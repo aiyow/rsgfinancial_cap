@@ -3,7 +3,14 @@ import cors from "cors";
 import dotenv from "dotenv";
 import pool from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
-import roleTestRoutes from "./routes/roleTestRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import unitRoutes from "./routes/unitRoutes.js";
+import unitAssignmentRoutes from "./routes/unitAssignmentRoutes.js";
+import billingPeriodRoutes from "./routes/billingPeriodRoutes.js";
+import billRoutes from "./routes/billRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import auditLogRoutes from "./routes/auditLogRoutes.js";
+import errorHandler from "./middleware/errorHandler.js";
 
 dotenv.config({ path: new URL("./.env", import.meta.url) });
 
@@ -20,9 +27,14 @@ app.get("/", (req, res) => {
   });
 });
 
-// Use the authRoutes and roleTestRoutes for handling authentication and role-based routes
 app.use("/api/auth", authRoutes);
-app.use("/api/roles", roleTestRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/units", unitRoutes);
+app.use("/api/unit-assignments", unitAssignmentRoutes);
+app.use("/api/billing-periods", billingPeriodRoutes);
+app.use("/api/bills", billRoutes);
+app.use("/api/payments", paymentRoutes);
+app.use("/api/audit-logs", auditLogRoutes);
 
 app.get("/api/health", async (req, res) => {
   try {
@@ -44,6 +56,8 @@ app.get("/api/health", async (req, res) => {
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
 });
+
+app.use(errorHandler);
 
 const port = Number(process.env.PORT) || 5000;
 

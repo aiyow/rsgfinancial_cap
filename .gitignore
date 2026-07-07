@@ -6,6 +6,7 @@ node_modules/
 dist/
 coverage/
 *.log
+backend/uploads/
 
 __pycache__/
 .venv/
