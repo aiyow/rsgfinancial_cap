@@ -1,22 +1,79 @@
 import { useEffect, useMemo, useState } from 'react'
+import { CheckCircle2, CircleUserRound, FileText, Pencil, Plus, Trash2, XCircle } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
-const entityOptions = ['ALL', 'USER_ACCOUNT', 'UNIT', 'UNIT_ASSIGNMENT', 'PAYMENT_SUBMISSION', 'BILLING_PERIOD']
-const actionOptions = ['ALL', 'CREATE', 'UPDATE', 'DELETE', 'END', 'SUBMIT', 'APPROVE', 'REJECT', 'GENERATED', 'REOPENED', 'FORWARDED', 'PUBLISHED', 'SOA_EDITED']
+const entityOptions = ['ALL', 'USER_ACCOUNT', 'UNIT', 'UNIT_ASSIGNMENT', 'PAYMENT_SUBMISSION', 'BILLING_PERIOD', 'PRESCRIPTIVE_RECOMMENDATION']
+const actionOptions = ['ALL', 'CREATE', 'CREATE_MANUAL', 'UPDATE', 'DELETE', 'END', 'SUBMIT', 'APPROVE', 'REJECT', 'GENERATED', 'REOPENED', 'FORWARDED', 'PUBLISHED', 'SOA_EDITED', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED', 'SHARED_WITH_RESIDENT']
 
-function formatDate(value) {
-  return value ? new Date(value).toLocaleString() : '—'
+const entityLabels = {
+  USER_ACCOUNT: 'user account',
+  UNIT: 'unit',
+  UNIT_ASSIGNMENT: 'unit assignment',
+  PAYMENT_SUBMISSION: 'payment',
+  BILLING_PERIOD: 'billing batch',
+  SOA_TEMPLATE: 'SOA template',
+  PRESCRIPTIVE_RECOMMENDATION: 'recommended action',
 }
 
-function JsonBlock({ value }) {
-  const hasContent = value && typeof value === 'object' && Object.keys(value).length > 0
-  return (
-    <pre className="max-h-48 overflow-auto rounded-xl bg-slate-950 p-3 text-xs leading-6 text-slate-100">
-      {hasContent ? JSON.stringify(value, null, 2) : '{}'}
-    </pre>
-  )
+const actionLabels = {
+  CREATE: 'created',
+  CREATE_MANUAL: 'recorded',
+  UPDATE: 'updated',
+  DELETE: 'deleted',
+  END: 'ended',
+  SUBMIT: 'submitted',
+  APPROVE: 'approved',
+  REJECT: 'rejected',
+  GENERATED: 'generated',
+  REOPENED: 'reopened',
+  FORWARDED: 'forwarded',
+  PUBLISHED: 'published',
+  SOA_EDITED: 'edited',
+  ACKNOWLEDGED: 'acknowledged',
+  RESOLVED: 'resolved',
+  DISMISSED: 'dismissed',
+  SHARED_WITH_RESIDENT: 'shared with the Resident',
+}
+
+const actionIcons = {
+  CREATE: Plus,
+  CREATE_MANUAL: Plus,
+  UPDATE: Pencil,
+  DELETE: Trash2,
+  END: XCircle,
+  SUBMIT: FileText,
+  APPROVE: CheckCircle2,
+  REJECT: XCircle,
+  GENERATED: FileText,
+  REOPENED: Pencil,
+  FORWARDED: FileText,
+  PUBLISHED: CheckCircle2,
+  SOA_EDITED: Pencil,
+}
+
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString() : 'Unknown time'
+}
+
+function labelFor(value, labels) {
+  return labels[value] || value.toLowerCase().replaceAll('_', ' ')
+}
+
+function describeLog(log) {
+  const action = actionLabels[log.action] || log.action.toLowerCase().replaceAll('_', ' ')
+  const entity = entityLabels[log.entityName] || 'record'
+  return `${action} ${entity}`
+}
+
+function initials(name) {
+  return String(name || '?')
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
 }
 
 export default function AdminAuditLogsPage() {
@@ -48,66 +105,59 @@ export default function AdminAuditLogsPage() {
   }), [logs])
 
   return (
-    <DashboardLayout title="Audit logs" description="Review who changed what across accounts, units, assignments, payments, and billing workflow events.">
+    <DashboardLayout title="Audit logs" description="A simple history of important actions in the system.">
       {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Loaded logs" value={summary.total} />
+        <StatCard label="Total entries" value={summary.total} />
         <StatCard label="Admin actions" value={summary.adminActions} />
         <StatCard label="Collector actions" value={summary.collectorActions} />
         <StatCard label="Resident actions" value={summary.residentActions} />
       </div>
 
-      <Panel title="Filter audit history" description="Use the filters below to narrow the activity feed.">
+      <Panel title="Filter activity" description="Choose a category to find a specific activity.">
         <div className="grid gap-4 md:grid-cols-2">
           <label className="block text-sm font-bold text-slate-700">
-            Entity
+            What changed?
             <select value={entity} onChange={(event) => setEntity(event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
-              {entityOptions.map((option) => <option key={option} value={option}>{option === 'ALL' ? 'All entities' : option}</option>)}
+              {entityOptions.map((option) => <option key={option} value={option}>{option === 'ALL' ? 'Everything' : labelFor(option, entityLabels)}</option>)}
             </select>
           </label>
           <label className="block text-sm font-bold text-slate-700">
-            Action
+            What happened?
             <select value={action} onChange={(event) => setAction(event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
-              {actionOptions.map((option) => <option key={option} value={option}>{option === 'ALL' ? 'All actions' : option}</option>)}
+              {actionOptions.map((option) => <option key={option} value={option}>{option === 'ALL' ? 'Everything' : labelFor(option, actionLabels)}</option>)}
             </select>
           </label>
         </div>
       </Panel>
 
-      <Panel title="Activity feed">
-        <div className="space-y-4">
-          {logs.map((log) => (
-            <article key={`${log.source}-${log.id}`} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{log.source}</span>
-                    <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">{log.entityName}</span>
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{log.action}</span>
-                  </div>
-                  <h2 className="mt-3 text-lg font-black text-slate-950">{log.actorName} ({log.actorRole})</h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    Entity ID: {log.entityId ?? '—'} | {formatDate(log.createdAt)}
-                  </p>
-                  {log.remarks && <p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{log.remarks}</p>}
-                </div>
-              </div>
+      <Panel title="Activity feed" description="Each row explains one action in plain language.">
+        <div className="divide-y divide-slate-100">
+          {logs.map((log) => {
+            const ActionIcon = actionIcons[log.action] || CircleUserRound
 
-              <div className="mt-5 grid gap-4 xl:grid-cols-2">
-                <div>
-                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Before</p>
-                  <JsonBlock value={log.oldValues} />
+            return (
+              <article key={`${log.source}-${log.id}`} title={log.remarks || undefined} className="flex flex-col gap-3 px-1 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-700" aria-hidden="true">{initials(log.actorName)}</span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-slate-700">
+                      <span className="font-bold text-slate-950">{log.actorName}</span>
+                      <span className="mx-1.5">{describeLog(log)}.</span>
+                      <span className="text-xs text-slate-500">{log.actorRole.toLowerCase()}</span>
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">After</p>
-                  <JsonBlock value={log.newValues} />
+                <div className="flex shrink-0 items-center gap-2 pl-12 text-xs text-slate-500 sm:pl-0">
+                  <ActionIcon size={15} className="text-indigo-600" aria-hidden="true" />
+                  <time dateTime={log.createdAt}>{formatDate(log.createdAt)}</time>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            )
+          })}
         </div>
-        {logs.length === 0 && <EmptyRow message="No audit log entries match the selected filters." />}
+        {logs.length === 0 && <EmptyRow message="No activity matches the selected filters." />}
       </Panel>
     </DashboardLayout>
   )

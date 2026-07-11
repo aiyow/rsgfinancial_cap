@@ -10,6 +10,10 @@ function money(value) {
   return `PHP ${Number(value || 0).toFixed(2)}`
 }
 
+function methodLabel(value) {
+  return value ? value.replace('_', ' ') : 'Not set'
+}
+
 export default function ResidentPaymentsPage() {
   const { token } = useAuth()
   const [status, setStatus] = useState('ALL')
@@ -71,7 +75,10 @@ export default function ResidentPaymentsPage() {
               </div>
               <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
                 <MiniInfo label="OCR amount" value={payment.ocrAmount ? money(payment.ocrAmount) : 'Not detected'} />
+                <MiniInfo label="Method" value={methodLabel(payment.paymentMethod)} />
                 <MiniInfo label="Reference" value={payment.verifiedReferenceNo || payment.ocrReferenceNo || 'Not detected'} />
+                <MiniInfo label="Applied amount" value={money(payment.appliedAmount)} />
+                <MiniInfo label="Advance balance" value={money(payment.unitAdvanceBalance)} />
                 <MiniInfo label="Remaining balance" value={money(payment.remainingBalance)} />
               </div>
               <div className="mt-5 flex flex-wrap gap-3">

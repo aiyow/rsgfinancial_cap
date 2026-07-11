@@ -3,6 +3,8 @@ import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
+import { billAppliedSql, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
+import { defaultSoaTemplate, ensureSoaTemplate, normalizeSoaTemplate } from "../services/soaTemplate.js";
 
 const router = express.Router();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");
@@ -27,7 +29,10 @@ const editBillSchema = z.object({
   message: "Change at least one SOA field.",
 });
 
-const approvedPaymentSql = `COALESCE((SELECT ROUND(SUM(pay.verified_amount), 2) FROM payment_submissions pay WHERE pay.unit_bill_id = b.id AND pay.review_status = 'APPROVED'), 0)`;
+const approvedPaymentSql = billAppliedSql;
+const unitAdvanceSql = `COALESCE((SELECT ROUND(SUM(pay.verified_amount - COALESCE((
+  SELECT SUM(app.amount_applied) FROM payment_applications app WHERE app.payment_submission_id = pay.id
+), 0)), 2) FROM payment_submissions pay WHERE pay.unit_id = b.unit_id AND pay.review_status = 'APPROVED'), 0)`;
 const totalChargeSql = `COALESCE(ROUND(SUM(c.quantity * c.rate_applied), 2), 0)`;
 const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "billingPeriodId",
   b.unit_number_snapshot AS "unitNumber", b.period_start_snapshot AS "periodStart",
@@ -40,7 +45,9 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
   b.payer_name_snapshot AS "payerName", b.payer_email_snapshot AS "payerEmail",
   b.generation_warning AS "generationWarning",
   b.published_at AS "publishedAt", b.published_by AS "publishedBy",
+  COALESCE(b.soa_template_snapshot, (SELECT template_data FROM soa_templates WHERE id = 1)) AS "soaTemplate",
   ${totalChargeSql} AS "totalAmount", ${approvedPaymentSql} AS "approvedAmount",
+  ${unitAdvanceSql} AS "advanceBalance",
   GREATEST(${totalChargeSql} - ${approvedPaymentSql}, 0) AS "remainingBalance",
   EXISTS (SELECT 1 FROM payment_submissions pending WHERE pending.unit_bill_id = b.id AND pending.review_status = 'PENDING') AS "hasPendingPayment",
   CASE WHEN ${approvedPaymentSql} >= ${totalChargeSql} AND ${totalChargeSql} > 0 THEN 'PAID'
@@ -49,7 +56,7 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
   FROM unit_bills b
   JOIN billing_periods p ON p.id = b.billing_period_id
   LEFT JOIN bill_charges c ON c.unit_bill_id = b.id`;
-const groupBy = "GROUP BY b.id, p.status";
+const groupBy = "GROUP BY b.id, p.status, b.soa_template_snapshot";
 
 async function readBill(client, id) {
   const bill = await client.query(`${billSelect} WHERE b.id = $1 ${groupBy}`, [id]);
@@ -70,6 +77,8 @@ router.use(requireAuth, allowRoles("ADMIN", "COLLECTOR", "RESIDENT"));
 
 router.get("/", async (req, res, next) => {
   try {
+    await ensureSoaTemplate(pool);
+    await ensurePaymentLedgerSchema(pool);
     const params = [];
     const conditions = [];
     if (req.query.billingPeriodId !== undefined) {
@@ -89,12 +98,14 @@ router.get("/", async (req, res, next) => {
     }
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     const result = await pool.query(`${billSelect} ${where} ${groupBy} ORDER BY b.period_start_snapshot DESC, b.unit_number_snapshot`, params);
-    return res.json({ bills: result.rows });
+    return res.json({ bills: result.rows.map((bill) => ({ ...bill, soaTemplate: normalizeSoaTemplate(bill.soaTemplate || defaultSoaTemplate) })) });
   } catch (error) { return next(error); }
 });
 
 router.get("/:id", requireId, async (req, res, next) => {
   try {
+    await ensureSoaTemplate(pool);
+    await ensurePaymentLedgerSchema(pool);
     const params = [req.resourceId];
     const conditions = ["b.id = $1"];
     if (req.user.role === "ADMIN" || req.user.role === "RESIDENT") conditions.push("p.status IN ('FORWARDED', 'CLOSED')");
@@ -111,13 +122,15 @@ router.get("/:id", requireId, async (req, res, next) => {
         ROUND(quantity * rate_applied, 2) AS amount, description
        FROM bill_charges WHERE unit_bill_id = $1 ORDER BY id`, [req.resourceId],
     );
-    return res.json({ bill: { ...billResult.rows[0], charges: chargeResult.rows } });
+    return res.json({ bill: { ...billResult.rows[0], soaTemplate: normalizeSoaTemplate(billResult.rows[0].soaTemplate || defaultSoaTemplate), charges: chargeResult.rows } });
   } catch (error) { return next(error); }
 });
 
 router.patch("/:id", allowRoles("COLLECTOR"), requireId, validateBody(editBillSchema), async (req, res, next) => {
   let client;
   try {
+    await ensureSoaTemplate(pool);
+    await ensurePaymentLedgerSchema(pool);
     client = await pool.connect();
     await client.query("BEGIN");
     const locked = await client.query(

@@ -8,6 +8,11 @@ coverage/
 *.log
 backend/uploads/
 
+# Local database exports can contain private resident and billing records.
+database/caps_db.sql
+database/*.dump
+database/*.backup
+
 __pycache__/
 .venv/
 

@@ -23,16 +23,18 @@ export default function ResidentBillsPage() {
     count: bills.length,
     unpaid: bills.filter((bill) => ['UNPAID', 'OVERDUE'].includes(bill.paymentStatus)).length,
     balance: bills.reduce((sum, bill) => sum + Number(bill.remainingBalance || 0), 0),
+    advance: bills.reduce((sum, bill) => sum + Number(bill.advanceBalance || 0), 0),
   }), [bills])
 
   return (
     <DashboardLayout title="My Statements of Account" description="Open each published SOA, check the remaining balance, and submit payment proof.">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <SummaryCard label="Published SOAs" value={summary.count} />
         <SummaryCard label="Need payment" value={summary.unpaid} />
         <SummaryCard label="Total remaining" value={money(summary.balance)} />
+        <SummaryCard label="Advance balance" value={money(summary.advance)} />
       </div>
 
       <Panel title="Published billing statements">
@@ -57,6 +59,7 @@ export default function ResidentBillsPage() {
               <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
                 <Info label="Total amount" value={money(bill.totalAmount)} />
                 <Info label="Approved payments" value={money(bill.approvedAmount)} />
+                <Info label="Advance balance" value={money(bill.advanceBalance)} />
                 <Info label="Pending review" value={bill.hasPendingPayment ? 'Yes' : 'No'} />
               </div>
               <div className="mt-5 flex flex-wrap gap-3">

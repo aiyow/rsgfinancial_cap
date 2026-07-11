@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { ShieldCheck } from 'lucide-react'
 import { apiRequest } from '../services/api'
 
 export default function Register() {
@@ -29,7 +30,7 @@ export default function Register() {
   return (
     <main className="grid min-h-screen place-items-center bg-slate-100 p-5">
       <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <h1 className="text-2xl font-black">Create test account</h1>
+        <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-xl bg-indigo-600 text-white"><ShieldCheck size={23} strokeWidth={2.2} /></span><div><h1 className="font-black">RSG Condo</h1><p className="text-xs text-slate-500">Create test account</p></div></div>
         <p className="mt-1 text-sm text-amber-700">Development only: all roles are available.</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}

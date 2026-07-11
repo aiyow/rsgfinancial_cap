@@ -95,10 +95,11 @@ export default function ResidentBillPage() {
 
       {bill && (
         <>
-          <div className="grid gap-4 md:grid-cols-3 print-hidden">
+          <div className="grid gap-4 md:grid-cols-4 print-hidden">
             <SummaryCard label="Total amount" value={money(bill.totalAmount)} />
             <SummaryCard label="Approved payments" value={money(bill.approvedAmount)} />
             <SummaryCard label="Remaining balance" value={money(bill.remainingBalance)} />
+            <SummaryCard label="Advance balance" value={money(bill.advanceBalance)} />
           </div>
 
           <Panel title="Submit payment proof" description="Upload a clear receipt image so OCR can extract the amount, reference number, and payment date for Admin review.">

@@ -5,6 +5,11 @@ import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
+import { regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.js";
+import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
+import { applyUnitCreditToOpenBills, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
+import { ensureSoaTemplate } from "../services/soaTemplate.js";
+import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
 
 const router = express.Router();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");
@@ -22,17 +27,15 @@ const readingSchema = z.object({
   unitId: z.coerce.number().int().positive(),
   previousReading: z.coerce.number().min(0),
   currentReading: z.coerce.number().min(0),
-}).strict().refine((row) => row.currentReading >= row.previousReading, {
-  message: "Present reading cannot be lower than the previous reading.",
-  path: ["currentReading"],
-});
+}).strict();
 const importSchema = z.object({ readings: z.array(readingSchema).min(1).max(1000) }).strict();
 const publishSchema = z.object({ billIds: z.array(z.coerce.number().int().positive()).min(1).max(2000).optional() }).strict();
 const periodColumns = `id, period_start AS "periodStart", period_end AS "periodEnd",
   due_date AS "dueDate", water_rate_per_cubic_m AS "waterRatePerCubicM",
   association_dues_rate_per_sqm AS "associationDuesRatePerSqm",
   status, created_by AS "createdBy", forwarded_at AS "forwardedAt",
-  forwarded_by AS "forwardedBy", created_at AS "createdAt", updated_at AS "updatedAt"`;
+  forwarded_by AS "forwardedBy", analytics_only AS "analyticsOnly",
+  readings_visible_at AS "readingsVisibleAt", created_at AS "createdAt", updated_at AS "updatedAt"`;
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -63,15 +66,38 @@ function numberValue(value) {
 }
 
 async function getDraftPeriod(id) {
-  const result = await pool.query(`SELECT ${periodColumns} FROM billing_periods WHERE id = $1`, [id]);
+  const result = await pool.query(`SELECT ${periodColumns} FROM billing_periods WHERE id = $1 AND analytics_only = FALSE`, [id]);
   return result.rows[0];
+}
+
+async function getPreviousReadings(client, periodStart) {
+  const result = await client.query(
+    `SELECT DISTINCT ON (m.unit_id) m.unit_id AS "unitId", m.current_reading AS "currentReading",
+      p.period_start AS "periodStart"
+     FROM meter_readings m JOIN billing_periods p ON p.id = m.billing_period_id
+     WHERE p.period_start < $1
+     ORDER BY m.unit_id, p.period_start DESC`,
+    [periodStart],
+  );
+  return new Map(result.rows.map((row) => [Number(row.unitId), row]));
+}
+
+function readingQuality(previousReading, currentReading, priorReading) {
+  const notes = [];
+  if (currentReading < previousReading) notes.push("Present reading is lower than the previous reading.");
+  if (priorReading && Math.abs(Number(priorReading.currentReading) - previousReading) > 0.001) {
+    notes.push(`Previous reading does not match the last recorded present reading (${priorReading.currentReading}).`);
+  }
+  return { status: notes.length ? "FLAGGED" : "VALID", notes };
 }
 
 router.use(requireAuth);
 
 router.get("/", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
   try {
-    const where = req.user.role === "ADMIN" ? "WHERE status IN ('FORWARDED', 'CLOSED')" : "";
+    const where = req.user.role === "ADMIN"
+      ? "WHERE analytics_only = FALSE AND status IN ('FORWARDED', 'CLOSED')"
+      : "WHERE analytics_only = FALSE";
     const result = await pool.query(`SELECT ${periodColumns} FROM billing_periods ${where} ORDER BY period_start DESC`);
     return res.json({ periods: result.rows });
   } catch (error) { return next(error); }
@@ -109,7 +135,7 @@ router.patch("/:id", allowRoles("COLLECTOR"), requireId, validateBody(updatePeri
     }
     values.push(req.resourceId);
     const result = await pool.query(
-      `UPDATE billing_periods SET ${updates.join(", ")} WHERE id = $${values.length} AND status = 'DRAFT'
+      `UPDATE billing_periods SET ${updates.join(", ")} WHERE id = $${values.length} AND status = 'DRAFT' AND analytics_only = FALSE
        RETURNING ${periodColumns}`,
       values,
     );
@@ -126,7 +152,7 @@ router.post("/:id/readings/preview", allowRoles("COLLECTOR"), requireId, upload.
     if (period.status !== "DRAFT") return res.status(409).json({ message: "Only draft periods accept readings." });
 
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(req.file.buffer);
+    await workbook.xlsx.load(await normalizeSpreadsheetNamespaces(req.file.buffer));
     const sheet = workbook.worksheets[0];
     if (!sheet) return res.status(400).json({ message: "The workbook has no worksheet." });
 
@@ -137,6 +163,7 @@ router.post("/:id/readings/preview", allowRoles("COLLECTOR"), requireId, upload.
     if (missingHeaders.length) return res.status(400).json({ message: `Missing required columns: ${missingHeaders.join(", ")}.` });
 
     const unitsResult = await pool.query("SELECT id, unit_number FROM units ORDER BY unit_number");
+    const priorReadings = await getPreviousReadings(pool, period.periodStart);
     const unitMap = new Map(unitsResult.rows.map((unit) => [String(unit.unit_number).trim().toLowerCase(), unit]));
     const seen = new Set();
     const rows = [];
@@ -155,9 +182,12 @@ router.post("/:id/readings/preview", allowRoles("COLLECTOR"), requireId, upload.
       seen.add(unitNumber.toLowerCase());
       if (previousReading === null || previousReading < 0) errors.push("Previous reading must be a non-negative number.");
       if (currentReading === null || currentReading < 0) errors.push("Present reading must be a non-negative number.");
-      if (previousReading !== null && currentReading !== null && currentReading < previousReading) errors.push("Present reading is lower than previous reading.");
       const consumption = previousReading !== null && currentReading !== null ? currentReading - previousReading : null;
-      const waterCharge = consumption === null ? null : consumption * Number(period.waterRatePerCubicM);
+      const quality = unit && consumption !== null
+        ? readingQuality(previousReading, currentReading, priorReadings.get(Number(unit.id)))
+        : { status: "VALID", notes: [] };
+      warnings.push(...quality.notes);
+      const waterCharge = consumption === null ? null : quality.status === "VALID" ? consumption * Number(period.waterRatePerCubicM) : 0;
       if (headers.has("WRATE")) {
         const fileRate = numberValue(cellValue(row.getCell(headers.get("WRATE"))));
         if (fileRate !== null && Math.abs(fileRate - Number(period.waterRatePerCubicM)) > 0.001) errors.push("Spreadsheet water rate differs from the billing period rate.");
@@ -170,14 +200,14 @@ router.post("/:id/readings/preview", allowRoles("COLLECTOR"), requireId, upload.
         const fileCharge = numberValue(cellValue(row.getCell(headers.get("WATER BILLED"))));
         if (fileCharge !== null && Math.abs(fileCharge - waterCharge) > 0.011) warnings.push("Spreadsheet water charge differs from the server calculation.");
       }
-      rows.push({ rowNumber, unitId: unit?.id ?? null, unitNumber, previousReading, currentReading, consumption, waterCharge, errors, warnings });
+      rows.push({ rowNumber, unitId: unit?.id ?? null, unitNumber, previousReading, currentReading, consumption, waterCharge, validationStatus: quality.status, validationNotes: quality.notes.join(" ") || null, errors, warnings });
     }
 
     const missingUnits = unitsResult.rows.filter((unit) => !seen.has(String(unit.unit_number).trim().toLowerCase())).map((unit) => unit.unit_number);
     const errors = [];
     const warnings = missingUnits.length ? [`Missing meter readings for units: ${missingUnits.join(", ")}. These units will receive a warning and a zero water charge.`] : [];
     const valid = rows.length > 0 && rows.every((row) => row.errors.length === 0);
-    return res.json({ valid, period, rows, errors, warnings, summary: { rowCount: rows.length, unitCount: unitsResult.rows.length, missingReadingCount: missingUnits.length, warningCount: warnings.length + rows.reduce((sum, row) => sum + row.warnings.length, 0) } });
+    return res.json({ valid, period, rows, errors, warnings, summary: { rowCount: rows.length, unitCount: unitsResult.rows.length, missingReadingCount: missingUnits.length, flaggedCount: rows.filter((row) => row.validationStatus === "FLAGGED").length, warningCount: warnings.length + rows.reduce((sum, row) => sum + row.warnings.length, 0) } });
   } catch (error) { return next(error); }
 });
 
@@ -186,7 +216,8 @@ router.get("/:id/readings", allowRoles("ADMIN", "COLLECTOR"), requireId, async (
     const result = await pool.query(
       `SELECT m.id, m.unit_id AS "unitId", u.unit_number AS "unitNumber",
         m.previous_reading AS "previousReading", m.current_reading AS "currentReading",
-        m.current_reading - m.previous_reading AS consumption, m.validation_status AS "validationStatus"
+        m.current_reading - m.previous_reading AS consumption, m.validation_status AS "validationStatus",
+        m.validation_notes AS "validationNotes"
        FROM meter_readings m JOIN units u ON u.id = m.unit_id
        WHERE m.billing_period_id = $1 ORDER BY u.unit_number`,
       [req.resourceId],
@@ -200,8 +231,10 @@ router.put("/:id/readings", allowRoles("COLLECTOR"), requireId, validateBody(imp
   try {
     client = await pool.connect();
     await client.query("BEGIN");
+    await ensurePaymentLedgerSchema(client);
+    await ensureSoaTemplate(client);
     const periodResult = await client.query(
-      "SELECT status, association_dues_rate_per_sqm FROM billing_periods WHERE id = $1 FOR UPDATE",
+      "SELECT status, period_start, association_dues_rate_per_sqm FROM billing_periods WHERE id = $1 AND analytics_only = FALSE FOR UPDATE",
       [req.resourceId],
     );
     if (!periodResult.rows[0]) {
@@ -219,19 +252,29 @@ router.put("/:id/readings", allowRoles("COLLECTOR"), requireId, validateBody(imp
       await client.query("ROLLBACK");
       return res.status(400).json({ message: "Submit unique readings for valid units only." });
     }
+    const priorReadings = await getPreviousReadings(client, periodResult.rows[0].period_start);
     await client.query("DELETE FROM meter_readings WHERE billing_period_id = $1", [req.resourceId]);
     for (const row of req.validatedBody.readings) {
+      const quality = readingQuality(row.previousReading, row.currentReading, priorReadings.get(Number(row.unitId)));
       await client.query(
-        `INSERT INTO meter_readings (unit_id, billing_period_id, recorded_by, previous_reading, current_reading, validation_status)
-         VALUES ($1, $2, $3, $4, $5, 'VALID')
+        `INSERT INTO meter_readings (unit_id, billing_period_id, recorded_by, previous_reading, current_reading, validation_status, validation_notes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (unit_id, billing_period_id) DO UPDATE SET recorded_by = EXCLUDED.recorded_by,
            previous_reading = EXCLUDED.previous_reading, current_reading = EXCLUDED.current_reading,
-           validation_status = 'VALID'`,
-        [row.unitId, req.resourceId, req.user.id, row.previousReading, row.currentReading],
+           validation_status = EXCLUDED.validation_status, validation_notes = EXCLUDED.validation_notes`,
+        [row.unitId, req.resourceId, req.user.id, row.previousReading, row.currentReading,
+          quality.status, quality.notes.join(" ") || null],
       );
     }
+    await regenerateForecastsFromPeriod(client, req.resourceId);
+    await regeneratePrescriptiveRecommendations(client);
     await client.query("COMMIT");
-    return res.json({ message: `Imported ${req.validatedBody.readings.length} meter readings.` });
+    const flaggedCount = req.validatedBody.readings.filter((row) => readingQuality(
+      row.previousReading,
+      row.currentReading,
+      priorReadings.get(Number(row.unitId)),
+    ).status === "FLAGGED").length;
+    return res.json({ message: `Imported ${req.validatedBody.readings.length} meter readings and generated forecasts.`, flaggedCount });
   } catch (error) {
     if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
@@ -243,8 +286,10 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
   try {
     client = await pool.connect();
     await client.query("BEGIN");
+    await ensurePaymentLedgerSchema(client);
+    await ensureSoaTemplate(client);
     const periodResult = await client.query(
-      "SELECT status, association_dues_rate_per_sqm FROM billing_periods WHERE id = $1 FOR UPDATE",
+      "SELECT status, association_dues_rate_per_sqm FROM billing_periods WHERE id = $1 AND analytics_only = FALSE FOR UPDATE",
       [req.resourceId],
     );
     if (!periodResult.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "Billing period not found." }); }
@@ -270,7 +315,8 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
         (unit_id, billing_period_id, generated_by, soa_generated_at,
          unit_number_snapshot, payer_name_snapshot, payer_email_snapshot,
          period_start_snapshot, period_end_snapshot, statement_date, due_date_snapshot,
-         previous_reading_snapshot, current_reading_snapshot, generation_warning)
+         previous_reading_snapshot, current_reading_snapshot, generation_warning,
+         soa_template_snapshot)
        SELECT u.id, p.id, $2, NOW(), u.unit_number, payer.full_name, payer.email,
          p.period_start, p.period_end, CURRENT_DATE, p.due_date,
          m.previous_reading, m.current_reading,
@@ -278,9 +324,11 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
            WHEN m.id IS NULL THEN 'Missing meter reading - water charge set to zero.'
            WHEN m.validation_status <> 'VALID' THEN 'Meter reading requires review - water charge set to zero.'
            ELSE NULL
-         END
+         END,
+         COALESCE(template.template_data, '{}'::jsonb)
        FROM units u
        JOIN billing_periods p ON p.id = $1
+       LEFT JOIN LATERAL (SELECT template_data FROM soa_templates WHERE id = 1) template ON TRUE
        LEFT JOIN meter_readings m ON m.unit_id = u.id AND m.billing_period_id = p.id
        LEFT JOIN LATERAL (
          SELECT usr.full_name, usr.email
@@ -309,6 +357,10 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
        JOIN billing_periods p ON p.id = b.billing_period_id
        WHERE b.billing_period_id = $1`, [req.resourceId],
     );
+    const generatedBills = await client.query("SELECT id, unit_id FROM unit_bills WHERE billing_period_id = $1 ORDER BY id", [req.resourceId]);
+    for (const bill of generatedBills.rows) {
+      await applyUnitCreditToOpenBills(client, bill.unit_id, bill.id);
+    }
     await client.query("UPDATE billing_periods SET status = 'GENERATED' WHERE id = $1", [req.resourceId]);
     await client.query(
       `INSERT INTO billing_events (billing_period_id, actor_id, event_type, details)
@@ -328,6 +380,7 @@ router.post("/:id/reopen", allowRoles("COLLECTOR"), requireId, async (req, res, 
   try {
     client = await pool.connect();
     await client.query("BEGIN");
+    await ensurePaymentLedgerSchema(client);
     const period = await client.query(
       `SELECT id, status, period_start AS "periodStart", period_end AS "periodEnd"
        FROM billing_periods WHERE id = $1 FOR UPDATE`, [req.resourceId],
@@ -428,6 +481,7 @@ router.delete("/:id", allowRoles("COLLECTOR"), requireId, async (req, res, next)
   try {
     client = await pool.connect();
     await client.query("BEGIN");
+    await ensurePaymentLedgerSchema(client);
     const period = await client.query(
       `SELECT id, status, period_start AS "periodStart", period_end AS "periodEnd"
        FROM billing_periods WHERE id = $1 FOR UPDATE`, [req.resourceId],
@@ -439,12 +493,14 @@ router.delete("/:id", allowRoles("COLLECTOR"), requireId, async (req, res, next)
     }
     const protectedBills = await client.query(
       `SELECT COUNT(*)::int AS count FROM unit_bills b
-       WHERE b.billing_period_id = $1 AND (b.published_at IS NOT NULL OR EXISTS
-         (SELECT 1 FROM payment_submissions ps WHERE ps.unit_bill_id = b.id))`, [req.resourceId],
+       WHERE b.billing_period_id = $1 AND (
+         EXISTS (SELECT 1 FROM payment_submissions ps WHERE ps.unit_bill_id = b.id)
+         OR EXISTS (SELECT 1 FROM payment_applications pa WHERE pa.unit_bill_id = b.id)
+       )`, [req.resourceId],
     );
     if (protectedBills.rows[0].count > 0) {
       await client.query("ROLLBACK");
-      return res.status(409).json({ message: "A batch with published SOAs or payment history cannot be deleted." });
+      return res.status(409).json({ message: "A batch with payment history cannot be deleted." });
     }
     const readingCount = await client.query("SELECT COUNT(*)::int AS count FROM meter_readings WHERE billing_period_id = $1", [req.resourceId]);
     const billCount = await client.query("SELECT COUNT(*)::int AS count FROM unit_bills WHERE billing_period_id = $1", [req.resourceId]);

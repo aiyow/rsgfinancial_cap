@@ -51,47 +51,63 @@ router.get("/:id", requireId, async (req, res, next) => {
 });
 
 router.post("/", validateBody(createUserSchema), async (req, res, next) => {
+  let client;
   try {
     const { fullName, email, password, role, isActive } = req.validatedBody;
     const passwordHash = await bcrypt.hash(password, 12);
-    const result = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const result = await client.query(
       `INSERT INTO users (full_name, email, password_hash, role, is_active)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING ${userColumns}`,
       [fullName, email, passwordHash, role, isActive]
     );
     await writeAuditLog({
+      client,
       actorUserId: req.user.id,
       entityName: "USER_ACCOUNT",
       entityId: result.rows[0].id,
       action: "CREATE",
       newValues: result.rows[0],
     });
+    await client.query("COMMIT");
     return res.status(201).json({ message: "User created.", user: result.rows[0] });
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
+  } finally {
+    client?.release();
   }
 });
 
 router.patch("/:id", requireId, validateBody(updateUserSchema), async (req, res, next) => {
+  let client;
   try {
     const body = req.validatedBody;
-    const beforeResult = await pool.query(`SELECT ${userColumns} FROM users WHERE id = $1`, [req.resourceId]);
-    if (!beforeResult.rows[0]) return res.status(404).json({ message: "User not found." });
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const beforeResult = await client.query(`SELECT ${userColumns} FROM users WHERE id = $1 FOR UPDATE`, [req.resourceId]);
+    if (!beforeResult.rows[0]) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "User not found." });
+    }
 
     if (req.resourceId === Number(req.user.id)
       && (body.isActive === false || (body.role && body.role !== "ADMIN"))) {
+      await client.query("ROLLBACK");
       return res.status(403).json({
         message: "You cannot deactivate your own account or remove your own Admin role.",
       });
     }
 
     if (body.role && body.role !== "RESIDENT") {
-      const assignment = await pool.query(
+      const assignment = await client.query(
         "SELECT 1 FROM unit_assignments WHERE user_id = $1 LIMIT 1",
         [req.resourceId]
       );
       if (assignment.rows.length > 0) {
+        await client.query("ROLLBACK");
         return res.status(409).json({
           message: "A user with assignment history must remain a Resident.",
         });
@@ -120,13 +136,14 @@ router.patch("/:id", requireId, validateBody(updateUserSchema), async (req, res,
     }
 
     values.push(req.resourceId);
-    const result = await pool.query(
+    const result = await client.query(
       `UPDATE users SET ${updates.join(", ")}
        WHERE id = $${values.length}
        RETURNING ${userColumns}`,
       values
     );
     await writeAuditLog({
+      client,
       actorUserId: req.user.id,
       entityName: "USER_ACCOUNT",
       entityId: req.resourceId,
@@ -134,9 +151,13 @@ router.patch("/:id", requireId, validateBody(updateUserSchema), async (req, res,
       oldValues: beforeResult.rows[0],
       newValues: result.rows[0],
     });
+    await client.query("COMMIT");
     return res.json({ message: "User updated.", user: result.rows[0] });
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
+  } finally {
+    client?.release();
   }
 });
 

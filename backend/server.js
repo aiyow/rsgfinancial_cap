@@ -10,6 +10,11 @@ import billingPeriodRoutes from "./routes/billingPeriodRoutes.js";
 import billRoutes from "./routes/billRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import auditLogRoutes from "./routes/auditLogRoutes.js";
+import analyticsImportRoutes from "./routes/analyticsImportRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
+import prescriptiveRecommendationRoutes from "./routes/prescriptiveRecommendationRoutes.js";
+import soaTemplateRoutes from "./routes/soaTemplateRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 dotenv.config({ path: new URL("./.env", import.meta.url) });
@@ -35,6 +40,11 @@ app.use("/api/billing-periods", billingPeriodRoutes);
 app.use("/api/bills", billRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
+app.use("/api/analytics/imports", analyticsImportRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/prescriptive-recommendations", prescriptiveRecommendationRoutes);
+app.use("/api/soa-template", soaTemplateRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/api/health", async (req, res) => {
   try {

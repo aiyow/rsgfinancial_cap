@@ -8,6 +8,10 @@ function money(value) {
   return `PHP ${Number(value || 0).toFixed(2)}`
 }
 
+function methodLabel(value) {
+  return value ? value.replace('_', ' ') : 'Not set'
+}
+
 export default function CollectorPaymentsPage() {
   const { token } = useAuth()
   const [payments, setPayments] = useState([])
@@ -38,13 +42,15 @@ export default function CollectorPaymentsPage() {
       <Panel title="Approved records">
         {payments.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
+            <table className="w-full min-w-[1060px] text-left text-sm">
               <thead className="text-xs uppercase text-slate-400">
                 <tr>
                   <th className="pb-3">Unit</th>
                   <th>Resident</th>
+                  <th>Method / source</th>
                   <th>Reference</th>
                   <th>Paid on</th>
+                  <th>Applied</th>
                   <th>Approved amount</th>
                   <th>SOA status</th>
                   <th></th>
@@ -55,15 +61,20 @@ export default function CollectorPaymentsPage() {
                   <tr key={payment.id}>
                     <td className="py-3 font-bold">Unit {payment.unitNumber}</td>
                     <td>{payment.submittedByName}</td>
+                    <td>
+                      <p className="font-semibold text-slate-800">{methodLabel(payment.paymentMethod)}</p>
+                      <p className="text-xs text-slate-500">{payment.entryType === 'MANUAL' ? 'Manual entry' : 'Receipt upload'}</p>
+                    </td>
                     <td>{payment.verifiedReferenceNo}</td>
-                    <td>{payment.verifiedPaymentDate ? String(payment.verifiedPaymentDate).slice(0, 10) : '—'}</td>
+                    <td>{payment.verifiedPaymentDate ? String(payment.verifiedPaymentDate).slice(0, 10) : '-'}</td>
+                    <td>{money(payment.appliedAmount)}</td>
                     <td>{money(payment.verifiedAmount)}</td>
                     <td>
                       <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${payment.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                         {payment.paymentStatus}
                       </span>
                     </td>
-                    <td><Link to={`/collector/bills/${payment.unitBillId}`} className="font-bold text-indigo-600">Open SOA</Link></td>
+                    <td>{payment.unitBillId && <Link to={`/collector/bills/${payment.unitBillId}`} className="font-bold text-indigo-600">Open SOA</Link>}</td>
                   </tr>
                 ))}
               </tbody>

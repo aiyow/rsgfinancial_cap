@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, ShieldCheck } from 'lucide-react'
 import { dashboardPathFor } from '../constants/routes'
 import useAuth from '../hooks/useAuth'
 
@@ -35,7 +35,7 @@ export default function Login() {
   return (
     <main className="grid min-h-screen place-items-center bg-slate-100 p-5">
       <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-xl bg-indigo-600 font-black text-white">C</span><div><h1 className="font-black">Condo Portal</h1><p className="text-xs text-slate-500">Sign in to continue</p></div></div>
+        <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-xl bg-indigo-600 text-white"><ShieldCheck size={23} strokeWidth={2.2} /></span><div><h1 className="font-black">RSG Condo</h1><p className="text-xs text-slate-500">Sign in to continue</p></div></div>
 
         <form onSubmit={submit} className="mt-8 space-y-4">
           {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
