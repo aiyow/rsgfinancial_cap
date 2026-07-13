@@ -36,6 +36,7 @@ export default function ResidentDashboard() {
   const [payments, setPayments] = useState([])
   const [analyticsUnits, setAnalyticsUnits] = useState([])
   const [recommendations, setRecommendations] = useState([])
+  const [viewingInsightId, setViewingInsightId] = useState(null)
   const [selectedUnitId, setSelectedUnitId] = useState('')
   const [error, setError] = useState('')
 
@@ -99,6 +100,22 @@ export default function ResidentDashboard() {
   })), [selectedUnit])
   const meterDomain = useMemo(() => paddedDomain(meterData.flatMap((row) => [row.previous, row.present])), [meterData])
 
+  async function markInsightViewed(recommendation) {
+    setViewingInsightId(recommendation.id)
+    setError('')
+    try {
+      const data = await apiRequest(`/api/prescriptive-recommendations/${recommendation.id}/view`, {
+        method: 'PATCH',
+        token,
+      })
+      setRecommendations((current) => current.map((item) => item.id === recommendation.id ? data.recommendation : item))
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setViewingInsightId(null)
+    }
+  }
+
   return (
     <DashboardLayout title="Resident dashboard" description="View published SOAs, payment status, historical water use, and next-month estimates.">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
@@ -110,13 +127,17 @@ export default function ResidentDashboard() {
       </div>
 
       {recommendations.length > 0 && (
-        <Panel title="Water-use notice" description="This is an early estimate, not an additional bill. Your building team has reviewed this notice before sharing it.">
+        <Panel title="Prescriptive Insights" description="These early water-use insights appear after bill generation and do not require the official SOA to be published.">
           <div className="space-y-3">
             {recommendations.map((recommendation) => (
               <article key={recommendation.id} className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                 <p className="font-black text-slate-950">Unit {recommendation.unitNumber}</p>
                 <p className="mt-1 text-sm text-amber-900">{recommendation.message}</p>
                 {recommendation.evidence?.increasePercent !== undefined && <p className="mt-2 text-xs text-amber-800">Projected increase: {Number(recommendation.evidence.increasePercent).toFixed(2)}% above the recent average.</p>}
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${recommendation.status === 'VIEWED' ? 'bg-slate-200 text-slate-700' : 'bg-rose-100 text-rose-700'}`}>{recommendation.status}</span>
+                  {recommendation.status === 'OPEN' && <button disabled={viewingInsightId === recommendation.id} onClick={() => markInsightViewed(recommendation)} className="rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold text-amber-900 disabled:opacity-50">{viewingInsightId === recommendation.id ? 'Saving...' : 'Mark as viewed'}</button>}
+                </div>
               </article>
             ))}
           </div>

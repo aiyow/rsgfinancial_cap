@@ -5,13 +5,24 @@ ADD COLUMN IF NOT EXISTS unit_id BIGINT NULL,
 ADD COLUMN IF NOT EXISTS entry_type VARCHAR(30) NOT NULL DEFAULT 'RECEIPT_UPLOAD',
 ADD COLUMN IF NOT EXISTS payment_method VARCHAR(30) NULL;
 
-UPDATE payment_submissions ps
-SET unit_id = b.unit_id
-FROM unit_bills b
-WHERE ps.unit_bill_id = b.id
-  AND ps.unit_id IS NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'payment_submissions'
+      AND column_name = 'unit_bill_id'
+  ) THEN
+    UPDATE payment_submissions ps
+    SET unit_id = b.unit_id
+    FROM unit_bills b
+    WHERE ps.unit_bill_id = b.id
+      AND ps.unit_id IS NULL;
 
-ALTER TABLE payment_submissions ALTER COLUMN unit_bill_id DROP NOT NULL;
+    ALTER TABLE payment_submissions ALTER COLUMN unit_bill_id DROP NOT NULL;
+  END IF;
+END;
+$$;
 ALTER TABLE payment_submissions ALTER COLUMN receipt_path DROP NOT NULL;
 ALTER TABLE payment_submissions ALTER COLUMN receipt_original_name DROP NOT NULL;
 ALTER TABLE payment_submissions ALTER COLUMN receipt_mime_type DROP NOT NULL;
@@ -39,8 +50,6 @@ ADD CONSTRAINT payment_submissions_method_check
   CHECK (payment_method IS NULL OR payment_method IN ('GCASH', 'BANK_TRANSFER', 'CASH', 'OTHER')),
 ADD CONSTRAINT payment_submissions_unit_fk
   FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE RESTRICT,
-ADD CONSTRAINT payment_submissions_bill_or_unit_check
-  CHECK (unit_bill_id IS NOT NULL OR unit_id IS NOT NULL),
 ADD CONSTRAINT payment_submissions_receipt_fields_check
   CHECK (
     (entry_type = 'RECEIPT_UPLOAD'
@@ -88,14 +97,29 @@ CREATE TABLE IF NOT EXISTS payment_applications (
 CREATE INDEX IF NOT EXISTS payment_applications_payment_idx ON payment_applications(payment_submission_id);
 CREATE INDEX IF NOT EXISTS payment_applications_bill_idx ON payment_applications(unit_bill_id);
 
-INSERT INTO payment_applications (payment_submission_id, unit_bill_id, amount_applied)
-SELECT ps.id, ps.unit_bill_id, ps.verified_amount
-FROM payment_submissions ps
-WHERE ps.review_status = 'APPROVED'
-  AND ps.unit_bill_id IS NOT NULL
-  AND ps.verified_amount IS NOT NULL
-  AND NOT EXISTS (
-    SELECT 1 FROM payment_applications pa WHERE pa.payment_submission_id = ps.id
-  );
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'payment_submissions'
+      AND column_name = 'unit_bill_id'
+  ) THEN
+    INSERT INTO payment_applications (payment_submission_id, unit_bill_id, amount_applied)
+    SELECT ps.id, ps.unit_bill_id, ps.verified_amount
+    FROM payment_submissions ps
+    WHERE ps.review_status = 'APPROVED'
+      AND ps.unit_bill_id IS NOT NULL
+      AND ps.verified_amount IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM payment_applications pa WHERE pa.payment_submission_id = ps.id
+      );
+
+    ALTER TABLE payment_submissions
+    ADD CONSTRAINT payment_submissions_bill_or_unit_check
+      CHECK (unit_bill_id IS NOT NULL OR unit_id IS NOT NULL);
+  END IF;
+END;
+$$;
 
 COMMIT;

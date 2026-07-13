@@ -57,7 +57,6 @@ CREATE TABLE IF NOT EXISTS payment_submissions (
     )
 );
 
-CREATE INDEX IF NOT EXISTS payment_submissions_bill_idx ON payment_submissions(unit_bill_id);
 CREATE INDEX IF NOT EXISTS payment_submissions_submitter_idx ON payment_submissions(submitted_by);
 CREATE INDEX IF NOT EXISTS payment_submissions_status_idx ON payment_submissions(review_status);
 CREATE UNIQUE INDEX IF NOT EXISTS payment_submissions_approved_reference_unique

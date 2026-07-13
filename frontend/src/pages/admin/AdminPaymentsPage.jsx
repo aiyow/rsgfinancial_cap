@@ -36,7 +36,7 @@ export default function AdminPaymentsPage() {
   const [busy, setBusy] = useState(false)
   const [manualForm, setManualForm] = useState({
     targetType: 'SOA',
-    unitBillId: '',
+    targetBillId: '',
     unitId: '',
     paymentMethod: 'CASH',
     amount: '',
@@ -69,7 +69,7 @@ export default function AdminPaymentsPage() {
         setCredits(creditData.credits)
         setManualForm((current) => ({
           ...current,
-          unitBillId: current.unitBillId || String(billData.bills.find((bill) => bill.paymentStatus !== 'PAID')?.id || billData.bills[0]?.id || ''),
+          targetBillId: current.targetBillId || String(billData.bills.find((bill) => bill.paymentStatus !== 'PAID')?.id || billData.bills[0]?.id || ''),
           unitId: current.unitId || String(unitData.units[0]?.id || ''),
         }))
       })
@@ -85,8 +85,8 @@ export default function AdminPaymentsPage() {
   }), [payments])
 
   const selectedBill = useMemo(
-    () => bills.find((bill) => String(bill.id) === String(manualForm.unitBillId)),
-    [bills, manualForm.unitBillId],
+    () => bills.find((bill) => String(bill.id) === String(manualForm.targetBillId)),
+    [bills, manualForm.targetBillId],
   )
   const selectedUnitId = manualForm.targetType === 'SOA' ? selectedBill?.unitId : manualForm.unitId
   const selectedCredit = credits.find((credit) => String(credit.unitId) === String(selectedUnitId))
@@ -119,7 +119,7 @@ export default function AdminPaymentsPage() {
         referenceNo: manualForm.referenceNo || undefined,
         remarks: manualForm.remarks || undefined,
         ...(manualForm.targetType === 'SOA'
-          ? { unitBillId: Number(manualForm.unitBillId) }
+          ? { targetBillId: Number(manualForm.targetBillId) }
           : { unitId: Number(manualForm.unitId) }),
       }
       const data = await apiRequest('/api/payments/manual', { method: 'POST', token, body })
@@ -154,7 +154,7 @@ export default function AdminPaymentsPage() {
           {manualForm.targetType === 'SOA' ? (
             <label className="block text-sm font-bold text-slate-700 lg:col-span-2">
               Statement of Account
-              <select required value={manualForm.unitBillId} onChange={(event) => updateManual('unitBillId', event.target.value)} className={inputClass}>
+              <select required value={manualForm.targetBillId} onChange={(event) => updateManual('targetBillId', event.target.value)} className={inputClass}>
                 {bills.map((bill) => (
                   <option key={bill.id} value={bill.id}>Unit {bill.unitNumber} - {String(bill.periodStart).slice(0, 10)} - remaining {money(bill.remainingBalance)}</option>
                 ))}
@@ -202,7 +202,7 @@ export default function AdminPaymentsPage() {
           </div>
 
           <div className="lg:col-span-4">
-            <button disabled={busy || !manualForm.amount || (manualForm.targetType === 'SOA' ? !manualForm.unitBillId : !manualForm.unitId)} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white disabled:bg-slate-300">
+            <button disabled={busy || !manualForm.amount || (manualForm.targetType === 'SOA' ? !manualForm.targetBillId : !manualForm.unitId)} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white disabled:bg-slate-300">
               {busy ? 'Recording payment...' : 'Record payment'}
             </button>
           </div>

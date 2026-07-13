@@ -77,18 +77,12 @@ export default function AnalyticsPage() {
     return () => { active = false }
   }, [token])
 
-  async function updateRecommendation(recommendation, action) {
+  async function deleteRecommendation(recommendation) {
+    if (!window.confirm(`Permanently delete the recommendation for Unit ${recommendation.unitNumber}?`)) return
     setRecommendationBusyId(recommendation.id)
     try {
-      const result = await apiRequest(`/api/prescriptive-recommendations/${recommendation.id}`, {
-        method: 'PATCH',
-        token,
-        body: { action },
-      })
-      const updated = result.recommendation
-      setRecommendations((current) => ['RESOLVED', 'DISMISSED', 'SUPERSEDED'].includes(updated.status)
-        ? current.filter((item) => item.id !== updated.id)
-        : current.map((item) => item.id === updated.id ? updated : item))
+      await apiRequest(`/api/prescriptive-recommendations/${recommendation.id}`, { method: 'DELETE', token })
+      setRecommendations((current) => current.filter((item) => item.id !== recommendation.id))
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -114,7 +108,7 @@ export default function AnalyticsPage() {
   )
   const recommendationSummary = {
     open: recommendations.filter((recommendation) => recommendation.status === 'OPEN').length,
-    acknowledged: recommendations.filter((recommendation) => recommendation.status === 'ACKNOWLEDGED').length,
+    viewed: recommendations.filter((recommendation) => recommendation.status === 'VIEWED').length,
     high: recommendations.filter((recommendation) => recommendation.priority === 'HIGH').length,
   }
   const visibleRecommendations = showAllRecommendations ? recommendations : recommendations.slice(0, 5)
@@ -186,13 +180,12 @@ export default function AnalyticsPage() {
           <Panel title="Recommended actions" description="These suggestions are based on the latest live billing period and the same readings used by the forecast.">
             <div className="mb-5 grid gap-3 sm:grid-cols-3">
               <Metric label="Open" value={recommendationSummary.open} compact />
-              <Metric label="Acknowledged" value={recommendationSummary.acknowledged} compact />
+              <Metric label="Viewed" value={recommendationSummary.viewed} compact />
               <Metric label="High priority" value={recommendationSummary.high} compact />
             </div>
             {recommendations.length ? (
               <div className="space-y-3">
                 {visibleRecommendations.map((recommendation) => {
-                  const active = ['OPEN', 'ACKNOWLEDGED'].includes(recommendation.status)
                   const busy = recommendationBusyId === recommendation.id
                   return (
                     <article key={recommendation.id} className="rounded-xl border border-slate-200 p-4">
@@ -201,19 +194,14 @@ export default function AnalyticsPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${recommendation.priority === 'HIGH' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-800'}`}>{recommendation.priority}</span>
                             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{recommendation.status}</span>
-                            {recommendation.residentVisibleAt && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Shared with Resident</span>}
+                            {recommendation.residentVisibleAt && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Visible to Resident</span>}
                           </div>
                           <p className="mt-3 font-black text-slate-950">Unit {recommendation.unitNumber}: {recommendation.message}</p>
                           <p className="mt-1 text-sm text-slate-500">{recommendationEvidence(recommendation)}</p>
                         </div>
-                        {active && (
-                          <div className="flex flex-wrap gap-2 lg:justify-end">
-                            {recommendation.status === 'OPEN' && <ActionButton disabled={busy} onClick={() => updateRecommendation(recommendation, 'ACKNOWLEDGED')}>Acknowledge</ActionButton>}
-                            {recommendation.recommendationType === 'CHECK_HIGH_USAGE' && !recommendation.residentVisibleAt && <ActionButton disabled={busy} onClick={() => updateRecommendation(recommendation, 'SHARED_WITH_RESIDENT')}>Share with Resident</ActionButton>}
-                            <ActionButton disabled={busy} onClick={() => updateRecommendation(recommendation, 'RESOLVED')}>Resolve</ActionButton>
-                            <ActionButton disabled={busy} onClick={() => updateRecommendation(recommendation, 'DISMISSED')}>Dismiss</ActionButton>
-                          </div>
-                        )}
+                        <div className="flex flex-wrap gap-2 lg:justify-end">
+                          <ActionButton disabled={busy} onClick={() => deleteRecommendation(recommendation)}>{busy ? 'Deleting...' : 'Delete'}</ActionButton>
+                        </div>
                       </div>
                     </article>
                   )

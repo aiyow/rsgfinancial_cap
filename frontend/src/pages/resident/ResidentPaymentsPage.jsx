@@ -82,7 +82,7 @@ export default function ResidentPaymentsPage() {
                 <MiniInfo label="Remaining balance" value={money(payment.remainingBalance)} />
               </div>
               <div className="mt-5 flex flex-wrap gap-3">
-                <Link to={`/resident/bills/${payment.unitBillId}`} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Open related SOA</Link>
+                {payment.targetBillId && <Link to={`/resident/bills/${payment.targetBillId}`} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Open target SOA</Link>}
               </div>
               {payment.remarks && <p className="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">{payment.remarks}</p>}
             </article>

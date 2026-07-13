@@ -44,14 +44,14 @@ const reviewSchema = z.discriminatedUnion("status", [
   }).strict(),
 ]);
 const manualPaymentSchema = z.object({
-  unitBillId: z.coerce.number().int().positive().optional(),
+  targetBillId: z.coerce.number().int().positive().optional(),
   unitId: z.coerce.number().int().positive().optional(),
   paymentMethod: paymentMethodSchema,
   amount: z.coerce.number().positive(),
   paymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format."),
   referenceNo: z.string().trim().max(100).optional(),
   remarks: z.string().trim().max(1000).optional(),
-}).strict().refine((body) => body.unitBillId || body.unitId, {
+}).strict().refine((body) => body.targetBillId || body.unitId, {
   message: "Choose an SOA or unit for the payment.",
 });
 
@@ -59,7 +59,7 @@ const totalSql = `COALESCE((SELECT ROUND(SUM(c.quantity * c.rate_applied), 2) FR
 const paymentApplicationSql = `COALESCE((SELECT ROUND(SUM(pa.amount_applied), 2) FROM payment_applications pa WHERE pa.payment_submission_id = ps.id), 0)`;
 const unitAdvanceSql = `COALESCE((SELECT ROUND(SUM(up.verified_amount - COALESCE((SELECT SUM(upa.amount_applied) FROM payment_applications upa WHERE upa.payment_submission_id = up.id), 0)), 2)
   FROM payment_submissions up WHERE up.unit_id = ps.unit_id AND up.review_status = 'APPROVED'), 0)`;
-const paymentSelect = `SELECT ps.id, ps.unit_bill_id AS "unitBillId", ps.submitted_by AS "submittedBy",
+const paymentSelect = `SELECT ps.id, pst.unit_bill_id AS "targetBillId", ps.submitted_by AS "submittedBy",
   ps.unit_id AS "unitId", ps.entry_type AS "entryType", ps.payment_method AS "paymentMethod",
   ps.receipt_original_name AS "receiptOriginalName", ps.receipt_mime_type AS "receiptMimeType",
   ps.ocr_raw_text AS "ocrRawText", ps.ocr_confidence AS "ocrConfidence",
@@ -80,7 +80,8 @@ const paymentSelect = `SELECT ps.id, ps.unit_bill_id AS "unitBillId", ps.submitt
     WHEN ${billAppliedSql} > 0 THEN 'PARTIAL'
     WHEN b.due_date_snapshot < CURRENT_DATE THEN 'OVERDUE' ELSE 'UNPAID' END AS "paymentStatus"
   FROM payment_submissions ps
-  LEFT JOIN unit_bills b ON b.id = ps.unit_bill_id
+  LEFT JOIN payment_submission_targets pst ON pst.payment_submission_id = ps.id
+  LEFT JOIN unit_bills b ON b.id = pst.unit_bill_id
   LEFT JOIN units u ON u.id = ps.unit_id
   JOIN users submitter ON submitter.id = ps.submitted_by
   LEFT JOIN users reviewer ON reviewer.id = ps.reviewed_by`;
@@ -169,12 +170,16 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.singl
     await writeFile(savedPath, req.file.buffer, { flag: "wx" });
     const result = await pool.query(
       `INSERT INTO payment_submissions
-        (unit_bill_id, unit_id, submitted_by, receipt_path, receipt_original_name, receipt_mime_type, receipt_sha256,
+        (unit_id, submitted_by, receipt_path, receipt_original_name, receipt_mime_type, receipt_sha256,
          ocr_raw_text, ocr_confidence, ocr_quality_status, ocr_amount, ocr_reference_no, ocr_payment_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'GOOD', $10, $11, $12)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'GOOD', $8, $9, $10, $11)
        RETURNING id`,
-      [req.resourceId, bill.unitId, req.user.id, fileName, req.file.originalname.slice(0, 255), req.file.mimetype, digest,
+      [bill.unitId, req.user.id, fileName, req.file.originalname.slice(0, 255), req.file.mimetype, digest,
         analysis.rawText, analysis.confidence, analysis.amount, analysis.referenceNo, analysis.paymentDate],
+    );
+    await pool.query(
+      "INSERT INTO payment_submission_targets (payment_submission_id, unit_bill_id) VALUES ($1, $2)",
+      [result.rows[0].id, req.resourceId],
     );
     await writeAuditLog({
       actorUserId: req.user.id,
@@ -182,7 +187,7 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.singl
       entityId: result.rows[0].id,
       action: "SUBMIT",
       newValues: {
-        unitBillId: req.resourceId,
+        targetBillId: req.resourceId,
         receiptOriginalName: req.file.originalname.slice(0, 255),
         ocrAmount: analysis.amount,
         ocrReferenceNo: analysis.referenceNo,
@@ -229,7 +234,7 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
     await client.query("BEGIN");
     const body = req.validatedBody;
     let unitId = body.unitId || null;
-    let billId = body.unitBillId || null;
+    let billId = body.targetBillId || null;
     if (billId) {
       const bill = await client.query("SELECT id, unit_id FROM unit_bills WHERE id = $1 FOR UPDATE", [billId]);
       if (!bill.rows[0]) {
@@ -248,18 +253,24 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
     const placeholderReference = body.referenceNo || `TEMP-${crypto.randomUUID()}`;
     const result = await client.query(
       `INSERT INTO payment_submissions
-        (unit_bill_id, unit_id, submitted_by, entry_type, payment_method, review_status,
+        (unit_id, submitted_by, entry_type, payment_method, review_status,
          reviewed_by, reviewed_at, verified_amount, verified_reference_no, verified_payment_date, remarks)
-       VALUES ($1, $2, $3, 'MANUAL', $4, 'APPROVED', $3, NOW(), $5, $6, $7, $8)
+       VALUES ($1, $2, 'MANUAL', $3, 'APPROVED', $2, NOW(), $4, $5, $6, $7)
        RETURNING id`,
-      [billId, unitId, req.user.id, body.paymentMethod, body.amount, placeholderReference, body.paymentDate, body.remarks || null],
+      [unitId, req.user.id, body.paymentMethod, body.amount, placeholderReference, body.paymentDate, body.remarks || null],
     );
     const paymentId = result.rows[0].id;
+    if (billId) {
+      await client.query(
+        "INSERT INTO payment_submission_targets (payment_submission_id, unit_bill_id) VALUES ($1, $2)",
+        [paymentId, billId],
+      );
+    }
     const verifiedReferenceNo = body.referenceNo || manualReference(body.paymentMethod, paymentId);
     if (!body.referenceNo) {
       await client.query("UPDATE payment_submissions SET verified_reference_no = $2 WHERE id = $1", [paymentId, verifiedReferenceNo]);
     }
-    await applyUnitCreditToOpenBills(client, unitId, billId);
+    await applyUnitCreditToOpenBills(client, unitId, billId, paymentId);
     const advanceBalance = await getUnitCreditBalance(client, unitId);
     await writeAuditLog({
       client,
@@ -269,7 +280,7 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
       action: "CREATE_MANUAL",
       newValues: {
         unitId,
-        unitBillId: billId,
+        targetBillId: billId,
         paymentMethod: body.paymentMethod,
         amount: body.amount,
         verifiedReferenceNo,
@@ -339,15 +350,15 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
     client = await pool.connect();
     await client.query("BEGIN");
     const locked = await client.query(
-      `SELECT ps.*, b.id AS bill_id, b.unit_id AS bill_unit_id FROM payment_submissions ps
-       LEFT JOIN unit_bills b ON b.id = ps.unit_bill_id
+      `SELECT ps.*, pst.unit_bill_id AS target_bill_id FROM payment_submissions ps
+       LEFT JOIN payment_submission_targets pst ON pst.payment_submission_id = ps.id
        WHERE ps.id = $1 FOR UPDATE OF ps`, [req.resourceId],
     );
     if (!locked.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "Payment submission not found." }); }
     if (locked.rows[0].review_status !== "PENDING") { await client.query("ROLLBACK"); return res.status(409).json({ message: "This payment submission was already reviewed." }); }
     const body = req.validatedBody;
     if (body.status === "APPROVED") {
-      const unitId = locked.rows[0].unit_id || locked.rows[0].bill_unit_id;
+      const unitId = locked.rows[0].unit_id;
       if (!unitId) {
         await client.query("ROLLBACK");
         return res.status(409).json({ message: "Payment has no unit to receive credit." });
@@ -365,7 +376,7 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
         [req.resourceId, req.user.id, unitId, body.paymentMethod, body.verifiedAmount,
           verifiedReferenceNo, body.verifiedPaymentDate, body.remarks || null],
       );
-      await applyUnitCreditToOpenBills(client, unitId, locked.rows[0].bill_id);
+      await applyUnitCreditToOpenBills(client, unitId, locked.rows[0].target_bill_id, req.resourceId);
       const advanceBalance = await getUnitCreditBalance(client, unitId);
       await writeAuditLog({
         client,

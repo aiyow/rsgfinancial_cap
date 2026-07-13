@@ -5,6 +5,7 @@ import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
 import { billAppliedSql, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
 import { defaultSoaTemplate, ensureSoaTemplate, normalizeSoaTemplate } from "../services/soaTemplate.js";
+import { writeAuditLog } from "../services/auditLog.js";
 
 const router = express.Router();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");
@@ -49,7 +50,12 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
   ${totalChargeSql} AS "totalAmount", ${approvedPaymentSql} AS "approvedAmount",
   ${unitAdvanceSql} AS "advanceBalance",
   GREATEST(${totalChargeSql} - ${approvedPaymentSql}, 0) AS "remainingBalance",
-  EXISTS (SELECT 1 FROM payment_submissions pending WHERE pending.unit_bill_id = b.id AND pending.review_status = 'PENDING') AS "hasPendingPayment",
+  EXISTS (
+    SELECT 1
+    FROM payment_submission_targets target
+    JOIN payment_submissions pending ON pending.id = target.payment_submission_id
+    WHERE target.unit_bill_id = b.id AND pending.review_status = 'PENDING'
+  ) AS "hasPendingPayment",
   CASE WHEN ${approvedPaymentSql} >= ${totalChargeSql} AND ${totalChargeSql} > 0 THEN 'PAID'
     WHEN ${approvedPaymentSql} > 0 THEN 'PARTIAL'
     WHEN b.due_date_snapshot < CURRENT_DATE THEN 'OVERDUE' ELSE 'UNPAID' END AS "paymentStatus"
@@ -222,12 +228,16 @@ router.patch("/:id", allowRoles("COLLECTOR"), requireId, validateBody(editBillSc
     }
 
     const after = await readBill(client, req.resourceId);
-    await client.query(
-      `INSERT INTO billing_events
-        (billing_period_id, unit_bill_id, actor_id, event_type, reason, details)
-       VALUES ($1, $2, $3, 'SOA_EDITED', $4, $5::jsonb)`,
-      [after.billingPeriodId, req.resourceId, req.user.id, body.reason, JSON.stringify({ before, after })],
-    );
+    await writeAuditLog({
+      client,
+      actorUserId: req.user.id,
+      entityName: "UNIT_BILL",
+      entityId: req.resourceId,
+      action: "SOA_EDITED",
+      oldValues: before,
+      newValues: after,
+      remarks: body.reason,
+    });
     await client.query("COMMIT");
     return res.json({ message: "SOA updated.", bill: after });
   } catch (error) {

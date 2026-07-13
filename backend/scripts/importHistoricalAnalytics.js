@@ -140,23 +140,23 @@ async function run() {
       const periodStart = dateFor(workbook.year, workbook.month, 1);
       const periodEnd = dateFor(workbook.year, workbook.month, lastDay(workbook.year, workbook.month));
       let period = await client.query(
-        `SELECT id, analytics_only AS "analyticsOnly" FROM billing_periods WHERE period_start = $1 FOR UPDATE`,
+        `SELECT id, period_type AS "periodType" FROM billing_periods WHERE period_start = $1 FOR UPDATE`,
         [periodStart],
       );
       if (!period.rows[0]) {
         period = await client.query(
           `INSERT INTO billing_periods
             (period_start, period_end, due_date, water_rate_per_cubic_m,
-             association_dues_rate_per_sqm, status, created_by, analytics_only, readings_visible_at)
-           VALUES ($1, $2, $2, $3, 0, 'CLOSED', $4, TRUE, NOW())
-           RETURNING id, analytics_only AS "analyticsOnly"`,
+             association_dues_rate_per_sqm, status, created_by, period_type, readings_visible_at)
+           VALUES ($1, $2, $2, $3, 0, 'CLOSED', $4, 'HISTORICAL_ANALYTICS', NOW())
+           RETURNING id, period_type AS "periodType"`,
           [periodStart, periodEnd, workbook.waterRate, collector.rows[0].id],
         );
       }
       const currentPeriod = period.rows[0];
       if (!firstPeriodId) firstPeriodId = currentPeriod.id;
 
-      if (!currentPeriod.analyticsOnly) {
+      if (currentPeriod.periodType === "LIVE_BILLING") {
         const stored = await client.query(
           `SELECT u.unit_number AS "unitNumber", m.previous_reading AS previous, m.current_reading AS current
            FROM meter_readings m JOIN units u ON u.id = m.unit_id

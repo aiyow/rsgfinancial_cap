@@ -74,7 +74,7 @@ export default function CollectorPaymentsPage() {
                         {payment.paymentStatus}
                       </span>
                     </td>
-                    <td>{payment.unitBillId && <Link to={`/collector/bills/${payment.unitBillId}`} className="font-bold text-indigo-600">Open SOA</Link>}</td>
+                    <td>{payment.targetBillId && <Link to={`/collector/bills/${payment.targetBillId}`} className="font-bold text-indigo-600">Open SOA</Link>}</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RSG Condo Management and Billing System - User Manual</title>
+  <style>
+    @page { size: A4; margin: 18mm 17mm 18mm 17mm; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: #18261f;
+      background: #ffffff;
+      font-family: Aptos, Calibri, Arial, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.5;
+    }
+    h1, h2, h3, h4 { color: #174b31; page-break-after: avoid; }
+    h1 { margin: 0 0 14px; font-size: 24pt; line-height: 1.15; border-bottom: 3px solid #2f8f5b; padding-bottom: 8px; }
+    h2 { margin: 25px 0 10px; font-size: 16pt; border-bottom: 1px solid #b8d7c4; padding-bottom: 5px; }
+    h3 { margin: 19px 0 7px; font-size: 12.5pt; }
+    h4 { margin: 14px 0 5px; font-size: 10.5pt; }
+    p { margin: 6px 0 10px; }
+    ul, ol { margin: 6px 0 11px 22px; padding: 0; }
+    li { margin: 3px 0; }
+    a { color: #206e48; text-decoration: none; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; page-break-inside: avoid; }
+    th { background: #174b31; color: white; font-weight: 700; text-align: left; }
+    th, td { border: 1px solid #b8c8be; padding: 6px 7px; vertical-align: top; }
+    tr:nth-child(even) td { background: #f4f8f5; }
+    code { font-family: Consolas, "Courier New", monospace; font-size: 9pt; background: #eef4f0; padding: 1px 4px; }
+    pre { border: 1px solid #b8c8be; background: #f4f8f5; padding: 10px; white-space: pre-wrap; font-family: Consolas, "Courier New", monospace; font-size: 9pt; }
+    .cover {
+      min-height: 245mm;
+      text-align: center;
+      padding: 25mm 12mm 10mm;
+      page-break-after: always;
+      border: 2px solid #2f8f5b;
+      background: #f4f8f5;
+    }
+    .cover img { width: 190px; max-height: 115px; object-fit: contain; margin: 5mm auto 15mm; }
+    .cover h1 { border: 0; font-size: 30pt; color: #174b31; margin: 0; padding: 0; }
+    .cover h2 { border: 0; color: #2f8f5b; font-size: 20pt; margin: 10px 0; }
+    .cover .subtitle { font-size: 13pt; color: #4f6357; margin-top: 16px; }
+    .cover .roles { margin: 25mm auto 0; width: 72%; border-collapse: separate; border-spacing: 7px; }
+    .cover .roles td { border: 1px solid #8fbaa0; background: #ffffff; color: #174b31; font-weight: 700; padding: 10px; text-align: center; }
+    .cover .meta { margin-top: 25mm; color: #53665a; font-size: 10pt; }
+    .page-break { page-break-before: always; }
+    .keep { page-break-inside: avoid; }
+    .note, .tip, .warning, .danger {
+      border-left: 4px solid #2f8f5b;
+      background: #eff8f2;
+      padding: 9px 12px;
+      margin: 10px 0 14px;
+      page-break-inside: avoid;
+    }
+    .tip { border-left-color: #2d72b8; background: #eef6fd; }
+    .warning { border-left-color: #d49722; background: #fff8e8; }
+    .danger { border-left-color: #c9473c; background: #fff0ee; }
+    .label { font-weight: 700; color: #174b31; }
+    .badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 8.5pt; font-weight: 700; border: 1px solid #a9bdb0; background: #f4f8f5; }
+    .flow td { text-align: center; vertical-align: middle; font-weight: 700; background: #f4f8f5 !important; }
+    .flow .arrow { width: 5%; border: 0; background: #ffffff !important; color: #2f8f5b; font-size: 16pt; }
+    .toc td { border: 0; padding: 3px 5px; background: #ffffff !important; }
+    .toc .num { width: 8%; color: #2f8f5b; font-weight: 700; }
+    .small { font-size: 9pt; color: #53665a; }
+    .checklist { list-style: none; margin-left: 0; }
+    .checklist li:before { content: "\2610\00a0"; color: #2f8f5b; font-weight: 700; }
+    .caption { font-size: 8.5pt; color: #627267; margin-top: -8px; }
+    .role-admin { background: #eef0ff; }
+    .role-collector { background: #eef9f4; }
+    .role-resident { background: #fff7e8; }
+    .doc-control td:first-child { width: 28%; font-weight: 700; color: #174b31; }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <img src="../frontend/public/residens-logo.png" alt="The Residens Condominium logo">
+    <h1>RSG Condo</h1>
+    <h2>Management and Billing System</h2>
+    <p class="subtitle">End-User Manual</p>
+    <table class="roles" aria-label="Roles covered by this manual">
+      <tr>
+        <td>ADMIN</td>
+        <td>COLLECTOR</td>
+        <td>RESIDENT</td>
+      </tr>
+    </table>
+    <div class="meta">
+      <p><strong>Version 1.0</strong></p>
+      <p>Prepared 13 July 2026</p>
+      <p>Based on the implemented application screens, permissions, and server rules.</p>
+    </div>
+  </section>
+
+  <h1>Document Information</h1>
+  <table class="doc-control">
+    <tr><td>Document title</td><td>RSG Condo Management and Billing System - End-User Manual</td></tr>
+    <tr><td>Intended audience</td><td>System Administrators, Collectors, and Residents</td></tr>
+    <tr><td>System version reviewed</td><td>Project working version reviewed on 13 July 2026</td></tr>
+    <tr><td>Purpose</td><td>Explain how to use every role-facing page and complete the normal billing, publication, payment, and water-analytics workflows.</td></tr>
+    <tr><td>Out of scope</td><td>Server installation, database administration, source-code maintenance, and deployment infrastructure. Those are technical-administrator tasks described separately in the project README.</td></tr>
+  </table>
+
+  <div class="warning">
+    <span class="label">Development registration warning.</span> The current login screen includes a testing link that can create an account and select any role. This is a development helper. In normal operations, accounts should be created by an authorized Admin through <strong>User Management</strong>. Do not use public registration in a live deployment unless your organization has explicitly approved it.
+  </div>
+
+  <h2>How to read this manual</h2>
+  <p>Start with Sections 1 to 3 for the system-wide workflow and navigation. Then use the guide for your role. Menu names and button labels are written exactly as they appear in the application. A path such as <strong>Manage &gt; Monthly Billing</strong> means open the <strong>Manage</strong> group in the left sidebar and select <strong>Monthly Billing</strong>.</p>
+
+  <h2>Contents</h2>
+  <table class="toc">
+    <tr><td class="num">1</td><td><a href="#overview">System Overview</a></td></tr>
+    <tr><td class="num">2</td><td><a href="#getting-started">Getting Started and Common Navigation</a></td></tr>
+    <tr><td class="num">3</td><td><a href="#concepts">Common Records, Statuses, and Calculations</a></td></tr>
+    <tr><td class="num">4</td><td><a href="#admin">Admin User Guide</a></td></tr>
+    <tr><td class="num">5</td><td><a href="#collector">Collector User Guide</a></td></tr>
+    <tr><td class="num">6</td><td><a href="#resident">Resident User Guide</a></td></tr>
+    <tr><td class="num">7</td><td><a href="#end-to-end">End-to-End Operating Workflows</a></td></tr>
+    <tr><td class="num">8</td><td><a href="#files">File Preparation Standards</a></td></tr>
+    <tr><td class="num">9</td><td><a href="#troubleshooting">Troubleshooting</a></td></tr>
+    <tr><td class="num">10</td><td><a href="#safety">Data Safety and Good Operating Practice</a></td></tr>
+    <tr><td class="num">A</td><td><a href="#appendix-a">Navigation Map</a></td></tr>
+    <tr><td class="num">B</td><td><a href="#appendix-b">Quick Checklists</a></td></tr>
+    <tr><td class="num">C</td><td><a href="#appendix-c">Glossary</a></td></tr>
+  </table>
+
+  <h1 id="overview" class="page-break">1. System Overview</h1>
+  <p>RSG Condo is a role-based condominium management, billing, payment-verification, and water-analytics system. It maintains units and resident assignments, converts monthly meter readings into Statements of Account (SOAs), lets Admin publish statements, accepts resident receipt images, tracks payment applications and advance balances, and produces predictive and prescriptive water-use information.</p>
+
+  <h2>1.1 Main operating cycle</h2>
+  <table class="flow">
+    <tr>
+      <td>Admin prepares users, units, and assignments</td><td class="arrow">&rarr;</td>
+      <td>Collector imports readings and generates SOAs</td><td class="arrow">&rarr;</td>
+      <td>Collector forwards the batch</td>
+    </tr>
+    <tr><td colspan="5" class="arrow">&darr;</td></tr>
+    <tr>
+      <td>Admin publishes SOAs</td><td class="arrow">&rarr;</td>
+      <td>Resident views SOA and submits receipt</td><td class="arrow">&rarr;</td>
+      <td>Admin verifies and applies payment</td>
+    </tr>
+  </table>
+
+  <h2>1.2 Roles and permissions</h2>
+  <table>
+    <thead><tr><th>Capability</th><th>Admin</th><th>Collector</th><th>Resident</th></tr></thead>
+    <tbody>
+      <tr><td>View role dashboard</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>
+      <tr><td>Create, edit, activate, deactivate, or delete user accounts</td><td>Yes</td><td>No</td><td>No</td></tr>
+      <tr><td>Create and maintain units</td><td>Yes</td><td>Read only</td><td>Assigned units only through resident views</td></tr>
+      <tr><td>Assign Residents to units</td><td>Yes</td><td>Read only</td><td>No</td></tr>
+      <tr><td>Configure future SOA text</td><td>Read only through generated statements</td><td>Yes</td><td>No</td></tr>
+      <tr><td>Create billing periods and import live readings</td><td>No</td><td>Yes</td><td>No</td></tr>
+      <tr><td>Edit generated, unforwarded SOAs</td><td>No</td><td>Yes</td><td>No</td></tr>
+      <tr><td>Forward billing batch</td><td>No</td><td>Yes</td><td>No</td></tr>
+      <tr><td>Publish SOAs to Residents</td><td>Yes</td><td>No</td><td>No</td></tr>
+      <tr><td>Upload payment proof</td><td>No</td><td>No</td><td>Yes</td></tr>
+      <tr><td>Approve or reject payment proof</td><td>Yes</td><td>No</td><td>No</td></tr>
+      <tr><td>Record face-to-face or advance payments</td><td>Yes</td><td>No</td><td>No</td></tr>
+      <tr><td>View approved payment records</td><td>Yes</td><td>Yes, read only</td><td>Own assigned units</td></tr>
+      <tr><td>Import historical analytics workbooks</td><td>No</td><td>Yes</td><td>No</td></tr>
+      <tr><td>View staff water analytics</td><td>Yes</td><td>Yes</td><td>No</td></tr>
+      <tr><td>View unit-specific resident water analytics</td><td>No</td><td>No</td><td>Assigned units only</td></tr>
+      <tr><td>View audit logs</td><td>Yes</td><td>No</td><td>No</td></tr>
+    </tbody>
+  </table>
+
+  <h2>1.3 Important visibility rules</h2>
+  <ul>
+    <li>Residents see only SOAs that Admin has published and only for units with an active assignment to their account.</li>
+    <li>Collectors see all billing batches they manage, but payment decisions belong to Admin.</li>
+    <li>Admins see forwarded or closed live-billing batches; draft and generated batches remain in the Collector workflow.</li>
+    <li>Residents see payment records connected to their currently assigned units.</li>
+    <li>High-water-use insights may appear on a Resident dashboard after bill generation. Other staff-only analytics remain hidden from Residents.</li>
+  </ul>
+
+  <h1 id="getting-started" class="page-break">2. Getting Started and Common Navigation</h1>
+
+  <h2>2.1 Open and sign in</h2>
+  <ol>
+    <li>Open the system address supplied by your system administrator. For a local development installation, the usual address is <code>http://localhost:5173</code>.</li>
+    <li>Enter your registered <strong>Email</strong> and <strong>Password</strong>.</li>
+    <li>Use the eye button if you need to show or hide the password.</li>
+    <li>Select <strong>Sign in</strong>. The system sends you to the dashboard for your assigned role.</li>
+  </ol>
+  <div class="tip"><span class="label">If sign-in fails:</span> verify the email spelling and password, then ask Admin whether the account is active. A deactivated account cannot sign in.</div>
+
+  <h2>2.2 Sidebar and page header</h2>
+  <ul>
+    <li>The left sidebar is divided into <strong>View</strong> and <strong>Manage</strong> sections.</li>
+    <li>Select a menu item to open its page. The highlighted item is your current location.</li>
+    <li>On a phone or narrow screen, select the menu button in the top-left corner to open the sidebar. Select outside the sidebar, press Escape, or choose a menu item to close it.</li>
+    <li>On a desktop, use <strong>Collapse</strong> at the bottom of the sidebar to show icons only. Use <strong>Expand</strong> to restore labels.</li>
+  </ul>
+
+  <h2>2.3 Profile, settings, and sign out</h2>
+  <ol>
+    <li>Select your name or initials in the top-right corner.</li>
+    <li>Select <strong>Profile</strong> to view your full name, email address, and role.</li>
+    <li>Select <strong>Settings</strong> to turn <strong>Use compact sidebar</strong> on or off. This preference is stored in the current browser.</li>
+    <li>Select <strong>Sign out</strong> when finished, especially on a shared computer.</li>
+  </ol>
+  <div class="note"><span class="label">Profile editing:</span> the Profile page is read-only. Ask Admin to correct your name or email. Admin can also set a new password from User Management.</div>
+
+  <h2>2.4 Messages and disabled buttons</h2>
+  <p>Green messages confirm success. Red messages explain errors. Amber messages indicate warnings that may require review. A gray or disabled button means a prerequisite is missing, the record is in the wrong status, or the current user lacks permission. Read the nearby status and message before trying again.</p>
+
+  <h2>2.5 Printing or saving an SOA</h2>
+  <ol>
+    <li>Open the SOA detail page.</li>
+    <li>Select <strong>Print / Save PDF</strong>.</li>
+    <li>In the browser print dialog, select a printer or choose <strong>Save as PDF</strong>.</li>
+    <li>Confirm paper size and orientation, then print or save.</li>
+  </ol>
+
+  <h1 id="concepts" class="page-break">3. Common Records, Statuses, and Calculations</h1>
+
+  <h2>3.1 Core records</h2>
+  <table>
+    <thead><tr><th>Record</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><strong>User</strong></td><td>A login account with one role: Admin, Collector, or Resident.</td></tr>
+      <tr><td><strong>Unit</strong></td><td>A condominium unit with a unit number, floor, billable area, and occupancy status.</td></tr>
+      <tr><td><strong>Assignment</strong></td><td>An active or ended Owner/Tenant relationship between a Resident account and a unit. An assignment may identify a primary payer.</td></tr>
+      <tr><td><strong>Billing period / batch</strong></td><td>A coverage period containing rates, meter readings, and one generated SOA per unit.</td></tr>
+      <tr><td><strong>SOA</strong></td><td>A Statement of Account containing association dues, water charges, balances, payer details, and a saved copy of the SOA template.</td></tr>
+      <tr><td><strong>Payment proof</strong></td><td>A Resident-uploaded receipt awaiting Admin verification.</td></tr>
+      <tr><td><strong>Manual payment</strong></td><td>An Admin-recorded face-to-face or advance payment that is approved immediately.</td></tr>
+      <tr><td><strong>Advance balance</strong></td><td>Approved money not yet needed by an SOA. The system applies available unit credit to open SOAs and retains any remainder.</td></tr>
+      <tr><td><strong>Forecast</strong></td><td>An estimated next-month water consumption and charge based on five consecutive valid monthly readings.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3.2 Billing batch statuses</h2>
+  <table>
+    <thead><tr><th>Status</th><th>What it means</th><th>Allowed next action</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge">DRAFT</span></td><td>Collector can edit period settings, preview a workbook, and replace saved readings.</td><td>Generate bills or delete the draft.</td></tr>
+      <tr><td><span class="badge">GENERATED</span></td><td>SOAs exist. Readings are locked. Collector may review and correct individual SOAs.</td><td>Forward to Admin, reopen to Draft, or delete if no payment history blocks deletion.</td></tr>
+      <tr><td><span class="badge">FORWARDED</span></td><td>Batch is read-only to Collector and visible to Admin.</td><td>Admin publishes SOAs. Collector can only view or, with caution, delete the forwarded batch.</td></tr>
+      <tr><td><span class="badge">CLOSED</span></td><td>Locked/retained record status, also used for historical analytics periods.</td><td>View only; closed batches cannot be deleted through the batch workflow.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3.3 SOA payment statuses</h2>
+  <table>
+    <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>UNPAID</td><td>No approved amount has been applied and the due date has not passed.</td></tr>
+      <tr><td>PARTIAL</td><td>Some approved amount has been applied, but a balance remains.</td></tr>
+      <tr><td>PAID</td><td>The approved applications cover the full SOA total.</td></tr>
+      <tr><td>OVERDUE</td><td>A balance remains after the due date.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3.4 Payment review statuses</h2>
+  <ul>
+    <li><strong>PENDING:</strong> submitted by a Resident and waiting for Admin review.</li>
+    <li><strong>APPROVED:</strong> verified by Admin and applied to the target SOA first, then other open SOAs for the same unit; any unused amount becomes advance balance.</li>
+    <li><strong>REJECTED:</strong> not accepted. Admin must provide rejection remarks. Only rejected proofs can be permanently deleted.</li>
+  </ul>
+
+  <h2>3.5 Meter-reading and forecast statuses</h2>
+  <ul>
+    <li><strong>VALID:</strong> the present reading is not lower than the previous reading and continuity matches the last saved present reading.</li>
+    <li><strong>FLAGGED:</strong> a lower reading, continuity break, missing reading, or other quality problem requires review. Flagged readings do not train the forecast and produce a zero water charge when a live bill is generated.</li>
+    <li><strong>READY forecast:</strong> five consecutive valid monthly readings are available.</li>
+    <li><strong>INSUFFICIENT_DATA:</strong> not enough consecutive valid history is available.</li>
+    <li><strong>FLAGGED_READING:</strong> a recent reading problem prevents a reliable forecast.</li>
+  </ul>
+
+  <h2>3.6 Billing calculations</h2>
+  <table>
+    <thead><tr><th>Item</th><th>System calculation</th></tr></thead>
+    <tbody>
+      <tr><td>Water consumption</td><td><strong>Present cumulative reading - Previous cumulative reading</strong></td></tr>
+      <tr><td>Water charge</td><td><strong>Valid water consumption &times; Water rate per m&sup3;</strong></td></tr>
+      <tr><td>Association dues</td><td><strong>Unit billable area in sqm &times; Association rate per sqm</strong></td></tr>
+      <tr><td>SOA total</td><td><strong>Water charge + Association dues</strong></td></tr>
+      <tr><td>Remaining balance</td><td><strong>SOA total - Approved payment applications</strong>, never below zero.</td></tr>
+    </tbody>
+  </table>
+  <div class="note">Spreadsheet formulas are not authoritative. The server recalculates consumption and charges from stored unit data, rates, and meter readings.</div>
+
+  <h1 id="admin" class="page-break">4. Admin User Guide</h1>
+  <p>The Admin controls account access, unit records, resident assignments, SOA publication, payment verification, and auditing. Admin should normally prepare master data before Collector starts a billing period.</p>
+
+  <h2>4.1 Admin dashboard</h2>
+  <p>Open <strong>View &gt; Dashboard</strong>. The Executive dashboard shows the current billed amount, current collected amount, open balance, occupied and vacant units, billing/collection trends, SOA payment statuses, water trends, and items needing attention.</p>
+  <p>Use the <strong>Needs attention</strong> links to open Payment verification, Overdue SOAs, or Water recommendations directly. Dashboard figures are operational summaries; open the linked page for record-level details.</p>
+
+  <h2>4.2 View the unit directory</h2>
+  <ol>
+    <li>Open <strong>View &gt; Unit Directory</strong>.</li>
+    <li>Review Total units, Occupied, Vacant, and With active residents.</li>
+    <li>Use <strong>Search unit or resident</strong>, the floor filter, and the occupancy filter.</li>
+    <li>Use <strong>Previous</strong> and <strong>Next</strong> for pages of 15 units.</li>
+    <li>Select <strong>Manage units</strong> when a record needs changes.</li>
+  </ol>
+
+  <h2>4.3 Create or maintain units</h2>
+  <p>Open <strong>Manage &gt; Manage Units</strong>. The table can be searched and filtered by floor, occupancy, or balance.</p>
+
+  <h3>Add a unit</h3>
+  <ol>
+    <li>Select <strong>Add unit</strong>.</li>
+    <li>Enter the unique <strong>Unit number</strong>, <strong>Floor</strong>, and <strong>Billable area (sqm)</strong>.</li>
+    <li>Select <strong>Vacant</strong> or <strong>Occupied</strong>.</li>
+    <li>Select <strong>Add unit</strong> in the form.</li>
+  </ol>
+  <div class="warning"><span class="label">Billing prerequisite:</span> every unit must have a billable area greater than zero before bills can be generated.</div>
+
+  <h3>Edit, toggle, view, or delete</h3>
+  <ul>
+    <li>Select <strong>Edit</strong>, change the fields, and select <strong>Save changes</strong>.</li>
+    <li>Select <strong>Toggle</strong> to switch Vacant/Occupied quickly.</li>
+    <li>Select <strong>View</strong> to return to the read-only directory.</li>
+    <li>Select <strong>Delete</strong> only for an incorrect unit. Confirm the permanent action. Dependent billing or assignment records may prevent deletion.</li>
+  </ul>
+  <div class="danger"><span class="label">Do not delete a valid unit to mark it vacant.</span> Change its occupancy to Vacant and end active resident assignments instead.</div>
+
+  <h2>4.4 Manage user accounts</h2>
+  <p>Open <strong>Manage &gt; User Management</strong>.</p>
+  <h3>Create an account</h3>
+  <ol>
+    <li>Enter Full name, a valid unique Email, and a Password of 8 to 72 characters.</li>
+    <li>Select the correct Role: Admin, Collector, or Resident.</li>
+    <li>Select <strong>Add user</strong>.</li>
+  </ol>
+  <h3>Edit an account</h3>
+  <ol>
+    <li>Select <strong>Edit</strong> beside the account.</li>
+    <li>Change the name, email, or role as needed. Enter <strong>New password (optional)</strong> only when resetting it.</li>
+    <li>Select <strong>Save</strong>. Your own Admin role cannot be removed from this page.</li>
+  </ol>
+  <h3>Deactivate, activate, or delete</h3>
+  <ul>
+    <li><strong>Deactivate</strong> blocks sign-in while keeping history. This is the preferred action for a person who should no longer access the system.</li>
+    <li><strong>Activate</strong> restores access.</li>
+    <li><strong>Delete</strong> permanently removes an incorrect account and its unit assignment records. You cannot delete your own account.</li>
+  </ul>
+  <div class="warning">A user with assignment history must remain a Resident. End or review assignments before attempting role changes that conflict with resident history.</div>
+
+  <h2>4.5 Assign a Resident to a unit</h2>
+  <ol>
+    <li>Open <strong>Manage &gt; Assignments</strong>.</li>
+    <li>Select a <strong>Unit</strong>.</li>
+    <li>Select an active <strong>Resident</strong>. Only active Resident accounts appear.</li>
+    <li>Select <strong>Owner</strong> or <strong>Tenant</strong>.</li>
+    <li>Check <strong>Primary payer</strong> when this person should be the principal payer shown for the unit.</li>
+    <li>Select <strong>Assign</strong>.</li>
+  </ol>
+  <p>To end access without deleting history, select <strong>End assignment</strong>. The record remains visible as Ended, and the Resident loses current access to unit-specific SOAs and records.</p>
+  <div class="tip">Before publication, confirm that each occupied unit has the correct active Resident assignment and primary payer. Generated SOAs save payer information as a snapshot.</div>
+
+  <h2>4.6 Review and publish forwarded SOAs</h2>
+  <ol>
+    <li>Open <strong>View &gt; Forwarded SOAs</strong>.</li>
+    <li>Find the billing period and select <strong>Open batch</strong>.</li>
+    <li>Review the count of Published and Hidden statements.</li>
+    <li>Select a statement's <strong>Review / Publish</strong> link to inspect the SOA. Use <strong>Print / Save PDF</strong> if needed.</li>
+    <li>From the statement, select <strong>Publish this SOA</strong>; or return to the batch.</li>
+    <li>For several statements, check the boxes and select <strong>Publish selected</strong>. To release all unpublished statements, select <strong>Publish all remaining</strong>.</li>
+  </ol>
+  <div class="warning"><span class="label">Publication is the Resident visibility control.</span> A forwarded SOA remains hidden until Admin publishes it. Published SOAs cannot be returned to Hidden from the current interface.</div>
+
+  <h2>4.7 Review Resident payment proofs</h2>
+  <ol>
+    <li>Open <strong>View &gt; Payments</strong>.</li>
+    <li>Use All statuses, Pending, Approved, or Rejected to filter the queue.</li>
+    <li>Select <strong>Review payment</strong> on a Pending row.</li>
+    <li>Compare the receipt image with Raw OCR text and Detected fields. Do not rely on OCR alone.</li>
+    <li>For approval, select <strong>Approve</strong> and confirm Payment method, Verified amount, Verified reference, and Verified payment date. Add remarks when useful.</li>
+    <li>Select <strong>Approve payment</strong>.</li>
+    <li>For rejection, select <strong>Reject</strong>, enter clear Rejection remarks of at least 3 characters, and select <strong>Reject payment</strong>.</li>
+  </ol>
+  <div class="note">If the verified reference is blank, the system creates one. Approved reference numbers must be unique. The approved amount is applied to the target SOA first, then other open SOAs for that unit. Any remainder becomes unit advance balance.</div>
+
+  <h3>Delete a rejected proof</h3>
+  <p>Open a Rejected payment, select <strong>Delete rejected proof</strong>, and confirm. Only rejected payment submissions can be permanently deleted. Approved payments cannot be deleted from this page because they affect the payment ledger.</p>
+
+  <h2>4.8 Record a face-to-face or advance payment</h2>
+  <ol>
+    <li>Open <strong>View &gt; Payments</strong> and locate <strong>Record face-to-face payment</strong>.</li>
+    <li>Select <strong>Apply to SOA</strong> to prioritize a specific statement, or <strong>Advance balance</strong> to record money against a unit.</li>
+    <li>Select the SOA or Unit.</li>
+    <li>Select GCash, Bank Transfer, Cash, or Other.</li>
+    <li>Enter Amount and Payment date. Enter the Reference/OR number or leave it blank for automatic generation.</li>
+    <li>Add Remarks when necessary.</li>
+    <li>Review the selected unit's current advance balance and select <strong>Record payment</strong>.</li>
+  </ol>
+  <div class="warning">Manual payments are approved immediately. Verify the amount, date, method, unit, and reference before saving.</div>
+
+  <h2>4.9 Review audit logs</h2>
+  <ol>
+    <li>Open <strong>View &gt; Audit Logs</strong>.</li>
+    <li>Use <strong>What changed?</strong> to filter by user account, unit, assignment, payment, billing batch, unit bill, or recommendation.</li>
+    <li>Use <strong>What happened?</strong> to filter by actions such as Create, Update, Delete, Approve, Reject, Generated, Reopened, Forwarded, Published, or SOA Edited.</li>
+    <li>Review the actor, role, action, and date/time in the activity feed. Hover over an entry when remarks are available.</li>
+  </ol>
+
+  <h2>4.10 Review water analytics</h2>
+  <p>Open <strong>View &gt; Water Analytics</strong> to review forecast coverage, WAPE accuracy, MAE, RMSE, historical-versus-projected charts, predicted-versus-actual diagnostics, flagged readings, and recommended actions.</p>
+  <ul>
+    <li>A unit needs five consecutive valid monthly readings after any reset or continuity break.</li>
+    <li>Flagged readings remain visible but are excluded from model training.</li>
+    <li>High-priority recommendations identify meter problems or unusual projected usage.</li>
+    <li>The current interface allows Admin or Collector to permanently <strong>Delete</strong> a recommendation. Delete only when it is no longer useful; the action is audited.</li>
+  </ul>
+
+  <h2>4.11 Recommended Admin monthly checklist</h2>
+  <ul class="checklist">
+    <li>Review active Residents and assignments before billing.</li>
+    <li>Confirm occupied/vacant status and billable area for every unit.</li>
+    <li>Review the forwarded batch and any reading warnings.</li>
+    <li>Publish the correct SOAs.</li>
+    <li>Review Pending payments regularly.</li>
+    <li>Check Overdue SOAs, advance balances, audit logs, and high-priority water alerts.</li>
+  </ul>
+
+  <h1 id="collector" class="page-break">5. Collector User Guide</h1>
+  <p>The Collector prepares the SOA template, imports historical analytics data, creates monthly billing periods, validates readings, generates and corrects SOAs, and forwards the completed batch to Admin.</p>
+
+  <h2>5.1 Collector dashboard</h2>
+  <p>Open <strong>View &gt; Dashboard</strong>. The Billing operations dashboard shows billed and collected totals, open balances, unit occupancy, trends, water forecasts, and attention items. Use <strong>Latest billing</strong> to continue the current period, <strong>Overdue SOAs</strong> to review balances, and <strong>Water recommendations</strong> to open analytics.</p>
+
+  <h2>5.2 View units and assignments</h2>
+  <p>Open <strong>View &gt; Units</strong>. This page is read-only and shows unit number, floor, occupancy, billable area, resident, relationship, payer status, and whether an assignment is active or ended. Report incorrect unit or assignment data to Admin before generating bills.</p>
+
+  <h2>5.3 Configure the SOA template</h2>
+  <ol>
+    <li>Open <strong>Manage &gt; SOA Template</strong>.</li>
+    <li>Enter the Company name, Statement title, Company address, Payment channel, Payment account name, and Payment account number.</li>
+    <li>Enter Prepared by and Checked by names and titles.</li>
+    <li>Enter optional Notice lines and the required Footer text.</li>
+    <li>Select <strong>Save SOA template</strong>.</li>
+  </ol>
+  <div class="note">Template changes apply only to SOAs generated afterward. Existing SOAs keep the template snapshot saved at generation time.</div>
+
+  <h2>5.4 Import historical data for analytics</h2>
+  <ol>
+    <li>Open <strong>Manage &gt; Analytics Import</strong>.</li>
+    <li>Select the <strong>Billing month</strong>.</li>
+    <li>Choose an <code>.xlsx</code> file containing UNIT, PREVIOUS, PRESENT, CONSUMPTION, WRATE, and WATER BILLED.</li>
+    <li>Select <strong>Preview</strong>.</li>
+    <li>Review month, row count, unit count, errors, warnings, water rate, and every row.</li>
+    <li>If valid, select <strong>Confirm import</strong>. If a live billing batch already exists for that month, select <strong>Verify and refresh</strong>.</li>
+  </ol>
+  <p>Historical imports feed predictions only. They do not create resident SOAs or overwrite live billing readings. When a live batch exists, the workbook must match the saved rate and readings; the system verifies it and refreshes forecasts.</p>
+  <h3>Remove imported analytics history</h3>
+  <p>In <strong>Imported analytics months</strong>, select <strong>Delete</strong> for one month or <strong>Clear all imports</strong> for all historical analytics data. Real billing, SOAs, payments, users, and units remain unchanged.</p>
+
+  <h2>5.5 Create a monthly billing period</h2>
+  <ol>
+    <li>Open <strong>Manage &gt; Monthly Billing</strong>.</li>
+    <li>Under <strong>1. Create billing period</strong>, enter Period start, Period end, Due date, Water rate / m&sup3;, and Association rate / sqm.</li>
+    <li>Select <strong>Create draft</strong>.</li>
+  </ol>
+  <div class="tip">Use one consistent billing month and confirm rates before importing readings. Period settings can be edited only while the batch is Draft.</div>
+
+  <h2>5.6 Upload and validate live readings</h2>
+  <ol>
+    <li>Under <strong>2. Upload and validate readings</strong>, select the Draft period.</li>
+    <li>Choose the Collector workbook. It must be an <code>.xlsx</code> file with UNIT, PREVIOUS, and PRESENT columns.</li>
+    <li>Select <strong>Preview file</strong>.</li>
+    <li>Review row count, database unit count, flagged rows, warnings, calculated consumption, water charge, and validation notes.</li>
+    <li>Correct spreadsheet errors and preview again. Errors prevent import.</li>
+    <li>When the preview is valid, select <strong>Confirm import</strong>.</li>
+  </ol>
+  <p>The system accepts non-negative numbers. A present reading below the previous reading, or a previous reading that does not match the last recorded present reading, is flagged. Duplicate or unknown units are errors.</p>
+  <div class="warning"><span class="label">Missing units:</span> a preview may remain valid even when some database units are absent. Missing units receive a warning and a zero water charge if bills are generated. Resolve missing readings whenever possible.</div>
+
+  <h2>5.7 Generate bills</h2>
+  <ol>
+    <li>Confirm that the selected period is Draft and saved readings are greater than zero.</li>
+    <li>Confirm every unit has a billable area and the association rate is set.</li>
+    <li>Under <strong>3. Generate bills</strong>, select <strong>Generate bills</strong>.</li>
+    <li>Read the confirmation that readings cannot be changed afterward and confirm.</li>
+    <li>The system creates one SOA for every unit and opens <strong>Bills &amp; SOAs</strong>.</li>
+  </ol>
+  <p>Valid readings create water charges. A missing or flagged reading creates an SOA warning and sets water charge to zero. Association dues still use the unit's billable area and rate.</p>
+
+  <h2>5.8 Review, print, and correct generated SOAs</h2>
+  <ol>
+    <li>Open <strong>View &gt; Bills &amp; SOAs</strong>.</li>
+    <li>Find the Generated batch and review each row for Payer, Statement date, Complete/Reading warning, and Total.</li>
+    <li>Select <strong>View / Edit</strong> for a statement.</li>
+    <li>Use <strong>Print / Save PDF</strong> to check the document output.</li>
+    <li>To correct it, select <strong>Edit SOA</strong>.</li>
+    <li>Change payer details, coverage dates, statement date, due date, readings, descriptions, quantity where allowed, or rates.</li>
+    <li>Enter a required <strong>Reason for correction</strong> and select <strong>Save corrected SOA</strong>.</li>
+  </ol>
+  <div class="note">Enter both previous and current readings or leave both blank. The current reading cannot be lower than the previous reading. SOA corrections are available only while the batch is Generated and unforwarded, and they are written to audit history.</div>
+
+  <h2>5.9 Reopen, delete, or forward a batch</h2>
+  <h3>Reopen a Generated batch</h3>
+  <ol>
+    <li>Select <strong>Reopen batch</strong>.</li>
+    <li>Enter the reason.</li>
+    <li>The system returns the batch to Draft, preserves readings, and removes generated bills so settings/readings can be corrected and bills regenerated.</li>
+  </ol>
+  <h3>Delete a batch</h3>
+  <ol>
+    <li>Select <strong>Delete batch</strong> or <strong>Delete forwarded batch</strong>.</li>
+    <li>Read the permanent-deletion warning and confirm.</li>
+    <li>Enter a reason.</li>
+  </ol>
+  <div class="danger">Deleting a batch removes its readings, SOAs, and charges. Deleting a Forwarded batch immediately removes Admin access. A Closed batch or a batch with payment history cannot be deleted.</div>
+  <h3>Forward to Admin</h3>
+  <ol>
+    <li>Make sure every SOA has been reviewed and corrected.</li>
+    <li>Select <strong>Forward to Admin</strong>.</li>
+    <li>Confirm that the entire batch will become read-only.</li>
+  </ol>
+
+  <h2>5.10 View verified payments</h2>
+  <p>Open <strong>View &gt; Verified Payments</strong>. Collector sees only Admin-approved records. Review approved count, approved amount, fully paid SOAs, method/source, reference, payment date, applied amount, approved amount, and SOA status. Select <strong>Open SOA</strong> when a payment targets a statement. Collector cannot approve or reject payments.</p>
+
+  <h2>5.11 Review water analytics</h2>
+  <p>Open <strong>View &gt; Water Analytics</strong>. Use forecast coverage, error metrics, charts, diagnostics, flagged readings, and recommended actions to identify missing history, meter continuity problems, or unusually high projected usage. If no data appears, return to <strong>Analytics Import</strong> and import consecutive monthly history.</p>
+
+  <h2>5.12 Recommended Collector monthly checklist</h2>
+  <ul class="checklist">
+    <li>Confirm the SOA template and payment account details.</li>
+    <li>Confirm unit areas and resident assignments with Admin.</li>
+    <li>Create the correct Draft period and rates.</li>
+    <li>Preview the workbook and resolve errors, missing units, and flagged readings.</li>
+    <li>Confirm the import before generating.</li>
+    <li>Review and print-check generated SOAs.</li>
+    <li>Correct any warning SOAs and document the reason.</li>
+    <li>Forward only the final batch to Admin.</li>
+  </ul>
+
+  <h1 id="resident" class="page-break">6. Resident User Guide</h1>
+  <p>Residents can view statements for their assigned units, review balances and water analytics, submit payment receipts, and track Admin decisions.</p>
+
+  <h2>6.1 Resident dashboard</h2>
+  <p>Open <strong>View &gt; Dashboard</strong>. Review Published SOAs, Need payment, and Pending payment reviews. The page may also show Prescriptive Insights, unit water-consumption analytics, recent published SOAs, and shortcuts to statements or payment history.</p>
+
+  <h3>View or acknowledge a water-use insight</h3>
+  <ol>
+    <li>Read the message under <strong>Prescriptive Insights</strong>.</li>
+    <li>Review any projected increase above the recent average.</li>
+    <li>Select <strong>Mark as viewed</strong>. The insight status changes from Open to Viewed.</li>
+  </ol>
+  <p>This is an early estimate and does not replace the official SOA.</p>
+
+  <h3>Read resident water analytics</h3>
+  <ul>
+    <li>If assigned to more than one unit, use <strong>Change unit</strong>.</li>
+    <li>Review Latest consumption, Recent 5-month average, Next-month estimate, and Estimated water charge.</li>
+    <li>Use Monthly consumption and Meter-reading history charts to compare periods.</li>
+    <li>A forecast requires five consecutive valid readings. Flagged readings are excluded.</li>
+  </ul>
+
+  <h2>6.2 View published SOAs</h2>
+  <ol>
+    <li>Open <strong>View &gt; My SOAs</strong>.</li>
+    <li>Review Published SOAs, Need payment, Total remaining, and Advance balance.</li>
+    <li>Find the correct unit and billing period. Review status, due date, remaining balance, total amount, approved payments, advance balance, and whether a payment is pending review.</li>
+    <li>Select <strong>Open SOA</strong>.</li>
+    <li>Review the statement and use <strong>Print / Save PDF</strong> if a copy is needed.</li>
+  </ol>
+  <div class="note">If a statement is missing, confirm that your unit assignment is active and ask Admin whether the Collector forwarded the batch and Admin published your SOA.</div>
+
+  <h2>6.3 Prepare a receipt image</h2>
+  <ul>
+    <li>Use JPG/JPEG or PNG only, up to 5 MB.</li>
+    <li>Use an image at least 600 by 600 pixels.</li>
+    <li>Place the receipt flat, fill the frame, use good lighting, avoid glare, and keep text sharp.</li>
+    <li>Make the amount, reference/transaction number, and payment date readable.</li>
+    <li>Do not submit the same receipt twice.</li>
+  </ul>
+
+  <h2>6.4 Preview and submit payment proof</h2>
+  <ol>
+    <li>Open an SOA that is not Paid.</li>
+    <li>Under <strong>Submit payment proof</strong>, choose the receipt image.</li>
+    <li>Select <strong>Preview OCR</strong>.</li>
+    <li>Review Image quality, Detected amount, Detected reference, Detected payment date, OCR confidence, and Extracted text.</li>
+    <li>If the result is incomplete or wrong, take a clearer photo and preview again. Admin will still verify the final values manually.</li>
+    <li>Select <strong>Submit payment proof</strong>.</li>
+    <li>Wait for the success message: the proof is now Pending Admin verification.</li>
+  </ol>
+  <div class="warning">A preview does not submit the receipt. You must select <strong>Submit payment proof</strong>. Fully paid SOAs do not accept additional payment proofs.</div>
+
+  <h2>6.5 Track payment history</h2>
+  <ol>
+    <li>Open <strong>View &gt; Payment History</strong>.</li>
+    <li>Use All submissions, Pending, Approved, or Rejected.</li>
+    <li>Review OCR amount, payment method, reference, applied amount, advance balance, remaining balance, and Admin remarks.</li>
+    <li>Select <strong>Open target SOA</strong> to review the statement.</li>
+  </ol>
+  <p>If a payment is Rejected, read the remarks, correct the problem, and submit a new proof from the target SOA. If Approved, the system updates the SOA balance. Any unused verified amount becomes unit credit and can apply to other open SOAs.</p>
+
+  <h2>6.6 Recommended Resident checklist</h2>
+  <ul class="checklist">
+    <li>Confirm your assigned unit and contact Admin if it is wrong.</li>
+    <li>Review new SOAs and due dates promptly.</li>
+    <li>Check remaining and advance balances before paying.</li>
+    <li>Keep a clear original receipt image.</li>
+    <li>Preview OCR, then submit the proof.</li>
+    <li>Check Payment History for approval or rejection remarks.</li>
+    <li>Review water-use insights and mark them as viewed.</li>
+    <li>Sign out on shared devices.</li>
+  </ul>
+
+  <h1 id="end-to-end" class="page-break">7. End-to-End Operating Workflows</h1>
+
+  <h2>7.1 First-time operational setup</h2>
+  <ol>
+    <li><strong>Admin:</strong> create or confirm all units and billable areas.</li>
+    <li><strong>Admin:</strong> create Resident accounts.</li>
+    <li><strong>Admin:</strong> assign each Resident to the correct unit as Owner or Tenant and set primary payer where appropriate.</li>
+    <li><strong>Collector:</strong> configure the SOA template.</li>
+    <li><strong>Collector:</strong> import at least five consecutive months of historical readings if forecasts are needed immediately.</li>
+    <li><strong>Collector:</strong> create the current Draft billing period.</li>
+  </ol>
+
+  <h2>7.2 Monthly billing lifecycle</h2>
+  <table>
+    <thead><tr><th>Step</th><th>Role</th><th>Page</th><th>Outcome</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Admin</td><td>User Management / Manage Units / Assignments</td><td>Master data is correct.</td></tr>
+      <tr><td>2</td><td>Collector</td><td>Monthly Billing</td><td>Draft period and rates are saved.</td></tr>
+      <tr><td>3</td><td>Collector</td><td>Monthly Billing</td><td>Workbook is previewed and valid readings are confirmed.</td></tr>
+      <tr><td>4</td><td>Collector</td><td>Monthly Billing</td><td>One SOA per unit is generated.</td></tr>
+      <tr><td>5</td><td>Collector</td><td>Bills &amp; SOAs</td><td>Warnings and corrections are resolved.</td></tr>
+      <tr><td>6</td><td>Collector</td><td>Bills &amp; SOAs</td><td>Batch is forwarded and becomes read-only.</td></tr>
+      <tr><td>7</td><td>Admin</td><td>Forwarded SOAs</td><td>Selected or all SOAs are published.</td></tr>
+      <tr><td>8</td><td>Resident</td><td>My SOAs</td><td>Resident sees the official statement and pays.</td></tr>
+      <tr><td>9</td><td>Resident</td><td>SOA detail</td><td>Receipt proof is submitted.</td></tr>
+      <tr><td>10</td><td>Admin</td><td>Payments</td><td>Payment is approved/applied or rejected with remarks.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>7.3 Payment application lifecycle</h2>
+  <ol>
+    <li>Resident submits a receipt against a published, unpaid SOA; or Admin records a manual payment.</li>
+    <li>Uploaded receipts start as Pending. Manual payments are Approved immediately.</li>
+    <li>Admin verifies the receipt image and corrected values.</li>
+    <li>On approval, the system applies available unit credit to the target SOA first.</li>
+    <li>If credit remains, it is applied to other open SOAs for the same unit in chronological order.</li>
+    <li>Any remaining amount becomes the unit's advance balance.</li>
+    <li>SOA status recalculates as Unpaid, Partial, Paid, or Overdue.</li>
+  </ol>
+
+  <h2>7.4 Water analytics lifecycle</h2>
+  <ol>
+    <li>Collector imports historical monthly readings or confirms live monthly readings.</li>
+    <li>The system validates continuity and flags unreliable readings.</li>
+    <li>Five consecutive valid readings produce a next-month linear-regression forecast.</li>
+    <li>Staff review coverage, accuracy, charts, diagnostics, and flagged readings.</li>
+    <li>The system creates recommendations for flagged readings, missing history, or projected high use.</li>
+    <li>High-use insights can appear to the assigned Resident, who can mark them Viewed.</li>
+  </ol>
+
+  <h1 id="files" class="page-break">8. File Preparation Standards</h1>
+
+  <h2>8.1 Live monthly meter-reading workbook</h2>
+  <p><strong>Format:</strong> Excel <code>.xlsx</code>, maximum 5 MB. The workbook must contain a worksheet and the required headers.</p>
+  <table>
+    <thead><tr><th>Header</th><th>Required</th><th>Content</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td>UNIT</td><td>Yes</td><td>Unit number exactly as stored in the system.</td><td>1201</td></tr>
+      <tr><td>PREVIOUS</td><td>Yes</td><td>Previous non-negative cumulative meter reading.</td><td>153.250</td></tr>
+      <tr><td>PRESENT</td><td>Yes</td><td>Current non-negative cumulative meter reading.</td><td>159.875</td></tr>
+    </tbody>
+  </table>
+  <pre>UNIT    PREVIOUS    PRESENT
+1201    153.250     159.875
+1202    211.000     216.500</pre>
+  <p>The server calculates consumption and water charge. Extra spreadsheet consumption or charge columns may be compared, but server results take priority.</p>
+
+  <h2>8.2 Historical analytics workbook</h2>
+  <p><strong>Format:</strong> Excel <code>.xlsx</code>, maximum 5 MB. Select the month in the interface before previewing.</p>
+  <table>
+    <thead><tr><th>Header</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>UNIT</td><td>Unit number.</td></tr>
+      <tr><td>PREVIOUS</td><td>Previous cumulative reading.</td></tr>
+      <tr><td>PRESENT</td><td>Current cumulative reading.</td></tr>
+      <tr><td>CONSUMPTION</td><td>Workbook consumption used for comparison.</td></tr>
+      <tr><td>WRATE</td><td>Water rate per cubic meter. Rows must use a consistent rate.</td></tr>
+      <tr><td>WATER BILLED</td><td>Workbook water charge used for comparison.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8.3 Receipt image</h2>
+  <table>
+    <thead><tr><th>Rule</th><th>Requirement</th></tr></thead>
+    <tbody>
+      <tr><td>Type</td><td>JPG, JPEG, or PNG</td></tr>
+      <tr><td>Maximum size</td><td>5 MB</td></tr>
+      <tr><td>Minimum dimensions</td><td>600 &times; 600 pixels</td></tr>
+      <tr><td>Quality</td><td>Sharp, well-lit, readable, and not excessively blurred</td></tr>
+      <tr><td>Useful fields</td><td>Amount, reference/transaction number, and payment date</td></tr>
+    </tbody>
+  </table>
+
+  <h2>8.4 Workbook validation checklist</h2>
+  <ul class="checklist">
+    <li>File extension is <code>.xlsx</code> and size is 5 MB or less.</li>
+    <li>Required headers are spelled exactly.</li>
+    <li>Every UNIT exists in the system and appears only once.</li>
+    <li>Readings are numeric and non-negative.</li>
+    <li>PRESENT is not lower than PREVIOUS.</li>
+    <li>PREVIOUS matches the last saved PRESENT when continuity is expected.</li>
+    <li>All expected units are included, or missing units are intentionally documented.</li>
+    <li>Selected month and rates are correct.</li>
+  </ul>
+
+  <h1 id="troubleshooting" class="page-break">9. Troubleshooting</h1>
+  <table>
+    <thead><tr><th>Problem</th><th>Likely cause</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td>Cannot sign in</td><td>Wrong credentials, inactive account, or expired session.</td><td>Re-enter email/password. Ask Admin to confirm the account is active. Sign in again if the session expired.</td></tr>
+      <tr><td>“You do not have permission”</td><td>The page belongs to another role.</td><td>Use your role's sidebar. Ask Admin to confirm the account role if incorrect.</td></tr>
+      <tr><td>Resident sees no SOA</td><td>No active assignment, batch not forwarded, or SOA not published.</td><td>Admin verifies assignment and publication; Collector verifies forwarding.</td></tr>
+      <tr><td>Cannot generate bills</td><td>No saved readings, batch not Draft, association rate missing, or one/more units lack billable area.</td><td>Return to Monthly Billing, select the Draft, confirm readings, and ask Admin to complete unit areas.</td></tr>
+      <tr><td>Workbook rejected</td><td>Wrong file type, over 5 MB, missing worksheet/headers, unknown/duplicate unit, or invalid number.</td><td>Use a clean <code>.xlsx</code>; correct headers and rows, then preview again.</td></tr>
+      <tr><td>Reading is flagged</td><td>PRESENT is below PREVIOUS or PREVIOUS does not match the last recorded PRESENT.</td><td>Verify the physical meter and prior record. Correct the source file, or document a justified SOA correction before forwarding.</td></tr>
+      <tr><td>Some units get zero water charge</td><td>Reading is missing or flagged.</td><td>Reopen the batch before forwarding, correct/import readings, and regenerate. If already forwarded, coordinate carefully; do not delete without authorization.</td></tr>
+      <tr><td>Cannot edit an SOA</td><td>Batch is Draft, Forwarded, or Closed.</td><td>SOA edit is allowed only in Generated, unforwarded status. Reopen/regenerate as needed before forwarding.</td></tr>
+      <tr><td>Cannot delete a batch</td><td>Batch is Closed or has payment history.</td><td>Keep the historical record. Correct future records or consult the technical administrator for an approved data-repair process.</td></tr>
+      <tr><td>Receipt is blurry or too small</td><td>Image fails quality checks.</td><td>Retake it in good light, fill the frame, focus the camera, and use at least 600 &times; 600 pixels.</td></tr>
+      <tr><td>OCR fields are wrong</td><td>Receipt layout or image quality makes text difficult to recognize.</td><td>Retake and preview, or submit a readable image. Admin must verify and correct final values.</td></tr>
+      <tr><td>Receipt already submitted</td><td>Identical image has been uploaded before.</td><td>Check Payment History. Do not submit duplicates; contact Admin if the earlier submission needs review.</td></tr>
+      <tr><td>Receipt cannot be submitted</td><td>SOA is already Paid, file is invalid, or no active assignment.</td><td>Check SOA status and assignment; use JPG/PNG under 5 MB.</td></tr>
+      <tr><td>Payment reference is rejected</td><td>The reference was already approved on another payment.</td><td>Verify the source receipt and enter the correct unique reference.</td></tr>
+      <tr><td>Forecast unavailable</td><td>Fewer than five consecutive valid months, a meter reset, or a continuity break.</td><td>Import/record more valid months and review flagged readings.</td></tr>
+      <tr><td>Historical import conflicts with live billing</td><td>Workbook rate or readings differ from the saved live batch.</td><td>Correct the workbook to match live records, or update/reopen the live billing batch instead.</td></tr>
+      <tr><td>Sidebar preference does not follow to another device</td><td>Setting is stored in the current browser only.</td><td>Open Settings on the other browser/device and set it again.</td></tr>
+    </tbody>
+  </table>
+
+  <h1 id="safety" class="page-break">10. Data Safety and Good Operating Practice</h1>
+  <ul>
+    <li>Use individual accounts. Do not share Admin or Collector passwords.</li>
+    <li>Deactivate departed users instead of deleting valid historical accounts.</li>
+    <li>Keep Resident names, emails, receipts, references, and meter history private.</li>
+    <li>Verify unit, month, rates, and totals before generating or publishing.</li>
+    <li>Use audit logs to investigate important changes.</li>
+    <li>Record clear reasons when reopening, deleting, or correcting billing records.</li>
+    <li>Do not delete forwarded batches during normal operations. Publication and payment history may be disrupted.</li>
+    <li>Before bulk or irreversible actions, confirm that a current authorized database backup exists. Backup and restoration are technical-administrator responsibilities, not an in-app feature.</li>
+    <li>Sign out after use and close the browser on shared workstations.</li>
+  </ul>
+
+  <h1 id="appendix-a" class="page-break">Appendix A. Navigation Map</h1>
+  <table>
+    <thead><tr><th>Role</th><th>Section</th><th>Menu item</th><th>Purpose</th></tr></thead>
+    <tbody>
+      <tr class="role-admin"><td>Admin</td><td>View</td><td>Dashboard</td><td>Executive operations summary.</td></tr>
+      <tr class="role-admin"><td>Admin</td><td>View</td><td>Unit Directory</td><td>Search/filter units and current residents.</td></tr>
+      <tr class="role-admin"><td>Admin</td><td>View</td><td>Forwarded SOAs</td><td>Review and publish Collector batches.</td></tr>
+      <tr class="role-admin"><td>Admin</td><td>View</td><td>Payments</td><td>Review proofs and record manual payments.</td></tr>
+      <tr class="role-admin"><td>Admin</td><td>View</td><td>Audit Logs</td><td>Review important actions.</td></tr>
+      <tr class="role-admin"><td>Admin</td><td>View</td><td>Water Analytics</td><td>Review forecasts, accuracy, flags, and recommendations.</td></tr>
+      <tr class="role-admin"><td>Admin</td><td>Manage</td><td>User Management</td><td>Maintain accounts and access.</td></tr>
+      <tr class="role-admin"><td>Admin</td><td>Manage</td><td>Manage Units</td><td>Maintain unit data and occupancy.</td></tr>
+      <tr class="role-admin"><td>Admin</td><td>Manage</td><td>Assignments</td><td>Connect Residents to units.</td></tr>
+      <tr class="role-collector"><td>Collector</td><td>View</td><td>Dashboard</td><td>Billing operations summary.</td></tr>
+      <tr class="role-collector"><td>Collector</td><td>View</td><td>Bills &amp; SOAs</td><td>Review, correct, reopen, delete, or forward batches.</td></tr>
+      <tr class="role-collector"><td>Collector</td><td>View</td><td>Units</td><td>Read-only units and assignments.</td></tr>
+      <tr class="role-collector"><td>Collector</td><td>View</td><td>Verified Payments</td><td>Read-only approved payment results.</td></tr>
+      <tr class="role-collector"><td>Collector</td><td>View</td><td>Water Analytics</td><td>Forecast and recommendation review.</td></tr>
+      <tr class="role-collector"><td>Collector</td><td>Manage</td><td>Monthly Billing</td><td>Create Draft, import readings, and generate bills.</td></tr>
+      <tr class="role-collector"><td>Collector</td><td>Manage</td><td>SOA Template</td><td>Set text for future SOAs.</td></tr>
+      <tr class="role-collector"><td>Collector</td><td>Manage</td><td>Analytics Import</td><td>Import historical monthly data.</td></tr>
+      <tr class="role-resident"><td>Resident</td><td>View</td><td>Dashboard</td><td>SOA, payment, water-use, and insight summary.</td></tr>
+      <tr class="role-resident"><td>Resident</td><td>View</td><td>My SOAs</td><td>View published statements and balances.</td></tr>
+      <tr class="role-resident"><td>Resident</td><td>View</td><td>Payment History</td><td>Track submitted proofs and decisions.</td></tr>
+      <tr><td>All roles</td><td>Account menu</td><td>Profile</td><td>View name, email, and role.</td></tr>
+      <tr><td>All roles</td><td>Account menu</td><td>Settings</td><td>Set compact sidebar for the browser.</td></tr>
+      <tr><td>All roles</td><td>Account menu</td><td>Sign out</td><td>End the current session.</td></tr>
+    </tbody>
+  </table>
+
+  <h1 id="appendix-b" class="page-break">Appendix B. Quick Checklists</h1>
+  <h2>Admin before publication</h2>
+  <ul class="checklist">
+    <li>Forwarded period and due date are correct.</li>
+    <li>All expected units and payers appear.</li>
+    <li>Rates and totals are reasonable.</li>
+    <li>Reading warnings have been explained or corrected by Collector.</li>
+    <li>Correct SOAs are selected for publication.</li>
+  </ul>
+  <h2>Collector before forwarding</h2>
+  <ul class="checklist">
+    <li>Workbook preview has no errors.</li>
+    <li>Missing and flagged readings were reviewed.</li>
+    <li>Every unit has billable area and an SOA.</li>
+    <li>SOA template/payment account is correct.</li>
+    <li>Generated totals and dates were print-checked.</li>
+    <li>All corrections include a reason.</li>
+  </ul>
+  <h2>Resident before submitting proof</h2>
+  <ul class="checklist">
+    <li>Correct unit and SOA are open.</li>
+    <li>SOA is not already Paid.</li>
+    <li>Receipt is JPG/PNG, under 5 MB, sharp, and readable.</li>
+    <li>OCR preview was reviewed.</li>
+    <li>Submit payment proof was selected after preview.</li>
+  </ul>
+
+  <h1 id="appendix-c" class="page-break">Appendix C. Glossary</h1>
+  <table>
+    <thead><tr><th>Term</th><th>Definition</th></tr></thead>
+    <tbody>
+      <tr><td>Admin</td><td>Role responsible for master data, publication, payment verification, and auditing.</td></tr>
+      <tr><td>Collector</td><td>Role responsible for readings, billing batches, SOA preparation, and analytics imports.</td></tr>
+      <tr><td>Resident</td><td>Owner or Tenant account assigned to one or more units.</td></tr>
+      <tr><td>SOA</td><td>Statement of Account.</td></tr>
+      <tr><td>OCR</td><td>Optical Character Recognition used to extract text from receipt images.</td></tr>
+      <tr><td>WAPE</td><td>Weighted Absolute Percentage Error, a staff model-accuracy measure.</td></tr>
+      <tr><td>MAE</td><td>Mean Absolute Error, the average magnitude of forecast errors.</td></tr>
+      <tr><td>RMSE</td><td>Root Mean Squared Error, which gives more weight to larger forecast errors.</td></tr>
+      <tr><td>Primary payer</td><td>The assigned Resident identified as the principal payer for a unit.</td></tr>
+      <tr><td>Advance balance</td><td>Approved unit credit that remains after open SOAs are covered.</td></tr>
+      <tr><td>Flagged reading</td><td>A reading excluded from forecasting because of a continuity or quality problem.</td></tr>
+      <tr><td>Historical analytics import</td><td>Past readings used for forecasts without creating real resident SOAs.</td></tr>
+      <tr><td>Live billing</td><td>The real monthly billing workflow that generates unit SOAs.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note keep">
+    <p><strong>End of manual</strong></p>
+    <p class="small">For technical setup, database initialization, environment configuration, and developer commands, refer to the project README in the repository root.</p>
+  </div>
+</body>
+</html>

@@ -14,7 +14,7 @@ router.get("/overview", async (req, res, next) => {
       pool.query(
         `WITH latest_period AS (
            SELECT id, period_start, status FROM billing_periods
-           WHERE analytics_only = FALSE ORDER BY period_start DESC LIMIT 1
+           WHERE period_type = 'LIVE_BILLING' ORDER BY period_start DESC LIMIT 1
          ), bill_balances AS (
            SELECT b.id, b.billing_period_id, b.due_date_snapshot AS due_date,
              COALESCE(SUM(c.quantity * c.rate_applied), 0) AS total,
@@ -32,13 +32,13 @@ router.get("/overview", async (req, res, next) => {
            (SELECT COUNT(*)::int FROM units WHERE occupancy_status = 'OCCUPIED') AS "occupiedUnits",
            (SELECT COUNT(*)::int FROM units WHERE occupancy_status = 'VACANT') AS "vacantUnits",
            (SELECT COUNT(*)::int FROM payment_submissions WHERE review_status = 'PENDING') AS "pendingPayments",
-           (SELECT COUNT(*)::int FROM prescriptive_recommendations WHERE status IN ('OPEN', 'ACKNOWLEDGED')) AS "openRecommendations",
-           (SELECT COUNT(*)::int FROM prescriptive_recommendations WHERE status IN ('OPEN', 'ACKNOWLEDGED') AND priority = 'HIGH') AS "highPriorityRecommendations"`,
+           (SELECT COUNT(*)::int FROM prescriptive_recommendations WHERE status IN ('OPEN', 'VIEWED')) AS "openRecommendations",
+           (SELECT COUNT(*)::int FROM prescriptive_recommendations WHERE status IN ('OPEN', 'VIEWED') AND priority = 'HIGH') AS "highPriorityRecommendations"`,
       ),
       pool.query(
         `WITH recent_periods AS (
            SELECT id, period_start FROM billing_periods
-           WHERE analytics_only = FALSE ORDER BY period_start DESC LIMIT 6
+           WHERE period_type = 'LIVE_BILLING' ORDER BY period_start DESC LIMIT 6
          ), bill_balances AS (
            SELECT b.id, b.billing_period_id,
              COALESCE(SUM(c.quantity * c.rate_applied), 0) AS billed,

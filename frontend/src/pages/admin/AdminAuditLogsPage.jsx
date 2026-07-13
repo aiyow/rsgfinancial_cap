@@ -4,8 +4,8 @@ import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayo
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
-const entityOptions = ['ALL', 'USER_ACCOUNT', 'UNIT', 'UNIT_ASSIGNMENT', 'PAYMENT_SUBMISSION', 'BILLING_PERIOD', 'PRESCRIPTIVE_RECOMMENDATION']
-const actionOptions = ['ALL', 'CREATE', 'CREATE_MANUAL', 'UPDATE', 'DELETE', 'END', 'SUBMIT', 'APPROVE', 'REJECT', 'GENERATED', 'REOPENED', 'FORWARDED', 'PUBLISHED', 'SOA_EDITED', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED', 'SHARED_WITH_RESIDENT']
+const entityOptions = ['ALL', 'USER_ACCOUNT', 'UNIT', 'UNIT_ASSIGNMENT', 'PAYMENT_SUBMISSION', 'BILLING_PERIOD', 'UNIT_BILL', 'PRESCRIPTIVE_RECOMMENDATION']
+const actionOptions = ['ALL', 'CREATE', 'CREATE_MANUAL', 'UPDATE', 'DELETE', 'DELETED', 'END', 'SUBMIT', 'APPROVE', 'REJECT', 'GENERATED', 'REOPENED', 'FORWARDED', 'PUBLISHED', 'SOA_EDITED', 'VIEWED', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED', 'SHARED_WITH_RESIDENT']
 
 const entityLabels = {
   USER_ACCOUNT: 'user account',
@@ -13,6 +13,7 @@ const entityLabels = {
   UNIT_ASSIGNMENT: 'unit assignment',
   PAYMENT_SUBMISSION: 'payment',
   BILLING_PERIOD: 'billing batch',
+  UNIT_BILL: 'unit bill',
   SOA_TEMPLATE: 'SOA template',
   PRESCRIPTIVE_RECOMMENDATION: 'recommended action',
 }
@@ -22,6 +23,7 @@ const actionLabels = {
   CREATE_MANUAL: 'recorded',
   UPDATE: 'updated',
   DELETE: 'deleted',
+  DELETED: 'deleted',
   END: 'ended',
   SUBMIT: 'submitted',
   APPROVE: 'approved',
@@ -31,6 +33,7 @@ const actionLabels = {
   FORWARDED: 'forwarded',
   PUBLISHED: 'published',
   SOA_EDITED: 'edited',
+  VIEWED: 'viewed',
   ACKNOWLEDGED: 'acknowledged',
   RESOLVED: 'resolved',
   DISMISSED: 'dismissed',

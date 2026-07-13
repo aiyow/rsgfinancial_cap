@@ -166,7 +166,7 @@ async function revalidateAnalyticsReadings(client) {
       m.current_reading AS "currentReading"
      FROM meter_readings m
      JOIN billing_periods p ON p.id = m.billing_period_id
-     WHERE p.analytics_only = TRUE
+     WHERE p.period_type = 'HISTORICAL_ANALYTICS'
      ORDER BY m.unit_id, p.period_start`,
   );
   const priorByUnit = new Map();
@@ -235,7 +235,7 @@ router.get("/", async (req, res, next) => {
        FROM billing_periods p
        LEFT JOIN meter_readings m ON m.billing_period_id = p.id
        LEFT JOIN billing_forecasts f ON f.based_on_period_id = p.id
-       WHERE p.analytics_only = TRUE
+       WHERE p.period_type = 'HISTORICAL_ANALYTICS'
        GROUP BY p.id
        ORDER BY p.period_start DESC`,
     );
@@ -249,12 +249,12 @@ router.post("/preview", upload.single("file"), async (req, res, next) => {
     const parsedMonth = monthSchema.safeParse(req.body.periodMonth);
     if (!parsedMonth.success) return res.status(400).json({ message: "Select a valid month." });
     const { periodStart } = periodDates(parsedMonth.data);
-    const existing = await pool.query("SELECT analytics_only AS \"analyticsOnly\" FROM billing_periods WHERE period_start = $1", [periodStart]);
+    const existing = await pool.query("SELECT period_type AS \"periodType\" FROM billing_periods WHERE period_start = $1", [periodStart]);
     const unitsResult = await pool.query("SELECT id, unit_number FROM units ORDER BY unit_number");
     const preview = await parseWorkbook(req.file.buffer, unitsResult.rows);
     return res.json({
       periodMonth: parsedMonth.data,
-      usesExistingLiveBilling: Boolean(existing.rows[0] && !existing.rows[0].analyticsOnly),
+      usesExistingLiveBilling: existing.rows[0]?.periodType === "LIVE_BILLING",
       ...preview,
       summary: {
         rowCount: preview.summary?.rowCount || 0,
@@ -280,7 +280,7 @@ router.post("/", async (req, res, next) => {
     await client.query("BEGIN");
 
     const existing = await client.query(
-      "SELECT id, analytics_only AS \"analyticsOnly\", water_rate_per_cubic_m AS \"waterRate\" FROM billing_periods WHERE period_start = $1 FOR UPDATE",
+      "SELECT id, period_type AS \"periodType\", water_rate_per_cubic_m AS \"waterRate\" FROM billing_periods WHERE period_start = $1 FOR UPDATE",
       [periodStart],
     );
 
@@ -292,7 +292,7 @@ router.post("/", async (req, res, next) => {
       return res.status(400).json({ message: "Submit one reading for every valid unit only." });
     }
 
-    if (existing.rows[0] && !existing.rows[0].analyticsOnly) {
+    if (existing.rows[0]?.periodType === "LIVE_BILLING") {
       const livePeriod = existing.rows[0];
       if (Math.abs(Number(livePeriod.waterRate) - Number(body.waterRatePerCubicM)) > 0.001) {
         await client.query("ROLLBACK");
@@ -329,8 +329,8 @@ router.post("/", async (req, res, next) => {
       const inserted = await client.query(
         `INSERT INTO billing_periods
           (period_start, period_end, due_date, water_rate_per_cubic_m,
-           association_dues_rate_per_sqm, status, created_by, analytics_only, readings_visible_at)
-         VALUES ($1, $2, $2, $3, 0, 'CLOSED', $4, TRUE, NOW())
+           association_dues_rate_per_sqm, status, created_by, period_type, readings_visible_at)
+         VALUES ($1, $2, $2, $3, 0, 'CLOSED', $4, 'HISTORICAL_ANALYTICS', NOW())
          RETURNING id`,
         [periodStart, periodEnd, body.waterRatePerCubicM, req.user.id],
       );
@@ -369,7 +369,7 @@ router.delete("/:periodMonth", async (req, res, next) => {
     client = await pool.connect();
     await client.query("BEGIN");
     const period = await client.query(
-      "SELECT id FROM billing_periods WHERE period_start = $1 AND analytics_only = TRUE FOR UPDATE",
+      "SELECT id FROM billing_periods WHERE period_start = $1 AND period_type = 'HISTORICAL_ANALYTICS' FOR UPDATE",
       [periodStart],
     );
     if (!period.rows[0]) {
@@ -396,7 +396,7 @@ router.delete("/", async (req, res, next) => {
   try {
     client = await pool.connect();
     await client.query("BEGIN");
-    const periods = await client.query("SELECT id FROM billing_periods WHERE analytics_only = TRUE FOR UPDATE");
+    const periods = await client.query("SELECT id FROM billing_periods WHERE period_type = 'HISTORICAL_ANALYTICS' FOR UPDATE");
     const ids = periods.rows.map((period) => period.id);
     if (ids.length) {
       await client.query("DELETE FROM billing_forecasts WHERE based_on_period_id = ANY($1::bigint[])", [ids]);
@@ -404,7 +404,7 @@ router.delete("/", async (req, res, next) => {
       await client.query("DELETE FROM billing_periods WHERE id = ANY($1::bigint[])", [ids]);
     }
     const firstLivePeriod = await client.query(
-      "SELECT id FROM billing_periods WHERE analytics_only = FALSE ORDER BY period_start LIMIT 1",
+      "SELECT id FROM billing_periods WHERE period_type = 'LIVE_BILLING' ORDER BY period_start LIMIT 1",
     );
     if (firstLivePeriod.rows[0]) await regenerateForecastsFromPeriod(client, firstLivePeriod.rows[0].id);
     await regeneratePrescriptiveRecommendations(client);

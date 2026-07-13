@@ -9,14 +9,6 @@ export async function ensurePaymentLedgerSchema(client) {
     ADD COLUMN IF NOT EXISTS entry_type VARCHAR(30) NOT NULL DEFAULT 'RECEIPT_UPLOAD',
     ADD COLUMN IF NOT EXISTS payment_method VARCHAR(30) NULL
   `);
-  await client.query(`
-    UPDATE payment_submissions ps
-    SET unit_id = b.unit_id
-    FROM unit_bills b
-    WHERE ps.unit_bill_id = b.id
-      AND ps.unit_id IS NULL
-  `);
-  await client.query("ALTER TABLE payment_submissions ALTER COLUMN unit_bill_id DROP NOT NULL");
   await client.query("ALTER TABLE payment_submissions ALTER COLUMN receipt_path DROP NOT NULL");
   await client.query("ALTER TABLE payment_submissions ALTER COLUMN receipt_original_name DROP NOT NULL");
   await client.query("ALTER TABLE payment_submissions ALTER COLUMN receipt_mime_type DROP NOT NULL");
@@ -37,22 +29,19 @@ export async function ensurePaymentLedgerSchema(client) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await client.query(`
+    CREATE TABLE IF NOT EXISTS payment_submission_targets (
+      payment_submission_id BIGINT PRIMARY KEY REFERENCES payment_submissions(id) ON DELETE CASCADE,
+      unit_bill_id BIGINT NOT NULL REFERENCES unit_bills(id) ON DELETE RESTRICT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
   await client.query("CREATE INDEX IF NOT EXISTS payment_submissions_unit_idx ON payment_submissions(unit_id)");
   await client.query("CREATE INDEX IF NOT EXISTS payment_submissions_method_idx ON payment_submissions(payment_method)");
   await client.query("CREATE INDEX IF NOT EXISTS payment_submissions_entry_type_idx ON payment_submissions(entry_type)");
   await client.query("CREATE INDEX IF NOT EXISTS payment_applications_payment_idx ON payment_applications(payment_submission_id)");
   await client.query("CREATE INDEX IF NOT EXISTS payment_applications_bill_idx ON payment_applications(unit_bill_id)");
-  await client.query(`
-    INSERT INTO payment_applications (payment_submission_id, unit_bill_id, amount_applied)
-    SELECT ps.id, ps.unit_bill_id, ps.verified_amount
-    FROM payment_submissions ps
-    WHERE ps.review_status = 'APPROVED'
-      AND ps.unit_bill_id IS NOT NULL
-      AND ps.verified_amount IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM payment_applications pa WHERE pa.payment_submission_id = ps.id
-      )
-  `);
+  await client.query("CREATE INDEX IF NOT EXISTS payment_submission_targets_bill_idx ON payment_submission_targets(unit_bill_id)");
 }
 
 function cents(value) {
@@ -96,7 +85,7 @@ export async function getUnitCreditBalance(client, unitId) {
   return Number(result.rows[0]?.balance || 0);
 }
 
-export async function applyUnitCreditToBill(client, billId) {
+export async function applyUnitCreditToBill(client, billId, preferredPaymentId = null) {
   const billResult = await client.query(
     `SELECT b.id, b.unit_id AS "unitId", ${billTotalSql} AS total, ${billAppliedSql} AS applied
      FROM unit_bills b WHERE b.id = $1`,
@@ -116,11 +105,11 @@ export async function applyUnitCreditToBill(client, billId) {
        AND ps.review_status = 'APPROVED'
        AND ps.verified_amount - ${paymentAppliedSql} > 0.005
      ORDER BY
-       CASE WHEN ps.unit_bill_id = $2 THEN 0 ELSE 1 END,
+       CASE WHEN ps.id = $2 THEN 0 ELSE 1 END,
        ps.verified_payment_date,
        ps.submitted_at,
        ps.id`,
-    [bill.unitId, billId],
+    [bill.unitId, preferredPaymentId],
   );
 
   const allocation = allocateCredit({ billRemaining: remaining, paymentCredits: creditsResult.rows });
@@ -136,10 +125,10 @@ export async function applyUnitCreditToBill(client, billId) {
   return { appliedAmount: Number(appliedAmount.toFixed(2)), remainingBalance: allocation.remainingBalance };
 }
 
-export async function applyUnitCreditToOpenBills(client, unitId, preferredBillId = null) {
+export async function applyUnitCreditToOpenBills(client, unitId, preferredBillId = null, preferredPaymentId = null) {
   let appliedAmount = 0;
   if (preferredBillId) {
-    const preferred = await applyUnitCreditToBill(client, preferredBillId);
+    const preferred = await applyUnitCreditToBill(client, preferredBillId, preferredPaymentId);
     appliedAmount += preferred.appliedAmount;
   }
 
@@ -156,7 +145,7 @@ export async function applyUnitCreditToOpenBills(client, unitId, preferredBillId
   for (const bill of billsResult.rows) {
     if (preferredBillId && Number(bill.id) === Number(preferredBillId)) continue;
     if (await getUnitCreditBalance(client, unitId) <= 0.005) break;
-    const result = await applyUnitCreditToBill(client, bill.id);
+    const result = await applyUnitCreditToBill(client, bill.id, preferredPaymentId);
     appliedAmount += result.appliedAmount;
   }
   return Number(appliedAmount.toFixed(2));

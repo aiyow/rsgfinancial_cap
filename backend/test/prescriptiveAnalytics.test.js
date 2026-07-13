@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildPrescriptiveRecommendations, RECOMMENDATION_TYPES } from '../services/prescriptiveAnalytics.js';
+import {
+  buildPrescriptiveRecommendations,
+  isResidentVisibleRecommendation,
+  RECOMMENDATION_TYPES,
+} from '../services/prescriptiveAnalytics.js';
 
 function reading(month, consumption, validationStatus = 'VALID') {
   return {
@@ -48,4 +52,10 @@ test('does not flag a normal or below-threshold forecast', () => {
     history,
   });
   assert.deepEqual(recommendations, []);
+});
+
+test('exposes only high-usage recommendations to residents', () => {
+  assert.equal(isResidentVisibleRecommendation(RECOMMENDATION_TYPES.CHECK_HIGH_USAGE), true);
+  assert.equal(isResidentVisibleRecommendation(RECOMMENDATION_TYPES.REVIEW_METER_READING), false);
+  assert.equal(isResidentVisibleRecommendation(RECOMMENDATION_TYPES.COLLECT_MORE_HISTORY), false);
 });

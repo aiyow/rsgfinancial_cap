@@ -10,6 +10,7 @@ import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveA
 import { applyUnitCreditToOpenBills, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
 import { ensureSoaTemplate } from "../services/soaTemplate.js";
 import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
+import { writeAuditLog } from "../services/auditLog.js";
 
 const router = express.Router();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");
@@ -34,7 +35,7 @@ const periodColumns = `id, period_start AS "periodStart", period_end AS "periodE
   due_date AS "dueDate", water_rate_per_cubic_m AS "waterRatePerCubicM",
   association_dues_rate_per_sqm AS "associationDuesRatePerSqm",
   status, created_by AS "createdBy", forwarded_at AS "forwardedAt",
-  forwarded_by AS "forwardedBy", analytics_only AS "analyticsOnly",
+  forwarded_by AS "forwardedBy", period_type AS "periodType",
   readings_visible_at AS "readingsVisibleAt", created_at AS "createdAt", updated_at AS "updatedAt"`;
 
 const upload = multer({
@@ -66,7 +67,7 @@ function numberValue(value) {
 }
 
 async function getDraftPeriod(id) {
-  const result = await pool.query(`SELECT ${periodColumns} FROM billing_periods WHERE id = $1 AND analytics_only = FALSE`, [id]);
+  const result = await pool.query(`SELECT ${periodColumns} FROM billing_periods WHERE id = $1 AND period_type = 'LIVE_BILLING'`, [id]);
   return result.rows[0];
 }
 
@@ -96,8 +97,8 @@ router.use(requireAuth);
 router.get("/", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
   try {
     const where = req.user.role === "ADMIN"
-      ? "WHERE analytics_only = FALSE AND status IN ('FORWARDED', 'CLOSED')"
-      : "WHERE analytics_only = FALSE";
+      ? "WHERE period_type = 'LIVE_BILLING' AND status IN ('FORWARDED', 'CLOSED')"
+      : "WHERE period_type = 'LIVE_BILLING'";
     const result = await pool.query(`SELECT ${periodColumns} FROM billing_periods ${where} ORDER BY period_start DESC`);
     return res.json({ periods: result.rows });
   } catch (error) { return next(error); }
@@ -135,7 +136,7 @@ router.patch("/:id", allowRoles("COLLECTOR"), requireId, validateBody(updatePeri
     }
     values.push(req.resourceId);
     const result = await pool.query(
-      `UPDATE billing_periods SET ${updates.join(", ")} WHERE id = $${values.length} AND status = 'DRAFT' AND analytics_only = FALSE
+      `UPDATE billing_periods SET ${updates.join(", ")} WHERE id = $${values.length} AND status = 'DRAFT' AND period_type = 'LIVE_BILLING'
        RETURNING ${periodColumns}`,
       values,
     );
@@ -234,7 +235,7 @@ router.put("/:id/readings", allowRoles("COLLECTOR"), requireId, validateBody(imp
     await ensurePaymentLedgerSchema(client);
     await ensureSoaTemplate(client);
     const periodResult = await client.query(
-      "SELECT status, period_start, association_dues_rate_per_sqm FROM billing_periods WHERE id = $1 AND analytics_only = FALSE FOR UPDATE",
+      "SELECT status, period_start, association_dues_rate_per_sqm FROM billing_periods WHERE id = $1 AND period_type = 'LIVE_BILLING' FOR UPDATE",
       [req.resourceId],
     );
     if (!periodResult.rows[0]) {
@@ -289,7 +290,7 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
     await ensurePaymentLedgerSchema(client);
     await ensureSoaTemplate(client);
     const periodResult = await client.query(
-      "SELECT status, association_dues_rate_per_sqm FROM billing_periods WHERE id = $1 AND analytics_only = FALSE FOR UPDATE",
+      "SELECT status, association_dues_rate_per_sqm FROM billing_periods WHERE id = $1 AND period_type = 'LIVE_BILLING' FOR UPDATE",
       [req.resourceId],
     );
     if (!periodResult.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "Billing period not found." }); }
@@ -362,11 +363,18 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
       await applyUnitCreditToOpenBills(client, bill.unit_id, bill.id);
     }
     await client.query("UPDATE billing_periods SET status = 'GENERATED' WHERE id = $1", [req.resourceId]);
-    await client.query(
-      `INSERT INTO billing_events (billing_period_id, actor_id, event_type, details)
-       VALUES ($1, $2, 'GENERATED', $3::jsonb)`,
-      [req.resourceId, req.user.id, JSON.stringify({ billCount: counts.unitCount, warningCount: counts.unitCount - counts.validCount })],
-    );
+    await regeneratePrescriptiveRecommendations(client, {
+      generatedPeriodId: req.resourceId,
+      residentVisibleBy: req.user.id,
+    });
+    await writeAuditLog({
+      client,
+      actorUserId: req.user.id,
+      entityName: "BILLING_PERIOD",
+      entityId: req.resourceId,
+      action: "GENERATED",
+      newValues: { billCount: counts.unitCount, warningCount: counts.unitCount - counts.validCount },
+    });
     await client.query("COMMIT");
     return res.json({ message: `Generated ${counts.unitCount} unit bills with ${counts.unitCount - counts.validCount} reading warning(s).` });
   } catch (error) {
@@ -391,11 +399,16 @@ router.post("/:id/reopen", allowRoles("COLLECTOR"), requireId, async (req, res, 
       return res.status(409).json({ message: "Only a generated, unforwarded batch can be reopened." });
     }
     const count = await client.query("SELECT COUNT(*)::int AS count FROM unit_bills WHERE billing_period_id = $1", [req.resourceId]);
-    await client.query(
-      `INSERT INTO billing_events (billing_period_id, actor_id, event_type, reason, details)
-       VALUES ($1, $2, 'REOPENED', $3, $4::jsonb)`,
-      [req.resourceId, req.user.id, req.body?.reason || "Collector reopened the batch for correction.", JSON.stringify({ ...period.rows[0], removedBills: count.rows[0].count })],
-    );
+    await writeAuditLog({
+      client,
+      actorUserId: req.user.id,
+      entityName: "BILLING_PERIOD",
+      entityId: req.resourceId,
+      action: "REOPENED",
+      oldValues: period.rows[0],
+      newValues: { status: "DRAFT", removedBills: count.rows[0].count },
+      remarks: req.body?.reason || "Collector reopened the batch for correction.",
+    });
     await client.query("DELETE FROM unit_bills WHERE billing_period_id = $1", [req.resourceId]);
     await client.query(
       "UPDATE billing_periods SET status = 'DRAFT', forwarded_at = NULL, forwarded_by = NULL WHERE id = $1",
@@ -421,11 +434,14 @@ router.post("/:id/forward", allowRoles("COLLECTOR"), requireId, async (req, res,
       [req.resourceId, req.user.id],
     );
     if (!result.rows[0]) { await client.query("ROLLBACK"); return res.status(409).json({ message: "Only a generated batch can be forwarded." }); }
-    await client.query(
-      `INSERT INTO billing_events (billing_period_id, actor_id, event_type, details)
-       VALUES ($1, $2, 'FORWARDED', $3::jsonb)`,
-      [req.resourceId, req.user.id, JSON.stringify({ forwardedAt: result.rows[0].forwardedAt })],
-    );
+    await writeAuditLog({
+      client,
+      actorUserId: req.user.id,
+      entityName: "BILLING_PERIOD",
+      entityId: req.resourceId,
+      action: "FORWARDED",
+      newValues: result.rows[0],
+    });
     await client.query("COMMIT");
     return res.json({ message: "Billing batch forwarded to Admin.", period: result.rows[0] });
   } catch (error) {
@@ -463,11 +479,14 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
         [req.resourceId, req.user.id],
       );
     }
-    await client.query(
-      `INSERT INTO billing_events (billing_period_id, actor_id, event_type, details)
-       VALUES ($1, $2, 'PUBLISHED', $3::jsonb)`,
-      [req.resourceId, req.user.id, JSON.stringify({ billIds: result.rows.map((row) => row.id), mode: selected ? "SELECTED" : "ALL" })],
-    );
+    await writeAuditLog({
+      client,
+      actorUserId: req.user.id,
+      entityName: "BILLING_PERIOD",
+      entityId: req.resourceId,
+      action: "PUBLISHED",
+      newValues: { billIds: result.rows.map((row) => row.id), mode: selected ? "SELECTED" : "ALL" },
+    });
     await client.query("COMMIT");
     return res.json({ message: result.rowCount ? `Published ${result.rowCount} SOA(s) to Resident dashboards.` : "All selected SOAs were already published.", publishedCount: result.rowCount });
   } catch (error) {
@@ -494,7 +513,7 @@ router.delete("/:id", allowRoles("COLLECTOR"), requireId, async (req, res, next)
     const protectedBills = await client.query(
       `SELECT COUNT(*)::int AS count FROM unit_bills b
        WHERE b.billing_period_id = $1 AND (
-         EXISTS (SELECT 1 FROM payment_submissions ps WHERE ps.unit_bill_id = b.id)
+         EXISTS (SELECT 1 FROM payment_submission_targets pst WHERE pst.unit_bill_id = b.id)
          OR EXISTS (SELECT 1 FROM payment_applications pa WHERE pa.unit_bill_id = b.id)
        )`, [req.resourceId],
     );
@@ -504,11 +523,15 @@ router.delete("/:id", allowRoles("COLLECTOR"), requireId, async (req, res, next)
     }
     const readingCount = await client.query("SELECT COUNT(*)::int AS count FROM meter_readings WHERE billing_period_id = $1", [req.resourceId]);
     const billCount = await client.query("SELECT COUNT(*)::int AS count FROM unit_bills WHERE billing_period_id = $1", [req.resourceId]);
-    await client.query(
-      `INSERT INTO billing_events (billing_period_id, actor_id, event_type, reason, details)
-       VALUES ($1, $2, 'DELETED', $3, $4::jsonb)`,
-      [req.resourceId, req.user.id, req.body?.reason || "Collector permanently deleted the billing batch.", JSON.stringify({ ...period.rows[0], removedReadings: readingCount.rows[0].count, removedBills: billCount.rows[0].count })],
-    );
+    await writeAuditLog({
+      client,
+      actorUserId: req.user.id,
+      entityName: "BILLING_PERIOD",
+      entityId: req.resourceId,
+      action: "DELETED",
+      oldValues: { ...period.rows[0], readingCount: readingCount.rows[0].count, billCount: billCount.rows[0].count },
+      remarks: req.body?.reason || "Collector permanently deleted the billing batch.",
+    });
     await client.query("DELETE FROM unit_bills WHERE billing_period_id = $1", [req.resourceId]);
     await client.query("DELETE FROM meter_readings WHERE billing_period_id = $1", [req.resourceId]);
     await client.query("DELETE FROM billing_periods WHERE id = $1", [req.resourceId]);
