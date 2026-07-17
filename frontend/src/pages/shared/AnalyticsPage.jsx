@@ -114,7 +114,7 @@ export default function AnalyticsPage() {
   const visibleRecommendations = showAllRecommendations ? recommendations : recommendations.slice(0, 5)
 
   return (
-    <DashboardLayout title="Predictive water analytics" description="Review model accuracy, forecast coverage, and meter readings excluded from regression.">
+    <DashboardLayout title="Predictive & Prescriptive Water Analytics" description="Review forecasts and the recommended actions generated from water use, occupancy, readings, and billing status.">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
       {data && !hasAnalyticsData ? (
@@ -177,7 +177,7 @@ export default function AnalyticsPage() {
             </ChartCard>
           </div>
 
-          <Panel title="Recommended actions" description="These suggestions are based on the latest live billing period and the same readings used by the forecast.">
+          <Panel title="Prescriptive recommendations" description="Detected conditions are translated into practical actions for staff and residents.">
             <div className="mb-5 grid gap-3 sm:grid-cols-3">
               <Metric label="Open" value={recommendationSummary.open} compact />
               <Metric label="Viewed" value={recommendationSummary.viewed} compact />
@@ -196,8 +196,11 @@ export default function AnalyticsPage() {
                             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{recommendation.status}</span>
                             {recommendation.residentVisibleAt && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Visible to Resident</span>}
                           </div>
-                          <p className="mt-3 font-black text-slate-950">Unit {recommendation.unitNumber}: {recommendation.message}</p>
-                          <p className="mt-1 text-sm text-slate-500">{recommendationEvidence(recommendation)}</p>
+                          <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Condition detected</p>
+                          <p className="mt-1 font-bold text-slate-900">Unit {recommendation.unitNumber}: {recommendation.evidence?.condition || recommendationEvidence(recommendation)}</p>
+                          <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Recommended action</p>
+                          <p className="mt-1 font-black text-slate-950">{recommendation.message}</p>
+                          <p className="mt-2 text-sm text-slate-500">{recommendationEvidence(recommendation)}</p>
                         </div>
                         <div className="flex flex-wrap gap-2 lg:justify-end">
                           <ActionButton disabled={busy} onClick={() => deleteRecommendation(recommendation)}>{busy ? 'Deleting...' : 'Delete'}</ActionButton>
@@ -279,9 +282,14 @@ function recommendationEvidence(recommendation) {
   if (recommendation.recommendationType === 'CHECK_HIGH_USAGE') {
     return `${Number(evidence.predictedConsumption || 0).toFixed(3)} m3 projected versus ${Number(evidence.recentAverage || 0).toFixed(3)} m3 recent average (+${Number(evidence.increasePercent || 0).toFixed(2)}%).`
   }
+  if (recommendation.recommendationType === 'VACANT_UNIT_USAGE') return `${Number(evidence.latestConsumption || 0).toFixed(3)} m3 recorded while the unit is vacant.`
+  if (recommendation.recommendationType === 'RISING_CONSUMPTION') return `Recent readings: ${(evidence.values || []).map((value) => `${Number(value).toFixed(3)} m3`).join(', ')}.`
+  if (recommendation.recommendationType === 'PAYMENT_REMINDER') return `Due ${String(evidence.dueDate || '').slice(0, 10)} with PHP ${Number(evidence.remainingBalance || 0).toFixed(2)} remaining.`
+  if (recommendation.recommendationType === 'MONITOR_HIGH_USAGE') return `${Number(evidence.predictedConsumption || 0).toFixed(3)} m3 projected; recent high is ${Number(evidence.recentHigh || 0).toFixed(3)} m3.`
   if (recommendation.recommendationType === 'COLLECT_MORE_HISTORY') {
     return `${evidence.missingMonths || 0} more valid monthly reading${Number(evidence.missingMonths) === 1 ? '' : 's'} needed.`
   }
+  if (recommendation.recommendationType === 'MONITOR_USAGE') return `Positive baseline readings: ${Number(evidence.positiveBaselineCount || 0)}; zero readings: ${Number(evidence.zeroReadingCount || 0)}; forecast: ${evidence.predictedConsumption === null || evidence.predictedConsumption === undefined ? 'not available' : `${Number(evidence.predictedConsumption).toFixed(3)} m3`}.`
   return evidence.reason || 'The latest meter reading is not valid for forecasting.'
 }
 

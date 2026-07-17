@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
-import { mkdir, unlink, writeFile } from "node:fs/promises";
+import { unlink } from "node:fs/promises";
 import path from "node:path";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import multer from "multer";
@@ -10,6 +12,8 @@ import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
 import { analyzeReceipt } from "../services/receiptOcr.js";
 import { writeAuditLog } from "../services/auditLog.js";
+import { destroyReceipt, receiptDeliveryUrl, uploadReceipt } from "../services/cloudinaryReceipts.js";
+import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
 import {
   applyUnitCreditToOpenBills,
   billAppliedSql,
@@ -59,7 +63,7 @@ const totalSql = `COALESCE((SELECT ROUND(SUM(c.quantity * c.rate_applied), 2) FR
 const paymentApplicationSql = `COALESCE((SELECT ROUND(SUM(pa.amount_applied), 2) FROM payment_applications pa WHERE pa.payment_submission_id = ps.id), 0)`;
 const unitAdvanceSql = `COALESCE((SELECT ROUND(SUM(up.verified_amount - COALESCE((SELECT SUM(upa.amount_applied) FROM payment_applications upa WHERE upa.payment_submission_id = up.id), 0)), 2)
   FROM payment_submissions up WHERE up.unit_id = ps.unit_id AND up.review_status = 'APPROVED'), 0)`;
-const paymentSelect = `SELECT ps.id, pst.unit_bill_id AS "targetBillId", ps.submitted_by AS "submittedBy",
+const paymentSelect = `SELECT ps.id, ps.target_unit_bill_id AS "targetBillId", ps.submitted_by AS "submittedBy",
   ps.unit_id AS "unitId", ps.entry_type AS "entryType", ps.payment_method AS "paymentMethod",
   ps.receipt_original_name AS "receiptOriginalName", ps.receipt_mime_type AS "receiptMimeType",
   ps.ocr_raw_text AS "ocrRawText", ps.ocr_confidence AS "ocrConfidence",
@@ -80,8 +84,7 @@ const paymentSelect = `SELECT ps.id, pst.unit_bill_id AS "targetBillId", ps.subm
     WHEN ${billAppliedSql} > 0 THEN 'PARTIAL'
     WHEN b.due_date_snapshot < CURRENT_DATE THEN 'OVERDUE' ELSE 'UNPAID' END AS "paymentStatus"
   FROM payment_submissions ps
-  LEFT JOIN payment_submission_targets pst ON pst.payment_submission_id = ps.id
-  LEFT JOIN unit_bills b ON b.id = pst.unit_bill_id
+  LEFT JOIN unit_bills b ON b.id = ps.target_unit_bill_id
   LEFT JOIN units u ON u.id = ps.unit_id
   JOIN users submitter ON submitter.id = ps.submitted_by
   LEFT JOIN users reviewer ON reviewer.id = ps.reviewed_by`;
@@ -147,7 +150,8 @@ router.post("/bills/:id/preview", allowRoles("RESIDENT"), requireId, receiptUplo
 });
 
 router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.single("receipt"), async (req, res, next) => {
-  let savedPath;
+  let uploadedReceipt;
+  let client;
   try {
     const bill = await residentBill(req.resourceId, req.user.id);
     if (!bill) return res.status(404).json({ message: "Published SOA not found." });
@@ -163,25 +167,22 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.singl
       return res.status(422).json({ message: analysis.quality.status === "BLURRY" ? "The receipt image appears blurry. Upload a clearer photo." : "The receipt image is too small. Upload a higher-resolution photo." });
     }
 
-    await mkdir(uploadDirectory, { recursive: true });
-    const extension = req.file.mimetype === "image/png" ? ".png" : ".jpg";
-    const fileName = `${crypto.randomUUID()}${extension}`;
-    savedPath = path.join(uploadDirectory, fileName);
-    await writeFile(savedPath, req.file.buffer, { flag: "wx" });
-    const result = await pool.query(
+    uploadedReceipt = await uploadReceipt(req.file.buffer);
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const result = await client.query(
       `INSERT INTO payment_submissions
-        (unit_id, submitted_by, receipt_path, receipt_original_name, receipt_mime_type, receipt_sha256,
+        (unit_id, submitted_by, target_unit_bill_id, receipt_path, receipt_storage, receipt_cloudinary_public_id,
+         receipt_original_name, receipt_mime_type, receipt_sha256,
          ocr_raw_text, ocr_confidence, ocr_quality_status, ocr_amount, ocr_reference_no, ocr_payment_date)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'GOOD', $8, $9, $10, $11)
+       VALUES ($1, $2, $3, $4, 'CLOUDINARY', $5, $6, $7, $8, $9, $10, 'GOOD', $11, $12, $13)
        RETURNING id`,
-      [bill.unitId, req.user.id, fileName, req.file.originalname.slice(0, 255), req.file.mimetype, digest,
+      [bill.unitId, req.user.id, req.resourceId, uploadedReceipt.publicId, uploadedReceipt.publicId,
+        req.file.originalname.slice(0, 255), req.file.mimetype, digest,
         analysis.rawText, analysis.confidence, analysis.amount, analysis.referenceNo, analysis.paymentDate],
     );
-    await pool.query(
-      "INSERT INTO payment_submission_targets (payment_submission_id, unit_bill_id) VALUES ($1, $2)",
-      [result.rows[0].id, req.resourceId],
-    );
     await writeAuditLog({
+      client,
       actorUserId: req.user.id,
       entityName: "PAYMENT_SUBMISSION",
       entityId: result.rows[0].id,
@@ -189,15 +190,20 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.singl
       newValues: {
         targetBillId: req.resourceId,
         receiptOriginalName: req.file.originalname.slice(0, 255),
+        receiptStorage: "CLOUDINARY",
         ocrAmount: analysis.amount,
         ocrReferenceNo: analysis.referenceNo,
         ocrPaymentDate: analysis.paymentDate,
       },
     });
+    await client.query("COMMIT");
     return res.status(201).json({ message: "Payment proof submitted for Admin verification.", paymentId: result.rows[0].id, analysis });
   } catch (error) {
-    if (savedPath) await unlink(savedPath).catch(() => {});
+    if (client) await client.query("ROLLBACK").catch(() => {});
+    if (uploadedReceipt?.publicId) await destroyReceipt(uploadedReceipt.publicId).catch(() => {});
     return next(error);
+  } finally {
+    client?.release();
   }
 });
 
@@ -253,19 +259,13 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
     const placeholderReference = body.referenceNo || `TEMP-${crypto.randomUUID()}`;
     const result = await client.query(
       `INSERT INTO payment_submissions
-        (unit_id, submitted_by, entry_type, payment_method, review_status,
+        (unit_id, submitted_by, target_unit_bill_id, entry_type, payment_method, review_status,
          reviewed_by, reviewed_at, verified_amount, verified_reference_no, verified_payment_date, remarks)
-       VALUES ($1, $2, 'MANUAL', $3, 'APPROVED', $2, NOW(), $4, $5, $6, $7)
+       VALUES ($1, $2, $3, 'MANUAL', $4, 'APPROVED', $2, NOW(), $5, $6, $7, $8)
        RETURNING id`,
-      [unitId, req.user.id, body.paymentMethod, body.amount, placeholderReference, body.paymentDate, body.remarks || null],
+      [unitId, req.user.id, billId, body.paymentMethod, body.amount, placeholderReference, body.paymentDate, body.remarks || null],
     );
     const paymentId = result.rows[0].id;
-    if (billId) {
-      await client.query(
-        "INSERT INTO payment_submission_targets (payment_submission_id, unit_bill_id) VALUES ($1, $2)",
-        [paymentId, billId],
-      );
-    }
     const verifiedReferenceNo = body.referenceNo || manualReference(body.paymentMethod, paymentId);
     if (!body.referenceNo) {
       await client.query("UPDATE payment_submissions SET verified_reference_no = $2 WHERE id = $1", [paymentId, verifiedReferenceNo]);
@@ -289,6 +289,7 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
       },
       remarks: body.remarks || null,
     });
+    await regeneratePrescriptiveRecommendations(client);
     await client.query("COMMIT");
     return res.status(201).json({
       message: billId ? "Manual payment recorded and applied to the SOA." : "Advance payment recorded for the unit.",
@@ -325,10 +326,26 @@ router.get("/:id/receipt", requireId, async (req, res, next) => {
     const conditions = ["ps.id = $1"];
     paymentAccess(req, params, conditions);
     conditions.push("ps.entry_type = 'RECEIPT_UPLOAD'");
-    const result = await pool.query(`SELECT ps.receipt_path, ps.receipt_mime_type FROM payment_submissions ps WHERE ${conditions.join(" AND ")}`, params);
+    const result = await pool.query(
+      `SELECT ps.receipt_path, ps.receipt_storage, ps.receipt_cloudinary_public_id, ps.receipt_mime_type
+       FROM payment_submissions ps WHERE ${conditions.join(" AND ")}`,
+      params,
+    );
     if (!result.rows[0]) return res.status(404).json({ message: "Receipt not found." });
-    const filePath = path.join(uploadDirectory, path.basename(result.rows[0].receipt_path));
-    res.type(result.rows[0].receipt_mime_type);
+    const receipt = result.rows[0];
+    if (receipt.receipt_storage === "CLOUDINARY") {
+      const response = await fetch(receiptDeliveryUrl(receipt.receipt_cloudinary_public_id));
+      if (!response.ok || !response.body) {
+        console.error(`Cloudinary receipt ${receipt.receipt_cloudinary_public_id} could not be retrieved: ${response.status}`);
+        return res.status(404).json({ message: "Receipt not found." });
+      }
+      res.type(receipt.receipt_mime_type);
+      res.set("Cache-Control", "private, no-store");
+      await pipeline(Readable.fromWeb(response.body), res);
+      return undefined;
+    }
+    const filePath = path.join(uploadDirectory, path.basename(receipt.receipt_path));
+    res.type(receipt.receipt_mime_type);
     return res.sendFile(filePath);
   } catch (error) { return next(error); }
 });
@@ -350,8 +367,8 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
     client = await pool.connect();
     await client.query("BEGIN");
     const locked = await client.query(
-      `SELECT ps.*, pst.unit_bill_id AS target_bill_id FROM payment_submissions ps
-       LEFT JOIN payment_submission_targets pst ON pst.payment_submission_id = ps.id
+      `SELECT ps.*, ps.target_unit_bill_id AS target_bill_id
+       FROM payment_submissions ps
        WHERE ps.id = $1 FOR UPDATE OF ps`, [req.resourceId],
     );
     if (!locked.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "Payment submission not found." }); }
@@ -411,6 +428,7 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
         newValues: { reviewStatus: "REJECTED", remarks: body.remarks },
       });
     }
+    await regeneratePrescriptiveRecommendations(client);
     await client.query("COMMIT");
     return res.json({ message: body.status === "APPROVED" ? "Payment approved and applied to the SOA." : "Payment proof rejected." });
   } catch (error) {
@@ -426,7 +444,8 @@ router.delete("/:id", allowRoles("ADMIN"), requireId, async (req, res, next) => 
     client = await pool.connect();
     await client.query("BEGIN");
     const locked = await client.query(
-      "SELECT id, review_status, receipt_path FROM payment_submissions WHERE id = $1 FOR UPDATE",
+      `SELECT id, review_status, receipt_path, receipt_storage, receipt_cloudinary_public_id
+       FROM payment_submissions WHERE id = $1 FOR UPDATE`,
       [req.resourceId],
     );
     if (!locked.rows[0]) {
@@ -445,12 +464,21 @@ router.delete("/:id", allowRoles("ADMIN"), requireId, async (req, res, next) => 
       entityName: "PAYMENT_SUBMISSION",
       entityId: req.resourceId,
       action: "DELETE",
-      oldValues: { reviewStatus: locked.rows[0].review_status, receiptPath: locked.rows[0].receipt_path },
+      oldValues: {
+        reviewStatus: locked.rows[0].review_status,
+        receiptPath: locked.rows[0].receipt_path,
+        receiptStorage: locked.rows[0].receipt_storage,
+        receiptCloudinaryPublicId: locked.rows[0].receipt_cloudinary_public_id,
+      },
       remarks: "Admin permanently deleted a rejected payment proof.",
     });
     await client.query("COMMIT");
 
-    if (locked.rows[0].receipt_path) {
+    if (locked.rows[0].receipt_storage === "CLOUDINARY" && locked.rows[0].receipt_cloudinary_public_id) {
+      await destroyReceipt(locked.rows[0].receipt_cloudinary_public_id).catch((error) => {
+        console.error(`Cloudinary cleanup failed for receipt ${locked.rows[0].receipt_cloudinary_public_id}:`, error);
+      });
+    } else if (locked.rows[0].receipt_path) {
       const filePath = path.join(uploadDirectory, path.basename(locked.rows[0].receipt_path));
       await unlink(filePath).catch(() => {});
     }

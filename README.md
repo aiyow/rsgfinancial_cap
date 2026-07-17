@@ -87,6 +87,34 @@ CLIENT_URL=http://localhost:5173
 
 Never commit `backend/.env`. It contains the database password, account passwords, and JWT secret.
 
+### Cloudinary payment receipts
+
+Payment receipts are private financial records. They are uploaded by the backend to Cloudinary as authenticated image assets; residents and staff continue to access them only through the existing authenticated API route. The Cloudinary API secret must never be added to the frontend environment file.
+
+In the Cloudinary Console, open **Settings > API Keys** and copy the Cloud name, API key, and API secret into `backend/.env`:
+
+```dotenv
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+CLOUDINARY_RECEIPTS_FOLDER=rsg-condo/payment-receipts
+```
+
+No unsigned upload preset is required because this system uploads through the backend. After adding the variables, apply the latest database migration:
+
+```powershell
+npm run db:init
+```
+
+For an existing local database, first preview local receipt records, then migrate them. The command does not delete local files:
+
+```powershell
+npm run receipts:migrate-cloudinary -- --dry-run
+npm run receipts:migrate-cloudinary
+```
+
+Open each migrated payment through the Admin payment screen to confirm the image loads. Keep `backend/uploads/payment-proofs` as a rollback copy until every migrated receipt has been verified.
+
 Initialize the schema and all numbered migrations:
 
 ```powershell

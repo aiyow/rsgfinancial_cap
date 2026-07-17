@@ -52,9 +52,8 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
   GREATEST(${totalChargeSql} - ${approvedPaymentSql}, 0) AS "remainingBalance",
   EXISTS (
     SELECT 1
-    FROM payment_submission_targets target
-    JOIN payment_submissions pending ON pending.id = target.payment_submission_id
-    WHERE target.unit_bill_id = b.id AND pending.review_status = 'PENDING'
+    FROM payment_submissions pending
+    WHERE pending.target_unit_bill_id = b.id AND pending.review_status = 'PENDING'
   ) AS "hasPendingPayment",
   CASE WHEN ${approvedPaymentSql} >= ${totalChargeSql} AND ${totalChargeSql} > 0 THEN 'PAID'
     WHEN ${approvedPaymentSql} > 0 THEN 'PARTIAL'

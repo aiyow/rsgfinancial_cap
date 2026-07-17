@@ -29,19 +29,11 @@ export async function ensurePaymentLedgerSchema(client) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
-  await client.query(`
-    CREATE TABLE IF NOT EXISTS payment_submission_targets (
-      payment_submission_id BIGINT PRIMARY KEY REFERENCES payment_submissions(id) ON DELETE CASCADE,
-      unit_bill_id BIGINT NOT NULL REFERENCES unit_bills(id) ON DELETE RESTRICT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
   await client.query("CREATE INDEX IF NOT EXISTS payment_submissions_unit_idx ON payment_submissions(unit_id)");
   await client.query("CREATE INDEX IF NOT EXISTS payment_submissions_method_idx ON payment_submissions(payment_method)");
   await client.query("CREATE INDEX IF NOT EXISTS payment_submissions_entry_type_idx ON payment_submissions(entry_type)");
   await client.query("CREATE INDEX IF NOT EXISTS payment_applications_payment_idx ON payment_applications(payment_submission_id)");
   await client.query("CREATE INDEX IF NOT EXISTS payment_applications_bill_idx ON payment_applications(unit_bill_id)");
-  await client.query("CREATE INDEX IF NOT EXISTS payment_submission_targets_bill_idx ON payment_submission_targets(unit_bill_id)");
 }
 
 function cents(value) {

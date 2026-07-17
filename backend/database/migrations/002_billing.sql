@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS billing_periods (
 );
 
 
+DROP TRIGGER IF EXISTS billing_periods_set_updated_at ON billing_periods;
 CREATE TRIGGER billing_periods_set_updated_at
 BEFORE UPDATE ON billing_periods
 FOR EACH ROW
@@ -98,6 +99,7 @@ CREATE TABLE IF NOT EXISTS meter_readings (
 );
 
 
+DROP TRIGGER IF EXISTS meter_readings_set_updated_at ON meter_readings;
 CREATE TRIGGER meter_readings_set_updated_at
 BEFORE UPDATE ON meter_readings
 FOR EACH ROW
@@ -139,6 +141,7 @@ CREATE TABLE IF NOT EXISTS unit_bills (
 );
 
 
+DROP TRIGGER IF EXISTS unit_bills_set_updated_at ON unit_bills;
 CREATE TRIGGER unit_bills_set_updated_at
 BEFORE UPDATE ON unit_bills
 FOR EACH ROW

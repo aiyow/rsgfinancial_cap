@@ -34,6 +34,7 @@ export default function AdminPaymentsPage() {
   const [units, setUnits] = useState([])
   const [credits, setCredits] = useState([])
   const [busy, setBusy] = useState(false)
+  const [manualModalOpen, setManualModalOpen] = useState(false)
   const [manualForm, setManualForm] = useState({
     targetType: 'SOA',
     targetBillId: '',
@@ -125,6 +126,7 @@ export default function AdminPaymentsPage() {
       const data = await apiRequest('/api/payments/manual', { method: 'POST', token, body })
       await refreshPayments()
       setManualForm((current) => ({ ...current, amount: '', referenceNo: '', remarks: '' }))
+      setManualModalOpen(false)
       setNotice({ error: '', message: data.message })
     } catch (error) {
       setNotice({ error: error.message, message: '' })
@@ -144,72 +146,15 @@ export default function AdminPaymentsPage() {
         <StatCard label="Rejected" value={counts.rejected} accent="rose" />
       </div>
 
-      <Panel title="Record face-to-face payment" description="Create an approved cash, GCash, bank transfer, or advance payment for a unit.">
-        <form onSubmit={submitManual} className="grid gap-4 lg:grid-cols-4">
-          <div className="lg:col-span-4 flex flex-wrap gap-2">
-            <button type="button" onClick={() => updateManual('targetType', 'SOA')} className={`rounded-full px-4 py-2 text-sm font-bold ${manualForm.targetType === 'SOA' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>Apply to SOA</button>
-            <button type="button" onClick={() => updateManual('targetType', 'ADVANCE')} className={`rounded-full px-4 py-2 text-sm font-bold ${manualForm.targetType === 'ADVANCE' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>Advance balance</button>
-          </div>
+      <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <div>
+          <h2 className="text-lg font-black text-slate-900">Manual payment</h2>
+          <p className="mt-1 text-sm text-slate-500">Record a face-to-face payment or add advance credit when needed.</p>
+        </div>
+        <button type="button" onClick={() => setManualModalOpen(true)} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white">Record payment</button>
+      </section>
 
-          {manualForm.targetType === 'SOA' ? (
-            <label className="block text-sm font-bold text-slate-700 lg:col-span-2">
-              Statement of Account
-              <select required value={manualForm.targetBillId} onChange={(event) => updateManual('targetBillId', event.target.value)} className={inputClass}>
-                {bills.map((bill) => (
-                  <option key={bill.id} value={bill.id}>Unit {bill.unitNumber} - {String(bill.periodStart).slice(0, 10)} - remaining {money(bill.remainingBalance)}</option>
-                ))}
-              </select>
-            </label>
-          ) : (
-            <label className="block text-sm font-bold text-slate-700 lg:col-span-2">
-              Unit
-              <select required value={manualForm.unitId} onChange={(event) => updateManual('unitId', event.target.value)} className={inputClass}>
-                {units.map((unit) => <option key={unit.id} value={unit.id}>Unit {unit.unitNumber}</option>)}
-              </select>
-            </label>
-          )}
-
-          <label className="block text-sm font-bold text-slate-700">
-            Payment method
-            <select value={manualForm.paymentMethod} onChange={(event) => updateManual('paymentMethod', event.target.value)} className={inputClass}>
-              {methods.map((method) => <option key={method} value={method}>{methodLabel(method)}</option>)}
-            </select>
-          </label>
-
-          <label className="block text-sm font-bold text-slate-700">
-            Amount
-            <input required min="0.01" step="0.01" type="number" value={manualForm.amount} onChange={(event) => updateManual('amount', event.target.value)} className={inputClass} />
-          </label>
-
-          <label className="block text-sm font-bold text-slate-700">
-            Payment date
-            <input required type="date" value={manualForm.paymentDate} onChange={(event) => updateManual('paymentDate', event.target.value)} className={inputClass} />
-          </label>
-
-          <label className="block text-sm font-bold text-slate-700">
-            Reference / OR no.
-            <input value={manualForm.referenceNo} onChange={(event) => updateManual('referenceNo', event.target.value)} placeholder="Auto-generated if blank" className={inputClass} />
-          </label>
-
-          <label className="block text-sm font-bold text-slate-700 lg:col-span-2">
-            Remarks
-            <input value={manualForm.remarks} onChange={(event) => updateManual('remarks', event.target.value)} className={inputClass} />
-          </label>
-
-          <div className="rounded-xl bg-slate-50 p-4 text-sm lg:col-span-2">
-            <p className="text-xs font-bold uppercase text-slate-400">Selected unit advance balance</p>
-            <p className="mt-2 text-2xl font-black text-slate-950">{money(selectedCredit?.advanceBalance || 0)}</p>
-          </div>
-
-          <div className="lg:col-span-4">
-            <button disabled={busy || !manualForm.amount || (manualForm.targetType === 'SOA' ? !manualForm.targetBillId : !manualForm.unitId)} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white disabled:bg-slate-300">
-              {busy ? 'Recording payment...' : 'Record payment'}
-            </button>
-          </div>
-        </form>
-      </Panel>
-
-      <Panel title="Payment queue" description="Open a payment proof to inspect the receipt or view finalized manual payments.">
+      <Panel title="Payment queue" description="Review the essentials here, then open a payment for its receipt, OCR, and full details.">
         <div className="mb-5 flex flex-wrap gap-2">
           {statuses.map((item) => (
             <button
@@ -225,17 +170,13 @@ export default function AdminPaymentsPage() {
 
         {payments.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1180px] text-left text-sm">
+            <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="text-xs uppercase text-slate-400">
                 <tr>
-                  <th className="pb-3">Unit</th>
-                  <th>Resident</th>
-                  <th>Submitted</th>
-                  <th>OCR amount</th>
-                  <th>Verified amount</th>
-                  <th>Method / source</th>
-                  <th>Applied / advance</th>
-                  <th>Balance after approval</th>
+                  <th className="pb-3">Resident / unit</th>
+                  <th>Received</th>
+                  <th>Amount</th>
+                  <th>Source</th>
                   <th>Status</th>
                   <th></th>
                 </tr>
@@ -243,25 +184,21 @@ export default function AdminPaymentsPage() {
               <tbody className="divide-y divide-slate-100">
                 {payments.map((payment) => (
                   <tr key={payment.id}>
-                    <td className="py-3 font-bold">Unit {payment.unitNumber}</td>
-                    <td>
+                    <td className="py-3">
                       <p className="font-semibold text-slate-800">{payment.submittedByName}</p>
-                      <p className="text-xs text-slate-500">Due {String(payment.dueDate || '').slice(0, 10) || '-'}</p>
+                      <p className="text-xs text-slate-500">Unit {payment.unitNumber}</p>
                     </td>
                     <td>{dateTime(payment.submittedAt)}</td>
-                    <td>{payment.ocrAmount ? money(payment.ocrAmount) : 'Not detected'}</td>
-                    <td>{payment.verifiedAmount ? money(payment.verifiedAmount) : '-'}</td>
                     <td>
-                      <p className="font-semibold text-slate-800">{methodLabel(payment.paymentMethod)}</p>
-                      <p className="text-xs text-slate-500">{payment.entryType === 'MANUAL' ? 'Manual entry' : 'Receipt upload'}</p>
+                      <p className="font-semibold text-slate-800">{payment.reviewStatus === 'APPROVED' ? money(payment.verifiedAmount) : payment.ocrAmount ? money(payment.ocrAmount) : 'Not detected'}</p>
+                      <p className="text-xs text-slate-500">{payment.reviewStatus === 'APPROVED' ? 'Verified' : 'OCR estimate'}</p>
                     </td>
                     <td>
-                      <p>{money(payment.appliedAmount)}</p>
-                      <p className="text-xs text-slate-500">Advance {money(payment.unitAdvanceBalance)}</p>
+                      <p className="font-semibold text-slate-800">{payment.entryType === 'MANUAL' ? 'Manual entry' : 'Receipt upload'}</p>
+                      <p className="text-xs text-slate-500">{methodLabel(payment.paymentMethod)}</p>
                     </td>
-                    <td>{money(payment.remainingBalance)}</td>
                     <td><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${badgeClass[payment.reviewStatus]}`}>{payment.reviewStatus}</span></td>
-                    <td><Link to={`/admin/payments/${payment.id}`} className="font-bold text-indigo-600">{payment.reviewStatus === 'PENDING' ? 'Review payment' : 'Open details'}</Link></td>
+                    <td><Link to={`/admin/payments/${payment.id}`} className="font-bold text-indigo-600">{payment.reviewStatus === 'PENDING' ? 'Review' : 'View details'}</Link></td>
                   </tr>
                 ))}
               </tbody>
@@ -271,7 +208,94 @@ export default function AdminPaymentsPage() {
 
         {payments.length === 0 && <EmptyRow message="No payment submissions match the current filter." />}
       </Panel>
+
+      {manualModalOpen && (
+        <ManualPaymentModal
+          bills={bills}
+          busy={busy}
+          form={manualForm}
+          methods={methods}
+          selectedCredit={selectedCredit}
+          units={units}
+          onClose={() => setManualModalOpen(false)}
+          onSubmit={submitManual}
+          onUpdate={updateManual}
+        />
+      )}
     </DashboardLayout>
+  )
+}
+
+function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, selectedCredit, units, onClose, onSubmit, onUpdate }) {
+  const canSubmit = form.amount && (form.targetType === 'SOA' ? form.targetBillId : form.unitId)
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4" role="presentation" onMouseDown={onClose}>
+      <section role="dialog" aria-modal="true" aria-labelledby="manual-payment-title" className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="manual-payment-title" className="text-xl font-black text-slate-900">Record manual payment</h2>
+            <p className="mt-1 text-sm text-slate-500">Use this only for payments received outside the resident receipt upload flow.</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">Close</button>
+        </div>
+
+        <form onSubmit={onSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2 flex flex-wrap gap-2">
+            <button type="button" onClick={() => onUpdate('targetType', 'SOA')} className={`rounded-full px-4 py-2 text-sm font-bold ${form.targetType === 'SOA' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>Apply to SOA</button>
+            <button type="button" onClick={() => onUpdate('targetType', 'ADVANCE')} className={`rounded-full px-4 py-2 text-sm font-bold ${form.targetType === 'ADVANCE' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>Advance credit</button>
+          </div>
+
+          {form.targetType === 'SOA' ? (
+            <label className="block text-sm font-bold text-slate-700 sm:col-span-2">
+              Statement of Account
+              <select required value={form.targetBillId} onChange={(event) => onUpdate('targetBillId', event.target.value)} className={inputClass}>
+                {bills.map((bill) => <option key={bill.id} value={bill.id}>Unit {bill.unitNumber} · {String(bill.periodStart).slice(0, 10)} · remaining {money(bill.remainingBalance)}</option>)}
+              </select>
+            </label>
+          ) : (
+            <label className="block text-sm font-bold text-slate-700 sm:col-span-2">
+              Unit
+              <select required value={form.unitId} onChange={(event) => onUpdate('unitId', event.target.value)} className={inputClass}>
+                {units.map((unit) => <option key={unit.id} value={unit.id}>Unit {unit.unitNumber}</option>)}
+              </select>
+            </label>
+          )}
+
+          <label className="block text-sm font-bold text-slate-700">
+            Payment method
+            <select value={form.paymentMethod} onChange={(event) => onUpdate('paymentMethod', event.target.value)} className={inputClass}>
+              {paymentMethods.map((method) => <option key={method} value={method}>{methodLabel(method)}</option>)}
+            </select>
+          </label>
+          <label className="block text-sm font-bold text-slate-700">
+            Amount
+            <input required min="0.01" step="0.01" type="number" value={form.amount} onChange={(event) => onUpdate('amount', event.target.value)} className={inputClass} />
+          </label>
+          <label className="block text-sm font-bold text-slate-700">
+            Payment date
+            <input required type="date" value={form.paymentDate} onChange={(event) => onUpdate('paymentDate', event.target.value)} className={inputClass} />
+          </label>
+          <label className="block text-sm font-bold text-slate-700">
+            Reference / OR no.
+            <input value={form.referenceNo} onChange={(event) => onUpdate('referenceNo', event.target.value)} placeholder="Auto-generated if blank" className={inputClass} />
+          </label>
+          <label className="block text-sm font-bold text-slate-700 sm:col-span-2">
+            Remarks <span className="font-normal text-slate-500">(optional)</span>
+            <input value={form.remarks} onChange={(event) => onUpdate('remarks', event.target.value)} className={inputClass} />
+          </label>
+
+          <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
+            <p className="text-xs font-bold uppercase text-slate-400">Selected unit advance balance</p>
+            <p className="mt-1 text-2xl font-black text-slate-950">{money(selectedCredit?.advanceBalance || 0)}</p>
+          </div>
+          <div className="flex justify-end gap-3 sm:col-span-2">
+            <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold">Cancel</button>
+            <button disabled={busy || !canSubmit} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white disabled:bg-slate-300">{busy ? 'Recording...' : 'Record payment'}</button>
+          </div>
+        </form>
+      </section>
+    </div>
   )
 }
 

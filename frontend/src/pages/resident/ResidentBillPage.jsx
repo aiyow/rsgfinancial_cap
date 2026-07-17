@@ -17,6 +17,7 @@ export default function ResidentBillPage() {
   const [bill, setBill] = useState(null)
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
 
@@ -34,7 +35,21 @@ export default function ResidentBillPage() {
     return () => { active = false }
   }, [id, token])
 
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl)
+    }
+  }, [imagePreviewUrl])
+
   const canSubmit = useMemo(() => bill && bill.paymentStatus !== 'PAID', [bill])
+
+  function selectReceipt(event) {
+    const selectedFile = event.target.files?.[0] || null
+    setFile(selectedFile)
+    setImagePreviewUrl(selectedFile ? URL.createObjectURL(selectedFile) : '')
+    setPreview(null)
+    setNotice({ error: '', message: '' })
+  }
 
   async function previewReceipt(event) {
     event.preventDefault()
@@ -71,6 +86,7 @@ export default function ResidentBillPage() {
       const data = await apiRequest(`/api/payments/bills/${id}`, { method: 'POST', token, body })
       setPreview(data.analysis)
       setFile(null)
+      setImagePreviewUrl('')
       setNotice({ error: '', message: data.message })
       const refreshed = await apiRequest(`/api/bills/${id}`, { token })
       setBill(refreshed.bill)
@@ -108,13 +124,19 @@ export default function ResidentBillPage() {
               <form onSubmit={previewReceipt} className="space-y-4">
                 <label className="block text-sm font-bold text-slate-700">
                   Receipt image
-                  <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={(event) => setFile(event.target.files?.[0] || null)} className={inputClass} />
+                  <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={selectReceipt} className={inputClass} />
                 </label>
                 <div className="flex flex-wrap gap-3">
                   <button disabled={busy || !canSubmit} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold disabled:opacity-50">Preview OCR</button>
                   <button type="button" disabled={busy || !canSubmit || !file} onClick={submitReceipt} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:bg-slate-300">Submit payment proof</button>
                 </div>
                 <p className="text-xs text-slate-500">Accepted files: JPG or PNG, up to 5 MB.</p>
+                {preview && imagePreviewUrl && (
+                  <figure className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                    <figcaption className="mb-2 text-sm font-black text-slate-900">Receipt image preview</figcaption>
+                    <img src={imagePreviewUrl} alt="Selected payment receipt" className="max-h-[35rem] w-full rounded-xl bg-white object-contain" />
+                  </figure>
+                )}
               </form>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">

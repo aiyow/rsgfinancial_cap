@@ -14,6 +14,10 @@ const CONFLICT_MESSAGES = {
 function errorHandler(error, req, res, next) {
   if (res.headersSent) return next(error);
 
+  if (error.code === "CLOUDINARY_NOT_CONFIGURED") {
+    return res.status(503).json({ message: error.message });
+  }
+
   if (error.name === "MulterError" || ["Only .xlsx files are accepted.", "Only JPG and PNG receipt images are accepted."].includes(error.message)) {
     return res.status(400).json({ message: error.message });
   }

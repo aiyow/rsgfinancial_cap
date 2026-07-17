@@ -5,7 +5,6 @@ import useAuth from './hooks/useAuth'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminAssignmentsPage from './pages/admin/AdminAssignmentsPage'
 import AdminUnitsPage from './pages/admin/AdminUnitsPage'
 import AdminUnitsViewPage from './pages/admin/AdminUnitsViewPage'
 import AdminUsersPage from './pages/admin/AdminUsersPage'
@@ -51,7 +50,7 @@ export default function App() {
       <Route path="/admin/users" element={<ProtectedRoute allowedRole="ADMIN"><AdminUsersPage /></ProtectedRoute>} />
       <Route path="/admin/units" element={<ProtectedRoute allowedRole="ADMIN"><AdminUnitsViewPage /></ProtectedRoute>} />
       <Route path="/admin/units/manage" element={<ProtectedRoute allowedRole="ADMIN"><AdminUnitsPage /></ProtectedRoute>} />
-      <Route path="/admin/assignments" element={<ProtectedRoute allowedRole="ADMIN"><AdminAssignmentsPage /></ProtectedRoute>} />
+      <Route path="/admin/assignments" element={<ProtectedRoute allowedRole="ADMIN"><Navigate to="/admin/units/manage" replace /></ProtectedRoute>} />
       <Route path="/admin/soa" element={<ProtectedRoute allowedRole="ADMIN"><AdminSoaPage /></ProtectedRoute>} />
       <Route path="/admin/soa/batches/:periodId" element={<ProtectedRoute allowedRole="ADMIN"><AdminSoaBatchPage /></ProtectedRoute>} />
       <Route path="/admin/soa/bills/:id" element={<ProtectedRoute allowedRole="ADMIN"><AdminSoaBillPage /></ProtectedRoute>} />

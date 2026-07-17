@@ -8,7 +8,8 @@
     "db:init": "node scripts/initDatabase.js",
     "seed": "node scripts/seedUsers.js",
     "test": "node --test test/*.test.js",
-    "data:import-history": "node scripts/importHistoricalAnalytics.js"
+    "data:import-history": "node scripts/importHistoricalAnalytics.js",
+    "receipts:migrate-cloudinary": "node scripts/migrateLocalReceiptsToCloudinary.js"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +18,7 @@
   "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.10.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",

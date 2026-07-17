@@ -6,7 +6,6 @@ import {
   Building2,
   Calculator,
   ChevronDown,
-  ClipboardList,
   CreditCard,
   FileText,
   LayoutDashboard,
@@ -38,7 +37,6 @@ const navigationByRole = {
     manage: [
       { label: 'User Management', to: '/admin/users', icon: Users },
       { label: 'Manage Units', to: '/admin/units/manage', icon: Settings2 },
-      { label: 'Assignments', to: '/admin/assignments', icon: ClipboardList },
     ],
   },
   COLLECTOR: {
@@ -163,7 +161,7 @@ export default function DashboardLayout({ title, description, children }) {
   const initials = user.fullName.split(' ').map((name) => name[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <div className={`dashboard-shell min-h-screen bg-[var(--app-bg)] text-[var(--ink)] lg:grid ${collapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
+    <div className={`dashboard-shell min-h-screen bg-[var(--app-bg)] text-[var(--ink)] lg:grid lg:transition-[grid-template-columns] lg:duration-200 lg:ease-out motion-reduce:transition-none ${collapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
       {mobileOpen && (
         <button
           type="button"
@@ -173,7 +171,7 @@ export default function DashboardLayout({ title, description, children }) {
         />
       )}
 
-      <aside className={`print-hidden fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 ${
+      <aside className={`print-hidden fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 motion-reduce:transition-none ${
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className={`flex h-14 shrink-0 items-center justify-between border-b border-[var(--border)] px-5 ${collapsed ? 'lg:justify-center lg:px-3' : ''}`}>
@@ -201,13 +199,13 @@ export default function DashboardLayout({ title, description, children }) {
           <NavigationLinks sections={sections} collapsed={collapsed} onNavigate={() => setMobileOpen(false)} />
         </div>
 
-        <div className="shrink-0 border-t border-[var(--border)] p-3">
+        <div className={`shrink-0 border-t border-[var(--border)] p-3 ${collapsed ? 'lg:p-2' : ''}`}>
           <button
             type="button"
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             onClick={() => setCollapsed((value) => !value)}
-            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold text-[var(--muted)] transition hover:bg-white/70 hover:text-[var(--primary)] ${collapsed ? 'lg:justify-center' : ''}`}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold text-[var(--muted)] transition hover:bg-white/70 hover:text-[var(--primary)] ${collapsed ? 'lg:justify-center lg:gap-0 lg:px-2' : ''}`}
           >
             {collapsed ? <PanelLeftOpen size={18} aria-hidden="true" /> : <PanelLeftClose size={18} aria-hidden="true" />}
             <span className={collapsed ? 'lg:sr-only' : ''}>{collapsed ? 'Expand' : 'Collapse'}</span>

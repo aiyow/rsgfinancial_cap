@@ -513,7 +513,7 @@ router.delete("/:id", allowRoles("COLLECTOR"), requireId, async (req, res, next)
     const protectedBills = await client.query(
       `SELECT COUNT(*)::int AS count FROM unit_bills b
        WHERE b.billing_period_id = $1 AND (
-         EXISTS (SELECT 1 FROM payment_submission_targets pst WHERE pst.unit_bill_id = b.id)
+         EXISTS (SELECT 1 FROM payment_submissions ps WHERE ps.target_unit_bill_id = b.id)
          OR EXISTS (SELECT 1 FROM payment_applications pa WHERE pa.unit_bill_id = b.id)
        )`, [req.resourceId],
     );

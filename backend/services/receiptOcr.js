@@ -3,7 +3,10 @@ import { createWorker } from "tesseract.js";
 
 const MIN_WIDTH = 600;
 const MIN_HEIGHT = 600;
-const BLUR_THRESHOLD = 45;
+// Digital wallet screenshots can have large flat-color areas, which lowers the
+// edge-variance score despite the receipt text being readable. Keep obviously
+// out-of-focus photos out while allowing clear screenshots to reach OCR/Admin review.
+const BLUR_THRESHOLD = 20;
 const monthMap = {
   jan: 1,
   feb: 2,

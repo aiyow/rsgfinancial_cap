@@ -3,11 +3,12 @@ import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId } from "../middleware/validate.js";
 import { writeAuditLog } from "../services/auditLog.js";
-import { ensurePrescriptiveAnalyticsSchema, RECOMMENDATION_TYPES } from "../services/prescriptiveAnalytics.js";
+import { ensurePrescriptiveAnalyticsSchema, regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
 
 const router = express.Router();
 const statuses = new Set(["ACTIVE", "ALL", "OPEN", "VIEWED", "SUPERSEDED"]);
 const priorities = new Set(["ALL", "HIGH", "MEDIUM"]);
+const residentRecommendationTypes = ["CHECK_HIGH_USAGE", "RISING_CONSUMPTION", "PAYMENT_REMINDER", "MONITOR_HIGH_USAGE", "MONITOR_USAGE"];
 
 const recommendationSelect = `SELECT r.id, r.unit_id AS "unitId", u.unit_number AS "unitNumber",
   r.based_on_period_id AS "basedOnPeriodId", p.period_start AS "periodStart",
@@ -25,17 +26,18 @@ router.use(requireAuth);
 
 router.get("/resident", allowRoles("RESIDENT"), async (req, res, next) => {
   try {
+    await regeneratePrescriptiveRecommendations(pool);
     const result = await pool.query(
       `${recommendationSelect}
        JOIN unit_assignments a ON a.unit_id = r.unit_id
        WHERE a.user_id = $1 AND a.end_date IS NULL
-         AND r.recommendation_type = $2
+         AND r.recommendation_type = ANY($2::varchar[])
          AND r.resident_visible_at IS NOT NULL
          AND r.status = ANY($3::varchar[])
          AND p.period_type = 'LIVE_BILLING'
          AND p.status IN ('GENERATED', 'FORWARDED', 'CLOSED')
        ORDER BY r.updated_at DESC, u.unit_number`,
-      [req.user.id, RECOMMENDATION_TYPES.CHECK_HIGH_USAGE, ["OPEN", "VIEWED"]],
+      [req.user.id, residentRecommendationTypes, ["OPEN", "VIEWED"]],
     );
     return res.json({ recommendations: result.rows });
   } catch (error) { return next(error); }
@@ -50,13 +52,13 @@ router.patch("/:id/view", allowRoles("RESIDENT"), requireId, async (req, res, ne
       `${recommendationSelect}
        JOIN unit_assignments a ON a.unit_id = r.unit_id
        WHERE r.id = $1 AND a.user_id = $2 AND a.end_date IS NULL
-         AND r.recommendation_type = $3
+         AND r.recommendation_type = ANY($3::varchar[])
          AND r.resident_visible_at IS NOT NULL
          AND r.status = ANY($4::varchar[])
          AND p.period_type = 'LIVE_BILLING'
          AND p.status IN ('GENERATED', 'FORWARDED', 'CLOSED')
        FOR UPDATE OF r`,
-      [req.resourceId, req.user.id, RECOMMENDATION_TYPES.CHECK_HIGH_USAGE, ["OPEN", "VIEWED"]],
+      [req.resourceId, req.user.id, residentRecommendationTypes, ["OPEN", "VIEWED"]],
     );
     const recommendation = existing.rows[0];
     if (!recommendation) {
@@ -89,6 +91,7 @@ router.patch("/:id/view", allowRoles("RESIDENT"), requireId, async (req, res, ne
 
 router.get("/", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
   try {
+    await regeneratePrescriptiveRecommendations(pool);
     const requestedStatus = String(req.query.status || "ACTIVE").trim().toUpperCase();
     const requestedPriority = String(req.query.priority || "ALL").trim().toUpperCase();
     if (!statuses.has(requestedStatus) || !priorities.has(requestedPriority)) {
