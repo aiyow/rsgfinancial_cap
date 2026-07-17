@@ -12,7 +12,7 @@ RSG Condo is a role-based condominium billing and water-analytics system. It sup
 ## Technology
 
 - Frontend: React 19, Vite, Tailwind CSS, Recharts, and Lucide icons
-- Backend: Node.js, Express, PostgreSQL, Zod, ExcelJS, Tesseract.js, and Sharp
+- Backend: Node.js, Express, PostgreSQL, Zod, ExcelJS, Tesseract.js, Sharp, and Cloudinary
 - Authentication: JSON Web Tokens (JWT) and bcrypt password hashing
 
 ## Prerequisites
@@ -64,7 +64,7 @@ Copy-Item .env.example .env
 
 On macOS or Linux, use `cp .env.example .env` instead of `Copy-Item`.
 
-Edit `backend/.env`:
+Edit `backend/.env` and replace every placeholder. This file is used only by the backend:
 
 ```dotenv
 PORT=5000
@@ -83,9 +83,21 @@ SEED_COLLECTOR_EMAIL=collector@example.com
 SEED_COLLECTOR_PASSWORD=choose_a_strong_collector_password
 
 CLIENT_URL=http://localhost:5173
+
+# Private receipt storage: backend only. Never use VITE_ names for these values.
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+CLOUDINARY_RECEIPTS_FOLDER=rsg-condo/payment-receipts
 ```
 
-Never commit `backend/.env`. It contains the database password, account passwords, and JWT secret.
+Never commit `backend/.env`. It contains database credentials, seeded-account passwords, the JWT secret, and the Cloudinary API secret. If a secret has ever been pasted into a chat, screenshot, or repository, rotate it in the relevant provider console.
+
+Use a long random value for `JWT_SECRET`. Changing it later signs out every user because existing login tokens are no longer valid. You can generate a value in PowerShell with:
+
+```powershell
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
 
 ### Cloudinary payment receipts
 
@@ -121,7 +133,7 @@ Initialize the schema and all numbered migrations:
 npm run db:init
 ```
 
-This command creates the base schema and applies migrations `001` through `013` in order. Run it against a new, empty database during initial setup.
+This command creates the base schema and applies migrations `001` through `020` in order. The initializer does not keep a migration-history table, so use it for a new database (or a disposable local development database) and make a backup before running it against an existing database.
 
 Create the initial Admin and Collector accounts using the values from `backend/.env`:
 
@@ -159,7 +171,7 @@ The default frontend environment is:
 VITE_API_URL=http://localhost:5000
 ```
 
-Change this URL only when the backend is running on another host or port. Do not commit `frontend/.env`.
+Change this URL only when the backend is running on another host or port. Do not include a trailing slash. Do not put database credentials, JWT secrets, or Cloudinary credentials in `frontend/.env`, because every `VITE_` variable is exposed to the browser. Do not commit `frontend/.env`.
 
 ## 5. Run the system
 
@@ -183,12 +195,44 @@ Open [http://localhost:5173](http://localhost:5173) in a browser. The backend he
 
 Sign in using the Admin or Collector email and password configured in `backend/.env` before running `npm run seed`.
 
+## Configuration checks
+
+After setup, verify each layer before using the system:
+
+1. **Backend and database:** open [http://localhost:5000/api/health](http://localhost:5000/api/health). It must return a successful JSON response with a database time.
+2. **Frontend:** open [http://localhost:5173](http://localhost:5173). If it says it cannot reach the backend, confirm `VITE_API_URL`, the backend terminal, and port `5000`.
+3. **Authentication:** sign in with the seeded Admin account. If sign-in fails, check `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, then run `npm run seed` again.
+4. **Cloudinary receipts:** while signed in as a Resident, open an unpaid SOA and upload a JPG or PNG receipt. Confirm it appears in Admin **Payments**, then open the receipt from Admin. The image is streamed through the authenticated API; its Cloudinary URL should never appear in the frontend configuration.
+
+Useful development commands:
+
+```powershell
+# backend (from backend/)
+npm test
+npm run db:init
+npm run seed
+
+# frontend (from frontend/)
+npm run lint
+npm run build
+```
+
+## Common setup problems
+
+| Problem | What to check |
+| --- | --- |
+| `password authentication failed` or database health returns 500 | Confirm PostgreSQL is running and verify `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` in `backend/.env`. |
+| `Cloudinary receipt storage is not configured` | Add all four `CLOUDINARY_*` variables to `backend/.env`, then restart the backend. Do not add them to the frontend. |
+| Browser shows `Cannot reach the backend` | Start the backend with `npm run dev` and make sure `VITE_API_URL` points to it. Restart Vite after changing the frontend `.env`. |
+| A new backend environment cannot read receipt images | Use the same Cloudinary cloud and receipt folder that hold the receipt assets, and configure valid API credentials. |
+| Database initialization fails on an existing database | Restore or back up first. The current initializer re-executes numbered migrations, so it is intended for a fresh or disposable development database. |
+
 ## Recommended first-time setup inside the system
 
 1. Sign in as **Admin**.
 2. Open **Manage Units** and confirm that the unit seed was imported, or add units manually.
 3. Create Resident accounts under **User Management**.
-4. Open **Assignments** and connect each Resident to a unit as an owner or tenant. Set the primary payer where applicable.
+4. Open **Manage Units**, choose **Edit** for a unit, and assign the Resident as an owner or tenant. Set the primary payer where applicable.
 5. Sign in as **Collector** and configure the **SOA Template**.
 6. Import at least five consecutive months of valid historical readings through **Analytics Import** if forecasts are required immediately.
 7. Create the current billing period under **Monthly Billing**.
