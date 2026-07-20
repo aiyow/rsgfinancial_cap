@@ -4,15 +4,15 @@ RSG Condo is a role-based condominium billing and water-analytics system. It sup
 
 ## Main features
 
-- **Admin:** manage users, units, and resident assignments; review forwarded SOAs; publish SOAs; verify payments; review audit logs and water recommendations.
-- **Collector:** create monthly billing periods; upload meter readings; generate and forward SOAs; manage the SOA template; import historical analytics data; review forecasts and verified payments.
-- **Resident:** view published SOAs for assigned units; upload payment receipts; review payment history; see staff-shared high-water-use notices.
-- **Analytics:** five-month linear-regression forecasts, forecast accuracy, historical versus projected charts, reading-quality checks, and explainable recommended actions.
+- **Admin:** manage users, units, and resident assignments; review and publish SOAs; verify payments; review audit logs; manage recommendations; and retry or resend SOA emails.
+- **Collector:** create monthly billing periods; upload meter readings; generate and forward SOAs; manage the SOA template; import historical analytics data; review forecasts, payments, and recommendations.
+- **Resident:** view published SOAs for assigned units; upload payment receipts; review payment history; and view their unit's automatically generated prescriptive insights.
+- **Analytics:** five-month linear-regression forecasts, forecast accuracy, historical versus projected charts, reading-quality checks, and explainable recommendations for each unit.
 
 ## Technology
 
 - Frontend: React 19, Vite, Tailwind CSS, Recharts, and Lucide icons
-- Backend: Node.js, Express, PostgreSQL, Zod, ExcelJS, Tesseract.js, Sharp, and Cloudinary
+- Backend: Node.js, Express, PostgreSQL, Zod, ExcelJS, Tesseract.js, Sharp, Cloudinary, and Nodemailer
 - Authentication: JSON Web Tokens (JWT) and bcrypt password hashing
 
 ## Prerequisites
@@ -84,6 +84,15 @@ SEED_COLLECTOR_PASSWORD=choose_a_strong_collector_password
 
 CLIENT_URL=http://localhost:5173
 
+# SOA email notifications. Use port 465 with SMTP_SECURE=true, or port 587
+# with SMTP_SECURE=false when your provider uses STARTTLS.
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your_smtp_username
+SMTP_PASSWORD=your_smtp_password
+SMTP_FROM="RSG Condo Billing <billing@example.com>"
+
 # Private receipt storage: backend only. Never use VITE_ names for these values.
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
@@ -133,7 +142,7 @@ Initialize the schema and all numbered migrations:
 npm run db:init
 ```
 
-This command creates the base schema and applies migrations `001` through `020` in order. The initializer does not keep a migration-history table, so use it for a new database (or a disposable local development database) and make a backup before running it against an existing database.
+This command creates the base schema and applies migrations `001` through `021` in order. The initializer does not keep a migration-history table, so use it for a new database (or a disposable local development database) and make a backup before running it against an existing database.
 
 Create the initial Admin and Collector accounts using the values from `backend/.env`:
 
@@ -203,6 +212,7 @@ After setup, verify each layer before using the system:
 2. **Frontend:** open [http://localhost:5173](http://localhost:5173). If it says it cannot reach the backend, confirm `VITE_API_URL`, the backend terminal, and port `5000`.
 3. **Authentication:** sign in with the seeded Admin account. If sign-in fails, check `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, then run `npm run seed` again.
 4. **Cloudinary receipts:** while signed in as a Resident, open an unpaid SOA and upload a JPG or PNG receipt. Confirm it appears in Admin **Payments**, then open the receipt from Admin. The image is streamed through the authenticated API; its Cloudinary URL should never appear in the frontend configuration.
+5. **SOA email:** after SMTP is configured, publish a test SOA for a resident with an email address. The Admin SOA screen shows sent and failed delivery counts and can retry or resend emails.
 
 Useful development commands:
 
@@ -225,6 +235,7 @@ npm run build
 | `Cloudinary receipt storage is not configured` | Add all four `CLOUDINARY_*` variables to `backend/.env`, then restart the backend. Do not add them to the frontend. |
 | Browser shows `Cannot reach the backend` | Start the backend with `npm run dev` and make sure `VITE_API_URL` points to it. Restart Vite after changing the frontend `.env`. |
 | A new backend environment cannot read receipt images | Use the same Cloudinary cloud and receipt folder that hold the receipt assets, and configure valid API credentials. |
+| SOA emails remain pending or fail | Confirm every `SMTP_*` variable is valid, the sender is permitted by the provider, and `SMTP_SECURE` matches the selected port. |
 | Database initialization fails on an existing database | Restore or back up first. The current initializer re-executes numbered migrations, so it is intended for a fresh or disposable development database. |
 
 ## Recommended first-time setup inside the system
@@ -263,7 +274,7 @@ The server recalculates consumption and charges. Spreadsheet formulas are not tr
 
 1. Open **Forwarded SOAs**.
 2. Open the forwarded billing batch and review its statements.
-3. Publish the selected SOAs to Residents.
+3. Publish the selected SOAs to Residents. When SMTP is configured, the system records and sends SOA email deliveries to the saved resident recipients.
 4. Use **Audit Logs** to review important billing and account changes.
 
 ### Resident
@@ -281,6 +292,24 @@ The server recalculates consumption and charges. Spreadsheet formulas are not tr
 4. Approved payments are applied to open SOAs. Any remaining verified amount becomes unit credit for later bills.
 
 Collectors can view approved payments but cannot approve or reject them.
+
+### Payment records and allocation
+
+The payment ledger uses two tables with separate purposes:
+
+- `payment_submissions` stores the resident or staff payment record, receipt, verification state, and the resident's original intended bill in `target_unit_bill_id`. Advance payments have no target bill.
+- `payment_applications` stores the approved accounting allocation. One approved submission can be split across more than one open SOA, and this table is the source of truth for bill balances.
+
+The intended target is retained for history even if the approved payment is allocated differently. The former `payment_submission_targets` table was removed; API responses continue to use the field name `targetBillId`.
+
+### Billing history and period types
+
+`billing_periods.period_type` distinguishes real billing from imported history:
+
+- `LIVE_BILLING` creates and manages real SOAs.
+- `HISTORICAL_ANALYTICS` supplies forecast history and does not create real SOAs.
+
+Billing activity, including generation, edits, forwarding, publishing, reopening, and deletion, is recorded in `audit_logs`. The former `billing_events` table and recommendation-action history table were removed to keep one canonical audit trail.
 
 ## Predictive and prescriptive water analytics
 
@@ -303,9 +332,17 @@ Prescriptive recommendations include:
 
 - Review a flagged meter reading.
 - Collect additional readings when fewer than five consecutive valid months exist.
-- Check possible high usage when the forecast is at least 30% above the recent five-month average.
+- Identify three consecutive months of rising consumption.
+- Flag possible water use in a unit marked vacant.
+- Remind a resident about a balance due within five days.
+- Check possible high usage when the forecast is at least 15% above the recent positive-consumption baseline.
+- Provide a neutral monitoring insight when there are too few positive readings for a reliable percentage comparison.
 
-Only Admin and Collector can act on recommendations. Residents see a high-usage notice only after staff shares it.
+The system keeps the recommendation's current state in `prescriptive_recommendations`: `OPEN`, `VIEWED`, or `SUPERSEDED`. It records resident viewing and staff deletion in `audit_logs`; it does not use a separate recommendation-action table.
+
+When the Collector generates a live billing period, forecasts and recommendations are regenerated in the same workflow. Resident-visible insights (`CHECK_HIGH_USAGE`, `RISING_CONSUMPTION`, `PAYMENT_REMINDER`, `MONITOR_HIGH_USAGE`, and `MONITOR_USAGE`) appear in the resident dashboard's **Water consumption analytics** for the selected assigned unit as soon as bills are generated. They do not wait for Admin publication of the SOA. Residents can mark only their own insight as viewed; it stays visible after viewing. Admin and Collector can permanently delete recommendations.
+
+Zero-consumption months remain visible as zero on charts. They are excluded only from percentage-baseline calculations: high-usage percentage alerts require at least two positive recent readings. With fewer than two, the system shows a monitoring insight instead of a misleading percentage alert.
 
 ## Useful commands
 
@@ -317,6 +354,8 @@ npm start         # Start normally
 npm run db:init   # Create schema and apply migrations on a fresh database
 npm run seed      # Create configured Admin and Collector accounts
 npm test          # Run backend tests
+npm run data:import-history # Import historical analytics workbook data
+npm run receipts:migrate-cloudinary # Move local receipt files to Cloudinary
 ```
 
 Frontend commands, run from `frontend`:
