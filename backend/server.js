@@ -21,23 +21,7 @@ dotenv.config({ path: new URL("./.env", import.meta.url) });
 
 const app = express();
 
-const allowedOrigins = (process.env.CLIENT_URL || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-
-      callback(new Error("Origin is not allowed by CORS"));
-    },
-  })
-);
+app.use(cors());
 app.use(express.json());
 
 // Testing backend if running try entering http://localhost:5000/ in the browser or Postman
