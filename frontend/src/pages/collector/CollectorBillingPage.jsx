@@ -7,6 +7,7 @@ import { apiRequest } from '../../services/api'
 const blankPeriod = { periodStart: '', periodEnd: '', dueDate: '', waterRatePerCubicM: 23, associationDuesRatePerSqm: 134.07 }
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal'
 const primaryClass = 'rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300'
+const unitNumberCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
 function Field({ label, children }) {
   return <label className="block text-xs font-bold text-slate-600">{label}{children}</label>
@@ -30,6 +31,7 @@ export default function CollectorBillingPage() {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
   const selectedPeriod = useMemo(() => periods.find((period) => String(period.id) === String(selectedId)), [periods, selectedId])
+  const sortedPreviewRows = useMemo(() => [...(preview?.rows || [])].sort((left, right) => unitNumberCollator.compare(String(left.unitNumber), String(right.unitNumber))), [preview])
 
   const loadPeriods = useCallback(async () => {
     const data = await apiRequest('/api/billing-periods', { token })
@@ -171,12 +173,12 @@ export default function CollectorBillingPage() {
         {readingCount > 0 && <p className="mt-3 text-sm font-bold text-emerald-700">{readingCount} readings are currently saved for this period.</p>}
         {preview && (
           <div className="mt-5">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 text-sm"><p><strong>{preview.summary.rowCount}</strong> spreadsheet rows | <strong>{preview.summary.unitCount}</strong> database units | <strong>{preview.summary.flaggedCount || 0}</strong> flagged | <strong>{preview.summary.warningCount}</strong> warnings</p><button type="button" disabled={!preview.valid || busy} onClick={importReadings} className={primaryClass}>Confirm import</button></div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600"><span><strong className="text-slate-900">{preview.summary.rowCount}</strong> spreadsheet rows</span><span><strong className="text-slate-900">{preview.summary.unitCount}</strong> database units</span><span className="text-amber-700"><strong>{preview.summary.flaggedCount || 0}</strong> flagged</span><span><strong>{preview.summary.warningCount}</strong> warnings</span><span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">Sorted by unit number</span></div><button type="button" disabled={!preview.valid || busy} onClick={importReadings} className={primaryClass}>Confirm import</button></div>
             {preview.errors.map((error) => <p key={error} className="mb-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>)}
             {(preview.warnings || []).map((warning) => <p key={warning} className="mb-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{warning}</p>)}
-            <div className="max-h-[520px] overflow-auto rounded-xl border border-slate-200">
-              <table className="w-full min-w-[850px] text-left text-sm"><thead className="sticky top-0 bg-white text-xs uppercase text-slate-400"><tr><th className="p-3">Row</th><th>Unit</th><th>Previous</th><th>Present</th><th>Consumption</th><th>Water charge</th><th>Validation</th></tr></thead><tbody className="divide-y divide-slate-100">
-                {preview.rows.map((row) => <tr key={row.rowNumber} className={row.errors.length ? 'bg-red-50' : row.validationStatus === 'FLAGGED' ? 'bg-amber-50' : ''}><td className="p-3">{row.rowNumber}</td><td className="font-bold">{row.unitNumber}</td><td>{row.previousReading}</td><td>{row.currentReading}</td><td>{row.consumption?.toFixed(3)}</td><td>{money(row.waterCharge)}</td><td>{row.errors.length ? <span className="text-red-700">{row.errors.join(' ')}</span> : row.warnings.length ? <span className="text-amber-700">{row.warnings.join(' ')}</span> : <span className="text-emerald-700">Valid</span>}</td></tr>)}
+            <div className="max-h-[520px] overflow-auto rounded-xl border border-slate-200 bg-white">
+              <table className="w-full min-w-[1050px] text-left text-sm"><thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm"><tr><th className="px-4 py-3 whitespace-nowrap">Source row</th><th className="px-4 py-3 whitespace-nowrap">Unit no.</th><th className="px-4 py-3 whitespace-nowrap">Previous</th><th className="px-4 py-3 whitespace-nowrap">Present</th><th className="px-4 py-3 whitespace-nowrap">Consumption</th><th className="px-4 py-3 whitespace-nowrap">Water charge</th><th className="min-w-[360px] px-4 py-3">Validation</th></tr></thead><tbody className="divide-y divide-slate-100">
+                {sortedPreviewRows.map((row) => <tr key={row.rowNumber} className={row.errors.length ? 'bg-red-50' : row.validationStatus === 'FLAGGED' ? 'bg-amber-50' : 'hover:bg-slate-50'}><td className="px-4 py-3 text-slate-500">{row.rowNumber}</td><td className="px-4 py-3 font-black tabular-nums text-slate-950">{row.unitNumber}</td><td className="px-4 py-3 tabular-nums">{row.previousReading}</td><td className="px-4 py-3 tabular-nums">{row.currentReading}</td><td className="px-4 py-3 tabular-nums">{row.consumption?.toFixed(3)}</td><td className="px-4 py-3 font-semibold tabular-nums">{money(row.waterCharge)}</td><td className="min-w-[360px] px-4 py-3 leading-5">{row.errors.length ? <span className="font-medium text-red-700">{row.errors.join(' ')}</span> : row.warnings.length ? <span className="font-medium text-amber-700">{row.warnings.join(' ')}</span> : <span className="font-medium text-emerald-700">Valid</span>}</td></tr>)}
               </tbody></table>
             </div>
           </div>

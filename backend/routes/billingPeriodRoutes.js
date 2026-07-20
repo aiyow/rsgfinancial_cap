@@ -11,6 +11,7 @@ import { applyUnitCreditToOpenBills, ensurePaymentLedgerSchema } from "../servic
 import { ensureSoaTemplate } from "../services/soaTemplate.js";
 import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
 import { writeAuditLog } from "../services/auditLog.js";
+import { deliverSoaEmailNotifications } from "../services/soaEmailDeliveries.js";
 
 const router = express.Router();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");
@@ -469,14 +470,33 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
       if (valid.rowCount !== unique.length) { await client.query("ROLLBACK"); return res.status(400).json({ message: "One or more selected SOAs do not belong to this batch." }); }
       result = await client.query(
         `UPDATE unit_bills SET published_at = COALESCE(published_at, NOW()), published_by = COALESCE(published_by, $3)
-         WHERE billing_period_id = $1 AND id = ANY($2::bigint[]) AND published_at IS NULL RETURNING id`,
+         WHERE billing_period_id = $1 AND id = ANY($2::bigint[]) AND published_at IS NULL
+         RETURNING id, unit_id AS "unitId"`,
         [req.resourceId, unique, req.user.id],
       );
     } else {
       result = await client.query(
         `UPDATE unit_bills SET published_at = NOW(), published_by = $2
-         WHERE billing_period_id = $1 AND published_at IS NULL RETURNING id`,
+         WHERE billing_period_id = $1 AND published_at IS NULL RETURNING id, unit_id AS "unitId"`,
         [req.resourceId, req.user.id],
+      );
+    }
+    const publishedBillIds = result.rows.map((row) => Number(row.id));
+    let deliveries = { rows: [] };
+    if (publishedBillIds.length) {
+      deliveries = await client.query(
+        `INSERT INTO soa_email_deliveries (unit_bill_id, recipient_user_id, recipient_name, recipient_email)
+         SELECT DISTINCT ON (b.id, LOWER(usr.email))
+           b.id, usr.id, usr.full_name, LOWER(usr.email)
+         FROM unit_bills b
+         JOIN unit_assignments assignment ON assignment.unit_id = b.unit_id AND assignment.end_date IS NULL
+         JOIN users usr ON usr.id = assignment.user_id AND usr.is_active = TRUE
+         WHERE b.id = ANY($1::bigint[]) AND assignment.relationship_type IN ('OWNER', 'TENANT')
+           AND NULLIF(TRIM(usr.email), '') IS NOT NULL
+         ORDER BY b.id, LOWER(usr.email), assignment.id
+         ON CONFLICT (unit_bill_id, recipient_email) DO NOTHING
+         RETURNING id, unit_bill_id AS "billId"`,
+        [publishedBillIds],
       );
     }
     await writeAuditLog({
@@ -488,11 +508,99 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
       newValues: { billIds: result.rows.map((row) => row.id), mode: selected ? "SELECTED" : "ALL" },
     });
     await client.query("COMMIT");
-    return res.json({ message: result.rowCount ? `Published ${result.rowCount} SOA(s) to Resident dashboards.` : "All selected SOAs were already published.", publishedCount: result.rowCount });
+
+    const deliveryBillIds = new Set(deliveries.rows.map((row) => Number(row.billId)));
+    let emailSummary = { sent: 0, failed: 0, skipped: publishedBillIds.length - deliveryBillIds.size };
+    try {
+      const deliveryResult = await deliverSoaEmailNotifications(deliveries.rows.map((row) => row.id));
+      emailSummary = { ...emailSummary, ...deliveryResult };
+    } catch (error) {
+      console.error("SOA email delivery processing failed:", error);
+      emailSummary.failed = deliveries.rowCount;
+    }
+    return res.json({
+      message: result.rowCount ? `Published ${result.rowCount} SOA(s) to Resident dashboards.` : "All selected SOAs were already published.",
+      publishedCount: result.rowCount,
+      emailSummary,
+    });
   } catch (error) {
     if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
   } finally { client?.release(); }
+});
+
+router.post("/:id/bills/:billId/email-deliveries/retry", allowRoles("ADMIN"), requireId, async (req, res, next) => {
+  const billId = Number(req.params.billId);
+  if (!Number.isSafeInteger(billId) || billId <= 0) return res.status(400).json({ message: "A valid bill ID is required." });
+
+  try {
+    const bill = await pool.query(
+      `SELECT b.id
+       FROM unit_bills b JOIN billing_periods p ON p.id = b.billing_period_id
+       WHERE b.id = $1 AND b.billing_period_id = $2
+         AND b.published_at IS NOT NULL AND p.status IN ('FORWARDED', 'CLOSED')`,
+      [billId, req.resourceId],
+    );
+    if (!bill.rows[0]) return res.status(404).json({ message: "Published SOA not found in this billing batch." });
+
+    const retries = await pool.query(
+      `UPDATE soa_email_deliveries SET status = 'PENDING'
+       WHERE unit_bill_id = $1 AND status = 'FAILED'
+       RETURNING id`,
+      [billId],
+    );
+    if (!retries.rowCount) return res.json({ message: "There are no failed SOA emails to retry.", emailSummary: { sent: 0, failed: 0, skipped: 0 } });
+
+    const deliveryResult = await deliverSoaEmailNotifications(retries.rows.map((row) => row.id));
+    await writeAuditLog({
+      actorUserId: req.user.id,
+      entityName: "SOA_EMAIL_DELIVERY",
+      entityId: billId,
+      action: "RETRIED",
+      newValues: deliveryResult,
+    });
+    return res.json({
+      message: `Retried ${retries.rowCount} failed SOA email(s).`,
+      emailSummary: { ...deliveryResult, skipped: 0 },
+    });
+  } catch (error) { return next(error); }
+});
+
+router.post("/:id/bills/:billId/email-deliveries/resend", allowRoles("ADMIN"), requireId, async (req, res, next) => {
+  const billId = Number(req.params.billId);
+  if (!Number.isSafeInteger(billId) || billId <= 0) return res.status(400).json({ message: "A valid bill ID is required." });
+
+  try {
+    const bill = await pool.query(
+      `SELECT b.id
+       FROM unit_bills b JOIN billing_periods p ON p.id = b.billing_period_id
+       WHERE b.id = $1 AND b.billing_period_id = $2
+         AND b.published_at IS NOT NULL AND p.status IN ('FORWARDED', 'CLOSED')`,
+      [billId, req.resourceId],
+    );
+    if (!bill.rows[0]) return res.status(404).json({ message: "Published SOA not found in this billing batch." });
+
+    const resend = await pool.query(
+      `UPDATE soa_email_deliveries SET status = 'PENDING'
+       WHERE unit_bill_id = $1 AND status IN ('SENT', 'FAILED')
+       RETURNING id`,
+      [billId],
+    );
+    if (!resend.rowCount) return res.status(409).json({ message: "This SOA has no saved recipient email to resend." });
+
+    const deliveryResult = await deliverSoaEmailNotifications(resend.rows.map((row) => row.id));
+    await writeAuditLog({
+      actorUserId: req.user.id,
+      entityName: "SOA_EMAIL_DELIVERY",
+      entityId: billId,
+      action: "RESENT",
+      newValues: deliveryResult,
+    });
+    return res.json({
+      message: `Resent the SOA to ${resend.rowCount} saved recipient${resend.rowCount === 1 ? '' : 's'}.`,
+      emailSummary: { ...deliveryResult, skipped: 0 },
+    });
+  } catch (error) { return next(error); }
 });
 
 router.delete("/:id", allowRoles("COLLECTOR"), requireId, async (req, res, next) => {

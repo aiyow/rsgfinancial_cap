@@ -3,9 +3,9 @@ BEGIN;
 ALTER TABLE prescriptive_recommendations
 DROP CONSTRAINT IF EXISTS prescriptive_recommendations_type_check;
 
--- Datprescriptive_recommendationsabases created by the runtime schema helper use PostgreSQL's automatic
+-- Databases created by the runtime schema helper use PostgreSQL's automatic
 -- column-based name, while migration-created databases use the explicit name.
-ALTER TABLE 
+ALTER TABLE prescriptive_recommendations
 DROP CONSTRAINT IF EXISTS prescriptive_recommendations_recommendation_type_check;
 
 ALTER TABLE prescriptive_recommendations

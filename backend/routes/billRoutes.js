@@ -46,6 +46,11 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
   b.payer_name_snapshot AS "payerName", b.payer_email_snapshot AS "payerEmail",
   b.generation_warning AS "generationWarning",
   b.published_at AS "publishedAt", b.published_by AS "publishedBy",
+  (SELECT jsonb_build_object(
+    'sent', COUNT(*) FILTER (WHERE delivery.status = 'SENT')::int,
+    'failed', COUNT(*) FILTER (WHERE delivery.status = 'FAILED')::int,
+    'pending', COUNT(*) FILTER (WHERE delivery.status = 'PENDING')::int
+   ) FROM soa_email_deliveries delivery WHERE delivery.unit_bill_id = b.id) AS "emailDelivery",
   COALESCE(b.soa_template_snapshot, (SELECT template_data FROM soa_templates WHERE id = 1)) AS "soaTemplate",
   ${totalChargeSql} AS "totalAmount", ${approvedPaymentSql} AS "approvedAmount",
   ${unitAdvanceSql} AS "advanceBalance",
