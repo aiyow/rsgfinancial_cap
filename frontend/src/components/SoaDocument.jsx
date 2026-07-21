@@ -46,7 +46,8 @@ export default function SoaDocument({ bill }) {
   const approvedAmount = Number(bill.approvedAmount || 0)
 
   return (
-    <article className="print-document soa-sheet overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
+    <div className="soa-document-scroll" tabIndex="0" aria-label="Scrollable Statement of Account">
+      <article className="print-document soa-sheet overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
       {bill.generationWarning && <p className="print-hidden m-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Warning: {bill.generationWarning}</p>}
 
       <div className="grid grid-cols-[1fr_1fr] border-b border-slate-500">
@@ -168,6 +169,7 @@ export default function SoaDocument({ bill }) {
         {template.noticeLine2 && <p className="py-2">{template.noticeLine2}</p>}
       </div>
       <p className="bg-green-200 py-2 text-center text-xs font-black">{template.footerText}</p>
-    </article>
+      </article>
+    </div>
   )
 }

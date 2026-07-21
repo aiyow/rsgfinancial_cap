@@ -61,6 +61,20 @@ button { cursor: pointer; }
   font-size: 12px;
 }
 
+/* Statements are fixed-format documents. On narrow screens, preserve their
+   readable layout and let the viewer swipe horizontally instead of shrinking
+   every column into an unreadable size. */
+.soa-document-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.soa-document-scroll .soa-sheet {
+  min-width: 820px;
+}
+
 .soa-table {
   width: 100%;
   border-collapse: collapse;
@@ -106,7 +120,9 @@ button { cursor: pointer; }
   .soa-sheet {
     font-size: 10px;
     page-break-inside: avoid;
+    min-width: 0 !important;
   }
+  .soa-document-scroll { overflow: visible; }
   .soa-table th,
   .soa-table td {
     padding: 4px;
