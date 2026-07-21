@@ -3,7 +3,7 @@ import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId } from "../middleware/validate.js";
 import { writeAuditLog } from "../services/auditLog.js";
-import { ensurePrescriptiveAnalyticsSchema, regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
+import { ensurePrescriptiveAnalyticsSchema } from "../services/prescriptiveAnalytics.js";
 
 const router = express.Router();
 const statuses = new Set(["ACTIVE", "ALL", "OPEN", "VIEWED", "SUPERSEDED"]);
@@ -26,7 +26,6 @@ router.use(requireAuth);
 
 router.get("/resident", allowRoles("RESIDENT"), async (req, res, next) => {
   try {
-    await regeneratePrescriptiveRecommendations(pool);
     const result = await pool.query(
       `${recommendationSelect}
        JOIN unit_assignments a ON a.unit_id = r.unit_id
@@ -91,7 +90,6 @@ router.patch("/:id/view", allowRoles("RESIDENT"), requireId, async (req, res, ne
 
 router.get("/", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
   try {
-    await regeneratePrescriptiveRecommendations(pool);
     const requestedStatus = String(req.query.status || "ACTIVE").trim().toUpperCase();
     const requestedPriority = String(req.query.priority || "ALL").trim().toUpperCase();
     if (!statuses.has(requestedStatus) || !priorities.has(requestedPriority)) {
