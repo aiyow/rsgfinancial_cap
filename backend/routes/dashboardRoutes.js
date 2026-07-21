@@ -2,7 +2,6 @@ import express from "express";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
-import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
 
 const router = express.Router();
 
@@ -11,7 +10,6 @@ router.use(requireAuth, allowRoles("ADMIN", "COLLECTOR"));
 router.get("/overview", async (req, res, next) => {
   try {
     await ensurePaymentLedgerSchema(pool);
-    await regeneratePrescriptiveRecommendations(pool);
     const [summaryResult, trendResult, statusResult] = await Promise.all([
       pool.query(
         `WITH latest_period AS (
