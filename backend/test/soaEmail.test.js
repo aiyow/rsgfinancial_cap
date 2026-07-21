@@ -42,6 +42,25 @@ test("SOA email service uses the configured generic SMTP transport", async () =>
   assert.equal(calls.mail[0].to, "ava@example.com");
 });
 
+test("SOA email service uses Resend when its API key is configured", async () => {
+  const calls = { apiKeys: [], messages: [] };
+  const service = createSoaEmailService({
+    environment: {
+      RESEND_API_KEY: "re_test_key", RESEND_FROM: "Condo <billing@example.com>",
+      CLIENT_URL: "https://condo.example",
+    },
+    createResend(apiKey) {
+      calls.apiKeys.push(apiKey);
+      return { emails: { async send(message) { calls.messages.push(message); return { data: { id: "email_123" }, error: null }; } } };
+    },
+  });
+
+  await service.sendSoaNotification(delivery);
+  assert.deepEqual(calls.apiKeys, ["re_test_key"]);
+  assert.equal(calls.messages[0].from, "Condo <billing@example.com>");
+  assert.equal(calls.messages[0].to, "ava@example.com");
+});
+
 test("SOA email service reports missing SMTP configuration", async () => {
   const service = createSoaEmailService({ environment: {} });
   await assert.rejects(() => service.sendSoaNotification(delivery), { code: "EMAIL_NOT_CONFIGURED" });

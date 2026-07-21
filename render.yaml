@@ -22,17 +22,9 @@ services:
         sync: false
       - key: CLIENT_URL
         sync: false
-      - key: SMTP_HOST
+      - key: RESEND_API_KEY
         sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_SECURE
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
-      - key: SMTP_FROM
+      - key: RESEND_FROM
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
