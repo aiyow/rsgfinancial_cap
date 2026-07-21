@@ -148,7 +148,7 @@ export default function AdminAuditLogsPage() {
                     <p className="truncate text-sm text-slate-700">
                       <span className="font-bold text-slate-950">{log.actorName}</span>
                       <span className="mx-1.5">{describeLog(log)}.</span>
-                      <span className="text-xs text-slate-500">{log.actorRole.toLowerCase()}</span>
+                      <span className="text-xs text-slate-500">{log.actorRole ? log.actorRole.toLowerCase() : 'deleted account'}</span>
                     </p>
                   </div>
                 </div>
