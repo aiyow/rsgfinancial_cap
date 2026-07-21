@@ -7,14 +7,12 @@ import { requireAuth } from "../middleware/authMiddleware.js";
 import { validateBody } from "../middleware/validate.js";
 
 const router = express.Router();
-const roleSchema = z.enum(["ADMIN", "COLLECTOR", "RESIDENT"]);
 const passwordSchema = z.string().min(8).max(72);
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(1).max(150),
   email: z.string().trim().toLowerCase().email().max(255),
   password: passwordSchema,
-  role: roleSchema,
 }).strict();
 
 const loginSchema = z.object({
@@ -31,20 +29,19 @@ const userColumns = `
   created_at AS "createdAt",
   updated_at AS "updatedAt"`;
 
-// Development helper: public registration is intentionally enabled for all roles.
 router.post("/register", validateBody(registerSchema), async (req, res, next) => {
   try {
-    const { fullName, email, password, role } = req.validatedBody;
+    const { fullName, email, password } = req.validatedBody;
     const passwordHash = await bcrypt.hash(password, 12);
     const result = await pool.query(
       `INSERT INTO users (full_name, email, password_hash, role)
        VALUES ($1, $2, $3, $4)
        RETURNING ${userColumns}`,
-      [fullName, email, passwordHash, role]
+      [fullName, email, passwordHash, "RESIDENT"]
     );
 
     return res.status(201).json({
-      message: "Test account created successfully.",
+      message: "Account created successfully.",
       user: result.rows[0],
     });
   } catch (error) {

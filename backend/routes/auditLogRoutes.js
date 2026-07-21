@@ -35,11 +35,11 @@ router.get("/", async (req, res, next) => {
           a.remarks,
           a.old_values AS "oldValues",
           a.new_values AS "newValues",
-          usr.id AS "actorUserId",
-          usr.full_name AS "actorName",
+          a.actor_user_id AS "actorUserId",
+          COALESCE(usr.full_name, 'Deleted user') AS "actorName",
           usr.role AS "actorRole"
         FROM audit_logs a
-        JOIN users usr ON usr.id = a.actor_user_id
+        LEFT JOIN users usr ON usr.id = a.actor_user_id
         ${auditWhere}
       ORDER BY "createdAt" DESC
       LIMIT $${params.length}`,
