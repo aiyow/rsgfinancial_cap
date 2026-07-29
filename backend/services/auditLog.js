@@ -16,8 +16,13 @@ export async function writeAuditLog({
 }) {
   await dbClient(client).query(
     `INSERT INTO audit_logs
-      (actor_user_id, entity_name, entity_id, action, old_values, new_values, remarks)
-     VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)`,
+      (actor_user_id, actor_name_snapshot, actor_role_snapshot, entity_name, entity_id, action, old_values, new_values, remarks)
+     VALUES (
+       $1,
+       (SELECT full_name FROM users WHERE id = $1),
+       (SELECT role FROM users WHERE id = $1),
+       $2, $3, $4, $5::jsonb, $6::jsonb, $7
+     )`,
     [
       actorUserId,
       entityName,

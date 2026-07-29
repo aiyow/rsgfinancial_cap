@@ -44,6 +44,7 @@ export default function SoaDocument({ bill }) {
   const remainingBalance = Number(bill.remainingBalance ?? bill.totalAmount ?? 0)
   const advanceBalance = Number(bill.advanceBalance || 0)
   const approvedAmount = Number(bill.approvedAmount || 0)
+  const latePenaltyAmount = Number(bill.latePenaltyAmount || 0)
 
   return (
     <article className="print-document soa-sheet overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm">
@@ -118,7 +119,7 @@ export default function SoaDocument({ bill }) {
             <td></td>
             <td></td>
             <td className="text-right">{bill.currentReading ?? ''}</td>
-            <td></td>
+            <CurrencyCell value={latePenaltyAmount} />
             <CurrencyCell value={amountOf(water)} />
             <CurrencyCell value={remainingBalance} />
           </tr>

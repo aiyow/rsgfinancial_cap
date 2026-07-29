@@ -113,6 +113,7 @@ export default function ResidentBillPage() {
         <>
           <div className="grid gap-4 md:grid-cols-4 print-hidden">
             <SummaryCard label="Total amount" value={money(bill.totalAmount)} />
+            {Number(bill.latePenaltyAmount || 0) > 0 && <SummaryCard label={`Late penalty (${Number(bill.latePenaltyPercent || 0).toFixed(2)}%)`} value={money(bill.latePenaltyAmount)} />}
             <SummaryCard label="Approved payments" value={money(bill.approvedAmount)} />
             <SummaryCard label="Remaining balance" value={money(bill.remainingBalance)} />
             <SummaryCard label="Advance balance" value={money(bill.advanceBalance)} />

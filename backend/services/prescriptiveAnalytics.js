@@ -1,4 +1,5 @@
 import { selectConsecutiveReadings, WINDOW_SIZE } from './predictiveAnalytics.js';
+import { billAppliedSql, billTotalSql } from './paymentLedger.js';
 
 const ACTIVE_STATUSES = ['OPEN', 'VIEWED'];
 export const HIGH_USAGE_THRESHOLD = 0.15;
@@ -268,11 +269,9 @@ export async function regeneratePrescriptiveRecommendations(client, options = {}
     ),
     client.query(
       `SELECT b.unit_id AS "unitId", b.due_date_snapshot AS "dueDate",
-        GREATEST(COALESCE(SUM(c.quantity * c.rate_applied), 0) - COALESCE((
-          SELECT SUM(pa.amount_applied) FROM payment_applications pa WHERE pa.unit_bill_id = b.id
-        ), 0), 0) AS "remainingBalance"
-       FROM unit_bills b LEFT JOIN bill_charges c ON c.unit_bill_id = b.id
-       WHERE b.billing_period_id = $1 GROUP BY b.id`, [period.id],
+        GREATEST(${billTotalSql} - ${billAppliedSql}, 0) AS "remainingBalance"
+       FROM unit_bills b
+       WHERE b.billing_period_id = $1`, [period.id],
     ),
   ]);
   const historyByUnit = new Map();

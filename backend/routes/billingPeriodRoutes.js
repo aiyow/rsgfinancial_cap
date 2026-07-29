@@ -12,6 +12,8 @@ import { ensureSoaTemplate } from "../services/soaTemplate.js";
 import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
 import { writeAuditLog } from "../services/auditLog.js";
 import { deliverSoaEmailNotifications } from "../services/soaEmailDeliveries.js";
+import { validateMeterReading } from "../services/meterReadingValidation.js";
+import { createUserNotifications } from "../services/notifications.js";
 
 const router = express.Router();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");
@@ -21,8 +23,16 @@ const createPeriodSchema = z.object({
   dueDate: dateSchema,
   waterRatePerCubicM: z.coerce.number().min(0),
   associationDuesRatePerSqm: z.coerce.number().min(0),
+  latePenaltyPercent: z.coerce.number().min(0).max(100).default(0),
 }).strict();
-const updatePeriodSchema = createPeriodSchema.partial().refine((body) => Object.keys(body).length > 0, {
+const updatePeriodSchema = z.object({
+  periodStart: dateSchema.optional(),
+  periodEnd: dateSchema.optional(),
+  dueDate: dateSchema.optional(),
+  waterRatePerCubicM: z.coerce.number().min(0).optional(),
+  associationDuesRatePerSqm: z.coerce.number().min(0).optional(),
+  latePenaltyPercent: z.coerce.number().min(0).max(100).optional(),
+}).strict().refine((body) => Object.keys(body).length > 0, {
   message: "At least one field must be provided.",
 });
 const readingSchema = z.object({
@@ -35,6 +45,7 @@ const publishSchema = z.object({ billIds: z.array(z.coerce.number().int().positi
 const periodColumns = `id, period_start AS "periodStart", period_end AS "periodEnd",
   due_date AS "dueDate", water_rate_per_cubic_m AS "waterRatePerCubicM",
   association_dues_rate_per_sqm AS "associationDuesRatePerSqm",
+  late_penalty_percent AS "latePenaltyPercent",
   status, created_by AS "createdBy", forwarded_at AS "forwardedAt",
   forwarded_by AS "forwardedBy", period_type AS "periodType",
   readings_visible_at AS "readingsVisibleAt", created_at AS "createdAt", updated_at AS "updatedAt"`;
@@ -84,15 +95,6 @@ async function getPreviousReadings(client, periodStart) {
   return new Map(result.rows.map((row) => [Number(row.unitId), row]));
 }
 
-function readingQuality(previousReading, currentReading, priorReading) {
-  const notes = [];
-  if (currentReading < previousReading) notes.push("Present reading is lower than the previous reading.");
-  if (priorReading && Math.abs(Number(priorReading.currentReading) - previousReading) > 0.001) {
-    notes.push(`Previous reading does not match the last recorded present reading (${priorReading.currentReading}).`);
-  }
-  return { status: notes.length ? "FLAGGED" : "VALID", notes };
-}
-
 router.use(requireAuth);
 
 router.get("/", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
@@ -110,9 +112,9 @@ router.post("/", allowRoles("COLLECTOR"), validateBody(createPeriodSchema), asyn
     const body = req.validatedBody;
     const result = await pool.query(
       `INSERT INTO billing_periods
-        (period_start, period_end, due_date, water_rate_per_cubic_m, association_dues_rate_per_sqm, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING ${periodColumns}`,
-      [body.periodStart, body.periodEnd, body.dueDate, body.waterRatePerCubicM, body.associationDuesRatePerSqm, req.user.id],
+        (period_start, period_end, due_date, water_rate_per_cubic_m, association_dues_rate_per_sqm, late_penalty_percent, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${periodColumns}`,
+      [body.periodStart, body.periodEnd, body.dueDate, body.waterRatePerCubicM, body.associationDuesRatePerSqm, body.latePenaltyPercent, req.user.id],
     );
     return res.status(201).json({ message: "Billing period created.", period: result.rows[0] });
   } catch (error) { return next(error); }
@@ -126,6 +128,7 @@ router.patch("/:id", allowRoles("COLLECTOR"), requireId, validateBody(updatePeri
       dueDate: "due_date",
       waterRatePerCubicM: "water_rate_per_cubic_m",
       associationDuesRatePerSqm: "association_dues_rate_per_sqm",
+      latePenaltyPercent: "late_penalty_percent",
     };
     const values = [];
     const updates = [];
@@ -186,7 +189,7 @@ router.post("/:id/readings/preview", allowRoles("COLLECTOR"), requireId, upload.
       if (currentReading === null || currentReading < 0) errors.push("Present reading must be a non-negative number.");
       const consumption = previousReading !== null && currentReading !== null ? currentReading - previousReading : null;
       const quality = unit && consumption !== null
-        ? readingQuality(previousReading, currentReading, priorReadings.get(Number(unit.id)))
+        ? validateMeterReading(previousReading, currentReading, priorReadings.get(Number(unit.id)))
         : { status: "VALID", notes: [] };
       warnings.push(...quality.notes);
       const waterCharge = consumption === null ? null : quality.status === "VALID" ? consumption * Number(period.waterRatePerCubicM) : 0;
@@ -257,7 +260,7 @@ router.put("/:id/readings", allowRoles("COLLECTOR"), requireId, validateBody(imp
     const priorReadings = await getPreviousReadings(client, periodResult.rows[0].period_start);
     await client.query("DELETE FROM meter_readings WHERE billing_period_id = $1", [req.resourceId]);
     for (const row of req.validatedBody.readings) {
-      const quality = readingQuality(row.previousReading, row.currentReading, priorReadings.get(Number(row.unitId)));
+      const quality = validateMeterReading(row.previousReading, row.currentReading, priorReadings.get(Number(row.unitId)));
       await client.query(
         `INSERT INTO meter_readings (unit_id, billing_period_id, recorded_by, previous_reading, current_reading, validation_status, validation_notes)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -271,7 +274,7 @@ router.put("/:id/readings", allowRoles("COLLECTOR"), requireId, validateBody(imp
     await regenerateForecastsFromPeriod(client, req.resourceId);
     await regeneratePrescriptiveRecommendations(client);
     await client.query("COMMIT");
-    const flaggedCount = req.validatedBody.readings.filter((row) => readingQuality(
+    const flaggedCount = req.validatedBody.readings.filter((row) => validateMeterReading(
       row.previousReading,
       row.currentReading,
       priorReadings.get(Number(row.unitId)),
@@ -313,12 +316,12 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
       return res.status(409).json({ message: `Set the billable square-meter area for units: ${(counts.missingAreaUnits || []).join(", ")}.`, ...counts });
     }
     await client.query(
-      `INSERT INTO unit_bills
-        (unit_id, billing_period_id, generated_by, soa_generated_at,
-         unit_number_snapshot, payer_name_snapshot, payer_email_snapshot,
-         period_start_snapshot, period_end_snapshot, statement_date, due_date_snapshot,
-         previous_reading_snapshot, current_reading_snapshot, generation_warning,
-         soa_template_snapshot)
+        `INSERT INTO unit_bills
+          (unit_id, billing_period_id, generated_by, soa_generated_at,
+           unit_number_snapshot, payer_name_snapshot, payer_email_snapshot,
+           period_start_snapshot, period_end_snapshot, statement_date, due_date_snapshot,
+           previous_reading_snapshot, current_reading_snapshot, generation_warning,
+           late_penalty_percent_snapshot, soa_template_snapshot)
        SELECT u.id, p.id, $2, NOW(), u.unit_number, payer.full_name, payer.email,
          p.period_start, p.period_end, CURRENT_DATE, p.due_date,
          m.previous_reading, m.current_reading,
@@ -327,6 +330,7 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
            WHEN m.validation_status <> 'VALID' THEN 'Meter reading requires review - water charge set to zero.'
            ELSE NULL
          END,
+         p.late_penalty_percent,
          COALESCE(template.template_data, '{}'::jsonb)
        FROM units u
        JOIN billing_periods p ON p.id = $1
@@ -456,7 +460,7 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
   try {
     client = await pool.connect();
     await client.query("BEGIN");
-    const period = await client.query("SELECT id, status FROM billing_periods WHERE id = $1 FOR UPDATE", [req.resourceId]);
+      const period = await client.query("SELECT id, status FROM billing_periods WHERE id = $1 FOR UPDATE", [req.resourceId]);
     if (!period.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "Billing period not found." }); }
     if (!['FORWARDED', 'CLOSED'].includes(period.rows[0].status)) {
       await client.query("ROLLBACK");
@@ -483,7 +487,7 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
     }
     const publishedBillIds = result.rows.map((row) => Number(row.id));
     let deliveries = { rows: [] };
-    if (publishedBillIds.length) {
+      if (publishedBillIds.length) {
       deliveries = await client.query(
         `INSERT INTO soa_email_deliveries (unit_bill_id, recipient_user_id, recipient_name, recipient_email)
          SELECT DISTINCT ON (b.id, LOWER(usr.email))
@@ -496,9 +500,25 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
          ORDER BY b.id, LOWER(usr.email), assignment.id
          ON CONFLICT (unit_bill_id, recipient_email) DO NOTHING
          RETURNING id, unit_bill_id AS "billId"`,
-        [publishedBillIds],
-      );
-    }
+          [publishedBillIds],
+        );
+        const recipients = await client.query(
+          `SELECT DISTINCT b.id AS "billId", assignment.user_id AS "recipientUserId"
+           FROM unit_bills b
+           JOIN unit_assignments assignment ON assignment.unit_id = b.unit_id AND assignment.end_date IS NULL
+           JOIN users usr ON usr.id = assignment.user_id AND usr.is_active = TRUE
+           WHERE b.id = ANY($1::bigint[]) AND assignment.relationship_type IN ('OWNER', 'TENANT')`,
+          [publishedBillIds],
+        );
+        await createUserNotifications(client, recipients.rows.map((recipient) => ({
+          recipientUserId: recipient.recipientUserId,
+          type: "SOA_PUBLISHED",
+          title: "New Statement of Account",
+          message: "Your new Statement of Account is ready to view and pay.",
+          href: `/resident/bills/${recipient.billId}`,
+          dedupeKey: `soa-published:${recipient.billId}`,
+        })));
+      }
     await writeAuditLog({
       client,
       actorUserId: req.user.id,

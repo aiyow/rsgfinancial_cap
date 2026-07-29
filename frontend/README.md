@@ -1,6 +1,6 @@
-# RSG Condo Frontend
+# RSG Condo Water Billing Frontend
 
-React and Vite frontend for the RSG Condo Management and Billing System.
+React and Vite frontend for the RSG Condo Water Billing & Management System.
 
 For full backend, database, payment, analytics, and deployment guidance, see the [root README](../README.md).
 

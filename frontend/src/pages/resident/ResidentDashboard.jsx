@@ -30,6 +30,20 @@ function paddedDomain(values) {
   return [Math.max(0, Math.floor((min - padding) * 1000) / 1000), Math.ceil((max + padding) * 1000) / 1000]
 }
 
+function latestMeterResetIndex(history) {
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    const reading = history[index]
+    const notes = Array.isArray(reading.validationNotes) ? reading.validationNotes.join(' ') : String(reading.validationNotes || '')
+    if (notes.toLowerCase().includes('meter reset recorded')) return index
+
+    const priorReading = history[index - 1]
+    if (priorReading
+      && Number(reading.previousReading) <= 0.001
+      && Number(priorReading.currentReading) > Number(reading.currentReading) + 0.001) return index
+  }
+  return -1
+}
+
 export default function ResidentDashboard() {
   const { token } = useAuth()
   const [bills, setBills] = useState([])
@@ -37,6 +51,7 @@ export default function ResidentDashboard() {
   const [analyticsUnits, setAnalyticsUnits] = useState([])
   const [recommendations, setRecommendations] = useState([])
   const [selectedUnitId, setSelectedUnitId] = useState('')
+  const [chartRange, setChartRange] = useState('RESET')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -71,7 +86,16 @@ export default function ResidentDashboard() {
     [recommendations, selectedUnit],
   )
   const allInsightsPositive = selectedRecommendations.length > 0 && selectedRecommendations.every(isPositiveInsight)
-  const validHistory = useMemo(() => selectedUnit?.history.filter((reading) => reading.validationStatus === 'VALID') || [], [selectedUnit])
+  const history = useMemo(() => selectedUnit?.history || [], [selectedUnit?.history])
+  const resetIndex = useMemo(() => latestMeterResetIndex(history), [history])
+  const historySinceReset = useMemo(() => (resetIndex >= 0 ? history.slice(resetIndex) : history), [history, resetIndex])
+  const chartHistory = useMemo(() => {
+    const baseHistory = chartRange === 'RESET' ? historySinceReset : history
+    const monthCount = Number(chartRange)
+    return Number.isInteger(monthCount) ? baseHistory.slice(-monthCount) : baseHistory
+  }, [chartRange, history, historySinceReset])
+  const validHistory = useMemo(() => historySinceReset.filter((reading) => reading.validationStatus === 'VALID'), [historySinceReset])
+  const validChartHistory = useMemo(() => chartHistory.filter((reading) => reading.validationStatus === 'VALID'), [chartHistory])
   const latestReading = validHistory.at(-1)
   const recentAverage = validHistory.length
     ? validHistory.slice(-5).reduce((sum, reading) => sum + number(reading.consumption), 0) / Math.min(5, validHistory.length)
@@ -79,7 +103,7 @@ export default function ResidentDashboard() {
   const forecast = selectedUnit?.forecast
 
   const consumptionData = useMemo(() => {
-    const rows = (selectedUnit?.history || []).map((reading) => ({
+    const rows = chartHistory.map((reading) => ({
       label: monthLabel(reading.periodStart),
       actual: reading.validationStatus === 'VALID' ? number(reading.consumption) : null,
       predicted: null,
@@ -94,10 +118,10 @@ export default function ResidentDashboard() {
       })
     }
     return rows
-  }, [forecast, selectedUnit])
+  }, [chartHistory, forecast])
 
   const meterData = useMemo(() => {
-    const rows = validHistory.map((reading) => ({
+    const rows = validChartHistory.map((reading) => ({
       label: monthLabel(reading.periodStart),
       actual: number(reading.currentReading),
       predicted: null,
@@ -112,7 +136,7 @@ export default function ResidentDashboard() {
       })
     }
     return rows
-  }, [forecast, validHistory])
+  }, [forecast, validChartHistory])
   const meterDomain = useMemo(() => paddedDomain(meterData.flatMap((row) => [row.actual, row.predicted])), [meterData])
 
   return (
@@ -148,6 +172,14 @@ export default function ResidentDashboard() {
               <MetricCard label="Recent 5-month average" value={recentAverage === null ? 'Unavailable' : `${recentAverage.toFixed(3)} m³`} />
               <MetricCard label="Next-month estimate" value={forecast?.status === 'READY' ? `${number(forecast.predictedConsumption).toFixed(3)} m³` : 'Not enough valid data'} />
               <MetricCard label="Estimated water charge" value={forecast?.status === 'READY' ? money(forecast.estimatedWaterCharge) : 'Unavailable'} />
+            </div>
+
+            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-bold text-slate-800">Chart history</p>
+                <p className="mt-1 text-xs text-slate-500">{resetIndex >= 0 ? `A meter reset was recorded in ${monthLabel(history[resetIndex].periodStart)}. Old-meter readings are hidden by default.` : 'Choose how many recent months to show.'}</p>
+              </div>
+              <label className="block w-full text-xs font-bold text-slate-600 sm:max-w-52">Show readings<select value={chartRange} onChange={(event) => setChartRange(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-800"><option value="RESET">{resetIndex >= 0 ? 'Since latest meter reset' : 'All available readings'}</option><option value="1">Last 1 month</option><option value="2">Last 2 months</option><option value="3">Last 3 months</option><option value="6">Last 6 months</option><option value="ALL">All readings</option></select></label>
             </div>
 
             {forecast && forecast.status !== 'READY' && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{forecast.reason}</p>}

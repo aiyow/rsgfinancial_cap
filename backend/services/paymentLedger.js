@@ -1,4 +1,6 @@
-const billTotalSql = `COALESCE((SELECT ROUND(SUM(c.quantity * c.rate_applied), 2) FROM bill_charges c WHERE c.unit_bill_id = b.id), 0)`;
+const billBaseTotalSql = `COALESCE((SELECT ROUND(SUM(c.quantity * c.rate_applied), 2) FROM bill_charges c WHERE c.unit_bill_id = b.id), 0)`;
+const billLatePenaltySql = `COALESCE(b.late_penalty_amount, 0)`;
+const billTotalSql = `((${billBaseTotalSql}) + (${billLatePenaltySql}))`;
 const billAppliedSql = `COALESCE((SELECT ROUND(SUM(pa.amount_applied), 2) FROM payment_applications pa WHERE pa.unit_bill_id = b.id), 0)`;
 const paymentAppliedSql = `COALESCE((SELECT ROUND(SUM(pa.amount_applied), 2) FROM payment_applications pa WHERE pa.payment_submission_id = ps.id), 0)`;
 
@@ -8,6 +10,12 @@ export async function ensurePaymentLedgerSchema(client) {
     ADD COLUMN IF NOT EXISTS unit_id BIGINT NULL,
     ADD COLUMN IF NOT EXISTS entry_type VARCHAR(30) NOT NULL DEFAULT 'RECEIPT_UPLOAD',
     ADD COLUMN IF NOT EXISTS payment_method VARCHAR(30) NULL
+  `);
+  await client.query(`
+    ALTER TABLE unit_bills
+    ADD COLUMN IF NOT EXISTS late_penalty_percent_snapshot NUMERIC(5, 2) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS late_penalty_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS late_penalty_applied_at TIMESTAMPTZ NULL
   `);
   await client.query("ALTER TABLE payment_submissions ALTER COLUMN receipt_path DROP NOT NULL");
   await client.query("ALTER TABLE payment_submissions ALTER COLUMN receipt_original_name DROP NOT NULL");
@@ -39,6 +47,36 @@ export async function ensurePaymentLedgerSchema(client) {
 function cents(value) {
   const number = Number(value || 0);
   return Math.round(number * 100);
+}
+
+export function calculateLatePenalty(baseTotal, percentage, isOverdue) {
+  const total = Number(baseTotal || 0)
+  const rate = Number(percentage || 0)
+  if (!isOverdue || !Number.isFinite(total) || !Number.isFinite(rate) || total <= 0 || rate <= 0) return 0
+  return Number((total * rate / 100).toFixed(2))
+}
+
+export async function applyDueLatePenalties(client, billId = null) {
+  const conditions = [
+    "b.due_date_snapshot < CURRENT_DATE",
+    "COALESCE(b.late_penalty_percent_snapshot, 0) > 0",
+    "b.late_penalty_applied_at IS NULL",
+    `${billAppliedSql} < ${billBaseTotalSql}`,
+  ];
+  const values = [];
+  if (billId !== null) {
+    values.push(billId);
+    conditions.push(`b.id = $${values.length}`);
+  }
+  const result = await client.query(
+    `UPDATE unit_bills b
+     SET late_penalty_amount = ROUND((${billBaseTotalSql}) * b.late_penalty_percent_snapshot / 100, 2),
+         late_penalty_applied_at = NOW()
+     WHERE ${conditions.join(' AND ')}
+     RETURNING b.id, b.late_penalty_amount AS "latePenaltyAmount"`,
+    values,
+  );
+  return result.rows;
 }
 
 function moneyFromCents(value) {
@@ -78,6 +116,7 @@ export async function getUnitCreditBalance(client, unitId) {
 }
 
 export async function applyUnitCreditToBill(client, billId, preferredPaymentId = null) {
+  await applyDueLatePenalties(client, billId);
   const billResult = await client.query(
     `SELECT b.id, b.unit_id AS "unitId", ${billTotalSql} AS total, ${billAppliedSql} AS applied
      FROM unit_bills b WHERE b.id = $1`,
@@ -143,4 +182,4 @@ export async function applyUnitCreditToOpenBills(client, unitId, preferredBillId
   return Number(appliedAmount.toFixed(2));
 }
 
-export { billAppliedSql, billTotalSql, paymentAppliedSql };
+export { billAppliedSql, billBaseTotalSql, billLatePenaltySql, billTotalSql, paymentAppliedSql };

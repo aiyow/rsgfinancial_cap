@@ -5,6 +5,7 @@ import path from "node:path";
 import pool from "../config/db.js";
 import { writeAuditLog } from "../services/auditLog.js";
 import { regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.js";
+import { validateMeterReading } from "../services/meterReadingValidation.js";
 import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
 
 const monthNumbers = new Map([
@@ -100,15 +101,12 @@ async function revalidateTimeline(client) {
     const previous = Number(reading.previous);
     const current = Number(reading.current);
     const prior = priorByUnit.get(Number(reading.unitId));
-    const notes = [];
-    if (current < previous) notes.push("Present reading is lower than the previous reading.");
-    if (prior !== undefined && Math.abs(prior - previous) > 0.001) notes.push("Previous reading does not match the last recorded present reading.");
-    const status = notes.length ? "FLAGGED" : "VALID";
+    const quality = validateMeterReading(previous, current, prior);
     await client.query(
       "UPDATE meter_readings SET validation_status = $2, validation_notes = $3 WHERE id = $1",
-      [reading.id, status, notes.join(" ") || null],
+      [reading.id, quality.status, quality.notes.join(" ") || null],
     );
-    if (notes.length) flags.push({ id: reading.id, unitId: reading.unitId, periodStart: reading.periodStart, notes });
+    if (quality.status === "FLAGGED") flags.push({ id: reading.id, unitId: reading.unitId, periodStart: reading.periodStart, notes: quality.notes });
     priorByUnit.set(Number(reading.unitId), current);
   }
   return flags;
@@ -195,7 +193,7 @@ async function run() {
     }
 
     const flags = await revalidateTimeline(client);
-    if (flags.length !== 5) throw new Error(`Expected 5 genuine January-May reading flags, found ${flags.length}.`);
+    if (flags.length !== 4) throw new Error(`Expected 4 genuine January-May reading flags, found ${flags.length}.`);
     await regenerateForecastsFromPeriod(client, firstPeriodId);
     const months = ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05"];
     const existingAudit = await client.query(

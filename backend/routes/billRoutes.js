@@ -3,7 +3,7 @@ import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
-import { billAppliedSql, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
+import { applyDueLatePenalties, billAppliedSql, billLatePenaltySql, billTotalSql, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
 import { defaultSoaTemplate, ensureSoaTemplate, normalizeSoaTemplate } from "../services/soaTemplate.js";
 import { writeAuditLog } from "../services/auditLog.js";
 
@@ -34,7 +34,6 @@ const approvedPaymentSql = billAppliedSql;
 const unitAdvanceSql = `COALESCE((SELECT ROUND(SUM(pay.verified_amount - COALESCE((
   SELECT SUM(app.amount_applied) FROM payment_applications app WHERE app.payment_submission_id = pay.id
 ), 0)), 2) FROM payment_submissions pay WHERE pay.unit_id = b.unit_id AND pay.review_status = 'APPROVED'), 0)`;
-const totalChargeSql = `COALESCE(ROUND(SUM(c.quantity * c.rate_applied), 2), 0)`;
 const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "billingPeriodId",
   b.unit_number_snapshot AS "unitNumber", b.period_start_snapshot AS "periodStart",
   b.period_end_snapshot AS "periodEnd", b.statement_date AS "statementDate",
@@ -45,6 +44,7 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
   b.current_reading_snapshot - b.previous_reading_snapshot AS consumption,
   b.payer_name_snapshot AS "payerName", b.payer_email_snapshot AS "payerEmail",
   b.generation_warning AS "generationWarning",
+  b.late_penalty_percent_snapshot AS "latePenaltyPercent",
   b.published_at AS "publishedAt", b.published_by AS "publishedBy",
   (SELECT jsonb_build_object(
     'sent', COUNT(*) FILTER (WHERE delivery.status = 'SENT')::int,
@@ -52,15 +52,15 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
     'pending', COUNT(*) FILTER (WHERE delivery.status = 'PENDING')::int
    ) FROM soa_email_deliveries delivery WHERE delivery.unit_bill_id = b.id) AS "emailDelivery",
   COALESCE(b.soa_template_snapshot, (SELECT template_data FROM soa_templates WHERE id = 1)) AS "soaTemplate",
-  ${totalChargeSql} AS "totalAmount", ${approvedPaymentSql} AS "approvedAmount",
+  ${billLatePenaltySql} AS "latePenaltyAmount", ${billTotalSql} AS "totalAmount", ${approvedPaymentSql} AS "approvedAmount",
   ${unitAdvanceSql} AS "advanceBalance",
-  GREATEST(${totalChargeSql} - ${approvedPaymentSql}, 0) AS "remainingBalance",
+  GREATEST(${billTotalSql} - ${approvedPaymentSql}, 0) AS "remainingBalance",
   EXISTS (
     SELECT 1
     FROM payment_submissions pending
     WHERE pending.target_unit_bill_id = b.id AND pending.review_status = 'PENDING'
   ) AS "hasPendingPayment",
-  CASE WHEN ${approvedPaymentSql} >= ${totalChargeSql} AND ${totalChargeSql} > 0 THEN 'PAID'
+  CASE WHEN ${approvedPaymentSql} >= ${billTotalSql} AND ${billTotalSql} > 0 THEN 'PAID'
     WHEN ${approvedPaymentSql} > 0 THEN 'PARTIAL'
     WHEN b.due_date_snapshot < CURRENT_DATE THEN 'OVERDUE' ELSE 'UNPAID' END AS "paymentStatus"
   FROM unit_bills b
@@ -69,6 +69,7 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
 const groupBy = "GROUP BY b.id, p.status, b.soa_template_snapshot";
 
 async function readBill(client, id) {
+  await applyDueLatePenalties(client, id);
   const bill = await client.query(`${billSelect} WHERE b.id = $1 ${groupBy}`, [id]);
   if (!bill.rows[0]) return null;
   const charges = await client.query(
@@ -89,6 +90,7 @@ router.get("/", async (req, res, next) => {
   try {
     await ensureSoaTemplate(pool);
     await ensurePaymentLedgerSchema(pool);
+    await applyDueLatePenalties(pool);
     const params = [];
     const conditions = [];
     if (req.query.billingPeriodId !== undefined) {
@@ -116,6 +118,7 @@ router.get("/:id", requireId, async (req, res, next) => {
   try {
     await ensureSoaTemplate(pool);
     await ensurePaymentLedgerSchema(pool);
+    await applyDueLatePenalties(pool, req.resourceId);
     const params = [req.resourceId];
     const conditions = ["b.id = $1"];
     if (req.user.role === "ADMIN" || req.user.role === "RESIDENT") conditions.push("p.status IN ('FORWARDED', 'CLOSED')");

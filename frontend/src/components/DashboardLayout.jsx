@@ -15,7 +15,6 @@ import {
   PanelLeftOpen,
   ScrollText,
   Settings2,
-  ShieldCheck,
   Upload,
   UserRound,
   Users,
@@ -23,6 +22,8 @@ import {
   X,
 } from 'lucide-react'
 import useAuth from '../hooks/useAuth'
+import BrandMark from './BrandMark'
+import NotificationCenter from './NotificationCenter'
 
 const navigationByRole = {
   ADMIN: {
@@ -111,7 +112,7 @@ function NavigationLinks({ sections, collapsed, onNavigate }) {
 }
 
 export default function DashboardLayout({ title, description, children }) {
-  const { user, logout } = useAuth()
+  const { user, logout, token } = useAuth()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('rsg_sidebar_collapsed') === 'true')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
@@ -176,12 +177,10 @@ export default function DashboardLayout({ title, description, children }) {
       }`}>
         <div className={`flex h-14 shrink-0 items-center justify-between border-b border-[var(--border)] px-5 ${collapsed ? 'lg:justify-center lg:px-3' : ''}`}>
           <div className={`flex items-center gap-3 ${collapsed ? 'lg:gap-0' : ''}`}>
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--primary)] text-white shadow-sm">
-              <ShieldCheck size={22} strokeWidth={2.2} aria-hidden="true" />
-            </span>
+            <BrandMark />
             <div className={collapsed ? 'lg:sr-only' : ''}>
               <p className="text-sm font-black tracking-tight text-[var(--ink)]">RSG Condo</p>
-              <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">{user.role}</p>
+              <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">Water Billing</p>
             </div>
           </div>
           <button
@@ -233,7 +232,9 @@ export default function DashboardLayout({ title, description, children }) {
               </div>
             </div>
 
-            <div ref={profileMenuRef} className="relative shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <NotificationCenter token={token} />
+              <div ref={profileMenuRef} className="relative shrink-0">
               <button
                 type="button"
                 aria-expanded={profileOpen}
@@ -272,6 +273,7 @@ export default function DashboardLayout({ title, description, children }) {
                   </div>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </header>

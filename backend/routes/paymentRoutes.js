@@ -14,9 +14,12 @@ import { analyzeReceipt } from "../services/receiptOcr.js";
 import { writeAuditLog } from "../services/auditLog.js";
 import { destroyReceipt, receiptDeliveryUrl, uploadReceipt } from "../services/cloudinaryReceipts.js";
 import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
+import { createUserNotifications } from "../services/notifications.js";
 import {
   applyUnitCreditToOpenBills,
+  applyDueLatePenalties,
   billAppliedSql,
+  billTotalSql,
   ensurePaymentLedgerSchema,
   getUnitCreditBalance,
   manualReference,
@@ -59,7 +62,6 @@ const manualPaymentSchema = z.object({
   message: "Choose an SOA or unit for the payment.",
 });
 
-const totalSql = `COALESCE((SELECT ROUND(SUM(c.quantity * c.rate_applied), 2) FROM bill_charges c WHERE c.unit_bill_id = b.id), 0)`;
 const paymentApplicationSql = `COALESCE((SELECT ROUND(SUM(pa.amount_applied), 2) FROM payment_applications pa WHERE pa.payment_submission_id = ps.id), 0)`;
 const unitAdvanceSql = `COALESCE((SELECT ROUND(SUM(up.verified_amount - COALESCE((SELECT SUM(upa.amount_applied) FROM payment_applications upa WHERE upa.payment_submission_id = up.id), 0)), 2)
   FROM payment_submissions up WHERE up.unit_id = ps.unit_id AND up.review_status = 'APPROVED'), 0)`;
@@ -73,20 +75,21 @@ const paymentSelect = `SELECT ps.id, ps.target_unit_bill_id AS "targetBillId", p
   ps.verified_amount AS "verifiedAmount", ps.verified_reference_no AS "verifiedReferenceNo",
   ps.verified_payment_date AS "verifiedPaymentDate", ps.remarks, ps.submitted_at AS "submittedAt",
   COALESCE(b.unit_number_snapshot, u.unit_number) AS "unitNumber", b.due_date_snapshot AS "dueDate", b.published_at AS "publishedAt",
-  submitter.full_name AS "submittedByName", reviewer.full_name AS "reviewedByName",
-  ${totalSql} AS "billTotal", ${billAppliedSql} AS "approvedTotal",
+  COALESCE(submitter.full_name, 'Deleted user') AS "submittedByName",
+  COALESCE(reviewer.full_name, 'Deleted user') AS "reviewedByName",
+  ${billTotalSql} AS "billTotal", ${billAppliedSql} AS "approvedTotal",
   ${paymentApplicationSql} AS "appliedAmount",
   GREATEST(COALESCE(ps.verified_amount, 0) - ${paymentApplicationSql}, 0) AS "unappliedAmount",
   ${unitAdvanceSql} AS "unitAdvanceBalance",
-  GREATEST(${totalSql} - ${billAppliedSql}, 0) AS "remainingBalance",
+  GREATEST(${billTotalSql} - ${billAppliedSql}, 0) AS "remainingBalance",
   CASE WHEN b.id IS NULL THEN 'ADVANCE'
-    WHEN ${billAppliedSql} >= ${totalSql} AND ${totalSql} > 0 THEN 'PAID'
+    WHEN ${billAppliedSql} >= ${billTotalSql} AND ${billTotalSql} > 0 THEN 'PAID'
     WHEN ${billAppliedSql} > 0 THEN 'PARTIAL'
     WHEN b.due_date_snapshot < CURRENT_DATE THEN 'OVERDUE' ELSE 'UNPAID' END AS "paymentStatus"
   FROM payment_submissions ps
   LEFT JOIN unit_bills b ON b.id = ps.target_unit_bill_id
   LEFT JOIN units u ON u.id = ps.unit_id
-  JOIN users submitter ON submitter.id = ps.submitted_by
+  LEFT JOIN users submitter ON submitter.id = ps.submitted_by
   LEFT JOIN users reviewer ON reviewer.id = ps.reviewed_by`;
 
 function paymentAccess(req, params, conditions) {
@@ -100,7 +103,7 @@ function paymentAccess(req, params, conditions) {
 async function residentBill(id, userId) {
   const result = await pool.query(
     `SELECT b.id, b.unit_id AS "unitId",
-      COALESCE((SELECT ROUND(SUM(c.quantity * c.rate_applied), 2) FROM bill_charges c WHERE c.unit_bill_id = b.id), 0) AS total,
+      ${billTotalSql} AS total,
       ${billAppliedSql} AS approved
      FROM unit_bills b
      WHERE b.id = $1 AND b.published_at IS NOT NULL
@@ -125,6 +128,7 @@ router.use(requireAuth, allowRoles("ADMIN", "COLLECTOR", "RESIDENT"));
 router.use(async (req, res, next) => {
   try {
     await ensurePaymentLedgerSchema(pool);
+    await applyDueLatePenalties(pool);
     return next();
   } catch (error) {
     return next(error);
@@ -248,7 +252,7 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
         return res.status(404).json({ message: "SOA not found." });
       }
       unitId = Number(bill.rows[0].unit_id);
-    } else {
+      } else {
       const unit = await client.query("SELECT id FROM units WHERE id = $1", [unitId]);
       if (!unit.rows[0]) {
         await client.query("ROLLBACK");
@@ -426,9 +430,26 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
         action: "REJECT",
         oldValues: { reviewStatus: "PENDING" },
         newValues: { reviewStatus: "REJECTED", remarks: body.remarks },
-      });
-    }
-    await regeneratePrescriptiveRecommendations(client);
+        });
+      }
+      const submitter = await client.query(
+        "SELECT id FROM users WHERE id = $1 AND role = 'RESIDENT' AND is_active = TRUE",
+        [locked.rows[0].submitted_by],
+      );
+      if (submitter.rows[0]) {
+        const approved = body.status === "APPROVED";
+        await createUserNotifications(client, [{
+          recipientUserId: submitter.rows[0].id,
+          type: approved ? "PAYMENT_APPROVED" : "PAYMENT_REJECTED",
+          title: approved ? "Payment approved" : "Payment proof needs attention",
+          message: approved
+            ? `Your payment of PHP ${Number(body.verifiedAmount).toFixed(2)} has been approved.`
+            : `Your payment proof was rejected: ${body.remarks}`,
+          href: "/resident/payments",
+          dedupeKey: `payment-review:${req.resourceId}`,
+        }]);
+      }
+      await regeneratePrescriptiveRecommendations(client);
     await client.query("COMMIT");
     return res.json({ message: body.status === "APPROVED" ? "Payment approved and applied to the SOA." : "Payment proof rejected." });
   } catch (error) {

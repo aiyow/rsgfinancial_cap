@@ -4,7 +4,7 @@ import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayo
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
-const blankPeriod = { periodStart: '', periodEnd: '', dueDate: '', waterRatePerCubicM: 23, associationDuesRatePerSqm: 134.07 }
+const blankPeriod = { periodStart: '', periodEnd: '', dueDate: '', waterRatePerCubicM: 23, associationDuesRatePerSqm: 134.07, latePenaltyPercent: 0 }
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal'
 const primaryClass = 'rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300'
 const unitNumberCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
@@ -53,6 +53,7 @@ export default function CollectorBillingPage() {
             periodStart: String(requested.periodStart).slice(0, 10), periodEnd: String(requested.periodEnd).slice(0, 10),
             dueDate: String(requested.dueDate).slice(0, 10), waterRatePerCubicM: Number(requested.waterRatePerCubicM),
             associationDuesRatePerSqm: Number(requested.associationDuesRatePerSqm),
+            latePenaltyPercent: Number(requested.latePenaltyPercent || 0),
           })
         }
       })
@@ -80,6 +81,7 @@ export default function CollectorBillingPage() {
       periodStart: String(period.periodStart).slice(0, 10), periodEnd: String(period.periodEnd).slice(0, 10),
       dueDate: String(period.dueDate).slice(0, 10), waterRatePerCubicM: Number(period.waterRatePerCubicM),
       associationDuesRatePerSqm: Number(period.associationDuesRatePerSqm),
+      latePenaltyPercent: Number(period.latePenaltyPercent || 0),
     })
   }
 
@@ -153,14 +155,16 @@ export default function CollectorBillingPage() {
       {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
 
       <Panel title={editingPeriodId ? '1. Edit draft billing period' : '1. Create billing period'} description="The workbook has no dates, so enter the coverage and due date here.">
-        <form onSubmit={savePeriod} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-6">
+        <form onSubmit={savePeriod} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-3 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
           <Field label="Period start"><input required type="date" value={periodForm.periodStart} onChange={(event) => setPeriodForm({ ...periodForm, periodStart: event.target.value })} className={inputClass} /></Field>
           <Field label="Period end"><input required type="date" value={periodForm.periodEnd} onChange={(event) => setPeriodForm({ ...periodForm, periodEnd: event.target.value })} className={inputClass} /></Field>
           <Field label="Due date"><input required type="date" value={periodForm.dueDate} onChange={(event) => setPeriodForm({ ...periodForm, dueDate: event.target.value })} className={inputClass} /></Field>
           <Field label="Water rate / m3"><input required min="0" step="0.01" type="number" value={periodForm.waterRatePerCubicM} onChange={(event) => setPeriodForm({ ...periodForm, waterRatePerCubicM: Number(event.target.value) })} className={inputClass} /></Field>
           <Field label="Association rate / sqm"><input required min="0" step="0.01" type="number" value={periodForm.associationDuesRatePerSqm} onChange={(event) => setPeriodForm({ ...periodForm, associationDuesRatePerSqm: Number(event.target.value) })} className={inputClass} /></Field>
-          <div className="flex self-end gap-2"><button disabled={busy} className={primaryClass}>{editingPeriodId ? 'Save settings' : 'Create draft'}</button>{editingPeriodId && <button type="button" onClick={cancelPeriodEdit} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold">Cancel</button>}</div>
+          <Field label="Late penalty (%)"><input required min="0" max="100" step="0.01" type="number" value={periodForm.latePenaltyPercent} onChange={(event) => setPeriodForm({ ...periodForm, latePenaltyPercent: Number(event.target.value) })} className={inputClass} /></Field>
+          <div className="flex self-end gap-2"><button disabled={busy} className={`${primaryClass} whitespace-nowrap`}>{editingPeriodId ? 'Save settings' : 'Create draft'}</button>{editingPeriodId && <button type="button" onClick={cancelPeriodEdit} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold">Cancel</button>}</div>
         </form>
+        <p className="mt-3 text-xs text-slate-500">The late penalty is applied once to an unpaid SOA after its due date.</p>
       </Panel>
 
       <Panel title="2. Upload and validate readings" description="Required columns: UNIT, PREVIOUS, and PRESENT. Server calculations override spreadsheet formulas.">

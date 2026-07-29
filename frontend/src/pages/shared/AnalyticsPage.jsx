@@ -185,30 +185,32 @@ export default function AnalyticsPage() {
             </div>
             {recommendations.length ? (
               <div className="space-y-3">
-                {visibleRecommendations.map((recommendation) => {
-                  const busy = recommendationBusyId === recommendation.id
-                  return (
-                    <article key={recommendation.id} className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${recommendation.priority === 'HIGH' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-800'}`}>{recommendation.priority}</span>
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{recommendation.status}</span>
-                            {recommendation.residentVisibleAt && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Visible to Resident</span>}
+                <div className={showAllRecommendations ? 'max-h-[42rem] space-y-3 overflow-y-auto overscroll-contain pr-2' : 'space-y-3'} aria-label="Prescriptive recommendations">
+                  {visibleRecommendations.map((recommendation) => {
+                    const busy = recommendationBusyId === recommendation.id
+                    return (
+                      <article key={recommendation.id} className="rounded-xl border border-slate-200 p-4">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${recommendation.priority === 'HIGH' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-800'}`}>{recommendation.priority}</span>
+                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{recommendation.status}</span>
+                              {recommendation.residentVisibleAt && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Visible to Resident</span>}
+                            </div>
+                            <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Condition detected</p>
+                            <p className="mt-1 font-bold text-slate-900">Unit {recommendation.unitNumber}: {recommendation.evidence?.condition || recommendationEvidence(recommendation)}</p>
+                            <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Recommended action</p>
+                            <p className="mt-1 font-black text-slate-950">{recommendation.message}</p>
+                            <p className="mt-2 text-sm text-slate-500">{recommendationEvidence(recommendation)}</p>
                           </div>
-                          <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Condition detected</p>
-                          <p className="mt-1 font-bold text-slate-900">Unit {recommendation.unitNumber}: {recommendation.evidence?.condition || recommendationEvidence(recommendation)}</p>
-                          <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Recommended action</p>
-                          <p className="mt-1 font-black text-slate-950">{recommendation.message}</p>
-                          <p className="mt-2 text-sm text-slate-500">{recommendationEvidence(recommendation)}</p>
+                          <div className="flex flex-wrap gap-2 lg:justify-end">
+                            <ActionButton disabled={busy} onClick={() => deleteRecommendation(recommendation)}>{busy ? 'Deleting...' : 'Delete'}</ActionButton>
+                          </div>
                         </div>
-                        <div className="flex flex-wrap gap-2 lg:justify-end">
-                          <ActionButton disabled={busy} onClick={() => deleteRecommendation(recommendation)}>{busy ? 'Deleting...' : 'Delete'}</ActionButton>
-                        </div>
-                      </div>
-                    </article>
-                  )
-                })}
+                      </article>
+                    )
+                  })}
+                </div>
                 {recommendations.length > 5 && (
                   <button
                     type="button"
@@ -224,9 +226,9 @@ export default function AnalyticsPage() {
 
           <Panel title="Predicted versus actual" description={`Visible to ${user.role === 'ADMIN' ? 'Admin' : 'Collector'} staff only. WAPE avoids division problems for units with zero consumption.`}>
             {data?.diagnostics.length ? (
-              <div className="overflow-auto rounded-xl border border-slate-200">
+              <div className="max-h-[31rem] overflow-auto overscroll-contain rounded-xl border border-slate-200" aria-label="Predicted versus actual results">
                 <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
+                  <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
                   <tbody className="divide-y divide-slate-100">
                     {data.diagnostics.map((row) => (
                       <tr key={`${row.unitId}-${row.forecastForMonth}`} className={row.status !== 'READY' || row.actualValidationStatus !== 'VALID' ? 'bg-amber-50' : ''}>
