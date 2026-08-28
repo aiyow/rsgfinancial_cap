@@ -30,9 +30,13 @@ export default function Register() {
     setLoading(true)
     try {
       await apiRequest('/api/auth/register', { method: 'POST', body: { email: form.email, password: form.password, role: form.role, fullName: fullName(form) } })
-      navigate('/login', { replace: true })
+      navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}`, { replace: true })
     } catch (requestError) {
-      setError(requestError.message)
+      if (requestError.data?.code === 'EMAIL_DELIVERY_UNAVAILABLE') {
+        navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}&delivery=unavailable`, { replace: true })
+      } else {
+        setError(requestError.message)
+      }
     } finally {
       setLoading(false)
     }
@@ -54,7 +58,7 @@ export default function Register() {
           <PasswordInput label="Password" visible={showPassword} onToggle={() => setShowPassword((current) => !current)} value={form.password} onChange={(event) => update('password', event.target.value)} />
           <PasswordInput label="Confirm password" visible={showConfirmation} onToggle={() => setShowConfirmation((current) => !current)} value={form.confirmPassword} onChange={(event) => update('confirmPassword', event.target.value)} />
           <label className="block text-sm font-bold">Role<select value={form.role} onChange={(event) => update('role', event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"><option value="ADMIN">Admin</option><option value="COLLECTOR">Collector</option><option value="RESIDENT">Resident</option></select></label>
-          <button disabled={loading} className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">{loading ? 'Creating...' : 'Create account'}</button>
+          <button disabled={loading} className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">{loading ? 'Creating...' : 'Create account and verify email'}</button>
         </form>
         <p className="mt-5 text-center text-sm"><Link to="/login" className="font-bold text-indigo-600">Back to login</Link></p>
       </section>

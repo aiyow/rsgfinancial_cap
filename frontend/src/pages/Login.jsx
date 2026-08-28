@@ -35,6 +35,9 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState('')
+  const [resendBusy, setResendBusy] = useState(false)
+  const [resendMessage, setResendMessage] = useState('')
 
   if (user) return <Navigate to={dashboardPathFor(user.role)} replace />
 
@@ -45,6 +48,8 @@ export default function Login() {
   async function submit(event) {
     event.preventDefault()
     setError('')
+    setUnverifiedEmail('')
+    setResendMessage('')
     setLoading(true)
     try {
       const loggedInUser = await login(form)
@@ -52,8 +57,23 @@ export default function Login() {
       navigate(dashboardPathFor(loggedInUser.role), { replace: true })
     } catch (requestError) {
       setError(requestError.message)
+      if (requestError.data?.code === 'EMAIL_VERIFICATION_REQUIRED') setUnverifiedEmail(requestError.data.email || form.email)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function resendVerification() {
+    setResendBusy(true)
+    setResendMessage('')
+    try {
+      const result = await apiRequest('/api/auth/resend-verification', { method: 'POST', body: { email: unverifiedEmail } })
+      setResendMessage(result.message)
+    } catch (requestError) {
+      const retryAfter = requestError.data?.retryAfterSeconds
+      setResendMessage(retryAfter ? `${requestError.message} Try again in ${Math.ceil(retryAfter / 60)} minute(s).` : requestError.message)
+    } finally {
+      setResendBusy(false)
     }
   }
 
@@ -64,6 +84,7 @@ export default function Login() {
 
         <form onSubmit={submit} className="mt-8 space-y-4">
           {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+          {unverifiedEmail && <div className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800"><p>Verify <span className="font-bold">{unverifiedEmail}</span> before signing in.</p><button type="button" disabled={resendBusy} onClick={resendVerification} className="mt-2 font-bold text-indigo-700 underline disabled:opacity-60">{resendBusy ? 'Sending verification email...' : 'Resend verification email'}</button>{resendMessage && <p className="mt-2 text-xs text-slate-600">{resendMessage}</p>}</div>}
 
           <label className="block text-sm font-bold text-slate-700">Email
             <input required type="email" autoComplete="username" value={form.email} onChange={(e) => update('email', e.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" />

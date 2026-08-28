@@ -22,7 +22,7 @@ const actionLabels = {
   CREATE: 'created',
   CREATE_MANUAL: 'recorded',
   UPDATE: 'updated',
-  DELETE: 'deleted',
+  DELETE: 'deleted',// double deleted, but keeping it for consistency with the original code
   DELETED: 'deleted',
   END: 'ended',
   SUBMIT: 'submitted',

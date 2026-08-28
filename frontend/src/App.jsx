@@ -4,6 +4,7 @@ import { dashboardPathFor } from './constants/routes'
 import useAuth from './hooks/useAuth'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import VerifyEmail from './pages/VerifyEmail'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUnitsPage from './pages/admin/AdminUnitsPage'
 import AdminUnitsViewPage from './pages/admin/AdminUnitsViewPage'
@@ -45,8 +46,11 @@ export default function App() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/profile" element={<ProtectedRoute allowedRoles={authenticatedRoles}><ProfilePage /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute allowedRoles={authenticatedRoles}><SettingsPage /></ProtectedRoute>} />
+
+      {/* ADMIN ROUTES */}
       <Route path="/admin" element={<ProtectedRoute allowedRole="ADMIN"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute allowedRole="ADMIN"><AdminUsersPage /></ProtectedRoute>} />
       <Route path="/admin/units" element={<ProtectedRoute allowedRole="ADMIN"><AdminUnitsViewPage /></ProtectedRoute>} />
@@ -59,6 +63,8 @@ export default function App() {
       <Route path="/admin/payments/:id" element={<ProtectedRoute allowedRole="ADMIN"><AdminPaymentPage /></ProtectedRoute>} />
       <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRole="ADMIN"><AdminAuditLogsPage /></ProtectedRoute>} />
       <Route path="/admin/analytics" element={<ProtectedRoute allowedRole="ADMIN"><AnalyticsPage /></ProtectedRoute>} />
+
+      {/* COLLECTOR ROUTES */}
       <Route path="/collector" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorDashboard /></ProtectedRoute>} />
       <Route path="/collector/billing" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorBillingPage /></ProtectedRoute>} />
       <Route path="/collector/soa-template" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorSoaTemplatePage /></ProtectedRoute>} />
@@ -69,6 +75,8 @@ export default function App() {
       <Route path="/collector/units" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorUnitsPage /></ProtectedRoute>} />
       <Route path="/collector/payments" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorPaymentsPage /></ProtectedRoute>} />
       <Route path="/collector/analytics" element={<ProtectedRoute allowedRole="COLLECTOR"><AnalyticsPage /></ProtectedRoute>} />
+
+      {/* RESIDENT ROUTES */}
       <Route path="/resident" element={<ProtectedRoute allowedRole="RESIDENT"><ResidentDashboard /></ProtectedRoute>} />
       <Route path="/resident/bills" element={<ProtectedRoute allowedRole="RESIDENT"><ResidentBillsPage /></ProtectedRoute>} />
       <Route path="/resident/bills/:id" element={<ProtectedRoute allowedRole="RESIDENT"><ResidentBillPage /></ProtectedRoute>} />
