@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CreditCard, FileCheck2, WalletCards } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -31,39 +32,40 @@ export default function ResidentBillsPage() {
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
       <div className="grid gap-4 md:grid-cols-4">
-        <SummaryCard label="Published SOAs" value={summary.count} />
-        <SummaryCard label="Need payment" value={summary.unpaid} />
-        <SummaryCard label="Total remaining" value={money(summary.balance)} />
-        <SummaryCard label="Advance balance" value={money(summary.advance)} />
+        <SummaryCard icon={FileCheck2} label="Published SOAs" value={summary.count} accent="blue" />
+        <SummaryCard icon={CreditCard} label="Need payment" value={summary.unpaid} accent="green" />
+        <SummaryCard icon={WalletCards} label="Total remaining" value={money(summary.balance)} accent="red" />
+        <SummaryCard icon={WalletCards} label="Advance balance" value={money(summary.advance)} accent="green" />
       </div>
 
       <Panel title="Published billing statements">
         <div className="space-y-4">
           {bills.map((bill) => (
-            <article key={bill.id} className="rounded-2xl border border-slate-200 p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <article key={bill.id} className="resident-soa-card">
+              <div className="flex flex-col gap-5 border-b border-[#d9e7dd] pb-5 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-lg font-black text-slate-950">Unit {bill.unitNumber}</h2>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${bill.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700' : bill.paymentStatus === 'PARTIAL' ? 'bg-sky-50 text-sky-700' : bill.paymentStatus === 'OVERDUE' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}`}>{bill.paymentStatus}</span>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Billing period {String(bill.periodStart).slice(0, 10)} to {String(bill.periodEnd).slice(0, 10)} | Due {String(bill.dueDate).slice(0, 10)}
-                  </p>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--primary)]">RSG Condo</p>
+                  <h2 className="mt-2 text-xl font-black text-slate-950">Statement of Account</h2>
                 </div>
                 <div className="text-left sm:text-right">
-                  <p className="text-xs font-bold uppercase text-slate-400">Remaining balance</p>
-                  <p className="mt-1 text-2xl font-black text-slate-950">{money(bill.remainingBalance)}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Account</p>
+                  <p className="mt-1 text-lg font-black text-slate-950">Unit {bill.unitNumber}</p>
+                  <p className="mt-1 text-sm text-slate-500">Billing period: {String(bill.periodStart).slice(0, 10)} – {String(bill.periodEnd).slice(0, 10)}</p>
+                  <p className="mt-1 text-sm font-bold text-slate-700">Due: {String(bill.dueDate).slice(0, 10)}</p>
                 </div>
               </div>
-              <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-3">
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2"><span className={`resident-status-dot ${bill.paymentStatus === 'PAID' ? 'bg-emerald-500' : bill.paymentStatus === 'PARTIAL' ? 'bg-sky-500' : bill.paymentStatus === 'OVERDUE' ? 'bg-rose-500' : 'bg-amber-500'}`} /><span className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">{bill.paymentStatus}</span></div>
+                <div className="text-left sm:text-right"><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-400">Remaining balance</p><p className="mt-1 text-2xl font-black text-slate-950">{money(bill.remainingBalance)}</p></div>
+              </div>
+              <div className="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2 lg:grid-cols-4">
                 <Info label="Total amount" value={money(bill.totalAmount)} />
                 <Info label="Approved payments" value={money(bill.approvedAmount)} />
                 <Info label="Advance balance" value={money(bill.advanceBalance)} />
                 <Info label="Pending review" value={bill.hasPendingPayment ? 'Yes' : 'No'} />
               </div>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Link to={`/resident/bills/${bill.id}`} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Open SOA</Link>
+              <div className="mt-5 flex justify-end">
+                <Link to={`/resident/bills/${bill.id}`} className="resident-soa-button resident-soa-button-green">Open SOA <span aria-hidden="true">→</span></Link>
               </div>
             </article>
           ))}
@@ -74,18 +76,13 @@ export default function ResidentBillsPage() {
   )
 }
 
-function SummaryCard({ label, value }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-black text-slate-950">{value}</p>
-    </div>
-  )
+function SummaryCard({ icon: Icon, label, value, accent }) {
+  return <div className={`resident-summary-card resident-summary-${accent}`}><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p><p className="mt-2 text-2xl font-black text-slate-950">{value}</p></div><div className="resident-card-icon"><Icon size={19} /></div></div>
 }
 
 function Info({ label, value }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-3">
+    <div className="resident-soa-info rounded-xl p-3">
       <p className="text-xs font-bold uppercase text-slate-400">{label}</p>
       <p className="mt-1 font-semibold text-slate-900">{value}</p>
     </div>

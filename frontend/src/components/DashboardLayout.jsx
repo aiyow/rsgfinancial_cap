@@ -69,6 +69,10 @@ const sectionLabels = {
   manage: 'Manage',
 }
 
+function displayName(value) {
+  return String(value || '').split(/\s+/).filter(Boolean).map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`).join(' ')
+}
+
 function NavigationLinks({ sections, collapsed, onNavigate }) {
   return (
     <nav className="space-y-5" aria-label="Main navigation">
@@ -118,6 +122,7 @@ export default function DashboardLayout({ title, description, children }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const profileMenuRef = useRef(null)
   const sections = navigationByRole[user.role] || navigationByRole.RESIDENT
+  const usesGreenSidebar = user.role === 'ADMIN' || user.role === 'RESIDENT' || user.role === 'COLLECTOR'
 
   useEffect(() => {
     localStorage.setItem('rsg_sidebar_collapsed', String(collapsed))
@@ -159,10 +164,11 @@ export default function DashboardLayout({ title, description, children }) {
     COLLECTOR: 'Collector Portal',
     RESIDENT: 'Resident Portal',
   }[user.role] || 'RSG Condo'
+  const formattedName = displayName(user.fullName)
   const initials = user.fullName.split(' ').map((name) => name[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <div className={`dashboard-shell min-h-screen bg-[var(--app-bg)] text-[var(--ink)] lg:grid lg:transition-[grid-template-columns] lg:duration-200 lg:ease-out motion-reduce:transition-none ${collapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
+    <div className={`dashboard-shell min-h-screen bg-[var(--app-bg)] text-[var(--ink)] lg:grid lg:transition-[grid-template-columns] lg:duration-200 lg:ease-out motion-reduce:transition-none ${usesGreenSidebar ? 'green-shell' : ''} ${collapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
       {mobileOpen && (
         <button
           type="button"
@@ -172,14 +178,14 @@ export default function DashboardLayout({ title, description, children }) {
         />
       )}
 
-      <aside className={`print-hidden fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 motion-reduce:transition-none ${
+      <aside className={`print-hidden fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 motion-reduce:transition-none ${usesGreenSidebar ? 'green-sidebar' : ''} ${
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className={`flex h-14 shrink-0 items-center justify-between border-b border-[var(--border)] px-5 ${collapsed ? 'lg:justify-center lg:px-3' : ''}`}>
           <div className={`flex items-center gap-3 ${collapsed ? 'lg:gap-0' : ''}`}>
             <BrandMark />
             <div className={collapsed ? 'lg:sr-only' : ''}>
-              <p className="text-sm font-black tracking-tight text-[var(--ink)]">RSG Condo</p>
+              <p className="text-sm font-black tracking-tight text-[var(--ink)]">The ResiDens</p>
               <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">Water Billing</p>
             </div>
           </div>
@@ -239,13 +245,13 @@ export default function DashboardLayout({ title, description, children }) {
                 type="button"
                 aria-expanded={profileOpen}
                 aria-haspopup="menu"
-                aria-label={`Open account menu for ${user.fullName}`}
+                aria-label={`Open account menu for ${formattedName}`}
                 onClick={() => setProfileOpen((value) => !value)}
                 className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-2 py-1.5 text-left hover:bg-[var(--app-bg)] sm:gap-3 sm:px-2.5"
               >
                 <span className="grid size-7 place-items-center rounded-sm bg-[var(--primary)] text-[10px] font-black text-white">{initials}</span>
                 <span className="hidden min-w-0 sm:block">
-                  <span className="block max-w-36 truncate text-xs font-bold text-[var(--ink)]">{user.fullName}</span>
+                  <span className="block max-w-36 truncate text-xs font-bold text-[var(--ink)]">{formattedName}</span>
                   <span className="block max-w-36 truncate text-[10px] text-[var(--muted)]">{user.role}</span>
                 </span>
                 <ChevronDown size={14} className={`text-[var(--muted)] transition ${profileOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
@@ -254,7 +260,7 @@ export default function DashboardLayout({ title, description, children }) {
               {profileOpen && (
                 <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-lg" role="menu">
                   <div className="border-b border-[var(--border)] px-4 py-3">
-                    <p className="truncate text-sm font-bold text-[var(--ink)]">{user.fullName}</p>
+                    <p className="truncate text-sm font-bold text-[var(--ink)]">{formattedName}</p>
                     <p className="mt-0.5 truncate text-xs text-[var(--muted)]">{user.email}</p>
                   </div>
                   <Link to="/profile" role="menuitem" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--ink)] hover:bg-[var(--app-bg)]">
@@ -289,9 +295,9 @@ export default function DashboardLayout({ title, description, children }) {
   )
 }
 
-export function Panel({ id, title, description, children }) {
+export function Panel({ accent, id, title, description, children }) {
   return (
-    <section id={id} className="rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm sm:p-6">
+    <section id={id} className={`${accent ? `collector-step-card collector-step-${accent}` : ''} rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm sm:p-6`}>
       <h2 className="text-lg font-black text-[var(--ink)]">{title}</h2>
       {description && <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>}
       <div className="mt-5">{children}</div>

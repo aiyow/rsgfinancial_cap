@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { CheckCircle2, ChevronDown, Clock3, WalletCards, XCircle } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -140,10 +141,10 @@ export default function AdminPaymentsPage() {
       {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Loaded payments" value={counts.total} />
-        <StatCard label="Pending review" value={counts.pending} accent="amber" />
-        <StatCard label="Approved" value={counts.approved} accent="emerald" />
-        <StatCard label="Rejected" value={counts.rejected} accent="rose" />
+        <StatCard label="Loaded payments" value={counts.total} icon={WalletCards} accent="blue" />
+        <StatCard label="Pending review" value={counts.pending} icon={Clock3} accent="green" />
+        <StatCard label="Approved" value={counts.approved} icon={CheckCircle2} accent="red" />
+        <StatCard label="Rejected" value={counts.rejected} icon={XCircle} accent="blue" />
       </div>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -161,7 +162,7 @@ export default function AdminPaymentsPage() {
               key={item}
               type="button"
               onClick={() => { setStatus(item); setNotice((current) => ({ ...current, error: '' })) }}
-              className={`rounded-full px-4 py-2 text-sm font-bold ${status === item ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+              className={`payment-filter ${status === item ? 'payment-filter-active' : ''}`}
             >
               {item === 'ALL' ? 'All statuses' : item}
             </button>
@@ -228,6 +229,7 @@ export default function AdminPaymentsPage() {
 
 function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, selectedCredit, units, onClose, onSubmit, onUpdate }) {
   const canSubmit = form.amount && (form.targetType === 'SOA' ? form.targetBillId : form.unitId)
+  const [methodMenuOpen, setMethodMenuOpen] = useState(false)
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4" role="presentation" onMouseDown={onClose}>
@@ -242,8 +244,8 @@ function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, select
 
         <form onSubmit={onSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 flex flex-wrap gap-2">
-            <button type="button" onClick={() => onUpdate('targetType', 'SOA')} className={`rounded-full px-4 py-2 text-sm font-bold ${form.targetType === 'SOA' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>Apply to SOA</button>
-            <button type="button" onClick={() => onUpdate('targetType', 'ADVANCE')} className={`rounded-full px-4 py-2 text-sm font-bold ${form.targetType === 'ADVANCE' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700'}`}>Advance credit</button>
+            <button type="button" onClick={() => onUpdate('targetType', 'SOA')} className={`payment-filter ${form.targetType === 'SOA' ? 'payment-filter-active' : ''}`}>Apply to SOA</button>
+            <button type="button" onClick={() => onUpdate('targetType', 'ADVANCE')} className={`payment-filter ${form.targetType === 'ADVANCE' ? 'payment-filter-active' : ''}`}>Advance Credit</button>
           </div>
 
           {form.targetType === 'SOA' ? (
@@ -262,12 +264,14 @@ function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, select
             </label>
           )}
 
-          <label className="block text-sm font-bold text-slate-700">
-            Payment method
-            <select value={form.paymentMethod} onChange={(event) => onUpdate('paymentMethod', event.target.value)} className={inputClass}>
-              {paymentMethods.map((method) => <option key={method} value={method}>{methodLabel(method)}</option>)}
-            </select>
-          </label>
+          <div className="relative block text-sm font-bold text-slate-700">
+            <p>Payment method</p>
+            <button type="button" aria-expanded={methodMenuOpen} onClick={() => setMethodMenuOpen((current) => !current)} className="mt-1.5 flex h-[42px] w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm font-normal text-slate-700 outline-none transition hover:border-[#2f8f5b]">
+              <span className="min-w-0 truncate">{methodLabel(form.paymentMethod)}</span>
+              <ChevronDown size={17} className={`shrink-0 text-slate-500 transition ${methodMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+            </button>
+            {methodMenuOpen && <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-60 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl"><div className="grid gap-1">{paymentMethods.map((method) => <button key={method} type="button" onClick={() => { onUpdate('paymentMethod', method); setMethodMenuOpen(false) }} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${form.paymentMethod === method ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{methodLabel(method)}</button>)}</div></div>}
+          </div>
           <label className="block text-sm font-bold text-slate-700">
             Amount
             <input required min="0.01" step="0.01" type="number" value={form.amount} onChange={(event) => onUpdate('amount', event.target.value)} className={inputClass} />
@@ -299,20 +303,17 @@ function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, select
   )
 }
 
-function StatCard({ label, value, accent = 'slate' }) {
-  const accentClass = {
-    slate: 'bg-slate-100 text-slate-900',
-    amber: 'bg-amber-50 text-amber-700',
-    emerald: 'bg-emerald-50 text-emerald-700',
-    rose: 'bg-rose-50 text-rose-700',
-  }[accent]
-
+function StatCard({ accent, icon: Icon, label, value }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm text-slate-500">{label}</p>
-      <div className="mt-3 flex items-center justify-between">
-        <p className="text-3xl font-black text-slate-950">{value}</p>
-        <span className={`rounded-full px-3 py-1 text-xs font-bold ${accentClass}`}>{label}</span>
+    <div className={`collector-metric collector-metric-${accent} rounded-2xl border border-[var(--border)] p-5 shadow-sm`}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold text-[var(--muted)]">{label}</p>
+          <p className="mt-3 text-3xl font-black text-[var(--ink)]">{value}</p>
+        </div>
+        <span className="grid size-11 place-items-center rounded-xl">
+          <Icon size={21} />
+        </span>
       </div>
     </div>
   )

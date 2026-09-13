@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Activity, CalendarDays, ChartNoAxesCombined, Gauge, ListChecks } from 'lucide-react'
 import {
-  CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
@@ -112,6 +113,7 @@ export default function AnalyticsPage() {
     high: recommendations.filter((recommendation) => recommendation.priority === 'HIGH').length,
   }
   const visibleRecommendations = showAllRecommendations ? recommendations : recommendations.slice(0, 5)
+  const analyticsAccents = ['blue', 'green', 'red', 'blue', 'green']
 
   return (
     <DashboardLayout title="Predictive & Prescriptive Water Analytics" description="Review forecasts and the recommended actions generated from water use, occupancy, readings, and billing status.">
@@ -126,11 +128,11 @@ export default function AnalyticsPage() {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <Metric label="Holdout month" value={month(data?.evaluationMonth)} />
-            <Metric label="WAPE accuracy" value={valueOrDash(metrics.accuracy, '%')} />
-            <Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} />
-            <Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} />
-            <Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} />
+            <Metric label="Holdout month" value={month(data?.evaluationMonth)} accent={analyticsAccents[0]} icon={CalendarDays} />
+            <Metric label="WAPE accuracy" value={valueOrDash(metrics.accuracy, '%')} accent={analyticsAccents[1]} icon={Gauge} />
+            <Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} accent={analyticsAccents[2]} icon={Activity} />
+            <Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} accent={analyticsAccents[3]} icon={ChartNoAxesCombined} />
+            <Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} accent={analyticsAccents[4]} icon={ListChecks} />
           </div>
 
           <Panel title="Latest forecast coverage" description="A unit needs five consecutive valid monthly readings after any meter reset or continuity break.">
@@ -146,32 +148,32 @@ export default function AnalyticsPage() {
           <div className="grid gap-6 xl:grid-cols-2">
             <ChartCard title="Historical vs Projected Water Consumption" description="Monthly total consumption in cubic meters.">
               {chartData.length ? (
-                <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
                     <YAxis unit=" m3" tick={{ fontSize: 12 }} />
                     <Tooltip formatter={consumptionTooltip} />
                     <Legend />
-                    <Line type="monotone" dataKey="actualConsumption" name="Historical actual" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#fff', strokeWidth: 3 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="forecastConsumption" name="Projected forecast" stroke="#7c3aed" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 4, fill: '#fff', strokeWidth: 3 }} activeDot={{ r: 6 }} connectNulls />
-                  </LineChart>
+                    <Area type="monotone" dataKey="actualConsumption" name="Historical actual" stroke="#2563eb" fill="#93c5fd" fillOpacity={0.28} strokeWidth={3} dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} animationBegin={0} animationDuration={1200} animationEasing="ease-out" />
+                    <Area type="monotone" dataKey="forecastConsumption" name="Projected forecast" stroke="#7c3aed" fill="#c4b5fd" fillOpacity={0.2} strokeWidth={3} strokeDasharray="7 5" dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} connectNulls animationBegin={140} animationDuration={1200} animationEasing="ease-out" />
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : <EmptyRow message="No chart data is available yet." />}
             </ChartCard>
 
             <ChartCard title="Historical vs Projected Water Bill" description="Monthly total water charges from actual readings and forecasts.">
               {chartData.length ? (
-                <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip formatter={billTooltip} />
                     <Legend />
-                    <Line type="monotone" dataKey="actualWaterBill" name="Historical actual" stroke="#059669" strokeWidth={3} dot={{ r: 4, fill: '#fff', strokeWidth: 3 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="forecastWaterBill" name="Projected forecast" stroke="#ea580c" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 4, fill: '#fff', strokeWidth: 3 }} activeDot={{ r: 6 }} connectNulls />
-                  </LineChart>
+                    <Area type="monotone" dataKey="actualWaterBill" name="Historical actual" stroke="#059669" fill="#86efac" fillOpacity={0.24} strokeWidth={3} dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} animationBegin={0} animationDuration={1200} animationEasing="ease-out" />
+                    <Area type="monotone" dataKey="forecastWaterBill" name="Projected forecast" stroke="#ea580c" fill="#fdba74" fillOpacity={0.18} strokeWidth={3} strokeDasharray="7 5" dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} connectNulls animationBegin={140} animationDuration={1200} animationEasing="ease-out" />
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : <EmptyRow message="No chart data is available yet." />}
             </ChartCard>
@@ -229,7 +231,7 @@ export default function AnalyticsPage() {
               <div className="max-h-[31rem] overflow-auto overscroll-contain rounded-xl border border-slate-200" aria-label="Predicted versus actual results">
                 <table className="w-full min-w-[760px] text-left text-sm">
                   <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-300">
                     {data.diagnostics.map((row) => (
                       <tr key={`${row.unitId}-${row.forecastForMonth}`} className={row.status !== 'READY' || row.actualValidationStatus !== 'VALID' ? 'bg-amber-50' : ''}>
                         <td className="p-3 font-bold">Unit {row.unitNumber}</td>
@@ -265,16 +267,16 @@ export default function AnalyticsPage() {
   )
 }
 
-function Metric({ label, value, compact = false }) {
-  return <div className={`rounded-2xl border border-slate-200 bg-white ${compact ? 'p-4 shadow-none' : 'p-5 shadow-sm'}`}><p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p><p className={`${compact ? 'mt-2 text-xl' : 'mt-3 text-2xl'} font-black text-slate-950`}>{value}</p></div>
+function Metric({ accent, icon: Icon, label, value, compact = false }) {
+  return <div className={`${accent ? `collector-metric collector-metric-${accent}` : ''} rounded-2xl border border-slate-200 bg-white ${compact ? 'p-4 shadow-none' : 'p-5 shadow-sm'}`}><div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p><p className={`${compact ? 'mt-2 text-xl' : 'mt-3 text-2xl'} font-black text-[var(--ink)]`}>{value}</p></div>{Icon && <span className="grid size-10 shrink-0 place-items-center rounded-xl"><Icon size={19} /></span>}</div></div>
 }
 
 function ChartCard({ title, description, children }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="font-black text-slate-950">{title}</h3>
-      <p className="mt-1 text-sm text-slate-500">{description}</p>
-      <div className="mt-5">{children}</div>
+    <div className="collector-chart-panel min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <h3 className="text-base font-black text-[var(--ink)]">{title}</h3>
+      <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>
+      <div className="mt-5 h-72">{children}</div>
     </div>
   )
 }
