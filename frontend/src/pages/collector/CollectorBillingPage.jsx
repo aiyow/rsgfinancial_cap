@@ -154,7 +154,7 @@ export default function CollectorBillingPage() {
     <DashboardLayout title="Monthly billing" description="Create a draft period, validate the Collector workbook, and generate unit bills.">
       {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
 
-      <Panel title={editingPeriodId ? '1. Edit draft billing period' : '1. Create billing period'} description="The workbook has no dates, so enter the coverage and due date here.">
+      <Panel accent="blue" title={editingPeriodId ? '1. Edit draft billing period' : '1. Create billing period'} description="The workbook has no dates, so enter the coverage and due date here.">
         <form onSubmit={savePeriod} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-3 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
           <Field label="Period start"><input required type="date" value={periodForm.periodStart} onChange={(event) => setPeriodForm({ ...periodForm, periodStart: event.target.value })} className={inputClass} /></Field>
           <Field label="Period end"><input required type="date" value={periodForm.periodEnd} onChange={(event) => setPeriodForm({ ...periodForm, periodEnd: event.target.value })} className={inputClass} /></Field>
@@ -167,7 +167,7 @@ export default function CollectorBillingPage() {
         <p className="mt-3 text-xs text-slate-500">The late penalty is applied once to an unpaid SOA after its due date.</p>
       </Panel>
 
-      <Panel title="2. Upload and validate readings" description="Required columns: UNIT, PREVIOUS, and PRESENT. Server calculations override spreadsheet formulas.">
+      <Panel accent="red" title="2. Upload and validate readings" description="Required columns: UNIT, PREVIOUS, and PRESENT. Server calculations override spreadsheet formulas.">
         <form onSubmit={previewFile} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-[1fr_1fr_auto_auto]">
           <Field label="Draft period"><select required value={selectedId} onChange={(event) => selectPeriod(event.target.value)} className={inputClass}><option value="">Select period</option>{periods.map((period) => <option key={period.id} value={period.id}>{period.periodStart} to {period.periodEnd} - {period.status}</option>)}</select></Field>
           <Field label="Collector workbook"><input required accept=".xlsx" type="file" onChange={(event) => setFile(event.target.files[0] || null)} className={inputClass} /></Field>
@@ -189,7 +189,7 @@ export default function CollectorBillingPage() {
         )}
       </Panel>
 
-      <Panel title="3. Generate bills" description="Creates one bill with water and association-dues charge lines for every unit.">
+      <Panel accent="green" title="3. Generate bills" description="Creates one bill with water and association-dues charge lines for every unit.">
         {!selectedPeriod ? <EmptyRow message="Select a billing period first." /> : <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-bold">{selectedPeriod.periodStart} to {selectedPeriod.periodEnd}</p><p className="text-sm text-slate-500">Status: {selectedPeriod.status} | Saved readings: {readingCount}</p></div><button disabled={busy || selectedPeriod.status !== 'DRAFT' || readingCount === 0} onClick={generateBills} className={primaryClass}>Generate bills</button></div>}
       </Panel>
     </DashboardLayout>

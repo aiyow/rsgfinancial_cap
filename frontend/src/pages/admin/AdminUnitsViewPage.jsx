@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Building2, ChevronDown, Users } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -7,18 +8,12 @@ import { apiRequest } from '../../services/api'
 const PAGE_SIZE = 15
 const controlClass = 'rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100'
 
-function SummaryCard({ label, value, tone = 'indigo' }) {
-  const tones = {
-    indigo: 'bg-indigo-50 text-indigo-700',
-    emerald: 'bg-emerald-50 text-emerald-700',
-    slate: 'bg-slate-100 text-slate-700',
-    amber: 'bg-amber-50 text-amber-700',
-  }
+function SummaryCard({ accent, icon: Icon, label, value }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <article className={`collector-metric collector-metric-${accent} rounded-2xl border border-[var(--border)] p-5 shadow-sm`}>
       <div className="flex items-center justify-between gap-4">
-        <div><p className="text-sm font-bold text-slate-500">{label}</p><p className="mt-2 text-3xl font-black text-slate-950">{value}</p></div>
-        <span className={`grid size-11 place-items-center rounded-xl text-lg font-black ${tones[tone]}`}>#</span>
+        <div><p className="text-sm font-bold text-[var(--muted)]">{label}</p><p className="mt-2 text-3xl font-black text-[var(--ink)]">{value}</p></div>
+        <span className="grid size-11 place-items-center rounded-xl"><Icon size={20} /></span>
       </div>
     </article>
   )
@@ -29,6 +24,27 @@ function StatusBadge({ status }) {
   return <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${occupied ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{occupied ? 'Occupied' : 'Vacant'}</span>
 }
 
+function FilterPopover({ label, onSelect, onToggle, open, options, value }) {
+  const selected = options.find((option) => option.value === value) || options[0]
+
+  return (
+    <div className="relative min-w-0 lg:w-[180px] lg:flex-none">
+      <p className="mb-1 text-xs font-bold text-slate-600">{label}</p>
+      <button type="button" aria-label={`Filter by ${label}`} aria-expanded={open} onClick={onToggle} className="flex h-[42px] w-full items-center justify-between gap-3 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left text-sm text-slate-700 outline-none transition hover:border-[#2f8f5b]">
+        <span className="min-w-0 truncate">{selected.label}</span>
+        <ChevronDown size={17} className={`shrink-0 text-slate-500 transition ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-60 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
+          <div className="grid gap-1">
+            {options.map((option) => <button key={option.value} type="button" onClick={() => onSelect(option.value)} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${value === option.value ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{option.label}</button>)}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AdminUnitsViewPage() {
   const { token } = useAuth()
   const [units, setUnits] = useState([])
@@ -36,6 +52,8 @@ export default function AdminUnitsViewPage() {
   const [search, setSearch] = useState('')
   const [floor, setFloor] = useState('ALL')
   const [status, setStatus] = useState('ALL')
+  const [floorMenuOpen, setFloorMenuOpen] = useState(false)
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [error, setError] = useState('')
 
@@ -95,23 +113,18 @@ export default function AdminUnitsViewPage() {
     <DashboardLayout title="Unit directory" description="View condominium units, occupancy, sizes, and active residents.">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="Total units" value={units.length} />
-        <SummaryCard label="Occupied" value={occupiedCount} tone="emerald" />
-        <SummaryCard label="Vacant" value={units.length - occupiedCount} tone="slate" />
-        <SummaryCard label="With active residents" value={assignedCount} tone="amber" />
+        <SummaryCard label="Total units" value={units.length} icon={Building2} accent="blue" />
+        <SummaryCard label="Occupied" value={occupiedCount} icon={Users} accent="green" />
+        <SummaryCard label="Vacant" value={units.length - occupiedCount} icon={Building2} accent="red" />
+        <SummaryCard label="With active residents" value={assignedCount} icon={Users} accent="blue" />
       </div>
 
       <Panel title="All units" description={`Search and filter all ${units.length} condominium units.`}>
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <input type="search" value={search} onChange={(event) => updateSearch(event.target.value)} placeholder="Search unit or resident..." aria-label="Search units" className={`${controlClass} min-w-0 flex-1`} />
-          <select value={floor} onChange={(event) => updateFloor(event.target.value)} aria-label="Filter by floor" className={controlClass}>
-            <option value="ALL">All floors</option>
-            {floors.map((floorOption) => <option key={floorOption} value={floorOption}>Floor {floorOption}</option>)}
-          </select>
-          <select value={status} onChange={(event) => updateStatus(event.target.value)} aria-label="Filter by occupancy" className={controlClass}>
-            <option value="ALL">All statuses</option><option value="OCCUPIED">Occupied</option><option value="VACANT">Vacant</option>
-          </select>
-          <Link to="/admin/units/manage" className="rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-bold text-white hover:bg-indigo-700">Manage units</Link>
+          <FilterPopover label="Floor" value={floor} open={floorMenuOpen} onToggle={() => { setFloorMenuOpen((current) => !current); setStatusMenuOpen(false) }} onSelect={(value) => { updateFloor(value); setFloorMenuOpen(false) }} options={[{ value: 'ALL', label: 'All floors' }, ...floors.map((floorOption) => ({ value: floorOption, label: floorOption }))]} />
+          <FilterPopover label="Occupancy" value={status} open={statusMenuOpen} onToggle={() => { setStatusMenuOpen((current) => !current); setFloorMenuOpen(false) }} onSelect={(value) => { updateStatus(value); setStatusMenuOpen(false) }} options={[{ value: 'ALL', label: 'All statuses' }, { value: 'OCCUPIED', label: 'Occupied' }, { value: 'VACANT', label: 'Vacant' }]} />
+          <Link to="/admin/units/manage" className="rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-bold !text-white hover:bg-indigo-700">Manage units</Link>
         </div>
 
         <div className="mt-6 overflow-x-auto">
@@ -119,7 +132,7 @@ export default function AdminUnitsViewPage() {
             <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
               <tr><th className="px-3 py-3">Unit</th><th className="px-3 py-3">Floor</th><th className="px-3 py-3">Size</th><th className="px-3 py-3">Resident</th><th className="px-3 py-3">Relationship</th><th className="px-3 py-3">Status</th></tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-300">
               {visibleUnits.map((unit) => (
                 <tr key={unit.id} className="hover:bg-slate-50">
                   <td className="px-3 py-4 font-black text-slate-900">Unit {unit.unitNumber}</td>

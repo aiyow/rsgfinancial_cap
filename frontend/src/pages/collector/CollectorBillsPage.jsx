@@ -5,6 +5,8 @@ import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
 const actionClass = 'inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold leading-5 text-slate-700 hover:bg-slate-50 disabled:opacity-50'
+const viewBatchClass = 'inline-flex items-center justify-center whitespace-nowrap rounded-lg bg-[#2f8f5b] px-3 py-2 text-sm font-bold leading-5 !text-white shadow-sm transition hover:bg-[#237a4a] disabled:cursor-not-allowed disabled:opacity-50'
+const deleteForwardedClass = 'inline-flex items-center justify-center whitespace-nowrap rounded-lg bg-[#b94a52] px-3 py-2 text-sm font-bold leading-5 text-white shadow-sm transition hover:bg-[#9f3d45] disabled:cursor-not-allowed disabled:opacity-50'
 const dateOnly = (value) => value ? String(value).slice(0, 10) : ''
 
 export default function CollectorBillsPage() {
@@ -72,10 +74,10 @@ export default function CollectorBillsPage() {
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
               <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-black">{dateOnly(period.periodStart)} to {dateOnly(period.periodEnd)}</h2><span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">{period.status}</span></div><p className="mt-1 text-sm text-slate-500">Due {dateOnly(period.dueDate)} | Water PHP {period.waterRatePerCubicM}/m3 | Dues PHP {period.associationDuesRatePerSqm}/sqm | {Number(period.latePenaltyPercent || 0) > 0 ? `Late penalty ${Number(period.latePenaltyPercent).toFixed(2)}% once | ` : ''}{periodBills.length} SOAs</p></div>
               <div className="flex flex-wrap gap-2 print-hidden">
-                <Link to={`/collector/bills/batches/${period.id}`} className={actionClass}>View batch</Link>
+                <Link to={`/collector/bills/batches/${period.id}`} className={viewBatchClass}>View batch</Link>
                 {period.status === 'DRAFT' && <><Link to={`/collector/billing?periodId=${period.id}`} className={actionClass}>Edit draft</Link><button disabled={busyId === period.id} onClick={() => remove(period)} className={`${actionClass} text-red-600`}>Delete batch</button></>}
                 {period.status === 'GENERATED' && <><button disabled={busyId === period.id} onClick={() => reopen(period)} className={actionClass}>Reopen batch</button><button disabled={busyId === period.id} onClick={() => remove(period)} className={`${actionClass} text-red-600`}>Delete batch</button><button disabled={busyId === period.id} onClick={() => forward(period)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white disabled:bg-slate-300">Forward to Admin</button></>}
-                {period.status === 'FORWARDED' && <button disabled={busyId === period.id} onClick={() => remove(period)} className={`${actionClass} text-red-600`}>Delete forwarded batch</button>}
+                {period.status === 'FORWARDED' && <button disabled={busyId === period.id} onClick={() => remove(period)} className={deleteForwardedClass}>Delete forwarded batch</button>}
               </div>
             </div>
           </section>
