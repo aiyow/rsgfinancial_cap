@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { BadgeCheck, CircleDollarSign, WalletCards } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -34,9 +35,9 @@ export default function CollectorPaymentsPage() {
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
       <div className="grid gap-4 md:grid-cols-3">
-        <SummaryCard label="Approved payments" value={summary.approvals} />
-        <SummaryCard label="Approved amount" value={money(summary.collected)} />
-        <SummaryCard label="Fully paid SOAs" value={summary.paidBills} />
+        <SummaryCard label="Approved payments" value={summary.approvals} icon={WalletCards} accent="blue" />
+        <SummaryCard label="Approved amount" value={money(summary.collected)} icon={CircleDollarSign} accent="green" />
+        <SummaryCard label="Fully paid SOAs" value={summary.paidBills} icon={BadgeCheck} accent="red" />
       </div>
 
       <Panel title="Approved records">
@@ -88,11 +89,18 @@ export default function CollectorPaymentsPage() {
   )
 }
 
-function SummaryCard({ label, value }) {
+function SummaryCard({ accent, icon: Icon, label, value }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-black text-slate-950">{value}</p>
+    <div className={`collector-metric collector-metric-${accent} rounded-2xl border border-slate-200 p-5 shadow-sm`}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold text-slate-500">{label}</p>
+          <p className="mt-3 text-3xl font-black text-[var(--ink)]">{value}</p>
+        </div>
+        <span className="grid size-11 place-items-center rounded-xl">
+          <Icon size={21} />
+        </span>
+      </div>
     </div>
   )
 }

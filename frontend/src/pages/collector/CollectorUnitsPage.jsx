@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Building2, Search, Users } from 'lucide-react'
+import { Building2, ChevronDown, Search, Users } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -20,6 +20,8 @@ export default function CollectorUnitsPage() {
   const [search, setSearch] = useState('')
   const [occupancyFilter, setOccupancyFilter] = useState('ALL')
   const [floorFilter, setFloorFilter] = useState('ALL')
+  const [occupancyMenuOpen, setOccupancyMenuOpen] = useState(false)
+  const [floorMenuOpen, setFloorMenuOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -77,17 +79,17 @@ export default function CollectorUnitsPage() {
     <DashboardLayout title="Units" description="Search the condominium directory and review resident assignments.">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard label="Total units" value={units.length} icon={Building2} tone="text-indigo-700" />
-        <SummaryCard label="Occupied" value={occupiedCount} icon={Users} tone="text-emerald-700" />
-        <SummaryCard label="Vacant" value={units.length - occupiedCount} icon={Building2} tone="text-slate-600" />
-        <SummaryCard label="Active assignments" value={activeAssignments.length} icon={Users} tone="text-sky-700" />
+        <SummaryCard label="Total units" value={units.length} icon={Building2} accent="blue" />
+        <SummaryCard label="Occupied" value={occupiedCount} icon={Users} accent="green" />
+        <SummaryCard label="Vacant" value={units.length - occupiedCount} icon={Building2} accent="red" />
+        <SummaryCard label="Active assignments" value={activeAssignments.length} icon={Users} accent="blue" />
       </div>
 
       <Panel title="Unit directory" description="Read-only records. Search by unit, floor, or resident name.">
         <div className="mb-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
           <label className="block text-xs font-bold text-slate-600">Search directory<div className="relative mt-1"><Search size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={search} onChange={(event) => resetPage(() => setSearch(event.target.value))} placeholder="Unit, floor, or resident name" className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm font-normal" /></div></label>
-          <label className="text-xs font-bold text-slate-600">Occupancy<select value={occupancyFilter} onChange={(event) => resetPage(() => setOccupancyFilter(event.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal"><option value="ALL">All units</option><option value="OCCUPIED">Occupied</option><option value="VACANT">Vacant</option></select></label>
-          <label className="text-xs font-bold text-slate-600">Floor<select value={floorFilter} onChange={(event) => resetPage(() => setFloorFilter(event.target.value))} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal"><option value="ALL">All floors</option>{floors.map((floor) => <option key={floor} value={floor}>{floor}</option>)}</select></label>
+          <FilterPopover label="Occupancy" value={occupancyFilter} open={occupancyMenuOpen} onToggle={() => { setOccupancyMenuOpen((current) => !current); setFloorMenuOpen(false) }} onSelect={(value) => { resetPage(() => setOccupancyFilter(value)); setOccupancyMenuOpen(false) }} options={[{ value: 'ALL', label: 'All units' }, { value: 'OCCUPIED', label: 'Occupied' }, { value: 'VACANT', label: 'Vacant' }]} />
+          <FilterPopover label="Floor" value={floorFilter} open={floorMenuOpen} onToggle={() => { setFloorMenuOpen((current) => !current); setOccupancyMenuOpen(false) }} onSelect={(value) => { resetPage(() => setFloorFilter(value)); setFloorMenuOpen(false) }} options={[{ value: 'ALL', label: 'All floors' }, ...floors.map((floor) => ({ value: floor, label: floor }))]} />
         </div>
 
         {!loading && <p className="mb-3 text-sm text-slate-500">Showing {filteredUnits.length ? `${firstUnitIndex + 1}-${lastUnitIndex}` : 0} of {filteredUnits.length} matching units ({units.length} total).</p>}
@@ -103,13 +105,34 @@ export default function CollectorUnitsPage() {
       </Panel>
 
       <Panel title="Active resident assignments" description="Residents currently linked to a condominium unit.">
-        <div className="max-h-[400px] overflow-auto rounded-xl border border-slate-100"><table className="w-full min-w-[700px] text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Resident</th><th className="px-4 py-3">Unit</th><th className="px-4 py-3">Relationship</th><th className="px-4 py-3">Payer</th></tr></thead><tbody className="divide-y divide-slate-100">{activeAssignments.map((assignment) => <tr key={assignment.id} className="hover:bg-slate-50"><td className="px-4 py-3 font-bold">{assignment.residentName}</td><td className="px-4 py-3">Unit {assignment.unitNumber}</td><td className="px-4 py-3 capitalize">{assignment.relationshipType.toLowerCase()}</td><td className="px-4 py-3">{assignment.isPrimaryPayer ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Primary payer</span> : <span className="text-slate-500">—</span>}</td></tr>)}</tbody></table></div>
+        <div className="max-h-[400px] overflow-auto rounded-xl border border-slate-100"><table className="w-full min-w-[700px] text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Resident</th><th className="px-4 py-3">Unit</th><th className="px-4 py-3">Relationship</th><th className="px-4 py-3">Payer</th></tr></thead><tbody className="divide-y divide-slate-300">{activeAssignments.map((assignment) => <tr key={assignment.id} className="hover:bg-slate-50"><td className="px-4 py-3 font-bold">{assignment.residentName}</td><td className="px-4 py-3">Unit {assignment.unitNumber}</td><td className="px-4 py-3 capitalize">{assignment.relationshipType.toLowerCase()}</td><td className="px-4 py-3">{assignment.isPrimaryPayer ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Primary payer</span> : <span className="text-slate-500">—</span>}</td></tr>)}</tbody></table></div>
         {!loading && activeAssignments.length === 0 && <EmptyRow message="No active resident assignments." />}
       </Panel>
     </DashboardLayout>
   )
 }
 
-function SummaryCard({ icon: Icon, label, tone, value }) {
-  return <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p><p className={`mt-2 text-2xl font-black ${tone}`}>{value}</p></div><span className={`grid size-10 place-items-center rounded-xl bg-slate-50 ${tone}`}><Icon size={19} /></span></div></article>
+function SummaryCard({ accent, icon: Icon, label, value }) {
+  return <article className={`collector-metric collector-metric-${accent} rounded-xl border border-slate-200 p-4 shadow-sm`}><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-2xl font-black text-[var(--ink)]">{value}</p></div><span className="grid size-10 place-items-center rounded-xl"><Icon size={19} /></span></div></article>
+}
+
+function FilterPopover({ label, onSelect, onToggle, open, options, value }) {
+  const selected = options.find((option) => option.value === value) || options[0]
+
+  return (
+    <div className="relative min-w-0">
+      <p className="text-xs font-bold text-slate-600">{label}</p>
+      <button type="button" aria-expanded={open} onClick={onToggle} className="mt-1 flex min-h-[42px] w-full items-center justify-between gap-3 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-left text-sm font-normal text-slate-700 outline-none transition hover:border-[#2f8f5b]">
+        <span className="truncate">{selected.label}</span>
+        <ChevronDown size={17} className={`shrink-0 text-slate-500 transition ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-60 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
+          <div className="grid gap-1">
+            {options.map((option) => <button key={option.value} type="button" onClick={() => onSelect(option.value)} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${value === option.value ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{option.label}</button>)}
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }

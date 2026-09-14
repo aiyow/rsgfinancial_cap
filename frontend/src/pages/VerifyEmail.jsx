@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CheckCircle2, Mail, RefreshCw, XCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Mail, RefreshCw, XCircle } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
 import { apiRequest } from '../services/api'
 
@@ -66,10 +66,12 @@ export default function VerifyEmail() {
   const iconTone = status === 'verified' ? 'text-emerald-600' : status === 'error' ? 'text-rose-600' : 'text-indigo-600'
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-100 p-5">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+    <main className="verify-overlay-shell relative grid min-h-screen place-items-center overflow-hidden p-5">
+      <div className="verify-background-card" aria-hidden="true"><div className="flex items-center gap-4"><BrandMark size="lg" /><div><p className="font-black text-slate-900">RSG Condo</p><p className="text-xs uppercase tracking-[0.15em] text-slate-500">Financial platform</p></div></div><div className="mt-10 h-3 w-3/4 rounded bg-slate-200" /><div className="mt-4 h-3 w-1/2 rounded bg-slate-200" /></div>
+      <div className="verify-backdrop" aria-hidden="true" />
+      <section className="verify-modal relative z-10 w-full max-w-md rounded-2xl border border-white/80 bg-white p-7 text-center shadow-2xl sm:p-9">
         <div className="flex justify-center"><BrandMark size="lg" /></div>
-        <Icon className={`mx-auto mt-6 ${iconTone}`} size={42} aria-hidden="true" />
+        <div className="verify-icon-wrap"><Icon className={iconTone} size={29} aria-hidden="true" /></div>
         <h1 className="mt-4 text-xl font-black text-slate-900">
           {status === 'verifying' ? 'Verifying your email...' : status === 'verified' ? 'Email verified' : status === 'error' ? 'Verification link unavailable' : 'Verify your email'}
         </h1>
@@ -80,14 +82,14 @@ export default function VerifyEmail() {
             <label className="block text-sm font-bold text-slate-700">Email address
               <input required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal" />
             </label>
-            <button disabled={resendBusy} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2.5 text-sm font-bold text-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
+            <button disabled={resendBusy} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--active-bg)] bg-[var(--sidebar-bg)] px-4 py-2.5 text-sm font-bold text-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-60">
               <RefreshCw size={16} className={resendBusy ? 'animate-spin' : ''} />{resendBusy ? 'Sending...' : 'Resend verification email'}
             </button>
             {resendMessage && <p className="mt-3 text-xs leading-5 text-slate-600">{resendMessage}</p>}
           </form>
         )}
 
-        <Link to="/login" className="mt-6 inline-block text-sm font-bold text-indigo-600 hover:underline">Back to sign in</Link>
+        <Link to="/login" className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-[var(--primary)] hover:underline"><ArrowLeft size={16} />Back to sign in</Link>
       </section>
     </main>
   )

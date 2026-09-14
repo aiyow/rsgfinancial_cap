@@ -111,12 +111,12 @@ export default function ResidentBillPage() {
 
       {bill && (
         <>
-          <div className="grid gap-4 md:grid-cols-4 print-hidden">
-            <SummaryCard label="Total amount" value={money(bill.totalAmount)} />
-            {Number(bill.latePenaltyAmount || 0) > 0 && <SummaryCard label={`Late penalty (${Number(bill.latePenaltyPercent || 0).toFixed(2)}%)`} value={money(bill.latePenaltyAmount)} />}
-            <SummaryCard label="Approved payments" value={money(bill.approvedAmount)} />
-            <SummaryCard label="Remaining balance" value={money(bill.remainingBalance)} />
-            <SummaryCard label="Advance balance" value={money(bill.advanceBalance)} />
+          <div className="grid gap-4 print-hidden sm:grid-cols-2 lg:grid-cols-5">
+            <SummaryCard label="Total amount" value={money(bill.totalAmount)} accent="blue" />
+            {Number(bill.latePenaltyAmount || 0) > 0 && <SummaryCard label={`Late penalty (${Number(bill.latePenaltyPercent || 0).toFixed(2)}%)`} value={money(bill.latePenaltyAmount)} accent="green" />}
+            <SummaryCard label="Approved payments" value={money(bill.approvedAmount)} accent="red" />
+            <SummaryCard label="Remaining balance" value={money(bill.remainingBalance)} accent="green" />
+            <SummaryCard label="Advance balance" value={money(bill.advanceBalance)} accent="blue" />
           </div>
 
           <Panel title="Submit payment proof" description="Upload a clear receipt image so OCR can extract the amount, reference number, and payment date for Admin review.">
@@ -167,11 +167,11 @@ export default function ResidentBillPage() {
   )
 }
 
-function SummaryCard({ label, value }) {
+function SummaryCard({ label, value, accent }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-black text-slate-950">{value}</p>
+    <div className={`bill-summary-card bill-summary-${accent}`}>
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p>
+      <p className="mt-3 break-words text-xl font-black text-slate-950">{value}</p>
     </div>
   )
 }

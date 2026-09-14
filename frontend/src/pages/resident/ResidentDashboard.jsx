@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Bar, CartesianGrid, ComposedChart, Legend, Line, LineChart,
+  Bar, CartesianGrid, Cell, ComposedChart, Legend, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
+import { Activity, ChevronDown, CreditCard, FileCheck2, Lightbulb, ListFilter, ReceiptText } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -18,6 +19,10 @@ function monthLabel(value) {
 
 function money(value) {
   return value === null || value === undefined ? 'Unavailable' : `PHP ${Number(value).toFixed(2)}`
+}
+
+function displayName(value) {
+  return String(value || '').split(/\s+/).filter(Boolean).map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`).join(' ')
 }
 
 function paddedDomain(values) {
@@ -45,13 +50,14 @@ function latestMeterResetIndex(history) {
 }
 
 export default function ResidentDashboard() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const [bills, setBills] = useState([])
   const [payments, setPayments] = useState([])
   const [analyticsUnits, setAnalyticsUnits] = useState([])
   const [recommendations, setRecommendations] = useState([])
   const [selectedUnitId, setSelectedUnitId] = useState('')
   const [chartRange, setChartRange] = useState('RESET')
+  const [chartRangeMenuOpen, setChartRangeMenuOpen] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -143,10 +149,12 @@ export default function ResidentDashboard() {
     <DashboardLayout title="Resident dashboard" description="View published SOAs, payment status, water analytics, and personalized recommendations.">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
+      <section className="resident-welcome"><div><p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Resident portal</p><h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Welcome back, {displayName(user.fullName)}</h1><p className="mt-2 text-sm text-slate-500">Unit {selectedUnit?.unitNumber || '—'} <span className="mx-1 text-slate-300">·</span> RSG Residences</p></div><div className="resident-welcome-mark"><Activity size={22} /></div></section>
+
       <div className="grid gap-4 md:grid-cols-3">
-        <DashboardCard label="Published SOAs" value={summary.publishedSoas} />
-        <DashboardCard label="Need payment" value={summary.unpaid} />
-        <DashboardCard label="Pending payment reviews" value={summary.pendingPayments} />
+        <DashboardCard icon={FileCheck2} label="Published SOAs" value={summary.publishedSoas} accent="blue" />
+        <DashboardCard icon={CreditCard} label="Need payment" value={summary.unpaid} accent="green" />
+        <DashboardCard icon={ReceiptText} label="Pending payment reviews" value={summary.pendingPayments} accent="red" />
       </div>
 
       <Panel title="Water consumption analytics" description="Forecasts are estimates based on five consecutive valid monthly readings and do not replace your actual bill.">
@@ -174,12 +182,42 @@ export default function ResidentDashboard() {
               <MetricCard label="Estimated water charge" value={forecast?.status === 'READY' ? money(forecast.estimatedWaterCharge) : 'Unavailable'} />
             </div>
 
-            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-sm font-bold text-slate-800">Chart history</p>
-                <p className="mt-1 text-xs text-slate-500">{resetIndex >= 0 ? `A meter reset was recorded in ${monthLabel(history[resetIndex].periodStart)}. Old-meter readings are hidden by default.` : 'Choose how many recent months to show.'}</p>
+            <div className="resident-chart-controls">
+              <div className="flex min-w-0 items-start gap-3">
+                <span className="resident-chart-control-icon"><Activity size={17} aria-hidden="true" /></span>
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-slate-800">Chart history</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{resetIndex >= 0 ? `A meter reset was recorded in ${monthLabel(history[resetIndex].periodStart)}. Old-meter readings are hidden by default.` : 'Choose how many recent months to show.'}</p>
+                </div>
               </div>
-              <label className="block w-full text-xs font-bold text-slate-600 sm:max-w-52">Show readings<select value={chartRange} onChange={(event) => setChartRange(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-800"><option value="RESET">{resetIndex >= 0 ? 'Since latest meter reset' : 'All available readings'}</option><option value="1">Last 1 month</option><option value="2">Last 2 months</option><option value="3">Last 3 months</option><option value="6">Last 6 months</option><option value="ALL">All readings</option></select></label>
+              <label className="resident-chart-select-label">
+                <span>Viewing</span>
+                <span className="relative block">
+                  <button type="button" aria-expanded={chartRangeMenuOpen} onClick={() => setChartRangeMenuOpen((current) => !current)} className="resident-range-selector">
+                    <ListFilter size={15} aria-hidden="true" />
+                    <span className="min-w-0 flex-1 truncate text-left">{chartRange === 'RESET' ? (resetIndex >= 0 ? 'Since latest meter reset' : 'All available readings') : chartRange === 'ALL' ? 'All readings' : `Last ${chartRange} month${chartRange === '1' ? '' : 's'}`}</span>
+                    <ChevronDown size={15} className={`shrink-0 text-[#587064] transition ${chartRangeMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                  </button>
+                  {chartRangeMenuOpen && (
+                    <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-full min-w-[230px] rounded-xl border border-[#d7eadc] bg-white p-3 text-left shadow-xl">
+                      <div>
+                        <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">Recommended</p>
+                        <button type="button" onClick={() => { setChartRange('RESET'); setChartRangeMenuOpen(false) }} className={`w-full rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${chartRange === 'RESET' ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{resetIndex >= 0 ? 'Since latest meter reset' : 'All available readings'}</button>
+                      </div>
+                      <div className="mt-3">
+                        <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">Recent</p>
+                        <div className="grid gap-1 sm:grid-cols-2">
+                          {['1', '2', '3', '6'].map((range) => <button key={range} type="button" onClick={() => { setChartRange(range); setChartRangeMenuOpen(false) }} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${chartRange === range ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>Last {range} month{range === '1' ? '' : 's'}</button>)}
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">Full history</p>
+                        <button type="button" onClick={() => { setChartRange('ALL'); setChartRangeMenuOpen(false) }} className={`w-full rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${chartRange === 'ALL' ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>All readings</button>
+                      </div>
+                    </div>
+                  )}
+                </span>
+              </label>
             </div>
 
             {forecast && forecast.status !== 'READY' && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{forecast.reason}</p>}
@@ -189,13 +227,15 @@ export default function ResidentDashboard() {
                 {consumptionData.length ? (
                   <ResponsiveContainer width="100%" height={320}>
                     <ComposedChart data={consumptionData} margin={{ top: 10, right: 12, left: 0, bottom: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#dceee2" />
                       <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
                       <YAxis unit=" m³" tick={{ fontSize: 12 }} />
                       <Tooltip formatter={(value) => [`${Number(value).toFixed(3)} m³`]} />
                       <Legend />
-                      <Bar dataKey="actual" name="Actual consumption" fill="#4f46e5" radius={[5, 5, 0, 0]} maxBarSize={64} />
-                      {forecast?.status === 'READY' && <Bar dataKey="predicted" name="Predicted consumption" fill="#f59e0b" radius={[5, 5, 0, 0]} maxBarSize={64} />}
+                      <Bar dataKey="actual" name="Actual consumption" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={0} animationDuration={1000} animationEasing="ease-out">
+                        {consumptionData.map((row, index) => <Cell key={`actual-${row.label}-${index}`} fill={index % 2 === 0 ? '#2563eb' : '#2f8f5b'} />)}
+                      </Bar>
+                      {forecast?.status === 'READY' && <Bar dataKey="predicted" name="Predicted consumption" fill="#2f8f5b" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={120} animationDuration={1000} animationEasing="ease-out" />}
                     </ComposedChart>
                   </ResponsiveContainer>
                 ) : <EmptyRow message="Meter-reading history is not available yet." />}
@@ -205,13 +245,13 @@ export default function ResidentDashboard() {
                 {meterData.length ? (
                   <ResponsiveContainer width="100%" height={320}>
                     <LineChart data={meterData} margin={{ top: 10, right: 12, left: 0, bottom: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#dceee2" />
                       <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
                       <YAxis domain={meterDomain} tick={{ fontSize: 12 }} />
                       <Tooltip formatter={(value) => [Number(value).toFixed(3)]} />
                       <Legend />
-                      <Line dataKey="actual" name="Monthly meter reading" stroke="#0f766e" strokeWidth={3} dot={{ r: 4 }} />
-                      {forecast?.status === 'READY' && <Line dataKey="predicted" name="Predicted reading" stroke="#f59e0b" strokeWidth={3} strokeDasharray="6 4" dot={{ r: 4 }} />}
+                      <Line type="monotone" dataKey="actual" name="Monthly meter reading" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#ffffff', strokeWidth: 3 }} />
+                      {forecast?.status === 'READY' && <Line type="monotone" dataKey="predicted" name="Predicted reading" stroke="#34d399" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 4, fill: '#ffffff', strokeWidth: 3 }} connectNulls />}
                     </LineChart>
                   </ResponsiveContainer>
                 ) : <EmptyRow message="Meter-reading history is not available yet." />}
@@ -222,9 +262,9 @@ export default function ResidentDashboard() {
               <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Some readings require staff review and are excluded from the forecast.</p>
             )}
 
-            <section className={`rounded-2xl border p-4 ${allInsightsPositive ? 'border-emerald-200 bg-emerald-50/50' : 'border-amber-200 bg-amber-50/40'}`}>
+            <section className={`resident-insights rounded-2xl border p-4 ${allInsightsPositive ? 'border-emerald-200 bg-emerald-50/50' : 'border-amber-200 bg-amber-50/40'}`}>
               <div className="mb-4">
-                <h3 className="font-black text-slate-950">Prescriptive Insights</h3>
+                <h3 className="flex items-center gap-2 font-black text-slate-950"><Lightbulb size={18} className="text-[var(--primary)]" />Prescriptive Insights</h3>
                 <p className="mt-1 text-sm text-slate-500">Recommendations for Unit {selectedUnit?.unitNumber}, based on its water use and current billing status.</p>
               </div>
               {selectedRecommendations.length > 0 ? (
@@ -257,7 +297,7 @@ export default function ResidentDashboard() {
                 </div>
                 <p className="mt-1 text-sm text-slate-500">Due {String(bill.dueDate).slice(0, 10)} | Remaining PHP {Number(bill.remainingBalance || 0).toFixed(2)} | Advance PHP {Number(bill.advanceBalance || 0).toFixed(2)}</p>
               </div>
-              <Link to={`/resident/bills/${bill.id}`} className="w-fit rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Open SOA</Link>
+              <Link to={`/resident/bills/${bill.id}`} className="resident-soa-button resident-soa-button-green w-fit">Open SOA <span aria-hidden="true">→</span></Link>
             </article>
           ))}
         </div>
@@ -274,16 +314,16 @@ export default function ResidentDashboard() {
   )
 }
 
-function DashboardCard({ label, value }) {
-  return <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm text-slate-500">{label}</p><p className="mt-3 text-3xl font-black text-slate-950">{value}</p></div>
+function DashboardCard({ icon: Icon, label, value, accent }) {
+  return <div className={`resident-summary-card resident-summary-${accent}`}><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p><p className="mt-2 text-3xl font-black text-slate-950">{value}</p></div><div className="resident-card-icon"><Icon size={19} /></div></div>
 }
 
 function MetricCard({ label, value }) {
-  return <div className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-2 text-xl font-black text-slate-900">{value}</p></div>
+  return <div className="resident-metric-card"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xl font-black text-slate-900">{value}</p></div>
 }
 
 function ChartCard({ title, description, children }) {
-  return <div className="min-w-0 rounded-2xl border border-slate-200 p-4"><h3 className="font-black text-slate-900">{title}</h3><p className="mt-1 text-sm text-slate-500">{description}</p><div className="mt-4">{children}</div></div>
+  return <div className="resident-chart-card min-w-0 rounded-2xl border p-4"><h3 className="font-black text-slate-900">{title}</h3><p className="mt-1 text-sm text-slate-500">{description}</p><div className="mt-4">{children}</div></div>
 }
 
 function isPositiveInsight(recommendation) {

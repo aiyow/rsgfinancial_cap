@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus, Search, X } from 'lucide-react'
+import { Building2, ChevronDown, Plus, Search, Users, X } from 'lucide-react'
 import DashboardLayout, { EmptyRow } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -43,6 +43,9 @@ export default function AdminUnitsPage() {
   const [floor, setFloor] = useState('ALL')
   const [status, setStatus] = useState('ALL')
   const [balance, setBalance] = useState('ALL')
+  const [floorMenuOpen, setFloorMenuOpen] = useState(false)
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false)
+  const [balanceMenuOpen, setBalanceMenuOpen] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
 
   const loadData = useCallback(async () => {
@@ -126,6 +129,7 @@ export default function AdminUnitsPage() {
   }, [balance, floor, rows, search, status])
 
   const occupiedCount = units.filter((unit) => unit.occupancyStatus === 'OCCUPIED').length
+  const activeAssignmentCount = assignments.filter((assignment) => !assignment.endDate).length
   const activeAssignments = useMemo(
     () => assignments.filter((assignment) => assignment.unitId === editingId && !assignment.endDate),
     [assignments, editingId],
@@ -220,15 +224,22 @@ export default function AdminUnitsPage() {
       onSave={saveUnit}
     />}
 
-    <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-white shadow-sm">
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <SummaryCard label="Total units" value={units.length} icon={Building2} accent="blue" />
+      <SummaryCard label="Occupied" value={occupiedCount} icon={Users} accent="green" />
+      <SummaryCard label="Vacant" value={units.length - occupiedCount} icon={Building2} accent="red" />
+      <SummaryCard label="Active residents" value={activeAssignmentCount} icon={Users} accent="blue" />
+    </div>
+
+    <section className="overflow-visible rounded-2xl border border-[var(--border)] bg-white shadow-sm">
       <div className="grid gap-3 border-b border-[var(--border)] p-4 lg:grid-cols-[minmax(280px,1fr)_180px_200px_180px_auto] lg:items-center">
         <label className="relative min-w-0 flex-1"><Search size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search unit number or resident..." className="w-full rounded-lg border border-[var(--border)] bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--active-bg)]" /></label>
-        <select value={floor} onChange={(event) => setFloor(event.target.value)} className={`${inputClass.replace('mt-1.5 ', '')} min-w-0`}><option value="ALL">Floor: all</option>{floors.map((option) => <option key={option} value={option}>Floor: {option}</option>)}</select>
-        <select value={status} onChange={(event) => setStatus(event.target.value)} className={`${inputClass.replace('mt-1.5 ', '')} min-w-0`}><option value="ALL">Occupancy: all</option><option value="OCCUPIED">Occupied</option><option value="VACANT">Vacant</option></select>
-        <select value={balance} onChange={(event) => setBalance(event.target.value)} className={`${inputClass.replace('mt-1.5 ', '')} min-w-0`}><option value="ALL">Balance: any</option><option value="OPEN">With balance</option><option value="CLEAR">Clear balance</option></select>
+        <FilterPopover value={floor} open={floorMenuOpen} onToggle={() => { setFloorMenuOpen((current) => !current); setStatusMenuOpen(false); setBalanceMenuOpen(false) }} onSelect={(value) => { setFloor(value); setFloorMenuOpen(false) }} options={[{ value: 'ALL', label: 'Floor: all' }, ...floors.map((option) => ({ value: option, label: option }))]} />
+        <FilterPopover value={status} open={statusMenuOpen} onToggle={() => { setStatusMenuOpen((current) => !current); setFloorMenuOpen(false); setBalanceMenuOpen(false) }} onSelect={(value) => { setStatus(value); setStatusMenuOpen(false) }} options={[{ value: 'ALL', label: 'Occupancy: all' }, { value: 'OCCUPIED', label: 'Occupied' }, { value: 'VACANT', label: 'Vacant' }]} />
+        <FilterPopover value={balance} open={balanceMenuOpen} onToggle={() => { setBalanceMenuOpen((current) => !current); setFloorMenuOpen(false); setStatusMenuOpen(false) }} onSelect={(value) => { setBalance(value); setBalanceMenuOpen(false) }} options={[{ value: 'ALL', label: 'Balance: any' }, { value: 'OPEN', label: 'With balance' }, { value: 'CLEAR', label: 'Clear balance' }]} />
         <p className="whitespace-nowrap text-right text-xs font-bold text-[var(--muted)]">{filteredRows.length} of {units.length} · 10 rows visible</p>
       </div>
-      <div className="max-h-[690px] overflow-auto"><table className="w-full min-w-[1050px] text-left text-sm"><thead className="sticky top-0 z-10 bg-[var(--app-bg)] text-[11px] uppercase tracking-[0.08em] text-[var(--muted)] shadow-sm"><tr><th className="px-4 py-3 font-bold">Unit</th><th className="px-4 py-3 font-bold">Resident</th><th className="px-4 py-3 font-bold">Floor / area</th><th className="px-4 py-3 font-bold">Open balance</th><th className="px-4 py-3 font-bold">Occupancy</th><th className="px-4 py-3 font-bold">Last payment</th><th className="px-4 py-3 text-right font-bold">Actions</th></tr></thead><tbody className="divide-y divide-[var(--border)]">
+      <div className="max-h-[690px] overflow-auto"><table className="w-full min-w-[1050px] text-left text-sm"><thead className="sticky top-0 z-10 bg-[var(--app-bg)] text-[11px] uppercase tracking-[0.08em] text-[var(--muted)] shadow-sm"><tr><th className="px-4 py-3 font-bold">Unit</th><th className="px-4 py-3 font-bold">Resident</th><th className="px-4 py-3 font-bold">Floor / area</th><th className="px-4 py-3 font-bold">Open balance</th><th className="px-4 py-3 font-bold">Occupancy</th><th className="px-4 py-3 font-bold">Last payment</th><th className="px-4 py-3 text-right font-bold">Actions</th></tr></thead><tbody className="divide-y divide-slate-300">
         {filteredRows.map((unit) => <tr key={unit.id} className="transition hover:bg-[var(--app-bg)]"><td className="px-4 py-3.5 font-black text-[var(--primary)]">{unit.unitNumber}</td><td className="px-4 py-3.5 text-[var(--ink)]">{unit.residents.length ? unit.residents.join(', ') : '-'}</td><td className="px-4 py-3.5 text-[var(--muted)]">Floor {unit.floor || '-'} · {unit.billableAreaSqm ? `${unit.billableAreaSqm} sqm` : 'Area not set'}</td><td className={`px-4 py-3.5 font-mono text-xs ${unit.outstandingBalance > 0 ? 'font-bold text-red-600' : 'text-[var(--muted)]'}`}>{money(unit.outstandingBalance)}</td><td className="px-4 py-3.5"><OccupancyBadge status={unit.occupancyStatus} /></td><td className="px-4 py-3.5 text-[var(--muted)]">{date(unit.lastPayment)}</td><td className="px-4 py-3.5"><div className="flex justify-end gap-2"><button type="button" onClick={() => openView(unit)} className={actionClass}>View</button><button type="button" onClick={() => startEdit(unit)} className={actionClass}>Edit</button><button type="button" onClick={() => window.confirm(`Delete unit ${unit.unitNumber}?`) && runAction(() => apiRequest(`/api/units/${unit.id}`, { method: 'DELETE', token }), 'Unit deleted.')} className={`${actionClass} text-red-600`}>Delete</button></div></td></tr>)}
       </tbody></table></div>
       {filteredRows.length === 0 ? <div className="p-4"><EmptyRow message={units.length ? 'No units match the selected filters.' : 'No units have been added yet.'} /></div> : null}
@@ -236,14 +247,40 @@ export default function AdminUnitsPage() {
   </DashboardLayout>
 }
 
+function SummaryCard({ accent, icon: Icon, label, value }) {
+  return <article className={`collector-metric collector-metric-${accent} rounded-xl border border-[var(--border)] p-4 shadow-sm`}><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">{label}</p><p className="mt-2 text-2xl font-black text-[var(--ink)]">{value}</p></div><span className="grid size-10 place-items-center rounded-xl"><Icon size={19} /></span></div></article>
+}
+
+function FilterPopover({ label, onSelect, onToggle, open, options, value }) {
+  const selected = options.find((option) => option.value === value) || options[0]
+
+  return (
+    <div className="relative min-w-0">
+      <button type="button" aria-label={label ? `Filter by ${label}` : undefined} aria-expanded={open} onClick={onToggle} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#b8d9c2] bg-white px-3.5 text-left text-sm font-bold text-[#345744] shadow-sm transition hover:border-[#2f8f5b]">
+        <span className="min-w-0 truncate">{selected.label}</span>
+        <ChevronDown size={17} className={`shrink-0 text-[var(--muted)] transition ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 min-w-full rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
+          {label && <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">{label}</p>}
+          <div className="grid gap-1">
+            {options.map((option) => <button key={option.value} type="button" onClick={() => onSelect(option.value)} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${value === option.value ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{option.label}</button>)}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function UnitModal({ assignments, assignmentBusy, assignmentForm, form, mode, residents, selectedUnit, onAssignmentChange, onClose, onCreateAssignment, onEndAssignment, onFormChange, onSave }) {
   const readOnly = mode === 'view'
   const editing = mode === 'edit'
   const title = readOnly ? `Unit ${form.unitNumber}` : editing ? `Edit unit ${form.unitNumber}` : 'Add unit'
+  const [occupancyMenuOpen, setOccupancyMenuOpen] = useState(false)
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4" role="presentation" onMouseDown={onClose}>
-      <section role="dialog" aria-modal="true" aria-labelledby="unit-modal-title" className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+      <section role="dialog" aria-modal="true" aria-labelledby="unit-modal-title" className={`max-h-[90vh] w-full max-w-3xl rounded-2xl bg-white p-5 shadow-xl sm:p-6 ${readOnly || editing ? 'overflow-y-auto' : 'overflow-visible'}`} onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="unit-modal-title" className="text-xl font-black text-[var(--ink)]">{title}</h2>
@@ -271,7 +308,7 @@ function UnitModal({ assignments, assignmentBusy, assignmentForm, form, mode, re
               <Field label="Unit number"><input required value={form.unitNumber} onChange={(event) => onFormChange('unitNumber', event.target.value)} className={inputClass} /></Field>
               <Field label="Floor"><input required value={form.floor} onChange={(event) => onFormChange('floor', event.target.value)} className={inputClass} /></Field>
               <Field label="Billable area (sqm)"><input required min="0.01" step="0.01" type="number" value={form.billableAreaSqm} onChange={(event) => onFormChange('billableAreaSqm', event.target.value)} className={inputClass} /></Field>
-              <Field label="Occupancy"><select value={form.occupancyStatus} onChange={(event) => onFormChange('occupancyStatus', event.target.value)} className={inputClass}><option value="VACANT">Vacant</option><option value="OCCUPIED">Occupied</option></select></Field>
+              <Field label="Occupancy"><div className="mt-1.5"><FilterPopover label="Occupancy" value={form.occupancyStatus} open={occupancyMenuOpen} onToggle={() => setOccupancyMenuOpen((current) => !current)} onSelect={(value) => { onFormChange('occupancyStatus', value); setOccupancyMenuOpen(false) }} options={[{ value: 'VACANT', label: 'Vacant' }, { value: 'OCCUPIED', label: 'Occupied' }]} /></div></Field>
               <div className="flex justify-end gap-3 sm:col-span-2"><button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-bold text-[var(--ink)]">Cancel</button><button className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white">{editing ? 'Save unit changes' : 'Add unit'}</button></div>
             </form>
 
