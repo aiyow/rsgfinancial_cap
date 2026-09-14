@@ -1,4 +1,7 @@
-const WINDOW_SIZE = 5;
+//Changed window size from 5 months fixed to 5 to 12 months flexibility
+const MIN_WINDOW_SIZE = 5;
+const MAX_WINDOW_SIZE = 12;
+const WINDOW_SIZE = MAX_WINDOW_SIZE;
 
 function numeric(value) {
   const result = Number(value);
@@ -30,7 +33,7 @@ export function linearRegression(values) {
   return { slope, intercept, predicted: Math.max(0, intercept + (slope * points.length)) };
 }
 
-export function selectConsecutiveReadings(history, windowSize = WINDOW_SIZE) {
+export function selectConsecutiveReadings(history, windowSize = MAX_WINDOW_SIZE) {
   if (!Array.isArray(history) || history.length === 0) return [];
   const sorted = [...history].sort((a, b) => monthIndex(a.periodStart) - monthIndex(b.periodStart));
   const segment = [];
@@ -48,7 +51,7 @@ export function selectConsecutiveReadings(history, windowSize = WINDOW_SIZE) {
   return segment;
 }
 
-export function buildForecast(history, { waterRate = 0, windowSize = WINDOW_SIZE } = {}) {
+export function buildForecast(history, { waterRate = 0, minWindow = MIN_WINDOW_SIZE, maxWindow = MAX_WINDOW_SIZE } = {}) {
   const sorted = [...(history || [])].sort((a, b) => monthIndex(a.periodStart) - monthIndex(b.periodStart));
   const latest = sorted.at(-1);
   if (!latest) {
@@ -57,16 +60,22 @@ export function buildForecast(history, { waterRate = 0, windowSize = WINDOW_SIZE
   if (latest.validationStatus !== "VALID") {
     return { status: "FLAGGED_READING", reason: "The latest meter reading requires review.", sampleCount: 0 };
   }
-  const selected = selectConsecutiveReadings(sorted, windowSize);
-  if (selected.length < windowSize) {
+
+  // Pulls up to 12 consecutive months if available
+  const selected = selectConsecutiveReadings(sorted, maxWindow);
+
+  // Fails only if fewer than 5 consecutive months exist
+  if (selected.length < minWindow) {
     return {
       status: "INSUFFICIENT_DATA",
-      reason: `At least ${windowSize} consecutive valid monthly readings are required.`,
+      reason: `At least ${minWindow} consecutive valid monthly readings are required.`,
       sampleCount: selected.length,
     };
   }
+
   const regression = linearRegression(selected.map((reading) => reading.consumption));
   const predictedConsumption = Number(regression.predicted.toFixed(3));
+
   return {
     status: "READY",
     reason: null,
@@ -110,8 +119,8 @@ export async function regenerateForecasts(client, billingPeriodId) {
 
   const readingsResult = await client.query(
     `SELECT m.unit_id AS "unitId", p.period_start AS "periodStart",
-      m.current_reading - m.previous_reading AS consumption,
-      m.validation_status AS "validationStatus"
+     m.current_reading - m.previous_reading AS consumption,
+     m.validation_status AS "validationStatus"
      FROM meter_readings m
      JOIN billing_periods p ON p.id = m.billing_period_id
      WHERE p.period_start <= $1
@@ -152,4 +161,4 @@ export async function regenerateForecastsFromPeriod(client, billingPeriodId) {
   for (const period of periods.rows) await regenerateForecasts(client, period.id);
 }
 
-export { WINDOW_SIZE };
+export { MIN_WINDOW_SIZE, MAX_WINDOW_SIZE, WINDOW_SIZE };
