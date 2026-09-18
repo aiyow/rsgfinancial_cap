@@ -2,7 +2,7 @@ import express from "express";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId } from "../middleware/validate.js";
-import { calculateAccuracy } from "../services/predictiveAnalytics.js";
+import { calculateAccuracy, regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.js";
 
 const router = express.Router();
 
@@ -28,6 +28,33 @@ const forecastSelect = `SELECT f.id, f.unit_id AS "unitId", u.unit_number AS "un
   JOIN billing_periods p ON p.id = f.based_on_period_id`;
 
 router.use(requireAuth);
+
+// Forecasts are persisted so a dashboard load is fast. Staff can explicitly
+// rebuild them after a forecasting-model or historical-reading update.
+router.post("/refresh-forecasts", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const firstPeriodResult = await client.query(
+      `SELECT id FROM billing_periods
+       WHERE period_type = 'LIVE_BILLING' OR readings_visible_at IS NOT NULL
+       ORDER BY period_start ASC LIMIT 1`,
+    );
+    const firstPeriod = firstPeriodResult.rows[0];
+    if (!firstPeriod) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ message: "There are no billing periods with readings to refresh." });
+    }
+    await regenerateForecastsFromPeriod(client, firstPeriod.id);
+    await client.query("COMMIT");
+    return res.json({ message: "Forecasts were refreshed using the current model." });
+  } catch (error) {
+    await client.query("ROLLBACK");
+    return next(error);
+  } finally {
+    client.release();
+  }
+});
 
 router.get("/resident", allowRoles("RESIDENT"), async (req, res, next) => {
   try {
@@ -100,7 +127,7 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
         `SELECT f.unit_id AS "unitId", u.unit_number AS "unitNumber", f.forecast_for_month AS "forecastForMonth",
           f.predicted_consumption AS "predictedConsumption",
           actual.current_reading - actual.previous_reading AS "actualConsumption",
-          f.forecast_status AS status, f.status_reason AS reason,
+          f.model_name AS "modelName", f.forecast_status AS status, f.status_reason AS reason,
           actual.validation_status AS "actualValidationStatus", actual.validation_notes AS "actualValidationNotes"
          FROM billing_forecasts f
          JOIN billing_periods source ON source.id = f.based_on_period_id
@@ -133,7 +160,7 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
          FROM billing_forecasts f2
          JOIN billing_periods source2 ON source2.id = f2.based_on_period_id
          WHERE (source2.period_type = 'LIVE_BILLING' OR source2.readings_visible_at IS NOT NULL)
-         ORDER BY f2.generated_at DESC LIMIT 1
+         ORDER BY source2.period_start DESC, f2.generated_at DESC LIMIT 1
        )
        AND (source.period_type = 'LIVE_BILLING' OR source.readings_visible_at IS NOT NULL)
        GROUP BY f.forecast_for_month`,

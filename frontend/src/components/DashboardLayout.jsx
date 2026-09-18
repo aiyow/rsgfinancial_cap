@@ -8,6 +8,8 @@ import {
   ChevronDown,
   CreditCard,
   FileText,
+  FolderKanban,
+  CircleAlert,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -34,10 +36,13 @@ const navigationByRole = {
       { label: 'Payments', to: '/admin/payments', icon: CreditCard },
       { label: 'Audit Logs', to: '/admin/audit-logs', icon: ScrollText },
       { label: 'Water Analytics', to: '/admin/analytics', icon: BarChart3 },
+      { label: 'Reports', to: '/admin/reports', icon: FolderKanban },
+      { label: 'Billing Errors', to: '/admin/billing-errors', icon: CircleAlert },
     ],
     manage: [
       { label: 'User Management', to: '/admin/users', icon: Users },
       { label: 'Manage Units', to: '/admin/units/manage', icon: Settings2 },
+      { label: 'SOA Settings', to: '/admin/soa-template', icon: BookOpen },
     ],
   },
   COLLECTOR: {
@@ -47,10 +52,11 @@ const navigationByRole = {
       { label: 'Units', to: '/collector/units', icon: Building2 },
       { label: 'Verified Payments', to: '/collector/payments', icon: WalletCards },
       { label: 'Water Analytics', to: '/collector/analytics', icon: BarChart3 },
+      { label: 'Reports', to: '/collector/reports', icon: FolderKanban },
+      { label: 'Billing Errors', to: '/collector/billing-errors', icon: CircleAlert },
     ],
     manage: [
       { label: 'Monthly Billing', to: '/collector/billing', icon: Calculator },
-      { label: 'SOA Template', to: '/collector/soa-template', icon: BookOpen },
       { label: 'Analytics Import', to: '/collector/history-import', icon: Upload },
     ],
   },
@@ -200,7 +206,7 @@ export default function DashboardLayout({ title, description, children }) {
           </button>
         </div>
 
-        <div className={`min-h-0 flex-1 overflow-y-auto px-3 py-5 ${collapsed ? 'lg:px-2' : ''}`}>
+        <div className={`sidebar-scroll min-h-0 flex-1 overflow-y-auto px-3 py-5 ${collapsed ? 'lg:px-2' : ''}`}>
           <NavigationLinks sections={sections} collapsed={collapsed} onNavigate={() => setMobileOpen(false)} />
         </div>
 

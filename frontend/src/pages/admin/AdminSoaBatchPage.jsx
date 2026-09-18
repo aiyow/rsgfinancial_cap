@@ -8,6 +8,7 @@ import { apiRequest } from '../../services/api'
 function emailSummaryMessage(summary) {
   if (!summary) return ''
   const parts = []
+  if (summary.queued) parts.push(`${summary.queued} email${summary.queued === 1 ? '' : 's'} queued`)
   if (summary.sent) parts.push(`${summary.sent} email${summary.sent === 1 ? '' : 's'} sent`)
   if (summary.failed) parts.push(`${summary.failed} failed`)
   if (summary.skipped) parts.push(`${summary.skipped} SOA${summary.skipped === 1 ? '' : 's'} had no active email recipient`)
@@ -73,6 +74,7 @@ export default function AdminSoaBatchPage() {
   const [page, setPage] = useState(1)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
+  const [publishConfirmation, setPublishConfirmation] = useState(null)
 
   const publishedCount = useMemo(() => bills.filter((bill) => bill.publishedAt).length, [bills])
   const unpublished = useMemo(() => bills.filter((bill) => !bill.publishedAt), [bills])
@@ -118,12 +120,40 @@ export default function AdminSoaBatchPage() {
       const refreshed = await apiRequest(`/api/bills?billingPeriodId=${periodId}`, { token })
       setBills(refreshed.bills)
       setSelectedIds([])
-      setNotice({ error: '', message: `${data.message || successMessage}${emailSummaryMessage(data.emailSummary)}` })
+      const deliveryMessage = data.emailsSending
+        ? ` ${data.emailQueuedCount} email${data.emailQueuedCount === 1 ? '' : 's'} are sending in the background.`
+        : body.sendEmails === false
+          ? ' Published without sending email.'
+          : ''
+      setNotice({ error: '', message: `${data.message || successMessage}${deliveryMessage}${emailSummaryMessage(data.emailSummary)}` })
     } catch (error) {
       setNotice({ error: error.message, message: '' })
     } finally {
       setBusy(false)
     }
+  }
+
+  function requestPublishAll() {
+    setPublishConfirmation({
+      body: {}, count: unpublished.length, title: 'Publish all remaining SOAs?',
+      message: 'Each resident with an active email recipient will be notified and can view their Statement of Account.',
+      successMessage: 'Published every unpublished SOA in this batch.',
+    })
+  }
+
+  function requestPublishSelected() {
+    setPublishConfirmation({
+      body: { billIds: selectedIds }, count: selectedIds.length, title: 'Publish selected SOAs?',
+      message: 'Only the selected residents will receive and be able to view these Statements of Account.',
+      successMessage: 'Published the selected SOAs.',
+    })
+  }
+
+  async function confirmPublish(sendEmails) {
+    if (!publishConfirmation) return
+    const request = publishConfirmation
+    setPublishConfirmation(null)
+    await publish({ ...request.body, sendEmails }, request.successMessage)
   }
 
   async function retryEmail(bill) {
@@ -163,8 +193,8 @@ export default function AdminSoaBatchPage() {
       {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
       <Panel title={`${bills.length} Statements of Account`} description={`${publishedCount} published to Residents | ${unpublished.length} still hidden`}>
         <div className="mb-5 flex flex-wrap gap-3">
-          <button disabled={busy || unpublished.length === 0} onClick={() => publish({}, 'Published every unpublished SOA in this batch.')} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:bg-slate-300">Publish all remaining</button>
-          <button disabled={busy || selectedIds.length === 0} onClick={() => publish({ billIds: selectedIds }, 'Published the selected SOAs.')} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold disabled:opacity-50">Publish selected</button>
+          <button disabled={busy || unpublished.length === 0} onClick={requestPublishAll} className="rounded-lg border border-[#75ba8e] bg-white px-4 py-2 text-sm font-bold text-[#237a4a] shadow-sm transition hover:border-[#237a4a] hover:bg-[#2f8f5b] hover:text-white hover:shadow-md focus:bg-[#2f8f5b] focus:text-white focus:outline-none focus:ring-2 focus:ring-[#2f8f5b] focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-white disabled:text-slate-400 disabled:shadow-none">Publish all remaining</button>
+          <button disabled={busy || selectedIds.length === 0} onClick={requestPublishSelected} className="rounded-lg border border-[#75ba8e] bg-white px-4 py-2 text-sm font-bold text-[#237a4a] shadow-sm transition hover:border-[#237a4a] hover:bg-[#2f8f5b] hover:text-white hover:shadow-md focus:bg-[#2f8f5b] focus:text-white focus:outline-none focus:ring-2 focus:ring-[#2f8f5b] focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-white disabled:text-slate-400 disabled:shadow-none">Publish selected{selectedIds.length ? ` (${selectedIds.length})` : ''}</button>
         </div>
         <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 p-4"><p className="mb-3 text-sm font-black text-slate-800">Filter Statements of Account</p><div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_170px_180px]"><label className="text-xs font-bold text-slate-600">Search unit or payer<input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }} placeholder="e.g. 401 or owner name" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal" /></label><FilterPopover label="Publication" value={publishFilter} open={publishMenuOpen} onToggle={() => { setPublishMenuOpen((current) => !current); setDeliveryMenuOpen(false) }} onSelect={(value) => { setPublishFilter(value); setPage(1); setPublishMenuOpen(false) }} options={[{ value: 'ALL', label: 'All SOAs' }, { value: 'PUBLISHED', label: 'Published' }, { value: 'HIDDEN', label: 'Hidden' }]} /><FilterPopover label="Email delivery" value={deliveryFilter} open={deliveryMenuOpen} onToggle={() => { setDeliveryMenuOpen((current) => !current); setPublishMenuOpen(false) }} onSelect={(value) => { setDeliveryFilter(value); setPage(1); setDeliveryMenuOpen(false) }} options={[{ value: 'ALL', label: 'All statuses' }, { value: 'SENT', label: 'Sent' }, { value: 'FAILED', label: 'Failed' }, { value: 'PENDING', label: 'Pending' }, { value: 'NO_RECIPIENTS', label: 'No recipients' }]} /></div></div>
         <p className="mb-3 text-sm text-slate-500">Showing {filteredBills.length ? `${firstBillIndex + 1}-${lastBillIndex}` : 0} of {filteredBills.length} matching SOAs ({bills.length} total), sorted by unit number.</p>
@@ -173,6 +203,20 @@ export default function AdminSoaBatchPage() {
         {bills.length === 0 && <EmptyRow message="No forwarded SOAs found for this batch." />}
         {bills.length > 0 && filteredBills.length === 0 && <EmptyRow message="No SOAs match the selected filters." />}
       </Panel>
+      {publishConfirmation && <PublishConfirmationModal confirmation={publishConfirmation} busy={busy} onCancel={() => setPublishConfirmation(null)} onPublishOnly={() => confirmPublish(false)} onPublishAndSend={() => confirmPublish(true)} />}
     </DashboardLayout>
+  )
+}
+
+function PublishConfirmationModal({ busy, confirmation, onCancel, onPublishOnly, onPublishAndSend }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4" role="presentation" onMouseDown={busy ? undefined : onCancel}>
+      <section role="dialog" aria-modal="true" aria-labelledby="publish-confirmation-title" className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+        <h2 id="publish-confirmation-title" className="text-xl font-black text-slate-900">{confirmation.title}</h2>
+        <p className="mt-2 text-sm text-slate-600">You are about to publish <strong>{confirmation.count}</strong> Statement{confirmation.count === 1 ? '' : 's'} of Account.</p>
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{confirmation.message}</p>
+        <div className="mt-5 flex flex-wrap justify-end gap-3"><button type="button" disabled={busy} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Cancel</button><button type="button" disabled={busy} onClick={onPublishOnly} className="rounded-lg border border-[#75ba8e] bg-white px-4 py-2.5 text-sm font-bold text-[#237a4a] transition hover:bg-[#effaf2] disabled:opacity-50">{busy ? 'Publishing...' : 'Publish only'}</button><button type="button" disabled={busy} onClick={onPublishAndSend} className="rounded-lg bg-[#2f8f5b] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#237a4a] disabled:opacity-50">{busy ? 'Publishing...' : 'Publish & send emails'}</button></div>
+      </section>
+    </div>
   )
 }

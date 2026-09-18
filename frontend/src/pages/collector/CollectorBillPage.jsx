@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import SoaDocument from '../../components/SoaDocument'
 import useAuth from '../../hooks/useAuth'
@@ -28,16 +28,18 @@ function formFromBill(bill) {
 
 export default function CollectorBillPage() {
   const { id } = useParams()
+  const location = useLocation()
   const { token } = useAuth()
   const [bill, setBill] = useState(null)
   const [form, setForm] = useState(null)
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
+  const [references, setReferences] = useState({ officialReceiptNumber: '', invoiceNumber: '', paymentNote: '' })
 
   useEffect(() => {
     apiRequest(`/api/bills/${id}`, { token })
-      .then((data) => { setBill(data.bill); setForm(formFromBill(data.bill)) })
+      .then((data) => { setBill(data.bill); setForm(formFromBill(data.bill)); setReferences({ officialReceiptNumber: data.bill.officialReceiptNumber || '', invoiceNumber: data.bill.invoiceNumber || '', paymentNote: data.bill.paymentNote || '' }) })
       .catch((error) => setNotice({ error: error.message, message: '' }))
   }, [id, token])
 
@@ -61,7 +63,7 @@ export default function CollectorBillPage() {
         id: charge.id, description: charge.description, rateApplied: Number(charge.rateApplied),
         ...(charge.chargeType === 'WATER' ? {} : { quantity: Number(charge.quantity) }),
       }))
-      const body = { ...form, charges }
+      const body = { ...form, ...(hasBillingErrorContext ? { billingErrorReportId } : {}), charges }
       if (hasPrevious && hasCurrent) {
         body.previousReading = Number(form.previousReading)
         body.currentReading = Number(form.currentReading)
@@ -82,10 +84,33 @@ export default function CollectorBillPage() {
     } finally { setBusy(false) }
   }
 
+  async function saveReferences(event) {
+    event.preventDefault()
+    setBusy(true)
+    setNotice({ error: '', message: '' })
+    try {
+      const data = await apiRequest(`/api/bills/${id}/payment-references`, { method: 'PATCH', token, body: { officialReceiptNumber: references.officialReceiptNumber || null, invoiceNumber: references.invoiceNumber || null, paymentNote: references.paymentNote || null } })
+      setBill(data.bill)
+      setReferences({ officialReceiptNumber: data.bill.officialReceiptNumber || '', invoiceNumber: data.bill.invoiceNumber || '', paymentNote: data.bill.paymentNote || '' })
+      setNotice({ error: '', message: data.message })
+    } catch (error) { setNotice({ error: error.message, message: '' }) } finally { setBusy(false) }
+  }
+
+  const openedFromBillingErrors = new URLSearchParams(location.search).get('from') === 'billing-errors'
+  const billingErrorReportId = Number(new URLSearchParams(location.search).get('reportId'))
+  const hasBillingErrorContext = openedFromBillingErrors && Number.isSafeInteger(billingErrorReportId) && billingErrorReportId > 0
+  const correctionBlockedReason = bill && Number(bill.approvedAmount || 0) > 0
+    ? 'This SOA has an approved payment, so billing amounts are protected. You can still add its Official Receipt, invoice number, or payment note below.'
+    : bill?.hasPendingPayment
+      ? 'This SOA has a payment awaiting review, so billing amounts are temporarily protected until the payment is reviewed.'
+      : ''
+  const canCorrect = Boolean(bill && ['GENERATED', 'FORWARDED', 'CLOSED'].includes(bill.status) && (!correctionBlockedReason || hasBillingErrorContext))
+
   return (
     <DashboardLayout title="Statement of Account" description="Review, correct, and print the generated statement.">
-      <div className="print-hidden flex flex-wrap gap-3"><Link to="/collector/bills" className={actionClass}>Back to batches</Link><button onClick={() => window.print()} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Print / Save PDF</button>{bill?.status === 'GENERATED' && <button onClick={() => setEditing((value) => !value)} className={actionClass}>{editing ? 'Cancel edit' : 'Edit SOA'}</button>}</div>
+      <div className="print-hidden flex flex-wrap gap-3"><Link to={openedFromBillingErrors ? '/collector/billing-errors' : '/collector/bills'} className={actionClass}>{openedFromBillingErrors ? 'Back to Billing Errors' : 'Back to batches'}</Link><button onClick={() => window.print()} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Print / Save PDF</button>{canCorrect && <button disabled={busy} onClick={() => setEditing((value) => !value)} className="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{editing ? 'Cancel correction' : openedFromBillingErrors ? 'Correct reported SOA' : 'Correct SOA'}</button>}</div>
       {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      {openedFromBillingErrors && correctionBlockedReason && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{hasBillingErrorContext ? 'This SOA has payment activity. Because it was opened from an active Billing Error report, you may correct all SOA details. The system will preserve the payment record and recalculate its applications and remaining balance.' : correctionBlockedReason}</p>}
       {editing && form && <Panel title="Edit SOA" description="Changes affect only this statement and are recorded in the billing audit history.">
         <form onSubmit={save} className="space-y-5">
           <div className="grid gap-3 md:grid-cols-4"><Field label="Payer name"><input value={form.payerName} onChange={(event) => update('payerName', event.target.value)} className={inputClass} /></Field><Field label="Payer email"><input type="email" value={form.payerEmail} onChange={(event) => update('payerEmail', event.target.value)} className={inputClass} /></Field><Field label="Statement date"><input required type="date" value={form.statementDate} onChange={(event) => update('statementDate', event.target.value)} className={inputClass} /></Field><Field label="Due date"><input required type="date" value={form.dueDate} onChange={(event) => update('dueDate', event.target.value)} className={inputClass} /></Field></div>
@@ -95,6 +120,7 @@ export default function CollectorBillPage() {
           <button disabled={busy} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white disabled:bg-slate-300">Save corrected SOA</button>
         </form>
       </Panel>}
+      {bill && Number(bill.approvedAmount || 0) > 0 && <Panel title="Official Receipt / invoice details" description="Payment references remain editable after payment approval; billing amounts remain protected."><form onSubmit={saveReferences} className="grid gap-4 md:grid-cols-2"><Field label="Official Receipt number"><input value={references.officialReceiptNumber} onChange={(event) => setReferences((current) => ({ ...current, officialReceiptNumber: event.target.value }))} className={inputClass} /></Field><Field label="Invoice number"><input value={references.invoiceNumber} onChange={(event) => setReferences((current) => ({ ...current, invoiceNumber: event.target.value }))} className={inputClass} /></Field><div className="md:col-span-2"><Field label="Payment note"><textarea value={references.paymentNote} onChange={(event) => setReferences((current) => ({ ...current, paymentNote: event.target.value }))} className={`${inputClass} min-h-20`} /></Field></div><button disabled={busy} className="w-fit rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Save payment references</button></form></Panel>}
       {!bill && !notice.error && <p className="text-sm text-slate-500">Loading statement...</p>}
       {bill && <SoaDocument bill={bill} />}
     </DashboardLayout>

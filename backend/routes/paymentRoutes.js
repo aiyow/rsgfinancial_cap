@@ -200,6 +200,19 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.singl
         ocrPaymentDate: analysis.paymentDate,
       },
     });
+    const recipients = await client.query(
+      `SELECT id, role
+       FROM users
+       WHERE is_active = TRUE AND role IN ('ADMIN', 'COLLECTOR')`,
+    );
+    await createUserNotifications(client, recipients.rows.map((recipient) => ({
+      recipientUserId: recipient.id,
+      type: "PAYMENT_SUBMITTED",
+      title: "New payment proof submitted",
+      message: "A resident submitted a payment proof for review.",
+      href: recipient.role === "ADMIN" ? `/admin/payments/${result.rows[0].id}` : "/collector/payments",
+      dedupeKey: `payment-submitted-${result.rows[0].id}`,
+    })));
     await client.query("COMMIT");
     return res.status(201).json({ message: "Payment proof submitted for Admin verification.", paymentId: result.rows[0].id, analysis });
   } catch (error) {

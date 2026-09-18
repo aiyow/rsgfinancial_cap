@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Bell, BellRing, CheckCheck } from 'lucide-react'
 import { apiRequest } from '../services/api'
@@ -151,11 +152,12 @@ export default function NotificationCenter({ token }) {
         )}
       </div>
 
-      {toast && (
-        <button type="button" onClick={() => markRead(toast)} className="fixed bottom-5 right-5 z-[60] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-emerald-200 bg-white p-4 text-left shadow-xl transition hover:border-emerald-300" role="status">
+      {toast && createPortal(
+        <button type="button" onClick={() => markRead(toast)} className="fixed right-5 top-20 z-[100] w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-emerald-200 bg-white p-4 text-left shadow-2xl transition hover:border-emerald-300" role="status">
           <span className="text-sm font-black text-[var(--ink)]">{toast.title}</span>
           <span className="mt-1 block text-sm text-[var(--muted)]">{toast.message}</span>
-        </button>
+        </button>,
+        document.body,
       )}
     </>
   )

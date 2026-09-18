@@ -28,6 +28,9 @@ const updateUserSchema = z.object({
 }).strict().refine((body) => Object.keys(body).length > 0, {
   message: "At least one field must be provided.",
 });
+const deleteUserSchema = z.object({
+  currentPassword: z.string().min(8).max(72).optional(),
+}).strict();
 
 router.use(requireAuth, allowRoles("ADMIN"));
 
@@ -161,7 +164,7 @@ router.patch("/:id", requireId, validateBody(updateUserSchema), async (req, res,
   }
 });
 
-router.delete("/:id", requireId, async (req, res, next) => {
+router.delete("/:id", requireId, validateBody(deleteUserSchema), async (req, res, next) => {
   let client;
   try {
     if (req.resourceId === Number(req.user.id)) {
@@ -172,12 +175,25 @@ router.delete("/:id", requireId, async (req, res, next) => {
     await client.query("BEGIN");
 
     const existingUser = await client.query(
-      "SELECT id FROM users WHERE id = $1 FOR UPDATE",
+      "SELECT id, role FROM users WHERE id = $1 FOR UPDATE",
       [req.resourceId]
     );
     if (!existingUser.rows[0]) {
       await client.query("ROLLBACK");
       return res.status(404).json({ message: "User not found." });
+    }
+
+    if (["ADMIN", "COLLECTOR"].includes(existingUser.rows[0].role)) {
+      if (!req.validatedBody.currentPassword) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ message: "Enter your current password to delete an Admin or Collector account." });
+      }
+      const actor = await client.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1", [req.user.id]);
+      const passwordMatches = actor.rows[0] && await bcrypt.compare(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
+      if (!passwordMatches) {
+        await client.query("ROLLBACK");
+        return res.status(403).json({ message: "Your current password is incorrect. The account was not deleted." });
+      }
     }
 
     const removedAssignments = await client.query(

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, CalendarDays, ChartNoAxesCombined, Gauge, ListChecks } from 'lucide-react'
+import { Activity, CalendarDays, ChartNoAxesCombined, ChevronDown, Gauge, ListChecks, RefreshCw } from 'lucide-react'
 import {
   Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
@@ -60,6 +60,9 @@ export default function AnalyticsPage() {
   const [recommendations, setRecommendations] = useState([])
   const [recommendationBusyId, setRecommendationBusyId] = useState(null)
   const [showAllRecommendations, setShowAllRecommendations] = useState(false)
+  const [recommendationSort, setRecommendationSort] = useState('PRIORITY')
+  const [expandedRecommendationId, setExpandedRecommendationId] = useState(null)
+  const [refreshingForecasts, setRefreshingForecasts] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -91,6 +94,21 @@ export default function AnalyticsPage() {
     }
   }
 
+  async function refreshForecasts() {
+    if (!window.confirm('Recalculate all saved forecasts using the current model? This may take a moment.')) return
+    setRefreshingForecasts(true)
+    setError('')
+    try {
+      await apiRequest('/api/analytics/refresh-forecasts', { method: 'POST', token })
+      const analyticsData = await apiRequest('/api/analytics/overview', { token })
+      setData(analyticsData)
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setRefreshingForecasts(false)
+    }
+  }
+
   const metrics = data?.metrics || {}
   const hasAnalyticsData = Boolean(data && ((data.latestForecast?.total || 0) > 0 || data.diagnostics.length > 0 || data.flaggedReadings.length > 0))
   const rawChartData = (data?.chartSeries || []).map((row) => ({
@@ -112,7 +130,16 @@ export default function AnalyticsPage() {
     viewed: recommendations.filter((recommendation) => recommendation.status === 'VIEWED').length,
     high: recommendations.filter((recommendation) => recommendation.priority === 'HIGH').length,
   }
-  const visibleRecommendations = showAllRecommendations ? recommendations : recommendations.slice(0, 5)
+  const sortedRecommendations = useMemo(() => {
+    const priority = { HIGH: 0, MEDIUM: 1, LOW: 2 }
+    const status = { OPEN: 0, VIEWED: 1, RESOLVED: 2 }
+    return [...recommendations].sort((left, right) => {
+      if (recommendationSort === 'UNIT') return String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true })
+      if (recommendationSort === 'STATUS') return (status[left.status] ?? 9) - (status[right.status] ?? 9) || String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true })
+      return (priority[left.priority] ?? 9) - (priority[right.priority] ?? 9) || String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true })
+    })
+  }, [recommendationSort, recommendations])
+  const visibleRecommendations = showAllRecommendations ? sortedRecommendations : sortedRecommendations.slice(0, 5)
   const analyticsAccents = ['blue', 'green', 'red', 'blue', 'green']
 
   return (
@@ -127,6 +154,7 @@ export default function AnalyticsPage() {
         </Panel>
       ) : (
         <>
+          <div className="mb-4 flex justify-end"><button type="button" onClick={refreshForecasts} disabled={refreshingForecasts} className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"><RefreshCw size={16} className={refreshingForecasts ? 'animate-spin' : ''} />{refreshingForecasts ? 'Refreshing forecasts...' : 'Refresh forecasts'}</button></div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <Metric label="Holdout month" value={month(data?.evaluationMonth)} accent={analyticsAccents[0]} icon={CalendarDays} />
             <Metric label="WAPE accuracy" value={valueOrDash(metrics.accuracy, '%')} accent={analyticsAccents[1]} icon={Gauge} />
@@ -187,28 +215,28 @@ export default function AnalyticsPage() {
             </div>
             {recommendations.length ? (
               <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-500">Showing concise recommendations by unit. Select one to view its full details.</p><label className="flex items-center gap-2 text-sm font-bold text-slate-700">Sort by<select value={recommendationSort} onChange={(event) => setRecommendationSort(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="PRIORITY">Priority: high first</option><option value="UNIT">Unit number</option><option value="STATUS">Status: open first</option></select></label></div>
                 <div className={showAllRecommendations ? 'max-h-[42rem] space-y-3 overflow-y-auto overscroll-contain pr-2' : 'space-y-3'} aria-label="Prescriptive recommendations">
                   {visibleRecommendations.map((recommendation) => {
                     const busy = recommendationBusyId === recommendation.id
+                    const expanded = expandedRecommendationId === recommendation.id
                     return (
                       <article key={recommendation.id} className="rounded-xl border border-slate-200 p-4">
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                          <div>
+                          <button type="button" onClick={() => setExpandedRecommendationId((current) => current === recommendation.id ? null : recommendation.id)} aria-expanded={expanded} className="min-w-0 flex-1 text-left">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${recommendation.priority === 'HIGH' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-800'}`}>{recommendation.priority}</span>
                               <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{recommendation.status}</span>
                               {recommendation.residentVisibleAt && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Visible to Resident</span>}
                             </div>
-                            <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Condition detected</p>
-                            <p className="mt-1 font-bold text-slate-900">Unit {recommendation.unitNumber}: {recommendation.evidence?.condition || recommendationEvidence(recommendation)}</p>
-                            <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Recommended action</p>
-                            <p className="mt-1 font-black text-slate-950">{recommendation.message}</p>
-                            <p className="mt-2 text-sm text-slate-500">{recommendationEvidence(recommendation)}</p>
-                          </div>
+                            <div className="mt-3 flex items-center justify-between gap-4"><p className="font-black text-slate-900">Unit {recommendation.unitNumber}</p><span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">{expanded ? 'Hide details' : 'View details'} <ChevronDown size={15} className={`transition ${expanded ? 'rotate-180' : ''}`} /></span></div>
+                            <p className="mt-1 truncate text-sm text-slate-600">{recommendation.message}</p>
+                          </button>
                           <div className="flex flex-wrap gap-2 lg:justify-end">
                             <ActionButton disabled={busy} onClick={() => deleteRecommendation(recommendation)}>{busy ? 'Deleting...' : 'Delete'}</ActionButton>
                           </div>
                         </div>
+                        {expanded && <div className="mt-4 border-t border-slate-100 pt-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Condition detected</p><p className="mt-1 font-bold text-slate-900">{recommendation.evidence?.condition || recommendationEvidence(recommendation)}</p><p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Recommended action</p><p className="mt-1 font-black text-slate-950">{recommendation.message}</p><p className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{recommendationEvidence(recommendation)}</p></div>}
                       </article>
                     )
                   })}
@@ -230,12 +258,13 @@ export default function AnalyticsPage() {
             {data?.diagnostics.length ? (
               <div className="max-h-[31rem] overflow-auto overscroll-contain rounded-xl border border-slate-200" aria-label="Predicted versus actual results">
                 <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
+                  <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Model</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
                   <tbody className="divide-y divide-slate-300">
                     {data.diagnostics.map((row) => (
                       <tr key={`${row.unitId}-${row.forecastForMonth}`} className={row.status !== 'READY' || row.actualValidationStatus !== 'VALID' ? 'bg-amber-50' : ''}>
                         <td className="p-3 font-bold">Unit {row.unitNumber}</td>
                         <td>{String(row.forecastForMonth).slice(0, 10)}</td>
+                        <td className="text-xs font-semibold text-slate-600">{String(row.modelName || 'LINEAR_REGRESSION').replaceAll('_', ' ')}</td>
                         <td>{row.predictedConsumption === null ? '-' : `${Number(row.predictedConsumption).toFixed(3)} m3`}</td>
                         <td>{row.actualConsumption === null ? '-' : `${Number(row.actualConsumption).toFixed(3)} m3`}</td>
                         <td>{row.absoluteError === null ? '-' : `${Number(row.absoluteError).toFixed(3)} m3`}</td>

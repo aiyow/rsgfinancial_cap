@@ -29,6 +29,8 @@ import ResidentBillsPage from './pages/resident/ResidentBillsPage'
 import ResidentBillPage from './pages/resident/ResidentBillPage'
 import ResidentPaymentsPage from './pages/resident/ResidentPaymentsPage'
 import AnalyticsPage from './pages/shared/AnalyticsPage'
+import FinancialReportsPage from './pages/shared/FinancialReportsPage'
+import BillingErrorsPage from './pages/shared/BillingErrorsPage'
 import ProfilePage from './pages/shared/ProfilePage'
 import SettingsPage from './pages/shared/SettingsPage'
 
@@ -63,11 +65,13 @@ export default function App() {
       <Route path="/admin/payments/:id" element={<ProtectedRoute allowedRole="ADMIN"><AdminPaymentPage /></ProtectedRoute>} />
       <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRole="ADMIN"><AdminAuditLogsPage /></ProtectedRoute>} />
       <Route path="/admin/analytics" element={<ProtectedRoute allowedRole="ADMIN"><AnalyticsPage /></ProtectedRoute>} />
+      <Route path="/admin/soa-template" element={<ProtectedRoute allowedRole="ADMIN"><CollectorSoaTemplatePage /></ProtectedRoute>} />
+      <Route path="/admin/reports" element={<ProtectedRoute allowedRole="ADMIN"><FinancialReportsPage /></ProtectedRoute>} />
+      <Route path="/admin/billing-errors" element={<ProtectedRoute allowedRole="ADMIN"><BillingErrorsPage /></ProtectedRoute>} />
 
       {/* COLLECTOR ROUTES */}
       <Route path="/collector" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorDashboard /></ProtectedRoute>} />
       <Route path="/collector/billing" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorBillingPage /></ProtectedRoute>} />
-      <Route path="/collector/soa-template" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorSoaTemplatePage /></ProtectedRoute>} />
       <Route path="/collector/history-import" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorHistoryImportPage /></ProtectedRoute>} />
       <Route path="/collector/bills" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorBillsPage /></ProtectedRoute>} />
       <Route path="/collector/bills/batches/:periodId" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorBillBatchPage /></ProtectedRoute>} />
@@ -75,6 +79,8 @@ export default function App() {
       <Route path="/collector/units" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorUnitsPage /></ProtectedRoute>} />
       <Route path="/collector/payments" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorPaymentsPage /></ProtectedRoute>} />
       <Route path="/collector/analytics" element={<ProtectedRoute allowedRole="COLLECTOR"><AnalyticsPage /></ProtectedRoute>} />
+      <Route path="/collector/reports" element={<ProtectedRoute allowedRole="COLLECTOR"><FinancialReportsPage /></ProtectedRoute>} />
+      <Route path="/collector/billing-errors" element={<ProtectedRoute allowedRole="COLLECTOR"><BillingErrorsPage /></ProtectedRoute>} />
 
       {/* RESIDENT ROUTES */}
       <Route path="/resident" element={<ProtectedRoute allowedRole="RESIDENT"><ResidentDashboard /></ProtectedRoute>} />

@@ -15,7 +15,14 @@ export async function ensurePaymentLedgerSchema(client) {
     ALTER TABLE unit_bills
     ADD COLUMN IF NOT EXISTS late_penalty_percent_snapshot NUMERIC(5, 2) NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS late_penalty_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS late_penalty_applied_at TIMESTAMPTZ NULL
+    ADD COLUMN IF NOT EXISTS late_penalty_applied_at TIMESTAMPTZ NULL,
+    ADD COLUMN IF NOT EXISTS official_receipt_number VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS invoice_number VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS payment_note VARCHAR(1000) NULL,
+    ADD COLUMN IF NOT EXISTS soa_revision INTEGER NOT NULL DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS corrected_at TIMESTAMPTZ NULL,
+    ADD COLUMN IF NOT EXISTS corrected_by BIGINT NULL,
+    ADD COLUMN IF NOT EXISTS correction_reason VARCHAR(500) NULL
   `);
   await client.query("ALTER TABLE payment_submissions ALTER COLUMN receipt_path DROP NOT NULL");
   await client.query("ALTER TABLE payment_submissions ALTER COLUMN receipt_original_name DROP NOT NULL");

@@ -33,6 +33,74 @@ export function linearRegression(values) {
   return { slope, intercept, predicted: Math.max(0, intercept + (slope * points.length)) };
 }
 
+function recentValues(values, count) {
+  return values.slice(Math.max(0, values.length - count));
+}
+
+function recentAverage(values, count = 3) {
+  const sample = recentValues(values, count);
+  if (sample.length === 0) return 0;
+  return Math.max(0, sample.reduce((sum, value) => sum + value, 0) / sample.length);
+}
+
+// Water use is not always a straight line.  These candidates give the model a
+// stable option for units with irregular use and a responsive option for units
+// whose consumption has changed recently.
+export function forecastCandidates(values) {
+  if (!Array.isArray(values) || values.length < MIN_WINDOW_SIZE) return [];
+  const fullRegression = linearRegression(values);
+  const recentRegression = linearRegression(recentValues(values, MIN_WINDOW_SIZE));
+  return [
+    {
+      name: "LINEAR_REGRESSION",
+      predicted: fullRegression?.predicted ?? 0,
+      slope: fullRegression?.slope ?? 0,
+      intercept: fullRegression?.intercept ?? 0,
+    },
+    {
+      name: "RECENT_5_MONTH_LINEAR_REGRESSION",
+      predicted: recentRegression?.predicted ?? 0,
+      slope: recentRegression?.slope ?? 0,
+      intercept: recentRegression?.intercept ?? 0,
+    },
+    {
+      name: "RECENT_3_MONTH_AVERAGE",
+      predicted: recentAverage(values),
+      slope: null,
+      intercept: null,
+    },
+  ];
+}
+
+export function selectForecastModel(values) {
+  const candidates = forecastCandidates(values);
+  if (candidates.length === 0) return null;
+
+  // Compare each candidate with known, later months. This rolling back-test
+  // avoids choosing a model merely because it fits old data nicely.
+  const scores = new Map(candidates.map((candidate) => [candidate.name, { error: 0, count: 0 }]));
+  for (let targetIndex = MIN_WINDOW_SIZE; targetIndex < values.length; targetIndex += 1) {
+    const training = values.slice(0, targetIndex);
+    const actual = values[targetIndex];
+    for (const candidate of forecastCandidates(training)) {
+      const score = scores.get(candidate.name);
+      score.error += Math.abs(candidate.predicted - actual);
+      score.count += 1;
+    }
+  }
+
+  // With fewer than six readings no holdout month exists, so retain the
+  // established straight-line forecast rather than overfitting a tiny sample.
+  const eligible = candidates.filter((candidate) => scores.get(candidate.name).count > 0);
+  if (eligible.length === 0) return candidates[0];
+  return eligible.sort((left, right) => {
+    const leftScore = scores.get(left.name);
+    const rightScore = scores.get(right.name);
+    const difference = (leftScore.error / leftScore.count) - (rightScore.error / rightScore.count);
+    return Math.abs(difference) < 0.000001 ? candidates.indexOf(left) - candidates.indexOf(right) : difference;
+  })[0];
+}
+
 export function selectConsecutiveReadings(history, windowSize = MAX_WINDOW_SIZE) {
   if (!Array.isArray(history) || history.length === 0) return [];
   const sorted = [...history].sort((a, b) => monthIndex(a.periodStart) - monthIndex(b.periodStart));
@@ -73,8 +141,8 @@ export function buildForecast(history, { waterRate = 0, minWindow = MIN_WINDOW_S
     };
   }
 
-  const regression = linearRegression(selected.map((reading) => reading.consumption));
-  const predictedConsumption = Number(regression.predicted.toFixed(3));
+  const model = selectForecastModel(selected.map((reading) => reading.consumption));
+  const predictedConsumption = Number(model.predicted.toFixed(3));
 
   return {
     status: "READY",
@@ -82,8 +150,9 @@ export function buildForecast(history, { waterRate = 0, minWindow = MIN_WINDOW_S
     sampleCount: selected.length,
     predictedConsumption,
     estimatedWaterCharge: Number((predictedConsumption * numeric(waterRate || 0)).toFixed(2)),
-    slope: regression.slope,
-    intercept: regression.intercept,
+    modelName: model.name,
+    slope: model.slope,
+    intercept: model.intercept,
   };
 }
 
@@ -142,11 +211,12 @@ export async function regenerateForecasts(client, billingPeriodId) {
     await client.query(
       `INSERT INTO billing_forecasts
         (unit_id, based_on_period_id, forecast_for_month, predicted_consumption,
-         estimated_water_charge, sample_count, slope, intercept, forecast_status, status_reason)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+         estimated_water_charge, model_name, sample_count, slope, intercept, forecast_status, status_reason)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
       [unit.id, billingPeriodId, forecastMonth, forecast.predictedConsumption ?? null,
-        forecast.estimatedWaterCharge ?? null, forecast.sampleCount, forecast.slope ?? null,
-        forecast.intercept ?? null, forecast.status, forecast.reason],
+        forecast.estimatedWaterCharge ?? null, forecast.modelName ?? "LINEAR_REGRESSION",
+        forecast.sampleCount, forecast.slope ?? null, forecast.intercept ?? null,
+        forecast.status, forecast.reason],
     );
   }
 }

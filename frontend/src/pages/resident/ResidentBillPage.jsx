@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { Download, Maximize2, QrCode, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import SoaDocument from '../../components/SoaDocument'
 import useAuth from '../../hooks/useAuth'
-import { apiRequest } from '../../services/api'
+import { apiFile, apiRequest } from '../../services/api'
 
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-sm file:font-bold file:text-white'
 
@@ -18,8 +19,12 @@ export default function ResidentBillPage() {
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState('')
+  const [paymentQrUrl, setPaymentQrUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
+  const [reportingError, setReportingError] = useState(false)
+  const [qrFullscreen, setQrFullscreen] = useState(false)
+  const [errorReport, setErrorReport] = useState({ category: 'METER_READING', description: '' })
 
   useEffect(() => {
     let active = true
@@ -34,6 +39,22 @@ export default function ResidentBillPage() {
     loadBill()
     return () => { active = false }
   }, [id, token])
+
+  useEffect(() => {
+    let active = true
+    let objectUrl = ''
+    apiFile('/api/soa-template/assets/qr', { token })
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob)
+        if (active) setPaymentQrUrl(objectUrl)
+        else URL.revokeObjectURL(objectUrl)
+      })
+      .catch(() => { if (active) setPaymentQrUrl('') })
+    return () => {
+      active = false
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [token])
 
   useEffect(() => {
     return () => {
@@ -98,12 +119,35 @@ export default function ResidentBillPage() {
     }
   }
 
+  async function submitBillingError(event) {
+    event.preventDefault()
+    setBusy(true)
+    setNotice({ error: '', message: '' })
+    try {
+      const data = await apiRequest(`/api/billing-errors/bills/${id}`, { method: 'POST', token, body: errorReport })
+      setErrorReport({ category: 'METER_READING', description: '' })
+      setReportingError(false)
+      setNotice({ error: '', message: data.message })
+    } catch (error) { setNotice({ error: error.message, message: '' }) } finally { setBusy(false) }
+  }
+
+  function downloadPaymentQr() {
+    if (!paymentQrUrl) return
+    const link = document.createElement('a')
+    link.href = paymentQrUrl
+    link.download = 'payment-qr-code.png'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  }
+
   return (
     <DashboardLayout title="My Statement of Account" description="Review the published SOA and submit your receipt image for Admin verification.">
       <div className="print-hidden flex flex-wrap gap-3">
         <Link to="/resident/bills" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Back to my SOAs</Link>
         <Link to="/resident/payments" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Open payment history</Link>
         <button onClick={() => window.print()} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Print / Save PDF</button>
+        <button onClick={() => setReportingError(true)} className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800 transition hover:bg-amber-600 hover:text-white">Report SOA error</button>
       </div>
 
       {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
@@ -118,6 +162,13 @@ export default function ResidentBillPage() {
             <SummaryCard label="Remaining balance" value={money(bill.remainingBalance)} accent="green" />
             <SummaryCard label="Advance balance" value={money(bill.advanceBalance)} accent="blue" />
           </div>
+
+          {paymentQrUrl && <section className="print-hidden overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
+            <div className="grid items-center gap-5 p-5 sm:grid-cols-[1fr_auto] sm:p-6">
+              <div><div className="flex items-center gap-2 text-emerald-700"><span className="grid size-9 place-items-center rounded-lg bg-emerald-100"><QrCode size={20} /></span><p className="font-black">Scan to pay</p></div><p className="mt-3 max-w-xl text-sm text-slate-600">Use your payment app to scan this official QR code, then upload your receipt below for verification.</p><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={() => setQrFullscreen(true)} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800"><Maximize2 size={17} />View full screen</button><button type="button" onClick={downloadPaymentQr} className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-700 hover:text-white"><Download size={17} />Download QR code</button></div></div>
+              <button type="button" onClick={() => setQrFullscreen(true)} aria-label="View payment QR code full screen" className="group justify-self-center rounded-xl border border-emerald-100 bg-emerald-50 p-3 shadow-sm transition hover:border-emerald-400 hover:shadow-md"><figure><img src={paymentQrUrl} alt="Official payment QR code" className="size-40 object-contain sm:size-44" /><figcaption className="mt-2 flex items-center justify-center gap-1 text-center text-xs font-black tracking-[0.12em] text-emerald-800">OFFICIAL PAYMENT QR <Maximize2 size={13} /></figcaption></figure></button>
+            </div>
+          </section>}
 
           <Panel title="Submit payment proof" description="Upload a clear receipt image so OCR can extract the amount, reference number, and payment date for Admin review.">
             {!canSubmit && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">This SOA is already fully paid.</p>}
@@ -160,10 +211,42 @@ export default function ResidentBillPage() {
             </div>
           </Panel>
 
-          <SoaDocument bill={bill} />
+          <SoaDocument bill={bill} showPaymentQr={false} />
         </>
       )}
+      {reportingError && <ReportSoaErrorModal busy={busy} errorReport={errorReport} onChange={(field, value) => setErrorReport((current) => ({ ...current, [field]: value }))} onClose={() => setReportingError(false)} onSubmit={submitBillingError} />}
+      {qrFullscreen && paymentQrUrl && <PaymentQrModal qrUrl={paymentQrUrl} onClose={() => setQrFullscreen(false)} onDownload={downloadPaymentQr} />}
     </DashboardLayout>
+  )
+}
+
+function ReportSoaErrorModal({ busy, errorReport, onChange, onClose, onSubmit }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4" role="presentation" onMouseDown={busy ? undefined : onClose}>
+      <section role="dialog" aria-modal="true" aria-labelledby="soa-error-title" className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4"><div><h2 id="soa-error-title" className="text-xl font-black text-slate-900">Report an SOA error</h2><p className="mt-1 text-sm text-slate-600">Tell the billing staff what appears incorrect. They will review it and notify you when it is resolved.</p></div><button type="button" disabled={busy} onClick={onClose} aria-label="Close SOA error form" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"><X size={19} /></button></div>
+        <form onSubmit={onSubmit} className="mt-5 space-y-4">
+          <label className="block text-sm font-bold text-slate-700">Issue category<select value={errorReport.category} onChange={(event) => onChange('category', event.target.value)} className={inputClass}><option value="METER_READING">Meter reading</option><option value="WATER_CHARGE">Water charge</option><option value="ASSOCIATION_DUES">Association dues</option><option value="PAYMENT_OR">Payment / Official Receipt</option><option value="OTHER">Other</option></select></label>
+          <label className="block text-sm font-bold text-slate-700">What is incorrect?<textarea required minLength="3" maxLength="1500" value={errorReport.description} onChange={(event) => onChange('description', event.target.value)} placeholder="Describe the issue clearly..." className={`${inputClass} min-h-32`} /></label>
+          <div className="flex justify-end gap-3"><button type="button" disabled={busy} onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Cancel</button><button disabled={busy} className="rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-amber-700 disabled:opacity-50">{busy ? 'Sending...' : 'Send error report'}</button></div>
+        </form>
+      </section>
+    </div>
+  )
+}
+
+function PaymentQrModal({ onClose, onDownload, qrUrl }) {
+  const [zoom, setZoom] = useState(1)
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/75 p-4" role="presentation" onMouseDown={onClose}>
+      <section role="dialog" aria-modal="true" aria-labelledby="payment-qr-title" className="flex max-h-[92vh] w-full max-w-2xl flex-col rounded-2xl bg-white p-5 shadow-2xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="flex items-center justify-between gap-4"><div><h2 id="payment-qr-title" className="text-xl font-black text-slate-900">Scan to pay</h2><p className="mt-1 text-sm text-slate-600">Open your payment app and scan this official QR code.</p></div><button type="button" onClick={onClose} aria-label="Close full screen QR code" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"><X size={21} /></button></div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2"><p className="text-xs font-bold text-emerald-800">QR size: {Math.round(zoom * 100)}%</p><div className="flex items-center gap-1"><button type="button" disabled={zoom <= 0.75} onClick={() => setZoom((value) => Math.max(0.75, Number((value - 0.25).toFixed(2))))} aria-label="Zoom out QR code" title="Zoom out" className="grid size-9 place-items-center rounded-lg text-emerald-800 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"><ZoomOut size={18} /></button><button type="button" disabled={zoom >= 3} onClick={() => setZoom((value) => Math.min(3, Number((value + 0.25).toFixed(2))))} aria-label="Zoom in QR code" title="Zoom in" className="grid size-9 place-items-center rounded-lg text-emerald-800 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"><ZoomIn size={18} /></button>{zoom !== 1 && <button type="button" onClick={() => setZoom(1)} aria-label="Reset QR zoom" title="Reset zoom" className="grid size-9 place-items-center rounded-lg text-emerald-800 transition hover:bg-white"><RotateCcw size={17} /></button>}</div></div>
+        <div className="mt-3 flex min-h-0 flex-1 items-start justify-center overflow-auto rounded-xl bg-emerald-50 p-5"><img src={qrUrl} alt="Official payment QR code" className="max-w-none object-contain" style={{ width: `${360 * zoom}px` }} /></div>
+        <div className="mt-5 flex justify-end gap-3"><button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700">Close</button><button type="button" onClick={onDownload} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800"><Download size={17} />Download QR code</button></div>
+      </section>
+    </div>
   )
 }
 

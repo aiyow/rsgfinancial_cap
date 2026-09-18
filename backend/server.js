@@ -17,6 +17,8 @@ import prescriptiveRecommendationRoutes from "./routes/prescriptiveRecommendatio
 import soaTemplateRoutes from "./routes/soaTemplateRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import financialReportRoutes from "./routes/financialReportRoutes.js";
+import billingErrorRoutes from "./routes/billingErrorRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 dotenv.config({ path: new URL("./.env", import.meta.url) });
@@ -48,6 +50,8 @@ app.use("/api/prescriptive-recommendations", prescriptiveRecommendationRoutes);
 app.use("/api/soa-template", soaTemplateRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/reports", financialReportRoutes);
+app.use("/api/billing-errors", billingErrorRoutes);
 
 app.get("/api/health", async (req, res) => {
   try {
