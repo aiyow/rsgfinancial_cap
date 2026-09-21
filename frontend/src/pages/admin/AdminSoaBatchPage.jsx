@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ChevronDown, Mail, RotateCcw } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -78,6 +79,7 @@ export default function AdminSoaBatchPage() {
 
   const publishedCount = useMemo(() => bills.filter((bill) => bill.publishedAt).length, [bills])
   const unpublished = useMemo(() => bills.filter((bill) => !bill.publishedAt), [bills])
+  const publishSelectedDisabled = busy || selectedIds.length === 0
   const filteredBills = useMemo(() => {
     const term = search.trim().toLowerCase()
     return bills
@@ -190,11 +192,11 @@ export default function AdminSoaBatchPage() {
   return (
     <DashboardLayout title="Forwarded billing batch" description="Open any read-only Statement of Account in this batch.">
       <div><Link to="/admin/soa" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Back to forwarded batches</Link></div>
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
       <Panel title={`${bills.length} Statements of Account`} description={`${publishedCount} published to Residents | ${unpublished.length} still hidden`}>
         <div className="mb-5 flex flex-wrap gap-3">
           <button disabled={busy || unpublished.length === 0} onClick={requestPublishAll} className="rounded-lg border border-[#75ba8e] bg-white px-4 py-2 text-sm font-bold text-[#237a4a] shadow-sm transition hover:border-[#237a4a] hover:bg-[#2f8f5b] hover:text-white hover:shadow-md focus:bg-[#2f8f5b] focus:text-white focus:outline-none focus:ring-2 focus:ring-[#2f8f5b] focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-white disabled:text-slate-400 disabled:shadow-none">Publish all remaining</button>
-          <button disabled={busy || selectedIds.length === 0} onClick={requestPublishSelected} className="rounded-lg border border-[#75ba8e] bg-white px-4 py-2 text-sm font-bold text-[#237a4a] shadow-sm transition hover:border-[#237a4a] hover:bg-[#2f8f5b] hover:text-white hover:shadow-md focus:bg-[#2f8f5b] focus:text-white focus:outline-none focus:ring-2 focus:ring-[#2f8f5b] focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-white disabled:text-slate-400 disabled:shadow-none">Publish selected{selectedIds.length ? ` (${selectedIds.length})` : ''}</button>
+          <button type="button" disabled={publishSelectedDisabled} aria-disabled={publishSelectedDisabled} title={publishSelectedDisabled ? 'Select at least one hidden SOA to publish.' : 'Publish the selected SOAs.'} onClick={requestPublishSelected} className={`rounded-lg border px-4 py-2 text-sm font-bold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#2f8f5b] focus:ring-offset-2 ${publishSelectedDisabled ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 shadow-none' : 'border-[#75ba8e] bg-white text-[#237a4a] hover:border-[#237a4a] hover:bg-[#2f8f5b] hover:text-white hover:shadow-md focus:bg-[#2f8f5b] focus:text-white active:scale-[0.98]'}`}>Publish selected{selectedIds.length ? ` (${selectedIds.length})` : ''}</button>
         </div>
         <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 p-4"><p className="mb-3 text-sm font-black text-slate-800">Filter Statements of Account</p><div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_170px_180px]"><label className="text-xs font-bold text-slate-600">Search unit or payer<input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }} placeholder="e.g. 401 or owner name" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal" /></label><FilterPopover label="Publication" value={publishFilter} open={publishMenuOpen} onToggle={() => { setPublishMenuOpen((current) => !current); setDeliveryMenuOpen(false) }} onSelect={(value) => { setPublishFilter(value); setPage(1); setPublishMenuOpen(false) }} options={[{ value: 'ALL', label: 'All SOAs' }, { value: 'PUBLISHED', label: 'Published' }, { value: 'HIDDEN', label: 'Hidden' }]} /><FilterPopover label="Email delivery" value={deliveryFilter} open={deliveryMenuOpen} onToggle={() => { setDeliveryMenuOpen((current) => !current); setPublishMenuOpen(false) }} onSelect={(value) => { setDeliveryFilter(value); setPage(1); setDeliveryMenuOpen(false) }} options={[{ value: 'ALL', label: 'All statuses' }, { value: 'SENT', label: 'Sent' }, { value: 'FAILED', label: 'Failed' }, { value: 'PENDING', label: 'Pending' }, { value: 'NO_RECIPIENTS', label: 'No recipients' }]} /></div></div>
         <p className="mb-3 text-sm text-slate-500">Showing {filteredBills.length ? `${firstBillIndex + 1}-${lastBillIndex}` : 0} of {filteredBills.length} matching SOAs ({bills.length} total), sorted by unit number.</p>

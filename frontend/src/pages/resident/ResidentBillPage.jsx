@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Download, Maximize2, QrCode, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { Download, LoaderCircle, Maximize2, QrCode, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import SoaDocument from '../../components/SoaDocument'
 import useAuth from '../../hooks/useAuth'
 import { apiFile, apiRequest } from '../../services/api'
@@ -21,6 +22,8 @@ export default function ResidentBillPage() {
   const [imagePreviewUrl, setImagePreviewUrl] = useState('')
   const [paymentQrUrl, setPaymentQrUrl] = useState('')
   const [busy, setBusy] = useState(false)
+  const [ocrPreviewing, setOcrPreviewing] = useState(false)
+  const [submittingReceipt, setSubmittingReceipt] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
   const [reportingError, setReportingError] = useState(false)
   const [qrFullscreen, setQrFullscreen] = useState(false)
@@ -79,6 +82,8 @@ export default function ResidentBillPage() {
       return
     }
     setBusy(true)
+    setOcrPreviewing(true)
+    setPreview(null)
     setNotice({ error: '', message: '' })
     try {
       const body = new FormData()
@@ -91,6 +96,7 @@ export default function ResidentBillPage() {
       setNotice({ error: error.message, message: '' })
     } finally {
       setBusy(false)
+      setOcrPreviewing(false)
     }
   }
 
@@ -100,6 +106,7 @@ export default function ResidentBillPage() {
       return
     }
     setBusy(true)
+    setSubmittingReceipt(true)
     setNotice({ error: '', message: '' })
     try {
       const body = new FormData()
@@ -108,7 +115,7 @@ export default function ResidentBillPage() {
       setPreview(data.analysis)
       setFile(null)
       setImagePreviewUrl('')
-      setNotice({ error: '', message: data.message })
+      setNotice({ error: '', message: 'Payment proof submitted. Your receipt is now waiting for Admin verification.' })
       const refreshed = await apiRequest(`/api/bills/${id}`, { token })
       setBill(refreshed.bill)
     } catch (error) {
@@ -116,6 +123,7 @@ export default function ResidentBillPage() {
       setNotice({ error: error.message, message: '' })
     } finally {
       setBusy(false)
+      setSubmittingReceipt(false)
     }
   }
 
@@ -124,10 +132,10 @@ export default function ResidentBillPage() {
     setBusy(true)
     setNotice({ error: '', message: '' })
     try {
-      const data = await apiRequest(`/api/billing-errors/bills/${id}`, { method: 'POST', token, body: errorReport })
+      await apiRequest(`/api/billing-errors/bills/${id}`, { method: 'POST', token, body: errorReport })
       setErrorReport({ category: 'METER_READING', description: '' })
       setReportingError(false)
-      setNotice({ error: '', message: data.message })
+      setNotice({ error: '', message: 'SOA error report submitted. An Admin will review it shortly.' })
     } catch (error) { setNotice({ error: error.message, message: '' }) } finally { setBusy(false) }
   }
 
@@ -150,7 +158,7 @@ export default function ResidentBillPage() {
         <button onClick={() => setReportingError(true)} className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800 transition hover:bg-amber-600 hover:text-white">Report SOA error</button>
       </div>
 
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
       {!bill && !notice.error && <p className="text-sm text-slate-500">Loading your SOA...</p>}
 
       {bill && (
@@ -179,9 +187,10 @@ export default function ResidentBillPage() {
                   <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={selectReceipt} className={inputClass} />
                 </label>
                 <div className="flex flex-wrap gap-3">
-                  <button disabled={busy || !canSubmit} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold disabled:opacity-50">Preview OCR</button>
-                  <button type="button" disabled={busy || !canSubmit || !file} onClick={submitReceipt} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:bg-slate-300">Submit payment proof</button>
+                  <button disabled={busy || !canSubmit} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50">{ocrPreviewing ? <><LoaderCircle size={16} className="animate-spin" />Reading receipt…</> : 'Preview OCR'}</button>
+                  <button type="button" disabled={busy || !canSubmit || !file} onClick={submitReceipt} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:bg-slate-300">{submittingReceipt ? <><LoaderCircle size={16} className="animate-spin" />Submitting proof…</> : 'Submit payment proof'}</button>
                 </div>
+                {submittingReceipt && <div role="status" className="flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-950"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-indigo-600 shadow-sm"><LoaderCircle size={18} className="animate-spin" /></span><div><p className="font-black">Submitting your payment proof…</p><p className="mt-0.5 text-indigo-800">Please keep this page open while we securely upload your receipt.</p></div></div>}
                 <p className="text-xs text-slate-500">Accepted files: JPG or PNG, up to 5 MB.</p>
                 {preview && imagePreviewUrl && (
                   <figure className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
@@ -193,7 +202,8 @@ export default function ResidentBillPage() {
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-sm font-black text-slate-900">OCR preview</p>
-                {!preview && <p className="mt-3 text-sm text-slate-500">Run a preview first to see what the system can read from the receipt.</p>}
+                {ocrPreviewing && <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 p-5 text-center"><span className="mx-auto grid size-11 place-items-center rounded-full bg-white text-indigo-600 shadow-sm"><LoaderCircle size={22} className="animate-spin" /></span><p className="mt-3 font-bold text-slate-900">Reading your receipt…</p><p className="mt-1 text-sm text-slate-600">Checking the image and looking for the amount, reference number, and payment date.</p><div className="mt-4 space-y-2"><div className="h-3 animate-pulse rounded-full bg-indigo-100" /><div className="h-3 w-4/5 animate-pulse rounded-full bg-indigo-100" /><div className="h-3 w-3/5 animate-pulse rounded-full bg-indigo-100" /></div></div>}
+                {!preview && !ocrPreviewing && <p className="mt-3 text-sm text-slate-500">Run a preview first to see what the system can read from the receipt.</p>}
                 {preview && (
                   <div className="mt-4 space-y-3 text-sm">
                     <InfoRow label="Image quality" value={preview.quality?.status || '—'} />
@@ -201,17 +211,13 @@ export default function ResidentBillPage() {
                     <InfoRow label="Detected reference" value={preview.referenceNo || 'Not detected'} />
                     <InfoRow label="Detected payment date" value={preview.paymentDate || 'Not detected'} />
                     <InfoRow label="OCR confidence" value={preview.confidence ? `${preview.confidence}%` : '—'} />
-                    <div className="rounded-xl bg-white p-3">
-                      <p className="text-xs font-bold uppercase text-slate-400">Extracted text</p>
-                      <pre className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-700">{preview.rawText || 'No text extracted.'}</pre>
-                    </div>
                   </div>
                 )}
               </div>
             </div>
           </Panel>
 
-          <SoaDocument bill={bill} showPaymentQr={false} />
+          <SoaDocument bill={bill} />
         </>
       )}
       {reportingError && <ReportSoaErrorModal busy={busy} errorReport={errorReport} onChange={(field, value) => setErrorReport((current) => ({ ...current, [field]: value }))} onClose={() => setReportingError(false)} onSubmit={submitBillingError} />}

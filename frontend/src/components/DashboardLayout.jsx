@@ -30,41 +30,41 @@ import NotificationCenter from './NotificationCenter'
 const navigationByRole = {
   ADMIN: {
     view: [
-      { label: 'Dashboard', to: '/admin', end: true, icon: LayoutDashboard },
-      { label: 'Unit Directory', to: '/admin/units', end: true, icon: Building2 },
-      { label: 'Forwarded SOAs', to: '/admin/soa', icon: FileText },
-      { label: 'Payments', to: '/admin/payments', icon: CreditCard },
-      { label: 'Audit Logs', to: '/admin/audit-logs', icon: ScrollText },
-      { label: 'Water Analytics', to: '/admin/analytics', icon: BarChart3 },
-      { label: 'Reports', to: '/admin/reports', icon: FolderKanban },
-      { label: 'Billing Errors', to: '/admin/billing-errors', icon: CircleAlert },
+      { label: 'Overview', to: '/admin', end: true, icon: LayoutDashboard },
+      { label: 'Homes & Units', to: '/admin/units', end: true, icon: Building2 },
+      { label: 'Statements to Review', to: '/admin/soa', icon: FileText },
+      { label: 'Payment Records', to: '/admin/payments', icon: CreditCard },
+      { label: 'Water Usage', to: '/admin/analytics', icon: BarChart3 },
+      { label: 'Money Reports', to: '/admin/reports', icon: FolderKanban },
+      { label: 'Activity History', to: '/admin/audit-logs', icon: ScrollText },
     ],
     manage: [
-      { label: 'User Management', to: '/admin/users', icon: Users },
-      { label: 'Manage Units', to: '/admin/units/manage', icon: Settings2 },
-      { label: 'SOA Settings', to: '/admin/soa-template', icon: BookOpen },
+      { label: 'People & Access', to: '/admin/users', icon: Users },
+      { label: 'Manage Homes', to: '/admin/units/manage', icon: Settings2 },
+      { label: 'Statement Design', to: '/admin/soa-template', icon: BookOpen },
+      { label: 'Statement Issues', to: '/admin/billing-errors', icon: CircleAlert },
     ],
   },
   COLLECTOR: {
     view: [
-      { label: 'Dashboard', to: '/collector', end: true, icon: LayoutDashboard },
-      { label: 'Bills & SOAs', to: '/collector/bills', icon: FileText },
-      { label: 'Units', to: '/collector/units', icon: Building2 },
-      { label: 'Verified Payments', to: '/collector/payments', icon: WalletCards },
-      { label: 'Water Analytics', to: '/collector/analytics', icon: BarChart3 },
-      { label: 'Reports', to: '/collector/reports', icon: FolderKanban },
-      { label: 'Billing Errors', to: '/collector/billing-errors', icon: CircleAlert },
+      { label: 'Overview', to: '/collector', end: true, icon: LayoutDashboard },
+      { label: 'Bills & Statements', to: '/collector/bills', icon: FileText },
+      { label: 'Homes & Units', to: '/collector/units', icon: Building2 },
+      { label: 'Confirmed Payments', to: '/collector/payments', icon: WalletCards },
+      { label: 'Water Usage', to: '/collector/analytics', icon: BarChart3 },
     ],
     manage: [
-      { label: 'Monthly Billing', to: '/collector/billing', icon: Calculator },
-      { label: 'Analytics Import', to: '/collector/history-import', icon: Upload },
+      { label: 'Create Monthly Bills', to: '/collector/billing', icon: Calculator },
+      { label: 'Upload Water History', to: '/collector/history-import', icon: Upload },
+      { label: 'Money Reports', to: '/collector/reports', icon: FolderKanban },
+      { label: 'Statement Issues', to: '/collector/billing-errors', icon: CircleAlert },
     ],
   },
   RESIDENT: {
     view: [
-      { label: 'Dashboard', to: '/resident', end: true, icon: LayoutDashboard },
-      { label: 'My SOAs', to: '/resident/bills', icon: FileText },
-      { label: 'Payment History', to: '/resident/payments', icon: CreditCard },
+      { label: 'Overview', to: '/resident', end: true, icon: LayoutDashboard },
+      { label: 'My Bills', to: '/resident/bills', icon: FileText },
+      { label: 'My Payments', to: '/resident/payments', icon: CreditCard },
     ],
     manage: [],
   },
@@ -121,6 +121,27 @@ function NavigationLinks({ sections, collapsed, onNavigate }) {
   )
 }
 
+function ResidentMobileNavigation() {
+  const items = [
+    { label: 'Home', to: '/resident', end: true, icon: LayoutDashboard },
+    { label: 'Bills', to: '/resident/bills', icon: FileText },
+    { label: 'Payments', to: '/resident/payments', icon: CreditCard },
+    { label: 'Profile', to: '/profile', icon: UserRound },
+  ]
+
+  return <nav className="print-hidden fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-[var(--border)] bg-white/95 px-2 py-2 shadow-[0_12px_30px_rgba(28,78,48,0.18)] backdrop-blur lg:hidden" aria-label="Resident mobile navigation">
+    <div className="grid grid-cols-4 gap-1">
+      {items.map((item) => {
+        const Icon = item.icon
+        return <NavLink key={item.label} to={item.to} end={item.end} className={({ isActive }) => `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-bold transition ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-[var(--muted)] hover:bg-[var(--app-bg)] hover:text-emerald-700'}`}>
+          <Icon size={19} strokeWidth={2.2} aria-hidden="true" />
+          <span>{item.label}</span>
+        </NavLink>
+      })}
+    </div>
+  </nav>
+}
+
 export default function DashboardLayout({ title, description, children }) {
   const { user, logout, token } = useAuth()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('rsg_sidebar_collapsed') === 'true')
@@ -129,6 +150,7 @@ export default function DashboardLayout({ title, description, children }) {
   const profileMenuRef = useRef(null)
   const sections = navigationByRole[user.role] || navigationByRole.RESIDENT
   const usesGreenSidebar = user.role === 'ADMIN' || user.role === 'RESIDENT' || user.role === 'COLLECTOR'
+  const usesResidentMobileNavigation = user.role === 'RESIDENT'
 
   useEffect(() => {
     localStorage.setItem('rsg_sidebar_collapsed', String(collapsed))
@@ -175,7 +197,7 @@ export default function DashboardLayout({ title, description, children }) {
 
   return (
     <div className={`dashboard-shell min-h-screen bg-[var(--app-bg)] text-[var(--ink)] lg:grid lg:transition-[grid-template-columns] lg:duration-200 lg:ease-out motion-reduce:transition-none ${usesGreenSidebar ? 'green-shell' : ''} ${collapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
-      {mobileOpen && (
+      {mobileOpen && !usesResidentMobileNavigation && (
         <button
           type="button"
           aria-label="Close navigation"
@@ -184,7 +206,7 @@ export default function DashboardLayout({ title, description, children }) {
         />
       )}
 
-      <aside className={`print-hidden fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 motion-reduce:transition-none ${usesGreenSidebar ? 'green-sidebar' : ''} ${
+      <aside className={`print-hidden fixed inset-y-0 left-0 z-40 ${usesResidentMobileNavigation ? 'hidden lg:flex' : 'flex'} w-[280px] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 motion-reduce:transition-none ${usesGreenSidebar ? 'green-sidebar' : ''} ${
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className={`flex h-14 shrink-0 items-center justify-between border-b border-[var(--border)] px-5 ${collapsed ? 'lg:justify-center lg:px-3' : ''}`}>
@@ -224,11 +246,11 @@ export default function DashboardLayout({ title, description, children }) {
         </div>
       </aside>
 
-      <main className="min-w-0 bg-[var(--app-bg)]">
+      <main className={`min-w-0 bg-[var(--app-bg)] ${usesResidentMobileNavigation ? 'pb-24 lg:pb-0' : ''}`}>
         <header className="print-hidden sticky top-0 z-20 border-b border-[var(--border)] bg-white/95 shadow-[0_4px_18px_rgba(28,78,48,0.06)] backdrop-blur">
           <div className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
-              <button
+              {!usesResidentMobileNavigation && <button
                 type="button"
                 aria-label="Open navigation"
                 title="Open navigation"
@@ -236,7 +258,7 @@ export default function DashboardLayout({ title, description, children }) {
                 className="rounded-lg border border-[var(--border)] bg-[var(--app-bg)] p-2 text-[var(--primary)] hover:bg-[var(--active-bg)] lg:hidden"
               >
                 <Menu size={19} aria-hidden="true" />
-              </button>
+              </button>}
               <div className="flex min-w-0 items-center gap-2 text-sm">
                 <span className="truncate font-bold text-[var(--ink)]">{portalLabel}</span>
                 <span className="text-[var(--muted)]">/</span>
@@ -297,6 +319,7 @@ export default function DashboardLayout({ title, description, children }) {
           <div className="space-y-8">{children}</div>
         </div>
       </main>
+      {usesResidentMobileNavigation && <ResidentMobileNavigation />}
     </div>
   )
 }

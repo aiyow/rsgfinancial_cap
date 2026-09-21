@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Activity, CheckCircle2, ChevronDown, CircleUserRound, FileText, Pencil, Plus, ShieldCheck, Trash2, UserRound, UsersRound, XCircle } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -125,7 +126,7 @@ export default function AdminAuditLogsPage() {
 
   return (
     <DashboardLayout title="Audit logs" description="A simple history of important actions in the system.">
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard label="Total entries" value={summary.total} icon={Activity} accent="blue" />

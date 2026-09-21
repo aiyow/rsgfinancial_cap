@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { CheckCircle2, ChevronDown, Clock3, WalletCards, XCircle } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -138,7 +139,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <DashboardLayout title="Resident payment proofs" description="Review receipt uploads and record face-to-face payments.">
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard label="Loaded payments" value={counts.total} icon={WalletCards} accent="blue" />

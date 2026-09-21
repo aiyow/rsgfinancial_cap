@@ -9,8 +9,8 @@ const unitNumberCollator = new Intl.Collator(undefined, { numeric: true, sensiti
 
 function occupancyBadge(status) {
   return status === 'OCCUPIED'
-    ? 'bg-emerald-50 text-emerald-700'
-    : 'bg-slate-100 text-slate-600'
+    ? 'bg-emerald-100 text-emerald-800'
+    : 'bg-amber-100 text-amber-800'
 }
 
 export default function CollectorUnitsPage() {
@@ -22,6 +22,11 @@ export default function CollectorUnitsPage() {
   const [floorFilter, setFloorFilter] = useState('ALL')
   const [occupancyMenuOpen, setOccupancyMenuOpen] = useState(false)
   const [floorMenuOpen, setFloorMenuOpen] = useState(false)
+  const [assignmentSearch, setAssignmentSearch] = useState('')
+  const [assignmentRelationship, setAssignmentRelationship] = useState('ALL')
+  const [assignmentSort, setAssignmentSort] = useState('UNIT')
+  const [assignmentRelationshipMenuOpen, setAssignmentRelationshipMenuOpen] = useState(false)
+  const [assignmentSortMenuOpen, setAssignmentSortMenuOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -42,6 +47,7 @@ export default function CollectorUnitsPage() {
   }, [token])
 
   const activeAssignments = useMemo(() => assignments.filter((assignment) => !assignment.endDate), [assignments])
+  const assignmentRelationships = useMemo(() => [...new Set(activeAssignments.map((assignment) => assignment.relationshipType).filter(Boolean))].sort(unitNumberCollator.compare), [activeAssignments])
   const assignmentsByUnit = useMemo(() => activeAssignments.reduce((grouped, assignment) => {
     const key = String(assignment.unitId)
     const current = grouped.get(key) || []
@@ -69,6 +75,20 @@ export default function CollectorUnitsPage() {
   const visibleUnits = filteredUnits.slice(firstUnitIndex, firstUnitIndex + UNITS_PER_PAGE)
   const lastUnitIndex = Math.min(firstUnitIndex + UNITS_PER_PAGE, filteredUnits.length)
   const occupiedCount = units.filter((unit) => unit.occupancyStatus === 'OCCUPIED').length
+  const filteredAssignments = useMemo(() => {
+    const searchTerm = assignmentSearch.trim().toLowerCase()
+    const rows = activeAssignments.filter((assignment) => {
+      const matchesSearch = !searchTerm || [assignment.residentName, assignment.unitNumber, assignment.relationshipType]
+        .some((value) => String(value || '').toLowerCase().includes(searchTerm))
+      return matchesSearch && (assignmentRelationship === 'ALL' || assignment.relationshipType === assignmentRelationship)
+    })
+    return rows.sort((left, right) => {
+      if (assignmentSort === 'RESIDENT') return unitNumberCollator.compare(left.residentName || '', right.residentName || '')
+      if (assignmentSort === 'RELATIONSHIP') return unitNumberCollator.compare(left.relationshipType || '', right.relationshipType || '') || unitNumberCollator.compare(left.residentName || '', right.residentName || '')
+      if (assignmentSort === 'PAYER') return Number(right.isPrimaryPayer) - Number(left.isPrimaryPayer) || unitNumberCollator.compare(String(left.unitNumber), String(right.unitNumber))
+      return unitNumberCollator.compare(String(left.unitNumber), String(right.unitNumber)) || unitNumberCollator.compare(left.residentName || '', right.residentName || '')
+    })
+  }, [activeAssignments, assignmentRelationship, assignmentSearch, assignmentSort])
 
   function resetPage(update) {
     update()
@@ -93,10 +113,10 @@ export default function CollectorUnitsPage() {
         </div>
 
         {!loading && <p className="mb-3 text-sm text-slate-500">Showing {filteredUnits.length ? `${firstUnitIndex + 1}-${lastUnitIndex}` : 0} of {filteredUnits.length} matching units ({units.length} total).</p>}
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
           {visibleUnits.map((unit) => {
             const residents = assignmentsByUnit.get(String(unit.id)) || []
-            return <article key={unit.id} className="rounded-xl border border-slate-200 bg-white p-4 transition hover:border-emerald-200 hover:shadow-sm"><div className="flex items-start justify-between gap-3"><div><h2 className="font-black text-slate-900">Unit {unit.unitNumber}</h2><p className="mt-0.5 text-xs text-slate-500">{unit.floor || 'Floor not set'}</p></div><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${occupancyBadge(unit.occupancyStatus)}`}>{unit.occupancyStatus}</span></div><dl className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-sm"><div><dt className="text-xs text-slate-500">Billable area</dt><dd className="mt-1 font-bold">{unit.billableAreaSqm ?? 'Not set'}{unit.billableAreaSqm ? ' sqm' : ''}</dd></div><div><dt className="text-xs text-slate-500">Active residents</dt><dd className="mt-1 font-bold">{residents.length}</dd></div></dl><div className="mt-3 min-h-9 border-t border-slate-100 pt-3 text-xs text-slate-600">{residents.length ? residents.map((assignment) => <p key={assignment.id} className="truncate"><span className="font-bold text-slate-800">{assignment.residentName}</span> · {assignment.relationshipType.toLowerCase()}{assignment.isPrimaryPayer ? ' · Primary payer' : ''}</p>) : 'No active resident assignment'}</div></article>
+            return <article key={unit.id} className="rounded-xl border border-slate-200 bg-white p-3 transition hover:border-emerald-200 hover:shadow-sm"><div className="flex items-start justify-between gap-2"><div><h2 className="text-sm font-black text-slate-900">Unit {unit.unitNumber}</h2><p className="mt-0.5 text-[11px] text-slate-500">{unit.floor || 'Floor not set'}</p></div><span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${occupancyBadge(unit.occupancyStatus)}`}>{unit.occupancyStatus}</span></div><dl className="mt-3 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2 text-xs"><div><dt className="text-[11px] text-slate-500">Billable area</dt><dd className="mt-0.5 font-bold">{unit.billableAreaSqm ?? 'Not set'}{unit.billableAreaSqm ? ' sqm' : ''}</dd></div><div><dt className="text-[11px] text-slate-500">Active residents</dt><dd className="mt-0.5 font-bold">{residents.length}</dd></div></dl><div className="mt-2 min-h-8 border-t border-slate-100 pt-2 text-[11px] leading-4 text-slate-600">{residents.length ? residents.map((assignment) => <p key={assignment.id} className="truncate"><span className="font-bold text-slate-800">{assignment.residentName}</span> · {assignment.relationshipType.toLowerCase()}{assignment.isPrimaryPayer ? ' · Primary payer' : ''}</p>) : 'No active resident assignment'}</div></article>
           })}
         </div>
         {loading && <p className="py-8 text-center text-sm text-slate-500">Loading unit directory...</p>}
@@ -105,8 +125,11 @@ export default function CollectorUnitsPage() {
       </Panel>
 
       <Panel title="Active resident assignments" description="Residents currently linked to a condominium unit.">
-        <div className="max-h-[400px] overflow-auto rounded-xl border border-slate-100"><table className="w-full min-w-[700px] text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Resident</th><th className="px-4 py-3">Unit</th><th className="px-4 py-3">Relationship</th><th className="px-4 py-3">Payer</th></tr></thead><tbody className="divide-y divide-slate-300">{activeAssignments.map((assignment) => <tr key={assignment.id} className="hover:bg-slate-50"><td className="px-4 py-3 font-bold">{assignment.residentName}</td><td className="px-4 py-3">Unit {assignment.unitNumber}</td><td className="px-4 py-3 capitalize">{assignment.relationshipType.toLowerCase()}</td><td className="px-4 py-3">{assignment.isPrimaryPayer ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Primary payer</span> : <span className="text-slate-500">—</span>}</td></tr>)}</tbody></table></div>
+        <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_190px_190px]"><label className="block text-xs font-bold text-slate-600">Search assignments<div className="relative mt-1"><Search size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input value={assignmentSearch} onChange={(event) => setAssignmentSearch(event.target.value)} placeholder="Resident, unit, or relationship" className="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm font-normal" /></div></label><FilterPopover label="Relationship" value={assignmentRelationship} open={assignmentRelationshipMenuOpen} onToggle={() => { setAssignmentRelationshipMenuOpen((current) => !current); setAssignmentSortMenuOpen(false) }} onSelect={(value) => { setAssignmentRelationship(value); setAssignmentRelationshipMenuOpen(false) }} options={[{ value: 'ALL', label: 'All relationships' }, ...assignmentRelationships.map((relationship) => ({ value: relationship, label: `${relationship.charAt(0)}${relationship.slice(1).toLowerCase()}` }))]} /><FilterPopover label="Sort by" value={assignmentSort} open={assignmentSortMenuOpen} onToggle={() => { setAssignmentSortMenuOpen((current) => !current); setAssignmentRelationshipMenuOpen(false) }} onSelect={(value) => { setAssignmentSort(value); setAssignmentSortMenuOpen(false) }} options={[{ value: 'UNIT', label: 'Unit number' }, { value: 'RESIDENT', label: 'Resident name' }, { value: 'RELATIONSHIP', label: 'Relationship' }, { value: 'PAYER', label: 'Primary payer first' }]} /></div>
+        {!loading && <p className="mb-3 text-sm text-slate-500">Showing {filteredAssignments.length} of {activeAssignments.length} active assignments.</p>}
+        <div className="max-h-[400px] overflow-auto rounded-xl border border-slate-100"><table className="w-full min-w-[700px] text-left text-sm"><thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Resident</th><th className="px-4 py-3">Unit</th><th className="px-4 py-3">Relationship</th><th className="px-4 py-3">Payer</th></tr></thead><tbody className="divide-y divide-slate-300">{filteredAssignments.map((assignment) => <tr key={assignment.id} className="hover:bg-slate-50"><td className="px-4 py-3 font-bold">{assignment.residentName}</td><td className="px-4 py-3">Unit {assignment.unitNumber}</td><td className="px-4 py-3 capitalize">{assignment.relationshipType.toLowerCase()}</td><td className="px-4 py-3">{assignment.isPrimaryPayer ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Primary payer</span> : <span className="text-slate-500">—</span>}</td></tr>)}</tbody></table></div>
         {!loading && activeAssignments.length === 0 && <EmptyRow message="No active resident assignments." />}
+        {!loading && activeAssignments.length > 0 && filteredAssignments.length === 0 && <EmptyRow message="No active assignments match these filters." />}
       </Panel>
     </DashboardLayout>
   )

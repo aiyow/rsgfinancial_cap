@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ChevronDown, Eye, EyeOff, Plus, Search, X } from 'lucide-react'
+import { ChevronDown, Eye, EyeOff, Plus, Search, TriangleAlert, X } from 'lucide-react'
 import DashboardLayout, { EmptyRow } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -126,16 +127,12 @@ export default function AdminUsersPage() {
   }
 
   function requestDelete(user) {
-    if (['ADMIN', 'COLLECTOR'].includes(user.role)) {
-      setDeleteTarget(user)
-      return
-    }
-    if (window.confirm(`Permanently delete ${user.fullName} and their unit assignment records?`)) deleteUser(user)
+    setDeleteTarget(user)
   }
 
   return (
     <DashboardLayout title="User management" description="Manage Admin, Collector, and Resident accounts.">
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">User management</h1><p className="mt-1 text-sm text-[var(--muted)]">{users.length} accounts · {users.filter((user) => user.isActive).length} active</p></div>
@@ -161,7 +158,7 @@ export default function AdminUsersPage() {
       </section>
 
       {modalOpen && <UserModal editingSelf={editingSelf} editing={Boolean(editingId)} form={form} onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))} onClose={closeModal} onSave={saveUser} />}
-      {deleteTarget && <PrivilegedDeleteModal user={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={(password) => deleteUser(deleteTarget, password)} />}
+      {deleteTarget && <DeleteUserModal user={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={(password) => deleteUser(deleteTarget, password)} />}
     </DashboardLayout>
   )
 }
@@ -209,25 +206,35 @@ function UserModal({ editing, editingSelf, form, onChange, onClose, onSave }) {
   )
 }
 
-function PrivilegedDeleteModal({ onCancel, onConfirm, user }) {
+function DeleteUserModal({ onCancel, onConfirm, user }) {
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const requiresPassword = ['ADMIN', 'COLLECTOR'].includes(user.role)
 
   async function submit(event) {
     event.preventDefault()
     setSubmitting(true)
-    const success = await onConfirm(password)
+    const success = await onConfirm(requiresPassword ? password : '')
     if (!success) setSubmitting(false)
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4" role="presentation" onMouseDown={onCancel}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4 backdrop-blur-[1px]" role="presentation" onMouseDown={() => { if (!submitting) onCancel() }}>
       <section role="dialog" aria-modal="true" aria-labelledby="delete-user-title" className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
-        <h2 id="delete-user-title" className="text-xl font-black text-slate-900">Confirm privileged account deletion</h2>
-        <p className="mt-2 text-sm text-slate-600">You are deleting <strong>{user.fullName}</strong> ({user.role}). Enter your current Admin password to continue.</p>
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-700"><TriangleAlert size={21} aria-hidden="true" /></span>
+          <div>
+            <h2 id="delete-user-title" className="text-xl font-black text-slate-900">Delete this account?</h2>
+            <p className="mt-1 text-sm text-slate-600">This cannot be undone.</p>
+          </div>
+        </div>
+        <div className="mt-5 rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-slate-700">
+          <p>Delete <strong className="text-slate-900">{user.fullName}</strong> and remove their unit assignment records.</p>
+          <p className="mt-1 text-xs font-bold uppercase tracking-wide text-rose-700">{user.role.toLowerCase()} account</p>
+        </div>
         <form onSubmit={submit} className="mt-5 space-y-4">
-          <PasswordField label="Your current password" required value={password} onChange={(event) => setPassword(event.target.value)} />
-          <div className="flex justify-end gap-3"><button type="button" disabled={submitting} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700">Cancel</button><button disabled={submitting} className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">{submitting ? 'Deleting...' : 'Delete account'}</button></div>
+          {requiresPassword && <><p className="text-sm text-slate-600">To protect privileged accounts, enter your current Admin password to continue.</p><PasswordField label="Your current password" required value={password} onChange={(event) => setPassword(event.target.value)} /></>}
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" disabled={submitting} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Keep account</button><button disabled={submitting} className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-50">{submitting ? 'Deleting...' : 'Delete permanently'}</button></div>
         </form>
       </section>
     </div>

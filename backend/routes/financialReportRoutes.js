@@ -27,22 +27,25 @@ function money(value) {
 
 function addSummary(sheet, report) {
   const rows = [
-    ['Total monthly billing', money(report.overview.totalBilling)],
-    ['Total monthly collections', money(report.overview.totalCollections)],
-    ['Association dues billed', money(report.overview.duesBilled)],
-    ['Association dues collected', money(report.overview.duesCollected)],
-    ['Water billed', money(report.overview.waterBilled)],
-    ['Water collected', money(report.overview.waterCollected)],
-    ['Late penalties', money(report.overview.latePenalties)],
-    ['Outstanding balance', money(report.overview.outstandingBalance)],
-    ['Unapplied advance credits', money(report.overview.unappliedCredits)],
+    ['Total monthly billing', money(report.overview.totalBilling), 'currency'],
+    ['Total monthly collections', money(report.overview.totalCollections), 'currency'],
+    ['Collection efficiency', report.overview.collectionEfficiency === null ? '—' : report.overview.collectionEfficiency / 100, 'percent'],
+    ['Association dues billed', money(report.overview.duesBilled), 'currency'],
+    ['Association dues collected', money(report.overview.duesCollected), 'currency'],
+    ['Water billed', money(report.overview.waterBilled), 'currency'],
+    ['Water collected', money(report.overview.waterCollected), 'currency'],
+    ['Late penalties', money(report.overview.latePenalties), 'currency'],
+    ['Outstanding balance', money(report.overview.outstandingBalance), 'currency'],
+    ['Unapplied advance credits', money(report.overview.unappliedCredits), 'currency'],
   ];
   sheet.addRow([]);
-  sheet.addRow(['Summary']);
-  rows.forEach((row) => sheet.addRow(row));
-  const first = sheet.rowCount - rows.length;
-  sheet.getRow(first).font = { bold: true };
-  for (let index = first + 1; index <= sheet.rowCount; index += 1) sheet.getCell(`B${index}`).numFmt = '₱#,##0.00';
+  const heading = sheet.addRow(['Summary']);
+  heading.font = { bold: true };
+  rows.forEach(([label, value, format]) => {
+    const row = sheet.addRow([label, value]);
+    if (format === 'currency') row.getCell(2).numFmt = '₱#,##0.00';
+    if (format === 'percent') row.getCell(2).numFmt = '0.0%';
+  });
 }
 
 function addTable(sheet, headers, rows, moneyColumns = []) {

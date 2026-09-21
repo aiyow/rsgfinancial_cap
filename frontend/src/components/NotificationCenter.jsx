@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, BellRing, CheckCheck } from 'lucide-react'
 import { apiRequest } from '../services/api'
 
-const POLL_INTERVAL_MS = 30_000
+const POLL_INTERVAL_MS = 10_000
 
 function notificationTime(value) {
   if (!value) return ''

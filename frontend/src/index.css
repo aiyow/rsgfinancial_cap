@@ -278,6 +278,11 @@ button { cursor: pointer; }
 
 ::selection { color: var(--ink); background: var(--active-bg); }
 
+@keyframes toast-enter {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .soa-sheet {
   color: #000;
   font-family: Arial, Helvetica, sans-serif;
@@ -346,7 +351,6 @@ button { cursor: pointer; }
   text-transform: uppercase;
 }
 .soa-primary-table td { height: 34px; }
-.soa-balance-row td { background: var(--soa-accent, #617c40); color: #fff; text-align: center; font-weight: 900; }
 .soa-total-row td:nth-child(2) { background: #cceabd; }
 .soa-summary-heading td { background: #fff; text-align: center; font-size: 10px; font-weight: 900; }
 .soa-summary-table td { min-height: 26px; padding-top: 4px; padding-bottom: 4px; }
@@ -361,12 +365,6 @@ button { cursor: pointer; }
   margin-right: 6px;
 }
 
-.soa-reference-section { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 16px; min-height: 84px; border-bottom: 1px solid #285b78; padding: 9px 16px; }
-.soa-reference-copy { font-size: 11px; line-height: 1.5; }
-.soa-reference-copy p { margin: 0; }
-.soa-qr-card { margin: 0; text-align: center; font-size: 9px; font-weight: 900; letter-spacing: 0.08em; }
-.soa-qr-card img { display: block; width: 72px; height: 72px; border: 1px solid #285b78; object-fit: contain; }
-.soa-qr-card figcaption { margin-top: 2px; }
 .soa-signature-band { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #285b78; background: #a9cbe8; text-align: center; font-size: 10px; font-weight: 900; }
 .soa-signature-band > div:first-child { border-right: 1px solid #285b78; }
 .soa-signature-band p { min-height: 26px; margin: 0; padding: 7px 8px; }
@@ -404,8 +402,6 @@ button { cursor: pointer; }
   .soa-brand-panel { min-height: 98px; }
   .soa-brand-logo { max-height: 68px; }
   .soa-payment-band { min-height: 70px; }
-  .soa-reference-section { min-height: 72px; padding-top: 6px; padding-bottom: 6px; }
-  .soa-qr-card img { width: 62px; height: 62px; }
   .soa-table th,
   .soa-table td {
     padding: 4px;

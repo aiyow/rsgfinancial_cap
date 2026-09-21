@@ -1,4 +1,5 @@
 import express from "express";
+import bcrypt from "bcrypt";
 import ExcelJS from "exceljs";
 import multer from "multer";
 import { z } from "zod";
@@ -44,6 +45,10 @@ const importSchema = z.object({ readings: z.array(readingSchema).min(1).max(1000
 const publishSchema = z.object({
   billIds: z.array(z.coerce.number().int().positive()).min(1).max(2000).optional(),
   sendEmails: z.boolean().optional().default(true),
+}).strict();
+const deletePeriodSchema = z.object({
+  currentPassword: z.string().min(8).max(72),
+  reason: z.string().trim().max(500).optional(),
 }).strict();
 const periodColumns = `id, period_start AS "periodStart", period_end AS "periodEnd",
   due_date AS "dueDate", water_rate_per_cubic_m AS "waterRatePerCubicM",
@@ -510,6 +515,15 @@ router.post("/:id/forward", allowRoles("COLLECTOR"), requireId, async (req, res,
       [req.resourceId, req.user.id],
     );
     if (!result.rows[0]) { await client.query("ROLLBACK"); return res.status(409).json({ message: "Only a generated batch can be forwarded." }); }
+    const admins = await client.query("SELECT id FROM users WHERE is_active = TRUE AND role = 'ADMIN'");
+    await createUserNotifications(client, admins.rows.map((admin) => ({
+      recipientUserId: admin.id,
+      type: "BILLING_BATCH_FORWARDED",
+      title: "Billing batch ready for review",
+      message: `A Collector forwarded the ${String(result.rows[0].periodStart).slice(0, 10)} to ${String(result.rows[0].periodEnd).slice(0, 10)} billing batch.`,
+      href: `/admin/soa/batches/${result.rows[0].id}`,
+      dedupeKey: `billing-batch-forwarded:${result.rows[0].id}`,
+    })));
     await writeAuditLog({
       client,
       actorUserId: req.user.id,
@@ -700,12 +714,18 @@ router.post("/:id/bills/:billId/email-deliveries/resend", allowRoles("ADMIN"), r
   } catch (error) { return next(error); }
 });
 
-router.delete("/:id", allowRoles("COLLECTOR"), requireId, async (req, res, next) => {
+router.delete("/:id", allowRoles("COLLECTOR"), requireId, validateBody(deletePeriodSchema), async (req, res, next) => {
   let client;
   try {
     client = await pool.connect();
     await client.query("BEGIN");
     await ensurePaymentLedgerSchema(client);
+    const actor = await client.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1 FOR UPDATE", [req.user.id]);
+    const passwordMatches = actor.rows[0] && await bcrypt.compare(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
+    if (!passwordMatches) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ message: "Your current password is incorrect. The billing batch was not deleted." });
+    }
     const period = await client.query(
       `SELECT id, status, period_start AS "periodStart", period_end AS "periodEnd"
        FROM billing_periods WHERE id = $1 FOR UPDATE`, [req.resourceId],
@@ -735,7 +755,7 @@ router.delete("/:id", allowRoles("COLLECTOR"), requireId, async (req, res, next)
       entityId: req.resourceId,
       action: "DELETED",
       oldValues: { ...period.rows[0], readingCount: readingCount.rows[0].count, billCount: billCount.rows[0].count },
-      remarks: req.body?.reason || "Collector permanently deleted the billing batch.",
+      remarks: req.validatedBody.reason || "Collector permanently deleted the billing batch.",
     });
     await client.query("DELETE FROM unit_bills WHERE billing_period_id = $1", [req.resourceId]);
     await client.query("DELETE FROM meter_readings WHERE billing_period_id = $1", [req.resourceId]);

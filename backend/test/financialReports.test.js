@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { allocateFinancialCollection, parseFinancialReportFilters } from '../services/financialReports.js';
+import { allocateFinancialCollection, calculateCollectionEfficiency, parseFinancialReportFilters } from '../services/financialReports.js';
 
 test('defaults financial reports to the current calendar month', () => {
   const result = parseFinancialReportFilters({}, new Date('2026-09-16T08:00:00.000Z'));
@@ -31,4 +31,9 @@ test('uses deterministic cent rounding when a partial payment cannot divide even
   const result = allocateFinancialCollection({ waterBilled: 1, duesBilled: 1, latePenalty: 1, amountApplied: 1 });
   assert.equal(result.waterCollected + result.duesCollected + result.latePenaltyCollected, 1);
   assert.deepEqual(result, { waterCollected: 0.34, duesCollected: 0.33, latePenaltyCollected: 0.33 });
+});
+
+test('calculates collection efficiency from approved collections and billed amounts', () => {
+  assert.equal(calculateCollectionEfficiency(750, 1000), 75);
+  assert.equal(calculateCollectionEfficiency(1000, 0), null);
 });

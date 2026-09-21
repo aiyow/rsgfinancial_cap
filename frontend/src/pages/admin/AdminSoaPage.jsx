@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
@@ -15,9 +15,27 @@ export default function AdminSoaPage() {
   const [periods, setPeriods] = useState([])
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    apiRequest('/api/billing-periods', { token }).then((data) => setPeriods(data.periods)).catch((requestError) => setError(requestError.message))
+  const loadPeriods = useCallback(async () => {
+    try {
+      const data = await apiRequest('/api/billing-periods', { token })
+      setPeriods(data.periods)
+      setError('')
+    } catch (requestError) {
+      setError(requestError.message)
+    }
   }, [token])
+
+  useEffect(() => {
+    const initialRefresh = window.setTimeout(loadPeriods, 0)
+    const refreshInterval = window.setInterval(loadPeriods, 10_000)
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') loadPeriods() }
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearTimeout(initialRefresh)
+      window.clearInterval(refreshInterval)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [loadPeriods])
 
   return (
     <DashboardLayout title="Forwarded SOAs" description="Read-only billing batches forwarded by the Collector.">

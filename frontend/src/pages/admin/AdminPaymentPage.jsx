@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Download, RotateCcw, Share2, ZoomIn, ZoomOut } from 'lucide-react'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiFile, apiRequest } from '../../services/api'
 
@@ -146,12 +147,12 @@ export default function AdminPaymentPage() {
   return (
     <DashboardLayout title="Payment verification" description="Compare uploaded receipts or review Admin-recorded payment details.">
       <div className="flex flex-wrap gap-3">
-        <Link to="/admin/payments" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Back to payments</Link>
-        {payment?.targetBillId && <Link to={`/admin/soa/bills/${payment.targetBillId}`} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Open target SOA</Link>}
+        <Link to="/admin/payments" className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:!text-white hover:shadow-md">Back to payments</Link>
+        {payment?.targetBillId && <Link to={`/admin/soa/bills/${payment.targetBillId}`} className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:!text-white hover:shadow-md">Open SOA & add invoice</Link>}
         {payment?.reviewStatus === 'REJECTED' && <button disabled={busy} onClick={removeRejectedPayment} className="rounded-lg border border-rose-300 px-4 py-2 text-sm font-bold text-rose-700 disabled:opacity-50">Delete rejected proof</button>}
       </div>
 
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
       {!payment && !notice.error && <p className="text-sm text-slate-500">Loading payment...</p>}
 
       {payment && (

@@ -21,7 +21,7 @@ function SummaryCard({ accent, icon: Icon, label, value }) {
 
 function StatusBadge({ status }) {
   const occupied = status === 'OCCUPIED'
-  return <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${occupied ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{occupied ? 'Occupied' : 'Vacant'}</span>
+  return <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${occupied ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{occupied ? 'Occupied' : 'Vacant'}</span>
 }
 
 function FilterPopover({ label, onSelect, onToggle, open, options, value }) {

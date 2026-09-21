@@ -43,10 +43,10 @@ function CurrencyCell({ value, strong = false }) {
   )
 }
 
-export default function SoaDocument({ bill, showPaymentQr = true }) {
+export default function SoaDocument({ bill }) {
   const { token } = useAuth()
   const template = { ...defaultTemplate, ...(bill.soaTemplate || {}) }
-  const [assets, setAssets] = useState({ logo: '', qr: '' })
+  const [logo, setLogo] = useState('')
 
   useEffect(() => {
     let active = true
@@ -62,15 +62,15 @@ export default function SoaDocument({ bill, showPaymentQr = true }) {
           return ''
         }
       }
-      const [logo, qr] = await Promise.all([read('logo'), showPaymentQr ? read('qr') : Promise.resolve('')])
-      if (active) setAssets({ logo, qr })
+      const logo = await read('logo')
+      if (active) setLogo(logo)
     }
     loadAssets()
     return () => {
       active = false
       urls.forEach((url) => URL.revokeObjectURL(url))
     }
-  }, [showPaymentQr, token])
+  }, [token])
 
   const association = chargeByType(bill, 'ASSOCIATION_DUES')
   const water = chargeByType(bill, 'WATER')
@@ -89,7 +89,7 @@ export default function SoaDocument({ bill, showPaymentQr = true }) {
 
       <header className="soa-header-grid">
         <div className={`soa-brand-panel ${template.logoPlacement === 'LEFT' ? 'justify-start' : template.logoPlacement === 'RIGHT' ? 'justify-end' : 'justify-center'}`}>
-          <img src={assets.logo || '/residens-logo.png'} alt={template.companyName} className="soa-brand-logo" />
+          <img src={logo || '/residens-logo.png'} alt={template.companyName} className="soa-brand-logo" />
           <p className="soa-company-address">{template.companyAddress}</p>
         </div>
         <div className="soa-account-panel">
@@ -120,7 +120,6 @@ export default function SoaDocument({ bill, showPaymentQr = true }) {
           </tr>
         </thead>
         <tbody>
-          <tr className="soa-balance-row"><td colSpan="9">BALANCE</td></tr>
           <tr>
             <td>{billingDate(bill)}</td>
             <td className="font-black">{association?.description || 'Association Dues'}</td>
@@ -131,7 +130,7 @@ export default function SoaDocument({ bill, showPaymentQr = true }) {
           <tr>
             <td>{billingDate(bill)}</td>
             <td className="font-black">{water?.description || 'Water Rate'}</td>
-            <td className="text-center">{bill.previousReading ?? '—'}</td><td className="text-center">—</td><td className="text-center">—</td>
+            <td className="text-center">{bill.previousReading ?? '—'}</td><td className="text-center">—</td><td className="break-words text-center font-bold">{bill.invoiceNumber || '—'}</td>
             <td className="text-center">{bill.currentReading ?? '—'}</td><CurrencyCell value={latePenaltyAmount} /><CurrencyCell value={amountOf(water)} /><CurrencyCell value={remainingBalance} />
           </tr>
           <tr className="soa-total-row">
@@ -149,15 +148,6 @@ export default function SoaDocument({ bill, showPaymentQr = true }) {
           <tr><td colSpan="2" className="font-black">REMAINING BALANCE</td><CurrencyCell value={remainingBalance} strong /><td colSpan="6"></td></tr>
         </tbody>
       </table>
-
-      <section className="soa-reference-section">
-        <div className="soa-reference-copy">
-          <p><strong>Official Receipt No.:</strong> {bill.officialReceiptNumber || '—'}</p>
-          <p><strong>Invoice No.:</strong> {bill.invoiceNumber || '—'}</p>
-          {bill.paymentNote && <p><strong>Payment note:</strong> {bill.paymentNote}</p>}
-        </div>
-        {showPaymentQr && assets.qr && <figure className="soa-qr-card"><img src={assets.qr} alt="Payment QR code" /><figcaption>SCAN TO PAY</figcaption></figure>}
-      </section>
 
       <section className="soa-signature-band">
         <div><p>PREPARED BY: {template.preparedByName}</p><p>{template.preparedByTitle}</p></div>

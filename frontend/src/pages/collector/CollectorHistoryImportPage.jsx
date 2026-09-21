@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FileSpreadsheet, RotateCcw, Trash2, Upload } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -123,7 +124,7 @@ export default function CollectorHistoryImportPage() {
 
   return (
     <DashboardLayout title="Analytics history import" description="Import past monthly meter readings for predictive water analytics.">
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
 
       <Panel accent="blue" title="Upload monthly history" description="Select the billing month, upload the cleaned Excel workbook, preview the readings, then confirm the import.">
         <form onSubmit={previewFile} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-[220px_1fr_auto]">

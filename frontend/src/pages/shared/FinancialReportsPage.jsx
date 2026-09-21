@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Download, FileText, Printer, ReceiptText, WalletCards, Waves } from 'lucide-react'
+import { Download, FileText, Gauge, Printer, ReceiptText, WalletCards, Waves } from 'lucide-react'
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiFile, apiRequest } from '../../services/api'
@@ -19,6 +20,17 @@ function currentMonth() {
 
 function money(value) {
   return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value || 0))
+}
+
+function percentage(value) {
+  return value === null || value === undefined ? '—' : `${Number(value).toFixed(1)}%`
+}
+
+function compactMoney(value) {
+  const amount = Number(value || 0)
+  if (Math.abs(amount) >= 1000000) return `₱${(amount / 1000000).toFixed(1)}M`
+  if (Math.abs(amount) >= 1000) return `₱${(amount / 1000).toFixed(0)}k`
+  return `₱${amount.toFixed(0)}`
 }
 
 function date(value) {
@@ -91,13 +103,38 @@ function Overview({ overview }) {
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <Metric label="Total monthly billing" value={money(overview.totalBilling)} detail="Water, dues, and applied late penalties" icon={FileText} tone="blue" />
       <Metric label="Total collections" value={money(overview.totalCollections)} detail="Approved payments by verified payment date" icon={WalletCards} />
+      <Metric label="Collection efficiency" value={percentage(overview.collectionEfficiency)} detail={overview.collectionEfficiency === null ? 'No billing was issued in this period' : 'Approved collections ÷ billing issued for this period'} icon={Gauge} tone="amber" />
       <Metric label="Outstanding balance" value={money(overview.outstandingBalance)} detail="Open resident balances as of the filter end date" icon={ReceiptText} tone="red" />
       <Metric label="Association dues" value={`${money(overview.duesBilled)} billed`} detail={`${money(overview.duesCollected)} collected`} icon={FileText} tone="amber" />
       <Metric label="Water billing" value={`${money(overview.waterBilled)} billed`} detail={`${money(overview.waterCollected)} collected`} icon={Waves} tone="blue" />
       <Metric label="Unapplied credits" value={money(overview.unappliedCredits)} detail={`${money(overview.latePenalties)} late penalties billed`} icon={WalletCards} tone="amber" />
     </div>
+    <FinancialCharts overview={overview} />
     <Panel title="How collections are reported" description="Collections use approved payments verified during the selected period. Payments applied to an SOA are split proportionally between its Water, Association Dues, and late-penalty amounts.">
       <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3"><div className="rounded-xl bg-slate-50 p-4"><p className="font-bold">Water collected</p><p className="mt-1 text-lg font-black">{money(overview.waterCollected)}</p></div><div className="rounded-xl bg-slate-50 p-4"><p className="font-bold">Dues collected</p><p className="mt-1 text-lg font-black">{money(overview.duesCollected)}</p></div><div className="rounded-xl bg-slate-50 p-4"><p className="font-bold">Late penalties collected</p><p className="mt-1 text-lg font-black">{money(overview.latePenaltyCollected)}</p></div></div>
+    </Panel>
+  </div>
+}
+
+function FinancialCharts({ overview }) {
+  const comparison = [
+    { name: 'Billed', amount: Number(overview.totalBilling || 0), color: '#2563eb' },
+    { name: 'Collected', amount: Number(overview.totalCollections || 0), color: '#15803d' },
+    { name: 'Outstanding', amount: Number(overview.outstandingBalance || 0), color: '#dc2626' },
+  ]
+  const chargeMix = [
+    { name: 'Association dues', value: Number(overview.duesBilled || 0), color: '#d97706' },
+    { name: 'Water', value: Number(overview.waterBilled || 0), color: '#2563eb' },
+    { name: 'Late penalties', value: Number(overview.latePenalties || 0), color: '#dc2626' },
+  ].filter((item) => item.value > 0)
+  const tooltipStyle = { borderRadius: 12, border: '1px solid #dbe5df', boxShadow: '0 10px 28px rgba(15, 44, 29, 0.12)', fontSize: 12 }
+
+  return <div className="grid gap-6 xl:grid-cols-2">
+    <Panel title="Billing, collections, and balance" description="A comparison of billed amounts, approved collections, and the remaining resident balance.">
+      <div className="h-80"><ResponsiveContainer width="100%" height="100%"><BarChart data={comparison} margin={{ top: 12, right: 12, left: 4, bottom: 0 }}><CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" /><XAxis dataKey="name" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={false} /><YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={compactMoney} tickLine={false} axisLine={false} width={58} /><Tooltip contentStyle={tooltipStyle} formatter={(value) => money(value)} cursor={{ fill: 'rgba(37, 99, 235, 0.06)' }} /><Bar dataKey="amount" name="Amount" radius={[7, 7, 0, 0]} maxBarSize={76}>{comparison.map((item) => <Cell key={item.name} fill={item.color} />)}</Bar></BarChart></ResponsiveContainer></div>
+    </Panel>
+    <Panel title="Billing charge mix" description="How the billing issued in the selected period is divided among charge types.">
+      <div className="h-80">{chargeMix.length ? <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chargeMix} dataKey="value" nameKey="name" innerRadius={64} outerRadius={96} paddingAngle={3} startAngle={90} endAngle={-270}>{chargeMix.map((item) => <Cell key={item.name} fill={item.color} stroke="#fff" strokeWidth={2} />)}</Pie><Tooltip contentStyle={tooltipStyle} formatter={(value) => money(value)} /><Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} /></PieChart></ResponsiveContainer> : <EmptyRow message="No billing charges were issued in this period." />}</div>
     </Panel>
   </div>
 }
@@ -115,6 +152,7 @@ export default function FinancialReportsPage() {
   const [tab, setTab] = useState('overview')
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [requestVersion, setRequestVersion] = useState(0)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState('')
 
@@ -126,13 +164,14 @@ export default function FinancialReportsPage() {
       .catch((requestError) => { if (active) setError(requestError.message) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [query, token])
+  }, [query, requestVersion, token])
 
   function viewReport(event) {
     event.preventDefault()
     setLoading(true)
     setError('')
     setAppliedFilter({ ...form })
+    setRequestVersion((version) => version + 1)
   }
 
   async function exportExcel() {

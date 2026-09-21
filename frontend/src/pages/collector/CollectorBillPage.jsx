@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import SoaDocument from '../../components/SoaDocument'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -78,7 +79,7 @@ export default function CollectorBillPage() {
       setBill(data.bill)
       setForm(formFromBill(data.bill))
       setEditing(false)
-      setNotice({ error: '', message: data.message })
+      setNotice({ error: '', message: 'Payment references saved. The official receipt, invoice number, and payment note are now up to date.' })
     } catch (error) {
       setNotice({ error: error.message, message: '' })
     } finally { setBusy(false) }
@@ -109,7 +110,7 @@ export default function CollectorBillPage() {
   return (
     <DashboardLayout title="Statement of Account" description="Review, correct, and print the generated statement.">
       <div className="print-hidden flex flex-wrap gap-3"><Link to={openedFromBillingErrors ? '/collector/billing-errors' : '/collector/bills'} className={actionClass}>{openedFromBillingErrors ? 'Back to Billing Errors' : 'Back to batches'}</Link><button onClick={() => window.print()} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Print / Save PDF</button>{canCorrect && <button disabled={busy} onClick={() => setEditing((value) => !value)} className="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{editing ? 'Cancel correction' : openedFromBillingErrors ? 'Correct reported SOA' : 'Correct SOA'}</button>}</div>
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
       {openedFromBillingErrors && correctionBlockedReason && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{hasBillingErrorContext ? 'This SOA has payment activity. Because it was opened from an active Billing Error report, you may correct all SOA details. The system will preserve the payment record and recalculate its applications and remaining balance.' : correctionBlockedReason}</p>}
       {editing && form && <Panel title="Edit SOA" description="Changes affect only this statement and are recorded in the billing audit history.">
         <form onSubmit={save} className="space-y-5">

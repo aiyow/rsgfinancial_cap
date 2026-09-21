@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { AlertTriangle, X } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -30,6 +32,7 @@ export default function CollectorBillingPage() {
   const [readingCount, setReadingCount] = useState(0)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
+  const [generateConfirmOpen, setGenerateConfirmOpen] = useState(false)
   const selectedPeriod = useMemo(() => periods.find((period) => String(period.id) === String(selectedId)), [periods, selectedId])
   const sortedPreviewRows = useMemo(() => [...(preview?.rows || [])].sort((left, right) => unitNumberCollator.compare(String(left.unitNumber), String(right.unitNumber))), [preview])
 
@@ -74,17 +77,6 @@ export default function CollectorBillingPage() {
     setReadingCount(0)
   }
 
-  function startEditPeriod(period) {
-    if (!period || period.status !== 'DRAFT') return
-    setEditingPeriodId(period.id)
-    setPeriodForm({
-      periodStart: String(period.periodStart).slice(0, 10), periodEnd: String(period.periodEnd).slice(0, 10),
-      dueDate: String(period.dueDate).slice(0, 10), waterRatePerCubicM: Number(period.waterRatePerCubicM),
-      associationDuesRatePerSqm: Number(period.associationDuesRatePerSqm),
-      latePenaltyPercent: Number(period.latePenaltyPercent || 0),
-    })
-  }
-
   function cancelPeriodEdit() {
     setEditingPeriodId(null)
     setPeriodForm(blankPeriod)
@@ -115,7 +107,9 @@ export default function CollectorBillingPage() {
       formData.append('file', file)
       const data = await apiRequest(`/api/billing-periods/${selectedId}/readings/preview`, { method: 'POST', token, body: formData })
       setPreview(data)
-      setNotice({ error: '', message: data.valid ? 'Spreadsheet is ready to import.' : 'Fix the validation errors before importing.' })
+      setNotice(data.valid
+        ? { error: '', message: 'Spreadsheet is ready to import.' }
+        : { error: 'Fix the validation errors before importing.', message: '' })
     } catch (error) {
       setPreview(null)
       setNotice({ error: error.message, message: '' })
@@ -137,7 +131,7 @@ export default function CollectorBillingPage() {
   }
 
   async function generateBills() {
-    if (!window.confirm('Generate final bills for this period? Readings cannot be changed afterward.')) return
+    setGenerateConfirmOpen(false)
     setBusy(true)
     setNotice({ error: '', message: '' })
     try {
@@ -152,7 +146,7 @@ export default function CollectorBillingPage() {
 
   return (
     <DashboardLayout title="Monthly billing" description="Create a draft period, validate the Collector workbook, and generate unit bills.">
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
 
       <Panel accent="blue" title={editingPeriodId ? '1. Edit draft billing period' : '1. Create billing period'} description="The workbook has no dates, so enter the coverage and due date here.">
         <form onSubmit={savePeriod} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-3 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
@@ -168,10 +162,9 @@ export default function CollectorBillingPage() {
       </Panel>
 
       <Panel accent="red" title="2. Upload and validate readings" description="Required columns: UNIT, PREVIOUS, and PRESENT. Server calculations override spreadsheet formulas.">
-        <form onSubmit={previewFile} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-[1fr_1fr_auto_auto]">
+        <form onSubmit={previewFile} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-[1fr_1fr_auto]">
           <Field label="Draft period"><select required value={selectedId} onChange={(event) => selectPeriod(event.target.value)} className={inputClass}><option value="">Select period</option>{periods.map((period) => <option key={period.id} value={period.id}>{period.periodStart} to {period.periodEnd} - {period.status}</option>)}</select></Field>
           <Field label="Collector workbook"><input required accept=".xlsx" type="file" onChange={(event) => setFile(event.target.files[0] || null)} className={inputClass} /></Field>
-          <button type="button" disabled={!selectedPeriod || selectedPeriod.status !== 'DRAFT'} onClick={() => startEditPeriod(selectedPeriod)} className="self-end rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-bold disabled:opacity-50">Edit settings</button>
           <button disabled={busy || !selectedId} className={`${primaryClass} self-end`}>{selectedPeriod?.status === 'DRAFT' ? 'Preview file' : 'Preview corrected file'}</button>
         </form>
         {readingCount > 0 && <p className="mt-3 text-sm font-bold text-emerald-700">{readingCount} readings are currently saved for this period.</p>}
@@ -190,8 +183,19 @@ export default function CollectorBillingPage() {
       </Panel>
 
       <Panel accent="green" title="3. Generate bills" description="Creates one bill with water and association-dues charge lines for every unit.">
-        {!selectedPeriod ? <EmptyRow message="Select a billing period first." /> : <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-bold">{selectedPeriod.periodStart} to {selectedPeriod.periodEnd}</p><p className="text-sm text-slate-500">Status: {selectedPeriod.status} | Saved readings: {readingCount}</p></div><button disabled={busy || selectedPeriod.status !== 'DRAFT' || readingCount === 0} onClick={generateBills} className={primaryClass}>Generate bills</button></div>}
+        {!selectedPeriod ? <EmptyRow message="Select a billing period first." /> : <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-bold">{selectedPeriod.periodStart} to {selectedPeriod.periodEnd}</p><p className="text-sm text-slate-500">Status: {selectedPeriod.status} | Saved readings: {readingCount}</p></div><button disabled={busy || selectedPeriod.status !== 'DRAFT' || readingCount === 0} onClick={() => setGenerateConfirmOpen(true)} className={primaryClass}>Generate bills</button></div>}
       </Panel>
+      {generateConfirmOpen && selectedPeriod && <GenerateBillsModal period={selectedPeriod} readingCount={readingCount} busy={busy} onCancel={() => setGenerateConfirmOpen(false)} onConfirm={generateBills} />}
     </DashboardLayout>
   )
+}
+
+function GenerateBillsModal({ period, readingCount, busy, onCancel, onConfirm }) {
+  return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4 backdrop-blur-[1px]" role="presentation" onMouseDown={() => { if (!busy) onCancel() }}>
+    <section role="dialog" aria-modal="true" aria-labelledby="generate-bills-title" className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+      <div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700"><AlertTriangle size={21} aria-hidden="true" /></span><div><h2 id="generate-bills-title" className="text-xl font-black text-slate-900">Generate final bills?</h2><p className="mt-1 text-sm text-slate-600">Please review this batch once more before continuing.</p></div></div><button type="button" disabled={busy} onClick={onCancel} aria-label="Close bill-generation confirmation" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"><X size={19} /></button></div>
+      <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-slate-700"><p>Generate final Statements of Account for <strong className="text-slate-900">{period.periodStart} to {period.periodEnd}</strong> using the <strong className="text-slate-900">{readingCount} saved meter readings</strong>.</p><p className="mt-2 font-bold text-amber-900">Readings cannot be changed after the bills are generated.</p></div>
+      <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" disabled={busy} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Keep editing</button><button type="button" disabled={busy} onClick={onConfirm} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:opacity-50">{busy ? 'Generating…' : 'Generate final bills'}</button></div>
+    </section>
+  </div>
 }

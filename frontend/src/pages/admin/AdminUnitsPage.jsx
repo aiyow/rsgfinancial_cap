@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Building2, ChevronDown, Plus, Search, Users, X } from 'lucide-react'
 import DashboardLayout, { EmptyRow } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -202,7 +203,7 @@ export default function AdminUnitsPage() {
   }
 
   return <DashboardLayout title="Manage units" description="Create and maintain unit records, occupancy, and billing visibility.">
-    {notice.error || notice.message ? <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p> : null}
+    <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">Unit management</h1><p className="mt-1 text-sm text-[var(--muted)]">{units.length} units · {occupiedCount} occupied · {units.length - occupiedCount} vacant</p></div>
       <button type="button" onClick={openCreateForm} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-95"><Plus size={17} /> Add unit</button>

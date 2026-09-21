@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -41,7 +42,7 @@ export default function CollectorBillBatchPage() {
   return (
     <DashboardLayout title="Billing batch" description="Review the Statements of Account in this billing batch.">
       <div><Link to="/collector/bills" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Back to batches</Link></div>
-      {notice.error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{notice.error}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
       <Panel title={`${bills.length} Statements of Account`} description="Showing 10 SOAs at a time, sorted by unit number.">
         <label className="mb-4 block max-w-md text-sm font-bold text-slate-700">Search by unit or payer
           <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }} placeholder="e.g. Unit 101 or Juan Dela Cruz" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-normal" />

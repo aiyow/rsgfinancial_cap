@@ -80,6 +80,12 @@ export function allocateFinancialCollection({ waterBilled = 0, duesBilled = 0, l
   return Object.fromEntries(Object.entries(allocation).map(([key, value]) => [key, money(value)]));
 }
 
+export function calculateCollectionEfficiency(totalCollections = 0, totalBilling = 0) {
+  const billed = Number(totalBilling || 0);
+  if (billed <= 0) return null;
+  return Number(((Number(totalCollections || 0) / billed) * 100).toFixed(1));
+}
+
 const billDetailSql = `
   SELECT b.id AS "billId", b.unit_id AS "unitId", b.unit_number_snapshot AS "unitNumber",
     COALESCE(NULLIF(b.payer_name_snapshot, ''), 'Unassigned resident') AS "payerName",
@@ -211,6 +217,7 @@ export async function getFinancialReport(pool, filters) {
     [filters.startDate, filters.endDate],
   );
   const totalCollections = number(cashResult.rows[0]?.totalCollections);
+  const totalBilling = sum(billedBills, 'totalBilled');
   const totalApplied = sum(applicationRows, 'appliedAmount');
   const appliedByBill = new Map(receivableAppliedResult.rows.map((row) => [Number(row.billId), number(row.applied)]));
   const receivables = receivableBills.map((bill) => {
@@ -225,8 +232,9 @@ export async function getFinancialReport(pool, filters) {
   return {
     filters,
     overview: {
-      totalBilling: sum(billedBills, 'totalBilled'),
+      totalBilling,
       totalCollections,
+      collectionEfficiency: calculateCollectionEfficiency(totalCollections, totalBilling),
       waterBilled: sum(billedBills, 'waterBilled'),
       duesBilled: sum(billedBills, 'duesBilled'),
       latePenalties: sum(billedBills, 'latePenalty'),
