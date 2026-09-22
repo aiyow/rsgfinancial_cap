@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Eye, Maximize2, Pencil, QrCode, RotateCcw, Share2, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Eye, Maximize2, Pencil, QrCode, RotateCcw, Share2, Upload, X, ZoomIn, ZoomOut } from 'lucide-react'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import SoaDocument from '../../components/SoaDocument'
@@ -62,6 +62,8 @@ export default function CollectorSoaTemplatePage() {
   const [qrVersion, setQrVersion] = useState(0)
   const [qrZoom, setQrZoom] = useState(1)
   const [qrFullscreen, setQrFullscreen] = useState(false)
+  const logoInputRef = useRef(null)
+  const qrInputRef = useRef(null)
 
   useEffect(() => {
     let active = true
@@ -140,8 +142,14 @@ export default function CollectorSoaTemplatePage() {
 
       <Panel title="SOA branding" description="Upload the association logo and payment QR code shown on staff and resident SOA views.">
         <div className="grid gap-4 md:grid-cols-2">
-          <Field label="Association logo"><input accept="image/jpeg,image/png" type="file" onChange={(event) => uploadAsset('logo', event.target.files?.[0])} className={inputClass} /><p className="mt-1 text-xs text-slate-500">JPG or PNG, up to 3 MB.</p></Field>
-          <Field label="Payment QR code"><input accept="image/jpeg,image/png" type="file" onChange={(event) => uploadAsset('qr', event.target.files?.[0])} className={inputClass} /><p className="mt-1 text-xs text-slate-500">JPG or PNG, up to 3 MB.</p></Field>
+          <Field label="Association logo">
+            <input ref={logoInputRef} accept="image/jpeg,image/png" type="file" onChange={(event) => { uploadAsset('logo', event.target.files?.[0]); event.target.value = '' }} className="sr-only" />
+            <div className="mt-1.5 flex flex-wrap items-center gap-3"><button type="button" disabled={assetBusy === 'logo'} onClick={() => logoInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"><Upload size={17} />{assetBusy === 'logo' ? 'Uploading logo...' : 'Upload logo'}</button><span className="text-xs font-normal text-slate-500">JPG or PNG, up to 3 MB.</span></div>
+          </Field>
+          <Field label="Payment QR code">
+            <input ref={qrInputRef} accept="image/jpeg,image/png" type="file" onChange={(event) => { uploadAsset('qr', event.target.files?.[0]); event.target.value = '' }} className="sr-only" />
+            <div className="mt-1.5 flex flex-wrap items-center gap-3"><button type="button" disabled={assetBusy === 'qr'} onClick={() => qrInputRef.current?.click()} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"><Upload size={17} />{assetBusy === 'qr' ? 'Uploading QR code...' : 'Upload QR code'}</button><span className="text-xs font-normal text-slate-500">JPG or PNG, up to 3 MB.</span></div>
+          </Field>
         </div>
         {assetBusy && <p className="mt-3 text-sm text-slate-500">Uploading {assetBusy === 'qr' ? 'payment QR code' : 'logo'}...</p>}
       </Panel>

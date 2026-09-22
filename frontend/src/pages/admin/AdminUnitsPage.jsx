@@ -48,6 +48,7 @@ export default function AdminUnitsPage() {
   const [statusMenuOpen, setStatusMenuOpen] = useState(false)
   const [balanceMenuOpen, setBalanceMenuOpen] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   const loadData = useCallback(async () => {
     const [unitData, assignmentData, billData, paymentData, userData] = await Promise.all([
@@ -202,6 +203,16 @@ export default function AdminUnitsPage() {
     setAssignmentBusy(false)
   }
 
+  async function deleteUnit(currentPassword) {
+    if (!deleteTarget) return false
+    const deleted = await runAction(
+      () => apiRequest(`/api/units/${deleteTarget.id}`, { method: 'DELETE', token, body: { currentPassword } }),
+      'Unit permanently deleted.',
+    )
+    if (deleted) setDeleteTarget(null)
+    return deleted
+  }
+
   return <DashboardLayout title="Manage units" description="Create and maintain unit records, occupancy, and billing visibility.">
     <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -224,6 +235,7 @@ export default function AdminUnitsPage() {
       onFormChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))}
       onSave={saveUnit}
     />}
+    {deleteTarget && <DeleteUnitModal unit={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={deleteUnit} />}
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <SummaryCard label="Total units" value={units.length} icon={Building2} accent="blue" />
@@ -241,7 +253,7 @@ export default function AdminUnitsPage() {
         <p className="whitespace-nowrap text-right text-xs font-bold text-[var(--muted)]">{filteredRows.length} of {units.length} · 10 rows visible</p>
       </div>
       <div className="max-h-[690px] overflow-auto"><table className="w-full min-w-[1050px] text-left text-sm"><thead className="sticky top-0 z-10 bg-[var(--app-bg)] text-[11px] uppercase tracking-[0.08em] text-[var(--muted)] shadow-sm"><tr><th className="px-4 py-3 font-bold">Unit</th><th className="px-4 py-3 font-bold">Resident</th><th className="px-4 py-3 font-bold">Floor / area</th><th className="px-4 py-3 font-bold">Open balance</th><th className="px-4 py-3 font-bold">Occupancy</th><th className="px-4 py-3 font-bold">Last payment</th><th className="px-4 py-3 text-right font-bold">Actions</th></tr></thead><tbody className="divide-y divide-slate-300">
-        {filteredRows.map((unit) => <tr key={unit.id} className="transition hover:bg-[var(--app-bg)]"><td className="px-4 py-3.5 font-black text-[var(--primary)]">{unit.unitNumber}</td><td className="px-4 py-3.5 text-[var(--ink)]">{unit.residents.length ? unit.residents.join(', ') : '-'}</td><td className="px-4 py-3.5 text-[var(--muted)]">Floor {unit.floor || '-'} · {unit.billableAreaSqm ? `${unit.billableAreaSqm} sqm` : 'Area not set'}</td><td className={`px-4 py-3.5 font-mono text-xs ${unit.outstandingBalance > 0 ? 'font-bold text-red-600' : 'text-[var(--muted)]'}`}>{money(unit.outstandingBalance)}</td><td className="px-4 py-3.5"><OccupancyBadge status={unit.occupancyStatus} /></td><td className="px-4 py-3.5 text-[var(--muted)]">{date(unit.lastPayment)}</td><td className="px-4 py-3.5"><div className="flex justify-end gap-2"><button type="button" onClick={() => openView(unit)} className={actionClass}>View</button><button type="button" onClick={() => startEdit(unit)} className={actionClass}>Edit</button><button type="button" onClick={() => window.confirm(`Delete unit ${unit.unitNumber}?`) && runAction(() => apiRequest(`/api/units/${unit.id}`, { method: 'DELETE', token }), 'Unit deleted.')} className={`${actionClass} text-red-600`}>Delete</button></div></td></tr>)}
+        {filteredRows.map((unit) => <tr key={unit.id} className="transition hover:bg-[var(--app-bg)]"><td className="px-4 py-3.5 font-black text-[var(--primary)]">{unit.unitNumber}</td><td className="px-4 py-3.5 text-[var(--ink)]">{unit.residents.length ? unit.residents.join(', ') : '-'}</td><td className="px-4 py-3.5 text-[var(--muted)]">Floor {unit.floor || '-'} · {unit.billableAreaSqm ? `${unit.billableAreaSqm} sqm` : 'Area not set'}</td><td className={`px-4 py-3.5 font-mono text-xs ${unit.outstandingBalance > 0 ? 'font-bold text-red-600' : 'text-[var(--muted)]'}`}>{money(unit.outstandingBalance)}</td><td className="px-4 py-3.5"><OccupancyBadge status={unit.occupancyStatus} /></td><td className="px-4 py-3.5 text-[var(--muted)]">{date(unit.lastPayment)}</td><td className="px-4 py-3.5"><div className="flex justify-end gap-2"><button type="button" onClick={() => openView(unit)} className={actionClass}>View</button><button type="button" onClick={() => startEdit(unit)} className={actionClass}>Edit</button><button type="button" onClick={() => setDeleteTarget(unit)} className={`${actionClass} text-red-600`}>Delete</button></div></td></tr>)}
       </tbody></table></div>
       {filteredRows.length === 0 ? <div className="p-4"><EmptyRow message={units.length ? 'No units match the selected filters.' : 'No units have been added yet.'} /></div> : null}
     </section>
@@ -250,6 +262,31 @@ export default function AdminUnitsPage() {
 
 function SummaryCard({ accent, icon: Icon, label, value }) {
   return <article className={`collector-metric collector-metric-${accent} rounded-xl border border-[var(--border)] p-4 shadow-sm`}><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">{label}</p><p className="mt-2 text-2xl font-black text-[var(--ink)]">{value}</p></div><span className="grid size-10 place-items-center rounded-xl"><Icon size={19} /></span></div></article>
+}
+
+function DeleteUnitModal({ onCancel, onConfirm, unit }) {
+  const [password, setPassword] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function submit(event) {
+    event.preventDefault()
+    setSubmitting(true)
+    const success = await onConfirm(password)
+    if (!success) setSubmitting(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4 backdrop-blur-[1px]" role="presentation" onMouseDown={() => { if (!submitting) onCancel() }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="delete-unit-title" className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+        <h2 id="delete-unit-title" className="text-xl font-black text-slate-900">Delete Unit {unit.unitNumber}?</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">This permanently removes the unit. Enter your current Admin password to confirm this action.</p>
+        <form onSubmit={submit} className="mt-5 space-y-4">
+          <Field label="Current Admin password"><input required autoFocus type="password" value={password} onChange={(event) => setPassword(event.target.value)} className={inputClass} /></Field>
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" disabled={submitting} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Cancel</button><button disabled={submitting || !password} className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50">{submitting ? 'Deleting...' : 'Delete unit'}</button></div>
+        </form>
+      </section>
+    </div>
+  )
 }
 
 function FilterPopover({ label, onSelect, onToggle, open, options, value }) {
