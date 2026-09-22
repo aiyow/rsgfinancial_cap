@@ -1,6 +1,8 @@
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 
+const roleLabel = (role) => ({ ADMIN: 'Admin', COLLECTOR: 'Billing Associate', RESIDENT: 'Resident' }[role] || role)
+
 export default function ProfilePage() {
   const { user } = useAuth()
 
@@ -19,14 +21,14 @@ export default function ProfilePage() {
             </div>
             <div className="flex items-center justify-between gap-4 py-3">
               <dt className="text-sm text-[var(--muted)]">Role</dt>
-              <dd className="rounded-full bg-[var(--active-bg)] px-2.5 py-1 text-xs font-bold text-[var(--primary)]">{user.role}</dd>
+              <dd className="rounded-full bg-[var(--active-bg)] px-2.5 py-1 text-xs font-bold text-[var(--primary)]">{roleLabel(user.role)}</dd>
             </div>
           </dl>
         </Panel>
 
         <Panel title="Access summary" description="Your available workspace is based on your assigned role.">
           <div className="rounded-lg bg-[var(--app-bg)] p-4 text-sm leading-6 text-[var(--sidebar-ink)]">
-            You are signed in to the <span className="font-bold">{user.role.toLowerCase()}</span> workspace. Use the sidebar to view the pages available to your account.
+            You are signed in to the <span className="font-bold">{roleLabel(user.role).toLowerCase()}</span> workspace. Use the sidebar to view the pages available to your account.
           </div>
         </Panel>
       </div>

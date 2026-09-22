@@ -150,19 +150,11 @@ export default function AnalyticsPage() {
         <Panel title="No analytics data yet" description="No analytics data yet. Import historical readings first.">
           {user.role === 'COLLECTOR'
             ? <Link to="/collector/history-import" className="inline-flex rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white">Open analytics import</Link>
-            : <EmptyRow message="Collector needs to import historical readings before analytics and predictions appear." />}
+            : <EmptyRow message="A Billing Associate needs to import historical readings before analytics and predictions appear." />}
         </Panel>
       ) : (
         <>
           <div className="mb-4 flex justify-end"><button type="button" onClick={refreshForecasts} disabled={refreshingForecasts} className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"><RefreshCw size={16} className={refreshingForecasts ? 'animate-spin' : ''} />{refreshingForecasts ? 'Refreshing forecasts...' : 'Refresh forecasts'}</button></div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <Metric label="Holdout month" value={month(data?.evaluationMonth)} accent={analyticsAccents[0]} icon={CalendarDays} />
-            <Metric label="WAPE accuracy" value={valueOrDash(metrics.accuracy, '%')} accent={analyticsAccents[1]} icon={Gauge} />
-            <Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} accent={analyticsAccents[2]} icon={Activity} />
-            <Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} accent={analyticsAccents[3]} icon={ChartNoAxesCombined} />
-            <Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} accent={analyticsAccents[4]} icon={ListChecks} />
-          </div>
-
           <Panel title="Latest forecast coverage" description="A unit needs five consecutive valid monthly readings after any meter reset or continuity break.">
             {!data ? <EmptyRow message="Loading forecast coverage..." /> : (
               <div className="grid gap-4 sm:grid-cols-3">
@@ -254,7 +246,7 @@ export default function AnalyticsPage() {
             ) : <EmptyRow message="No action is recommended for the latest live billing period." />}
           </Panel>
 
-          <Panel title="Predicted versus actual" description={`Visible to ${user.role === 'ADMIN' ? 'Admin' : 'Collector'} staff only. WAPE avoids division problems for units with zero consumption.`}>
+          <Panel title="Predicted versus actual" description={`Visible to ${user.role === 'ADMIN' ? 'Admin' : 'Billing Associate'} staff only. WAPE avoids division problems for units with zero consumption.`}>
             {data?.diagnostics.length ? (
               <div className="max-h-[31rem] overflow-auto overscroll-contain rounded-xl border border-slate-200" aria-label="Predicted versus actual results">
                 <table className="w-full min-w-[760px] text-left text-sm">
@@ -276,6 +268,14 @@ export default function AnalyticsPage() {
               </div>
             ) : <EmptyRow message="No forecast has a matching actual month yet. Import five months, then import the holdout month." />}
           </Panel>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <Metric label="Holdout month" value={month(data?.evaluationMonth)} accent={analyticsAccents[0]} icon={CalendarDays} />
+            <Metric label="WAPE accuracy" value={valueOrDash(metrics.accuracy, '%')} accent={analyticsAccents[1]} icon={Gauge} />
+            <Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} accent={analyticsAccents[2]} icon={Activity} />
+            <Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} accent={analyticsAccents[3]} icon={ChartNoAxesCombined} />
+            <Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} accent={analyticsAccents[4]} icon={ListChecks} />
+          </div>
 
           <Panel title="Flagged meter readings" description="These readings remain visible for correction but do not train the model.">
             {data?.flaggedReadings.length ? (

@@ -12,7 +12,7 @@ const entityGroups = [
 ]
 const actionGroups = [
   { label: 'General', options: ['ALL', 'CREATE', 'CREATE_MANUAL', 'UPDATE'] },
-  { label: 'Records', options: ['DELETE', 'DELETED', 'END', 'GENERATED', 'REOPENED', 'FORWARDED', 'PUBLISHED', 'SOA_EDITED', 'VIEWED', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED', 'SHARED_WITH_RESIDENT'] },
+  { label: 'Records', options: ['DELETE', 'DELETED', 'END', 'GENERATED', 'REOPENED', 'FORWARDED', 'PUBLISHED', 'UNPUBLISHED', 'SOA_EDITED', 'VIEWED', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED', 'SHARED_WITH_RESIDENT'] },
   { label: 'Payments', options: ['SUBMIT', 'APPROVE', 'REJECT'] },
 ]
 
@@ -41,6 +41,7 @@ const actionLabels = {
   REOPENED: 'Reopened',
   FORWARDED: 'Forwarded',
   PUBLISHED: 'Published',
+  UNPUBLISHED: 'Unpublished',
   SOA_EDITED: 'Edited',
   VIEWED: 'Viewed',
   ACKNOWLEDGED: 'Acknowledged',
@@ -68,6 +69,7 @@ const actionIcons = {
   REOPENED: Pencil,
   FORWARDED: FileText,
   PUBLISHED: CheckCircle2,
+  UNPUBLISHED: XCircle,
   SOA_EDITED: Pencil,
 }
 
@@ -92,6 +94,10 @@ function initials(name) {
     .join('')
     .slice(0, 2)
     .toUpperCase()
+}
+
+function actorRoleLabel(role) {
+  return { ADMIN: 'Admin', COLLECTOR: 'Billing Associate', RESIDENT: 'Resident' }[role] || String(role || 'deleted').toLowerCase()
 }
 
 export default function AdminAuditLogsPage() {
@@ -131,7 +137,7 @@ export default function AdminAuditLogsPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard label="Total entries" value={summary.total} icon={Activity} accent="blue" />
         <StatCard label="Admin actions" value={summary.adminActions} icon={ShieldCheck} accent="green" />
-        <StatCard label="Collector actions" value={summary.collectorActions} icon={UsersRound} accent="red" />
+        <StatCard label="Billing Associate actions" value={summary.collectorActions} icon={UsersRound} accent="red" />
         <StatCard label="Resident actions" value={summary.residentActions} icon={UserRound} accent="blue" />
       </div>
 
@@ -140,7 +146,7 @@ export default function AdminAuditLogsPage() {
           <div className="block text-sm font-bold text-slate-700">
             <p>What changed?</p>
             <div className="relative mt-2">
-              <button type="button" aria-expanded={entityMenuOpen} onClick={() => { setEntityMenuOpen((current) => !current); setActionMenuOpen(false) }} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#b8d9c2] bg-white px-3.5 text-left text-sm font-bold text-[#345744] shadow-sm transition hover:border-[#2f8f5b]">
+              <button type="button" aria-expanded={entityMenuOpen} onClick={() => { setEntityMenuOpen((current) => !current); setActionMenuOpen(false) }} style={{ fontWeight: 400 }} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#b8d9c2] bg-white px-3.5 text-left text-sm text-[#345744] shadow-sm transition hover:border-[#2f8f5b]">
                 <span className="truncate">{entity === 'ALL' ? 'Everything' : labelFor(entity, entityLabels)}</span>
                 <ChevronDown size={17} className={`shrink-0 text-[#587064] transition ${entityMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
               </button>
@@ -148,11 +154,11 @@ export default function AdminAuditLogsPage() {
                 <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
                   {entityGroups.map((group) => (
                     <div key={group.label} className="not-first:mt-3">
-                      <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">{group.label}</p>
+                      <p style={{ fontWeight: 400 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">{group.label}</p>
                       <div className="grid gap-1 sm:grid-cols-2">
                         {group.options.map((option) => {
                           const label = option === 'ALL' ? 'Everything' : labelFor(option, entityLabels)
-                          return <button key={option} type="button" onClick={() => { setEntity(option); setEntityMenuOpen(false) }} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${entity === option ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{label}</button>
+                          return <button key={option} type="button" onClick={() => { setEntity(option); setEntityMenuOpen(false) }} style={{ fontWeight: 400 }} className={`rounded-lg px-2.5 py-2 text-left text-xs transition ${entity === option ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{label}</button>
                         })}
                       </div>
                     </div>
@@ -164,7 +170,7 @@ export default function AdminAuditLogsPage() {
           <div className="block text-sm font-bold text-slate-700">
             <p>What happened?</p>
             <div className="relative mt-2">
-              <button type="button" aria-expanded={actionMenuOpen} onClick={() => { setActionMenuOpen((current) => !current); setEntityMenuOpen(false) }} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#b8d9c2] bg-white px-3.5 text-left text-sm font-bold text-[#345744] shadow-sm transition hover:border-[#2f8f5b]">
+              <button type="button" aria-expanded={actionMenuOpen} onClick={() => { setActionMenuOpen((current) => !current); setEntityMenuOpen(false) }} style={{ fontWeight: 400 }} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#b8d9c2] bg-white px-3.5 text-left text-sm text-[#345744] shadow-sm transition hover:border-[#2f8f5b]">
                 <span className="truncate">{action === 'ALL' ? 'Everything' : labelFor(action, actionFilterLabels)}</span>
                 <ChevronDown size={17} className={`shrink-0 text-[#587064] transition ${actionMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
               </button>
@@ -172,11 +178,11 @@ export default function AdminAuditLogsPage() {
                 <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
                   {actionGroups.map((group) => (
                     <div key={group.label} className="not-first:mt-3">
-                      <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">{group.label}</p>
+                      <p style={{ fontWeight: 400 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">{group.label}</p>
                       <div className="grid gap-1 sm:grid-cols-2">
                         {group.options.map((option) => {
                           const label = option === 'ALL' ? 'Everything' : labelFor(option, actionFilterLabels)
-                          return <button key={option} type="button" onClick={() => { setAction(option); setActionMenuOpen(false) }} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${action === option ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{label}</button>
+                          return <button key={option} type="button" onClick={() => { setAction(option); setActionMenuOpen(false) }} style={{ fontWeight: 400 }} className={`rounded-lg px-2.5 py-2 text-left text-xs transition ${action === option ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{label}</button>
                         })}
                       </div>
                     </div>
@@ -201,7 +207,7 @@ export default function AdminAuditLogsPage() {
                     <p className="truncate text-sm text-slate-700">
                       <span className="font-bold text-slate-950">{log.actorName}</span>
                       <span className="mx-1.5">{describeLog(log)}.</span>
-                      <span className="text-xs text-slate-500">{String(log.actorRole || 'deleted').toLowerCase()}</span>
+                      <span className="text-xs text-slate-500">{actorRoleLabel(log.actorRole)}</span>
                     </p>
                   </div>
                 </div>

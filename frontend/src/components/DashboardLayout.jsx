@@ -30,34 +30,34 @@ import NotificationCenter from './NotificationCenter'
 const navigationByRole = {
   ADMIN: {
     view: [
-      { label: 'Overview', to: '/admin', end: true, icon: LayoutDashboard },
-      { label: 'Homes & Units', to: '/admin/units', end: true, icon: Building2 },
-      { label: 'Statements to Review', to: '/admin/soa', icon: FileText },
+      { label: 'Executive Dashboard', to: '/admin', end: true, icon: LayoutDashboard },
+      { label: 'Unit Directory', to: '/admin/units', end: true, icon: Building2 },
+      { label: 'Forwarded Billings', to: '/admin/soa', icon: FileText },
       { label: 'Payment Records', to: '/admin/payments', icon: CreditCard },
-      { label: 'Water Usage', to: '/admin/analytics', icon: BarChart3 },
-      { label: 'Money Reports', to: '/admin/reports', icon: FolderKanban },
-      { label: 'Activity History', to: '/admin/audit-logs', icon: ScrollText },
+      { label: 'Water Analytics', to: '/admin/analytics', icon: BarChart3 },
+      { label: 'Financial Reports', to: '/admin/reports', icon: FolderKanban },
+      { label: 'Activity Log', to: '/admin/audit-logs', icon: ScrollText },
     ],
     manage: [
-      { label: 'People & Access', to: '/admin/users', icon: Users },
-      { label: 'Manage Homes', to: '/admin/units/manage', icon: Settings2 },
-      { label: 'Statement Design', to: '/admin/soa-template', icon: BookOpen },
-      { label: 'Statement Issues', to: '/admin/billing-errors', icon: CircleAlert },
+      { label: 'User Management', to: '/admin/users', icon: Users },
+      { label: 'Unit Management', to: '/admin/units/manage', icon: Settings2 },
+      { label: 'SOA Template', to: '/admin/soa-template', icon: BookOpen },
+      { label: 'Billing Errors', to: '/admin/billing-errors', icon: CircleAlert },
     ],
   },
   COLLECTOR: {
     view: [
-      { label: 'Overview', to: '/collector', end: true, icon: LayoutDashboard },
-      { label: 'Bills & Statements', to: '/collector/bills', icon: FileText },
-      { label: 'Homes & Units', to: '/collector/units', icon: Building2 },
-      { label: 'Confirmed Payments', to: '/collector/payments', icon: WalletCards },
-      { label: 'Water Usage', to: '/collector/analytics', icon: BarChart3 },
+      { label: 'Executive Dashboard', to: '/collector', end: true, icon: LayoutDashboard },
+      { label: 'Unit Directory', to: '/collector/units', icon: Building2 },
+      { label: 'Forwarded Billings', to: '/collector/bills', icon: FileText },
+      { label: 'Payment Records', to: '/collector/payments', icon: WalletCards },
+      { label: 'Water Analytics', to: '/collector/analytics', icon: BarChart3 },
+      { label: 'Financial Reports', to: '/collector/reports', icon: FolderKanban },
     ],
     manage: [
-      { label: 'Create Monthly Bills', to: '/collector/billing', icon: Calculator },
+      { label: 'Unit Management', to: '/collector/billing', icon: Calculator },
       { label: 'Upload Water History', to: '/collector/history-import', icon: Upload },
-      { label: 'Money Reports', to: '/collector/reports', icon: FolderKanban },
-      { label: 'Statement Issues', to: '/collector/billing-errors', icon: CircleAlert },
+      { label: 'Billing Errors', to: '/collector/billing-errors', icon: CircleAlert },
     ],
   },
   RESIDENT: {
@@ -77,6 +77,14 @@ const sectionLabels = {
 
 function displayName(value) {
   return String(value || '').split(/\s+/).filter(Boolean).map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`).join(' ')
+}
+
+function roleLabel(role) {
+  return {
+    ADMIN: 'Admin',
+    COLLECTOR: 'Billing Associate',
+    RESIDENT: 'Resident',
+  }[role] || displayName(role)
 }
 
 function NavigationLinks({ sections, collapsed, onNavigate }) {
@@ -189,7 +197,7 @@ export default function DashboardLayout({ title, description, children }) {
 
   const portalLabel = {
     ADMIN: 'Admin Portal',
-    COLLECTOR: 'Collector Portal',
+    COLLECTOR: 'Billing Associate Portal',
     RESIDENT: 'Resident Portal',
   }[user.role] || 'RSG Condo'
   const formattedName = displayName(user.fullName)
@@ -280,7 +288,7 @@ export default function DashboardLayout({ title, description, children }) {
                 <span className="grid size-7 place-items-center rounded-sm bg-[var(--primary)] text-[10px] font-black text-white">{initials}</span>
                 <span className="hidden min-w-0 sm:block">
                   <span className="block max-w-36 truncate text-xs font-bold text-[var(--ink)]">{formattedName}</span>
-                  <span className="block max-w-36 truncate text-[10px] text-[var(--muted)]">{user.role}</span>
+                  <span className="block max-w-36 truncate text-[10px] text-[var(--muted)]">{roleLabel(user.role)}</span>
                 </span>
                 <ChevronDown size={14} className={`text-[var(--muted)] transition ${profileOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
               </button>

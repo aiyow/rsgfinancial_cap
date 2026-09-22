@@ -127,27 +127,27 @@ export default function NotificationCenter({ token }) {
         </button>
 
         {open && (
-          <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-[min(23rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[var(--border)] bg-white shadow-xl">
-            <div className="flex items-center justify-between gap-3 border-b border-[var(--border)] px-4 py-3">
-              <div><p className="font-bold text-[var(--ink)]">Notifications</p><p className="text-xs text-[var(--muted)]">{unreadCount ? `${unreadCount} unread` : 'You are all caught up'}</p></div>
-              {unreadCount > 0 && <button type="button" onClick={markAllRead} className="inline-flex items-center gap-1 text-xs font-bold text-[var(--primary)] hover:underline"><CheckCheck size={15} /> Mark all read</button>}
+          <div className="absolute -right-[4.25rem] top-[calc(100%+6px)] z-50 w-[min(17rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-[var(--border)] bg-white shadow-xl sm:right-0 sm:top-[calc(100%+8px)] sm:w-[min(23rem,calc(100vw-2rem))]">
+            <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-2.5 py-2 sm:gap-3 sm:px-4 sm:py-3">
+              <div><p className="text-sm font-bold text-[var(--ink)] sm:text-base">Notifications</p><p className="text-[11px] text-[var(--muted)] sm:text-xs">{unreadCount ? `${unreadCount} unread` : 'You are all caught up'}</p></div>
+              {unreadCount > 0 && <button type="button" onClick={markAllRead} className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline sm:text-xs"><CheckCheck size={14} /> Mark all read</button>}
             </div>
-            <div className="max-h-80 overflow-y-auto overscroll-contain">
+            <div className="max-h-48 overflow-y-auto overscroll-contain sm:max-h-80">
               {notifications.length ? notifications.map((notification) => (
                 <button
                   key={notification.id}
                   type="button"
                   onClick={() => markRead(notification)}
-                  className={`block w-full border-b border-[var(--border)] px-4 py-3 text-left last:border-b-0 hover:bg-[var(--app-bg)] ${notification.readAt ? 'bg-white' : 'bg-emerald-50/60'}`}
+                  className={`block w-full border-b border-[var(--border)] px-2.5 py-2 text-left last:border-b-0 hover:bg-[var(--app-bg)] sm:px-4 sm:py-3 ${notification.readAt ? 'bg-white' : 'bg-emerald-50/60'}`}
                 >
-                  <span className="flex items-start justify-between gap-3"><span className="font-bold text-[var(--ink)]">{notification.title}</span>{!notification.readAt && <span className="mt-1.5 size-2 shrink-0 rounded-full bg-[var(--primary)]" />}</span>
-                  <span className="mt-1 block text-sm text-[var(--muted)]">{notification.message}</span>
-                  <span className="mt-2 block text-xs text-[var(--muted)]">{notificationTime(notification.createdAt)}</span>
+                  <span className="flex items-start justify-between gap-2"><span className="line-clamp-1 text-sm font-bold text-[var(--ink)] sm:text-base">{notification.title}</span>{!notification.readAt && <span className="mt-1 size-1.5 shrink-0 rounded-full bg-[var(--primary)] sm:mt-1.5 sm:size-2" />}</span>
+                  <span className="mt-0.5 line-clamp-2 text-xs text-[var(--muted)] sm:mt-1 sm:text-sm">{notification.message}</span>
+                  <span className="mt-1 block text-[10px] text-[var(--muted)] sm:mt-2 sm:text-xs">{notificationTime(notification.createdAt)}</span>
                 </button>
-              )) : <p className="px-4 py-8 text-center text-sm text-[var(--muted)]">No notifications yet.</p>}
+              )) : <p className="px-3 py-6 text-center text-xs text-[var(--muted)] sm:px-4 sm:py-8 sm:text-sm">No notifications yet.</p>}
             </div>
-            {browserPermission === 'default' && <button type="button" onClick={enableBrowserAlerts} className="w-full border-t border-[var(--border)] px-4 py-3 text-left text-xs font-bold text-[var(--primary)] hover:bg-[var(--app-bg)]">Enable browser alerts on this device</button>}
-            {browserPermission === 'denied' && <p className="border-t border-[var(--border)] px-4 py-3 text-xs text-[var(--muted)]">Browser alerts are blocked. Enable them in your browser settings.</p>}
+            {browserPermission === 'default' && <button type="button" onClick={enableBrowserAlerts} className="w-full border-t border-[var(--border)] px-2.5 py-2 text-left text-[11px] font-bold text-[var(--primary)] hover:bg-[var(--app-bg)] sm:px-4 sm:py-3 sm:text-xs">Enable browser alerts on this device</button>}
+            {browserPermission === 'denied' && <p className="border-t border-[var(--border)] px-2.5 py-2 text-[11px] text-[var(--muted)] sm:px-4 sm:py-3 sm:text-xs">Browser alerts are blocked. Enable them in your browser settings.</p>}
           </div>
         )}
       </div>

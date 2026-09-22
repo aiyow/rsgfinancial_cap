@@ -21,7 +21,6 @@ import CollectorHistoryImportPage from './pages/collector/CollectorHistoryImport
 import CollectorBillsPage from './pages/collector/CollectorBillsPage'
 import CollectorBillBatchPage from './pages/collector/CollectorBillBatchPage'
 import CollectorBillPage from './pages/collector/CollectorBillPage'
-import CollectorUnitsPage from './pages/collector/CollectorUnitsPage'
 import CollectorPaymentsPage from './pages/collector/CollectorPaymentsPage'
 import CollectorSoaTemplatePage from './pages/collector/CollectorSoaTemplatePage'
 import ResidentDashboard from './pages/resident/ResidentDashboard'
@@ -76,7 +75,7 @@ export default function App() {
       <Route path="/collector/bills" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorBillsPage /></ProtectedRoute>} />
       <Route path="/collector/bills/batches/:periodId" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorBillBatchPage /></ProtectedRoute>} />
       <Route path="/collector/bills/:id" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorBillPage /></ProtectedRoute>} />
-      <Route path="/collector/units" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorUnitsPage /></ProtectedRoute>} />
+      <Route path="/collector/units" element={<ProtectedRoute allowedRole="COLLECTOR"><AdminUnitsViewPage /></ProtectedRoute>} />
       <Route path="/collector/payments" element={<ProtectedRoute allowedRole="COLLECTOR"><CollectorPaymentsPage /></ProtectedRoute>} />
       <Route path="/collector/analytics" element={<ProtectedRoute allowedRole="COLLECTOR"><AnalyticsPage /></ProtectedRoute>} />
       <Route path="/collector/reports" element={<ProtectedRoute allowedRole="COLLECTOR"><FinancialReportsPage /></ProtectedRoute>} />

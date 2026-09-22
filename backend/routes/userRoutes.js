@@ -186,7 +186,7 @@ router.delete("/:id", requireId, validateBody(deleteUserSchema), async (req, res
     if (["ADMIN", "COLLECTOR"].includes(existingUser.rows[0].role)) {
       if (!req.validatedBody.currentPassword) {
         await client.query("ROLLBACK");
-        return res.status(400).json({ message: "Enter your current password to delete an Admin or Collector account." });
+        return res.status(400).json({ message: "Enter your current password to delete an Admin or Billing Associate account." });
       }
       const actor = await client.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1", [req.user.id]);
       const passwordMatches = actor.rows[0] && await bcrypt.compare(req.validatedBody.currentPassword, actor.rows[0].passwordHash);

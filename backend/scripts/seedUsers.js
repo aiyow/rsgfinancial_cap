@@ -11,7 +11,7 @@ async function seedUsers() {
       role: "ADMIN",
     },
     {
-      fullName: "Billing Collector",
+      fullName: "Billing Associate",
       email: process.env.SEED_COLLECTOR_EMAIL,
       password: process.env.SEED_COLLECTOR_PASSWORD,
       role: "COLLECTOR",

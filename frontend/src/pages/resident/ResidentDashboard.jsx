@@ -201,18 +201,18 @@ export default function ResidentDashboard() {
                   {chartRangeMenuOpen && (
                     <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-full min-w-[230px] rounded-xl border border-[#d7eadc] bg-white p-3 text-left shadow-xl">
                       <div>
-                        <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">Recommended</p>
-                        <button type="button" onClick={() => { setChartRange('RESET'); setChartRangeMenuOpen(false) }} className={`w-full rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${chartRange === 'RESET' ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{resetIndex >= 0 ? 'Since latest meter reset' : 'All available readings'}</button>
+                        <p style={{ fontWeight: 500 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">Recommended</p>
+                        <button type="button" onClick={() => { setChartRange('RESET'); setChartRangeMenuOpen(false) }} style={{ fontWeight: 500 }} className={`w-full rounded-lg px-2.5 py-2 text-left text-xs transition ${chartRange === 'RESET' ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{resetIndex >= 0 ? 'Since latest meter reset' : 'All available readings'}</button>
                       </div>
                       <div className="mt-3">
-                        <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">Recent</p>
+                        <p style={{ fontWeight: 500 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">Recent</p>
                         <div className="grid gap-1 sm:grid-cols-2">
-                          {['1', '2', '3', '6'].map((range) => <button key={range} type="button" onClick={() => { setChartRange(range); setChartRangeMenuOpen(false) }} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${chartRange === range ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>Last {range} month{range === '1' ? '' : 's'}</button>)}
+                          {['1', '2', '3', '6'].map((range) => <button key={range} type="button" onClick={() => { setChartRange(range); setChartRangeMenuOpen(false) }} style={{ fontWeight: 500 }} className={`rounded-lg px-2.5 py-2 text-left text-xs transition ${chartRange === range ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>Last {range} month{range === '1' ? '' : 's'}</button>)}
                         </div>
                       </div>
                       <div className="mt-3">
-                        <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">Full history</p>
-                        <button type="button" onClick={() => { setChartRange('ALL'); setChartRangeMenuOpen(false) }} className={`w-full rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${chartRange === 'ALL' ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>All readings</button>
+                        <p style={{ fontWeight: 500 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">Full history</p>
+                        <button type="button" onClick={() => { setChartRange('ALL'); setChartRangeMenuOpen(false) }} style={{ fontWeight: 500 }} className={`w-full rounded-lg px-2.5 py-2 text-left text-xs transition ${chartRange === 'ALL' ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>All readings</button>
                       </div>
                     </div>
                   )}
@@ -235,7 +235,7 @@ export default function ResidentDashboard() {
                       <Bar dataKey="actual" name="Actual consumption" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={0} animationDuration={1000} animationEasing="ease-out">
                         {consumptionData.map((row, index) => <Cell key={`actual-${row.label}-${index}`} fill={index % 2 === 0 ? '#2563eb' : '#2f8f5b'} />)}
                       </Bar>
-                      {forecast?.status === 'READY' && <Bar dataKey="predicted" name="Predicted consumption" fill="#2f8f5b" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={120} animationDuration={1000} animationEasing="ease-out" />}
+                      {forecast?.status === 'READY' && <Bar dataKey="predicted" name="Predicted consumption" fill="#f59e0b" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={120} animationDuration={1000} animationEasing="ease-out" />}
                     </ComposedChart>
                   </ResponsiveContainer>
                 ) : <EmptyRow message="Meter-reading history is not available yet." />}
@@ -251,7 +251,7 @@ export default function ResidentDashboard() {
                       <Tooltip formatter={(value) => [Number(value).toFixed(3)]} />
                       <Legend />
                       <Line type="monotone" dataKey="actual" name="Monthly meter reading" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#ffffff', strokeWidth: 3 }} />
-                      {forecast?.status === 'READY' && <Line type="monotone" dataKey="predicted" name="Predicted reading" stroke="#34d399" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 4, fill: '#ffffff', strokeWidth: 3 }} connectNulls />}
+                      {forecast?.status === 'READY' && <Line type="monotone" dataKey="predicted" name="Predicted reading" stroke="#f59e0b" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 4, fill: '#ffffff', strokeWidth: 3 }} connectNulls />}
                     </LineChart>
                   </ResponsiveContainer>
                 ) : <EmptyRow message="Meter-reading history is not available yet." />}

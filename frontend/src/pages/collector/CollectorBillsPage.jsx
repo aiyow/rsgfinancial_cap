@@ -61,7 +61,7 @@ export default function CollectorBillsPage() {
 
   async function confirmReopen(reason) {
     if (!reopenTarget) return false
-    const reopened = await run(reopenTarget, `/api/billing-periods/${reopenTarget.id}/reopen`, 'POST', { reason: reason || 'Collector reopened the batch for correction.' }, 'Batch reopened.')
+    const reopened = await run(reopenTarget, `/api/billing-periods/${reopenTarget.id}/reopen`, 'POST', { reason: reason || 'Billing Associate reopened the batch for correction.' }, 'Batch reopened.')
     setReopenTarget(null)
     return reopened
   }
@@ -72,7 +72,7 @@ export default function CollectorBillsPage() {
 
   async function confirmDelete(currentPassword, reason) {
     if (!deleteTarget) return false
-    const deleted = await run(deleteTarget, `/api/billing-periods/${deleteTarget.id}`, 'DELETE', { currentPassword, reason: reason || 'Collector deleted an incorrect billing batch.' }, 'Billing batch deleted.')
+    const deleted = await run(deleteTarget, `/api/billing-periods/${deleteTarget.id}`, 'DELETE', { currentPassword, reason: reason || 'Billing Associate deleted an incorrect billing batch.' }, 'Billing batch deleted.')
     if (deleted) setDeleteTarget(null)
     return deleted
   }

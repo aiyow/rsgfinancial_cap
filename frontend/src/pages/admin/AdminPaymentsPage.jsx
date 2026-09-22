@@ -143,9 +143,9 @@ export default function AdminPaymentsPage() {
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard label="Loaded payments" value={counts.total} icon={WalletCards} accent="blue" />
-        <StatCard label="Pending review" value={counts.pending} icon={Clock3} accent="green" />
-        <StatCard label="Approved" value={counts.approved} icon={CheckCircle2} accent="red" />
-        <StatCard label="Rejected" value={counts.rejected} icon={XCircle} accent="blue" />
+        <StatCard label="Pending review" value={counts.pending} icon={Clock3} accent="yellow" />
+        <StatCard label="Approved" value={counts.approved} icon={CheckCircle2} accent="green" />
+        <StatCard label="Rejected" value={counts.rejected} icon={XCircle} accent="red" />
       </div>
 
       <section className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -153,7 +153,7 @@ export default function AdminPaymentsPage() {
           <h2 className="text-lg font-black text-slate-900">Manual payment</h2>
           <p className="mt-1 text-sm text-slate-500">Record a face-to-face payment or add advance credit when needed.</p>
         </div>
-        <button type="button" onClick={() => setManualModalOpen(true)} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white">Record payment</button>
+        <button type="button" onClick={() => setManualModalOpen(true)} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white">Record payment</button>
       </section>
 
       <Panel title="Payment queue" description="Review the essentials here, then open a payment for its receipt, OCR, and full details.">
@@ -199,8 +199,8 @@ export default function AdminPaymentsPage() {
                       <p className="font-semibold text-slate-800">{payment.entryType === 'MANUAL' ? 'Manual entry' : 'Receipt upload'}</p>
                       <p className="text-xs text-slate-500">{methodLabel(payment.paymentMethod)}</p>
                     </td>
-                    <td><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${badgeClass[payment.reviewStatus]}`}>{payment.reviewStatus}</span></td>
-                    <td><Link to={`/admin/payments/${payment.id}`} className="font-bold text-indigo-600">{payment.reviewStatus === 'PENDING' ? 'Review' : 'View details'}</Link></td>
+                    <td><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${badgeClass[payment.reviewStatus]}`}>{payment.reviewStatus}</span></td>
+                    <td><Link to={`/admin/payments/${payment.id}`} className="font-medium text-indigo-600">{payment.reviewStatus === 'PENDING' ? 'Review' : 'View details'}</Link></td>
                   </tr>
                 ))}
               </tbody>
@@ -240,7 +240,7 @@ function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, select
             <h2 id="manual-payment-title" className="text-xl font-black text-slate-900">Record manual payment</h2>
             <p className="mt-1 text-sm text-slate-500">Use this only for payments received outside the resident receipt upload flow.</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100">Close</button>
+          <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100">Close</button>
         </div>
 
         <form onSubmit={onSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -271,7 +271,7 @@ function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, select
               <span className="min-w-0 truncate">{methodLabel(form.paymentMethod)}</span>
               <ChevronDown size={17} className={`shrink-0 text-slate-500 transition ${methodMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
             </button>
-            {methodMenuOpen && <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-60 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl"><div className="grid gap-1">{paymentMethods.map((method) => <button key={method} type="button" onClick={() => { onUpdate('paymentMethod', method); setMethodMenuOpen(false) }} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${form.paymentMethod === method ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{methodLabel(method)}</button>)}</div></div>}
+            {methodMenuOpen && <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-60 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl"><div className="grid gap-1">{paymentMethods.map((method) => <button key={method} type="button" onClick={() => { onUpdate('paymentMethod', method); setMethodMenuOpen(false) }} className={`rounded-lg px-2.5 py-2 text-left text-xs font-medium transition ${form.paymentMethod === method ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{methodLabel(method)}</button>)}</div></div>}
           </div>
           <label className="block text-sm font-bold text-slate-700">
             Amount
@@ -295,8 +295,8 @@ function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, select
             <p className="mt-1 text-2xl font-black text-slate-950">{money(selectedCredit?.advanceBalance || 0)}</p>
           </div>
           <div className="flex justify-end gap-3 sm:col-span-2">
-            <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold">Cancel</button>
-            <button disabled={busy || !canSubmit} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white disabled:bg-slate-300">{busy ? 'Recording...' : 'Record payment'}</button>
+            <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium">Cancel</button>
+            <button disabled={busy || !canSubmit} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white disabled:bg-slate-300">{busy ? 'Recording...' : 'Record payment'}</button>
           </div>
         </form>
       </section>

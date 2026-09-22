@@ -59,7 +59,7 @@ export function buildPrescriptiveRecommendations({ forecast, history = [], conte
       RECOMMENDATION_TYPES.REVIEW_METER_READING,
       'HIGH',
       'The latest meter reading is unusually high, lower than the previous reading, or breaks the expected sequence.',
-      'Ask the collector to recheck the meter reading and upload a meter photo before it is used for billing or forecasting.',
+      'Ask the Billing Associate to recheck the meter reading and upload a meter photo before it is used for billing or forecasting.',
       { reason: forecast.reason || latest?.validationNotes || 'The latest meter reading needs review.', latestPeriod: latest?.periodStart || null },
     )];
   }

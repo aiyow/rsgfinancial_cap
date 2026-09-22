@@ -46,7 +46,8 @@ function FilterPopover({ label, onSelect, onToggle, open, options, value }) {
 }
 
 export default function AdminUnitsViewPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
+  const canManageUnits = user.role === 'ADMIN'
   const [units, setUnits] = useState([])
   const [assignments, setAssignments] = useState([])
   const [search, setSearch] = useState('')
@@ -124,7 +125,7 @@ export default function AdminUnitsViewPage() {
           <input type="search" value={search} onChange={(event) => updateSearch(event.target.value)} placeholder="Search unit or resident..." aria-label="Search units" className={`${controlClass} min-w-0 flex-1`} />
           <FilterPopover label="Floor" value={floor} open={floorMenuOpen} onToggle={() => { setFloorMenuOpen((current) => !current); setStatusMenuOpen(false) }} onSelect={(value) => { updateFloor(value); setFloorMenuOpen(false) }} options={[{ value: 'ALL', label: 'All floors' }, ...floors.map((floorOption) => ({ value: floorOption, label: floorOption }))]} />
           <FilterPopover label="Occupancy" value={status} open={statusMenuOpen} onToggle={() => { setStatusMenuOpen((current) => !current); setFloorMenuOpen(false) }} onSelect={(value) => { updateStatus(value); setStatusMenuOpen(false) }} options={[{ value: 'ALL', label: 'All statuses' }, { value: 'OCCUPIED', label: 'Occupied' }, { value: 'VACANT', label: 'Vacant' }]} />
-          <Link to="/admin/units/manage" className="rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-bold !text-white hover:bg-indigo-700">Manage units</Link>
+          {canManageUnits && <Link to="/admin/units/manage" className="rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-bold !text-white hover:bg-indigo-700">Manage units</Link>}
         </div>
 
         <div className="mt-6 overflow-x-auto">

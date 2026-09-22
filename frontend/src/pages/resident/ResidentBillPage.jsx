@@ -217,7 +217,11 @@ export default function ResidentBillPage() {
             </div>
           </Panel>
 
-          <SoaDocument bill={bill} />
+          <div className="resident-soa-scroll">
+            <div>
+              <SoaDocument bill={bill} />
+            </div>
+          </div>
         </>
       )}
       {reportingError && <ReportSoaErrorModal busy={busy} errorReport={errorReport} onChange={(field, value) => setErrorReport((current) => ({ ...current, [field]: value }))} onClose={() => setReportingError(false)} onSubmit={submitBillingError} />}
@@ -243,14 +247,29 @@ function ReportSoaErrorModal({ busy, errorReport, onChange, onClose, onSubmit })
 
 function PaymentQrModal({ onClose, onDownload, qrUrl }) {
   const [zoom, setZoom] = useState(1)
+  const [mobileViewport, setMobileViewport] = useState(() => window.matchMedia('(max-width: 640px)').matches)
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 640px)')
+    const updateViewport = () => {
+      setMobileViewport(media.matches)
+      setZoom((value) => Math.min(value, 3))
+    }
+    updateViewport()
+    media.addEventListener('change', updateViewport)
+    return () => media.removeEventListener('change', updateViewport)
+  }, [])
+
+  const maxZoom = 3
+  const qrWidth = (mobileViewport ? 220 : 360) * zoom
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/75 p-4" role="presentation" onMouseDown={onClose}>
-      <section role="dialog" aria-modal="true" aria-labelledby="payment-qr-title" className="flex max-h-[92vh] w-full max-w-2xl flex-col rounded-2xl bg-white p-5 shadow-2xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="flex items-center justify-between gap-4"><div><h2 id="payment-qr-title" className="text-xl font-black text-slate-900">Scan to pay</h2><p className="mt-1 text-sm text-slate-600">Open your payment app and scan this official QR code.</p></div><button type="button" onClick={onClose} aria-label="Close full screen QR code" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"><X size={21} /></button></div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2"><p className="text-xs font-bold text-emerald-800">QR size: {Math.round(zoom * 100)}%</p><div className="flex items-center gap-1"><button type="button" disabled={zoom <= 0.75} onClick={() => setZoom((value) => Math.max(0.75, Number((value - 0.25).toFixed(2))))} aria-label="Zoom out QR code" title="Zoom out" className="grid size-9 place-items-center rounded-lg text-emerald-800 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"><ZoomOut size={18} /></button><button type="button" disabled={zoom >= 3} onClick={() => setZoom((value) => Math.min(3, Number((value + 0.25).toFixed(2))))} aria-label="Zoom in QR code" title="Zoom in" className="grid size-9 place-items-center rounded-lg text-emerald-800 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"><ZoomIn size={18} /></button>{zoom !== 1 && <button type="button" onClick={() => setZoom(1)} aria-label="Reset QR zoom" title="Reset zoom" className="grid size-9 place-items-center rounded-lg text-emerald-800 transition hover:bg-white"><RotateCcw size={17} /></button>}</div></div>
-        <div className="mt-3 flex min-h-0 flex-1 items-start justify-center overflow-auto rounded-xl bg-emerald-50 p-5"><img src={qrUrl} alt="Official payment QR code" className="max-w-none object-contain" style={{ width: `${360 * zoom}px` }} /></div>
-        <div className="mt-5 flex justify-end gap-3"><button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700">Close</button><button type="button" onClick={onDownload} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800"><Download size={17} />Download QR code</button></div>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/75 p-2 sm:p-4" role="presentation" onMouseDown={onClose}>
+      <section role="dialog" aria-modal="true" aria-labelledby="payment-qr-title" className="flex h-[calc(100dvh-1rem)] min-h-0 w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white p-4 shadow-2xl sm:h-auto sm:max-h-[92vh] sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="flex items-center justify-between gap-4"><div><h2 id="payment-qr-title" className="text-lg font-black text-slate-900 sm:text-xl">Scan to pay</h2><p className="mt-1 text-xs text-slate-600 sm:text-sm">Open your payment app and scan this official QR code.</p></div><button type="button" onClick={onClose} aria-label="Close full screen QR code" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"><X size={21} /></button></div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2"><p className="text-xs font-bold text-emerald-800">QR size: {Math.round(zoom * 100)}%</p><div className="flex items-center gap-1"><button type="button" disabled={zoom <= 0.75} onClick={() => setZoom((value) => Math.max(0.75, Number((value - 0.25).toFixed(2))))} aria-label="Zoom out QR code" title="Zoom out" className="grid size-9 place-items-center rounded-lg text-emerald-800 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"><ZoomOut size={18} /></button><button type="button" disabled={zoom >= maxZoom} onClick={() => setZoom((value) => Math.min(maxZoom, Number((value + 0.25).toFixed(2))))} aria-label="Zoom in QR code" title="Zoom in" className="grid size-9 place-items-center rounded-lg text-emerald-800 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"><ZoomIn size={18} /></button>{zoom !== 1 && <button type="button" onClick={() => setZoom(1)} aria-label="Reset QR zoom" title="Reset zoom" className="grid size-9 place-items-center rounded-lg text-emerald-800 transition hover:bg-white"><RotateCcw size={17} /></button>}</div></div>
+        <div className="mt-3 min-h-0 flex-1 overflow-auto rounded-xl bg-emerald-50 p-3 sm:p-5"><div className="flex min-w-full w-max justify-center"><img src={qrUrl} alt="Official payment QR code" className="max-w-none object-contain" style={{ width: `${qrWidth}px` }} /></div></div>
+        <div className="mt-4 flex flex-col-reverse gap-2 sm:mt-5 sm:flex-row sm:justify-end sm:gap-3"><button type="button" onClick={onClose} className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 sm:w-auto">Close</button><button type="button" onClick={onDownload} className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 sm:w-auto"><Download size={17} />Download QR code</button></div>
       </section>
     </div>
   )

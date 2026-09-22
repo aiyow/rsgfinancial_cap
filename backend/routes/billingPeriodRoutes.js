@@ -483,7 +483,7 @@ router.post("/:id/reopen", allowRoles("COLLECTOR"), requireId, async (req, res, 
       action: "REOPENED",
       oldValues: period.rows[0],
       newValues: { status: "DRAFT", removedBills: count.rows[0].count },
-      remarks: req.body?.reason || "Collector reopened the batch for correction.",
+      remarks: req.body?.reason || "Billing Associate reopened the batch for correction.",
     });
     await client.query("DELETE FROM unit_bills WHERE billing_period_id = $1", [req.resourceId]);
     await client.query(
@@ -520,7 +520,7 @@ router.post("/:id/forward", allowRoles("COLLECTOR"), requireId, async (req, res,
       recipientUserId: admin.id,
       type: "BILLING_BATCH_FORWARDED",
       title: "Billing batch ready for review",
-      message: `A Collector forwarded the ${String(result.rows[0].periodStart).slice(0, 10)} to ${String(result.rows[0].periodEnd).slice(0, 10)} billing batch.`,
+      message: `A Billing Associate forwarded the ${String(result.rows[0].periodStart).slice(0, 10)} to ${String(result.rows[0].periodEnd).slice(0, 10)} billing batch.`,
       href: `/admin/soa/batches/${result.rows[0].id}`,
       dedupeKey: `billing-batch-forwarded:${result.rows[0].id}`,
     })));
@@ -633,6 +633,51 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
       emailSummary: sendEmails
         ? { queued: emailQueuedCount, sent: 0, failed: 0, skipped: publishedBillIds.length - deliveryBillIds.size }
         : { queued: 0, sent: 0, failed: 0, skipped: publishedBillIds.length },
+    });
+  } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
+    return next(error);
+  } finally { client?.release(); }
+});
+
+router.post("/:id/bills/:billId/unpublish", allowRoles("ADMIN"), requireId, async (req, res, next) => {
+  const billId = Number(req.params.billId);
+  if (!Number.isSafeInteger(billId) || billId <= 0) return res.status(400).json({ message: "A valid bill ID is required." });
+
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const bill = await client.query(
+      `SELECT b.id, b.unit_number_snapshot AS "unitNumber", b.published_at AS "publishedAt", b.published_by AS "publishedBy"
+       FROM unit_bills b JOIN billing_periods p ON p.id = b.billing_period_id
+       WHERE b.id = $1 AND b.billing_period_id = $2 AND p.status IN ('FORWARDED', 'CLOSED')
+       FOR UPDATE OF b`,
+      [billId, req.resourceId],
+    );
+    if (!bill.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "SOA not found in this billing batch." }); }
+    if (!bill.rows[0].publishedAt) { await client.query("ROLLBACK"); return res.status(409).json({ message: "This SOA is already hidden from residents." }); }
+
+    const removedDeliveries = await client.query("DELETE FROM soa_email_deliveries WHERE unit_bill_id = $1 RETURNING id", [billId]);
+    await client.query(
+      "DELETE FROM user_notifications WHERE notification_type = 'SOA_PUBLISHED' AND (href = $1 OR dedupe_key = $2)",
+      [`/resident/bills/${billId}`, `soa-published:${billId}`],
+    );
+    await client.query("UPDATE unit_bills SET published_at = NULL, published_by = NULL WHERE id = $1", [billId]);
+    await writeAuditLog({
+      client,
+      actorUserId: req.user.id,
+      entityName: "UNIT_BILL",
+      entityId: billId,
+      action: "UNPUBLISHED",
+      oldValues: { publishedAt: bill.rows[0].publishedAt, publishedBy: bill.rows[0].publishedBy },
+      newValues: { publishedAt: null, publishedBy: null, cancelledEmailDeliveries: removedDeliveries.rowCount },
+      remarks: "SOA hidden from resident access for correction.",
+    });
+    await client.query("COMMIT");
+    return res.json({
+      message: `SOA for Unit ${bill.rows[0].unitNumber} is now hidden from the resident dashboard.`,
+      cancelledEmailDeliveries: removedDeliveries.rowCount,
     });
   } catch (error) {
     if (client) await client.query("ROLLBACK").catch(() => {});
@@ -755,7 +800,7 @@ router.delete("/:id", allowRoles("COLLECTOR"), requireId, validateBody(deletePer
       entityId: req.resourceId,
       action: "DELETED",
       oldValues: { ...period.rows[0], readingCount: readingCount.rows[0].count, billCount: billCount.rows[0].count },
-      remarks: req.validatedBody.reason || "Collector permanently deleted the billing batch.",
+      remarks: req.validatedBody.reason || "Billing Associate permanently deleted the billing batch.",
     });
     await client.query("DELETE FROM unit_bills WHERE billing_period_id = $1", [req.resourceId]);
     await client.query("DELETE FROM meter_readings WHERE billing_period_id = $1", [req.resourceId]);

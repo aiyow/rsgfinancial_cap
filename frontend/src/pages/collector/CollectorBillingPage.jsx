@@ -145,7 +145,7 @@ export default function CollectorBillingPage() {
   }
 
   return (
-    <DashboardLayout title="Monthly billing" description="Create a draft period, validate the Collector workbook, and generate unit bills.">
+    <DashboardLayout title="Monthly billing" description="Create a draft period, validate the Billing Associate workbook, and generate unit bills.">
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
 
       <Panel accent="blue" title={editingPeriodId ? '1. Edit draft billing period' : '1. Create billing period'} description="The workbook has no dates, so enter the coverage and due date here.">
@@ -164,7 +164,7 @@ export default function CollectorBillingPage() {
       <Panel accent="red" title="2. Upload and validate readings" description="Required columns: UNIT, PREVIOUS, and PRESENT. Server calculations override spreadsheet formulas.">
         <form onSubmit={previewFile} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-[1fr_1fr_auto]">
           <Field label="Draft period"><select required value={selectedId} onChange={(event) => selectPeriod(event.target.value)} className={inputClass}><option value="">Select period</option>{periods.map((period) => <option key={period.id} value={period.id}>{period.periodStart} to {period.periodEnd} - {period.status}</option>)}</select></Field>
-          <Field label="Collector workbook"><input required accept=".xlsx" type="file" onChange={(event) => setFile(event.target.files[0] || null)} className={inputClass} /></Field>
+          <Field label="Billing Associate workbook"><input required accept=".xlsx" type="file" onChange={(event) => setFile(event.target.files[0] || null)} className={inputClass} /></Field>
           <button disabled={busy || !selectedId} className={`${primaryClass} self-end`}>{selectedPeriod?.status === 'DRAFT' ? 'Preview file' : 'Preview corrected file'}</button>
         </form>
         {readingCount > 0 && <p className="mt-3 text-sm font-bold text-emerald-700">{readingCount} readings are currently saved for this period.</p>}
