@@ -11,20 +11,13 @@ const { Pool, types } = pg;
 // Manila's UTC offset cannot shift May 1 back to April 30 in API responses.
 types.setTypeParser(1082, (value) => value);
 
-const pool = new Pool(
-  process.env.DATABASE_URL
-    ? {
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DB_SSL === "true" ? true : undefined,
-      }
-    : {
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: Number(process.env.DB_PORT),
-      }
-);
+const pool = new Pool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: Number(process.env.DB_PORT),
+});
 
 pool.on("connect", () => {
   console.log("Connected to the database");

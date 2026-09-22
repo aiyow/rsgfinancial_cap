@@ -1,5 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RSG Condo Water Billing">
   <rect width="64" height="64" rx="16" fill="#2f8f5b"/>
-  <path d="M12 28 32 12l20 16v24H12V28Z" fill="#fff"/>
-  <path d="M28 52V37h8v15M20 31h6v6h-6zm18 0h6v6h-6zm-18 12h6v6h-6zm18 0h6v6h-6z" fill="#2f8f5b"/>
+  <path d="M32 10c-7.2 10.1-13 17.1-13 25a13 13 0 1 0 26 0c0-7.9-5.8-14.9-13-25Z" fill="#f2faf4"/>
+  <path d="M27 37h10v10H27zM29 31h6v4h-6zM30 40h2v3h-2zM34 40h1v3h-1z" fill="#2f8f5b"/>
+  <path d="M42 42h12v12H42z" fill="#16352a" stroke="#f2faf4" stroke-width="2"/>
+  <path d="M46 46h4M46 50h4M48 44v8" stroke="#f2faf4" stroke-width="1.5" stroke-linecap="round"/>
 </svg>

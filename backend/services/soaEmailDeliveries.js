@@ -21,7 +21,7 @@ export async function deliverSoaEmailNotifications(deliveryIds) {
       GREATEST(${billTotalSql} - ${billAppliedSql}, 0) AS "remainingBalance"
      FROM soa_email_deliveries d
      JOIN unit_bills b ON b.id = d.unit_bill_id
-     WHERE d.id = ANY($1::bigint[]) AND d.status = 'PENDING'`,
+     WHERE d.id = ANY($1::bigint[]) AND d.status = 'PENDING' AND b.published_at IS NOT NULL`,
     [ids],
   );
 

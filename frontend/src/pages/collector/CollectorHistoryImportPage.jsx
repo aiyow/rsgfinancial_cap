@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FileSpreadsheet, RotateCcw, Trash2, Upload } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -123,9 +124,9 @@ export default function CollectorHistoryImportPage() {
 
   return (
     <DashboardLayout title="Analytics history import" description="Import past monthly meter readings for predictive water analytics.">
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
 
-      <Panel title="Upload monthly history" description="Select the billing month, upload the cleaned Excel workbook, preview the readings, then confirm the import.">
+      <Panel accent="blue" title="Upload monthly history" description="Select the billing month, upload the cleaned Excel workbook, preview the readings, then confirm the import.">
         <form onSubmit={previewFile} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-[220px_1fr_auto]">
           <Field label="Billing month">
             <input required type="month" value={periodMonth} onChange={(event) => { setPeriodMonth(event.target.value); setPreview(null) }} className={inputClass} />
@@ -139,7 +140,7 @@ export default function CollectorHistoryImportPage() {
         </form>
       </Panel>
 
-      <Panel title="Preview readings" description="Required columns: UNIT, PREVIOUS, PRESENT, CONSUMPTION, WRATE, and WATER BILLED.">
+      <Panel accent="red" title="Preview readings" description="Required columns: UNIT, PREVIOUS, PRESENT, CONSUMPTION, WRATE, and WATER BILLED.">
         {!preview ? <EmptyRow message="No workbook preview yet." /> : (
           <div>
             <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -180,7 +181,7 @@ export default function CollectorHistoryImportPage() {
         )}
       </Panel>
 
-      <Panel title="Imported analytics months" description="These imports feed predictive analytics only. They do not create SOAs or change real billing records.">
+      <Panel accent="green" title="Imported analytics months" description="These imports feed predictive analytics only. They do not create SOAs or change real billing records.">
         <div className="mb-4 flex justify-end">
           <button type="button" disabled={busy || sortedImports.length === 0} onClick={clearAll} className={dangerClass}>
             <RotateCcw size={16} /> Clear all imports
@@ -190,7 +191,7 @@ export default function CollectorHistoryImportPage() {
           <div className="overflow-auto rounded-xl border border-slate-200">
             <table className="w-full min-w-[780px] text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase text-slate-400"><tr><th className="p-3">Month</th><th>Readings</th><th>Flagged</th><th>Forecast month</th><th>Ready forecasts</th><th></th></tr></thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-300">
                 {sortedImports.map((item) => (
                   <tr key={item.periodMonth}>
                     <td className="p-3 font-bold">{monthLabel(item.periodMonth)}</td>

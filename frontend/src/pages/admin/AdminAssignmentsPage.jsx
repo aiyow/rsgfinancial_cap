@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -68,7 +69,7 @@ export default function AdminAssignmentsPage() {
 
   return (
     <DashboardLayout title="Unit assignments" description="Assign active Residents to units as owners or tenants.">
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
       <Panel title="Assignments" description="Connect an active Resident account to a unit.">
         <form onSubmit={createAssignment} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-5">
           <Field label="Unit"><select required value={form.unitId} onChange={(event) => setForm({ ...form, unitId: event.target.value })} className={inputClass}><option value="">Select unit</option>{units.map((unit) => <option key={unit.id} value={unit.id}>Unit {unit.unitNumber}</option>)}</select></Field>

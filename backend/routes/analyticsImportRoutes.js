@@ -7,6 +7,7 @@ import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.js";
 import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
 import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
+import { validateMeterReading } from "../services/meterReadingValidation.js";
 
 const router = express.Router();
 
@@ -60,15 +61,6 @@ function periodDates(periodMonth) {
 
 function monthFromDate(value) {
   return String(value).slice(0, 7);
-}
-
-function readingQuality(previousReading, currentReading, priorReading) {
-  const notes = [];
-  if (currentReading < previousReading) notes.push("Present reading is lower than the previous reading.");
-  if (priorReading !== undefined && Math.abs(Number(priorReading) - previousReading) > 0.001) {
-    notes.push(`Previous reading does not match the last recorded present reading (${priorReading}).`);
-  }
-  return { status: notes.length ? "FLAGGED" : "VALID", notes };
 }
 
 async function parseWorkbook(buffer, units) {
@@ -171,7 +163,7 @@ async function revalidateAnalyticsReadings(client) {
   );
   const priorByUnit = new Map();
   for (const row of result.rows) {
-    const quality = readingQuality(Number(row.previousReading), Number(row.currentReading), priorByUnit.get(Number(row.unitId)));
+    const quality = validateMeterReading(Number(row.previousReading), Number(row.currentReading), priorByUnit.get(Number(row.unitId)));
     await client.query(
       "UPDATE meter_readings SET validation_status = $2, validation_notes = $3 WHERE id = $1",
       [row.id, quality.status, quality.notes.join(" ") || null],
@@ -338,7 +330,7 @@ router.post("/", async (req, res, next) => {
     }
 
     for (const row of body.readings) {
-      const localQuality = readingQuality(row.previousReading, row.currentReading);
+      const localQuality = validateMeterReading(row.previousReading, row.currentReading);
       await client.query(
         `INSERT INTO meter_readings
           (unit_id, billing_period_id, recorded_by, previous_reading, current_reading, validation_status, validation_notes)

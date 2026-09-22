@@ -1,6 +1,8 @@
-# RSG Condo Management and Billing System
+# RSG Condo Water Billing & Management System
 
 RSG Condo is a role-based condominium billing and water-analytics system. It supports monthly meter-reading imports, Statement of Account (SOA) generation, payment verification, resident access, predictive water forecasts, prescriptive recommendations, audit logs, and operational dashboards.
+
+For a Windows-focused local installation walkthrough with step-by-step error solutions, see [LOCAL_SETUP_GUIDE.md](LOCAL_SETUP_GUIDE.md).
 
 ## Main features
 
@@ -142,7 +144,7 @@ Initialize the schema and all numbered migrations:
 npm run db:init
 ```
 
-This command creates the base schema and applies migrations `001` through `021` in order. The initializer does not keep a migration-history table, so use it for a new database (or a disposable local development database) and make a backup before running it against an existing database.
+This command creates the base schema and applies migrations `001` through `022` in order. The initializer does not keep a migration-history table, so use it for a new database (or a disposable local development database) and make a backup before running it against an existing database.
 
 Create the initial Admin and Collector accounts using the values from `backend/.env`:
 

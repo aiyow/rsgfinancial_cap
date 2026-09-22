@@ -1,4 +1,5 @@
 import express from "express";
+import bcrypt from "bcrypt";
 import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
@@ -27,6 +28,10 @@ const updateUnitSchema = z.object({
 }).strict().refine((body) => Object.keys(body).length > 0, {
   message: "At least one field must be provided.",
 });
+
+const deleteUnitSchema = z.object({
+  currentPassword: z.string().min(1).max(200),
+}).strict();
 
 router.use(requireAuth);
 
@@ -152,8 +157,12 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateUnitSche
   }
 });
 
-router.delete("/:id", allowRoles("ADMIN"), requireId, async (req, res, next) => {
+router.delete("/:id", allowRoles("ADMIN"), requireId, validateBody(deleteUnitSchema), async (req, res, next) => {
   try {
+    const actor = await pool.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1", [req.user.id]);
+    const passwordMatches = actor.rows[0] && await bcrypt.compare(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
+    if (!passwordMatches) return res.status(401).json({ message: "Your current Admin password is required to delete a unit." });
+
     const result = await pool.query(
       `DELETE FROM units WHERE id = $1
        RETURNING id, unit_number AS "unitNumber"`,

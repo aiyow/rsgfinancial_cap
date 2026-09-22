@@ -9,7 +9,8 @@ import { writeAuditLog } from "../services/auditLog.js";
 const router = express.Router();
 const roleSchema = z.enum(["ADMIN", "COLLECTOR", "RESIDENT"]);
 const userColumns = `id, full_name AS "fullName", email, role,
-  is_active AS "isActive", created_at AS "createdAt", updated_at AS "updatedAt"`;
+  is_active AS "isActive", email_verified AS "emailVerified",
+  created_at AS "createdAt", updated_at AS "updatedAt"`;
 
 const createUserSchema = z.object({
   fullName: z.string().trim().min(1).max(150),
@@ -28,6 +29,9 @@ const updateUserSchema = z.object({
 }).strict().refine((body) => Object.keys(body).length > 0, {
   message: "At least one field must be provided.",
 });
+const deleteUserSchema = z.object({
+  currentPassword: z.string().min(8).max(72).optional(),
+}).strict();
 
 router.use(requireAuth, allowRoles("ADMIN"));
 
@@ -58,8 +62,8 @@ router.post("/", validateBody(createUserSchema), async (req, res, next) => {
     client = await pool.connect();
     await client.query("BEGIN");
     const result = await client.query(
-      `INSERT INTO users (full_name, email, password_hash, role, is_active)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO users (full_name, email, password_hash, role, is_active, email_verified)
+       VALUES ($1, $2, $3, $4, $5, TRUE)
        RETURNING ${userColumns}`,
       [fullName, email, passwordHash, role, isActive]
     );
@@ -161,7 +165,7 @@ router.patch("/:id", requireId, validateBody(updateUserSchema), async (req, res,
   }
 });
 
-router.delete("/:id", requireId, async (req, res, next) => {
+router.delete("/:id", requireId, validateBody(deleteUserSchema), async (req, res, next) => {
   let client;
   try {
     if (req.resourceId === Number(req.user.id)) {
@@ -172,12 +176,25 @@ router.delete("/:id", requireId, async (req, res, next) => {
     await client.query("BEGIN");
 
     const existingUser = await client.query(
-      "SELECT id FROM users WHERE id = $1 FOR UPDATE",
+      "SELECT id, role FROM users WHERE id = $1 FOR UPDATE",
       [req.resourceId]
     );
     if (!existingUser.rows[0]) {
       await client.query("ROLLBACK");
       return res.status(404).json({ message: "User not found." });
+    }
+
+    if (["ADMIN", "COLLECTOR"].includes(existingUser.rows[0].role)) {
+      if (!req.validatedBody.currentPassword) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ message: "Enter your current password to delete an Admin or Billing Associate account." });
+      }
+      const actor = await client.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1", [req.user.id]);
+      const passwordMatches = actor.rows[0] && await bcrypt.compare(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
+      if (!passwordMatches) {
+        await client.query("ROLLBACK");
+        return res.status(403).json({ message: "Your current password is incorrect. The account was not deleted." });
+      }
     }
 
     const removedAssignments = await client.query(

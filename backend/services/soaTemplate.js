@@ -12,6 +12,8 @@ export const defaultSoaTemplate = {
   noticeLine1: "This temporary arrangement will remain in place until the defunct Board of Trustees formally turn over",
   noticeLine2: "our Official Bank Passbook and Cheque book to the Elected Board of Trustees.",
   footerText: "T H A N K   Y O U!",
+  logoPlacement: "LEFT",
+  accentColor: "#166534",
 };
 
 export async function ensureSoaTemplateSchema(client) {
@@ -26,6 +28,11 @@ export async function ensureSoaTemplateSchema(client) {
     )
   `);
   await client.query("ALTER TABLE unit_bills ADD COLUMN IF NOT EXISTS soa_template_snapshot JSONB NULL");
+  await client.query(`ALTER TABLE soa_templates
+    ADD COLUMN IF NOT EXISTS logo_asset_public_id VARCHAR(500) NULL,
+    ADD COLUMN IF NOT EXISTS logo_asset_mime_type VARCHAR(100) NULL,
+    ADD COLUMN IF NOT EXISTS qr_asset_public_id VARCHAR(500) NULL,
+    ADD COLUMN IF NOT EXISTS qr_asset_mime_type VARCHAR(100) NULL`);
 }
 
 export async function ensureSoaTemplate(client) {

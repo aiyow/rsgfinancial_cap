@@ -1,43 +1,59 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, CircleUserRound, FileText, Pencil, Plus, Trash2, XCircle } from 'lucide-react'
+import { Activity, CheckCircle2, ChevronDown, CircleUserRound, FileText, Pencil, Plus, ShieldCheck, Trash2, UserRound, UsersRound, XCircle } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
-const entityOptions = ['ALL', 'USER_ACCOUNT', 'UNIT', 'UNIT_ASSIGNMENT', 'PAYMENT_SUBMISSION', 'BILLING_PERIOD', 'UNIT_BILL', 'PRESCRIPTIVE_RECOMMENDATION']
-const actionOptions = ['ALL', 'CREATE', 'CREATE_MANUAL', 'UPDATE', 'DELETE', 'DELETED', 'END', 'SUBMIT', 'APPROVE', 'REJECT', 'GENERATED', 'REOPENED', 'FORWARDED', 'PUBLISHED', 'SOA_EDITED', 'VIEWED', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED', 'SHARED_WITH_RESIDENT']
+const entityGroups = [
+  { label: 'All activity', options: ['ALL'] },
+  { label: 'Records', options: ['USER_ACCOUNT', 'UNIT', 'UNIT_ASSIGNMENT', 'BILLING_PERIOD', 'UNIT_BILL'] },
+  { label: 'Payments & insights', options: ['PAYMENT_SUBMISSION', 'PRESCRIPTIVE_RECOMMENDATION'] },
+]
+const actionGroups = [
+  { label: 'General', options: ['ALL', 'CREATE', 'CREATE_MANUAL', 'UPDATE'] },
+  { label: 'Records', options: ['DELETE', 'DELETED', 'END', 'GENERATED', 'REOPENED', 'FORWARDED', 'PUBLISHED', 'UNPUBLISHED', 'SOA_EDITED', 'VIEWED', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED', 'SHARED_WITH_RESIDENT'] },
+  { label: 'Payments', options: ['SUBMIT', 'APPROVE', 'REJECT'] },
+]
 
 const entityLabels = {
-  USER_ACCOUNT: 'user account',
-  UNIT: 'unit',
-  UNIT_ASSIGNMENT: 'unit assignment',
-  PAYMENT_SUBMISSION: 'payment',
-  BILLING_PERIOD: 'billing batch',
-  UNIT_BILL: 'unit bill',
-  SOA_TEMPLATE: 'SOA template',
-  PRESCRIPTIVE_RECOMMENDATION: 'recommended action',
+  USER_ACCOUNT: 'User Account',
+  UNIT: 'Unit',
+  UNIT_ASSIGNMENT: 'Unit Assignment',
+  PAYMENT_SUBMISSION: 'Payment',
+  BILLING_PERIOD: 'Billing Batch',
+  UNIT_BILL: 'Unit Bill',
+  SOA_TEMPLATE: 'SOA Template',
+  PRESCRIPTIVE_RECOMMENDATION: 'Recommended Action',
 }
 
 const actionLabels = {
-  CREATE: 'created',
-  CREATE_MANUAL: 'recorded',
-  UPDATE: 'updated',
-  DELETE: 'deleted',
-  DELETED: 'deleted',
-  END: 'ended',
-  SUBMIT: 'submitted',
-  APPROVE: 'approved',
-  REJECT: 'rejected',
-  GENERATED: 'generated',
-  REOPENED: 'reopened',
-  FORWARDED: 'forwarded',
-  PUBLISHED: 'published',
-  SOA_EDITED: 'edited',
-  VIEWED: 'viewed',
-  ACKNOWLEDGED: 'acknowledged',
-  RESOLVED: 'resolved',
-  DISMISSED: 'dismissed',
-  SHARED_WITH_RESIDENT: 'shared with the Resident',
+  CREATE: 'Created',
+  CREATE_MANUAL: 'Recorded',
+  UPDATE: 'Updated',
+  DELETE: 'Deleted',// double deleted, but keeping it for consistency with the original code
+  DELETED: 'Deleted',
+  END: 'Ended',
+  SUBMIT: 'Submitted',
+  APPROVE: 'Approved',
+  REJECT: 'Rejected',
+  GENERATED: 'Generated',
+  REOPENED: 'Reopened',
+  FORWARDED: 'Forwarded',
+  PUBLISHED: 'Published',
+  UNPUBLISHED: 'Unpublished',
+  SOA_EDITED: 'Edited',
+  VIEWED: 'Viewed',
+  ACKNOWLEDGED: 'Acknowledged',
+  RESOLVED: 'Resolved',
+  DISMISSED: 'Dismissed',
+  SHARED_WITH_RESIDENT: 'Shared with the Resident',
+}
+
+const actionFilterLabels = {
+  ...actionLabels,
+  DELETE: 'Deleted User Account',
+  DELETED: 'Deleted Billing Batch',
 }
 
 const actionIcons = {
@@ -53,6 +69,7 @@ const actionIcons = {
   REOPENED: Pencil,
   FORWARDED: FileText,
   PUBLISHED: CheckCircle2,
+  UNPUBLISHED: XCircle,
   SOA_EDITED: Pencil,
 }
 
@@ -79,10 +96,16 @@ function initials(name) {
     .toUpperCase()
 }
 
+function actorRoleLabel(role) {
+  return { ADMIN: 'Admin', COLLECTOR: 'Billing Associate', RESIDENT: 'Resident' }[role] || String(role || 'deleted').toLowerCase()
+}
+
 export default function AdminAuditLogsPage() {
   const { token } = useAuth()
   const [entity, setEntity] = useState('ALL')
   const [action, setAction] = useState('ALL')
+  const [entityMenuOpen, setEntityMenuOpen] = useState(false)
+  const [actionMenuOpen, setActionMenuOpen] = useState(false)
   const [logs, setLogs] = useState([])
   const [notice, setNotice] = useState({ error: '', message: '' })
 
@@ -109,34 +132,70 @@ export default function AdminAuditLogsPage() {
 
   return (
     <DashboardLayout title="Audit logs" description="A simple history of important actions in the system.">
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
 
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Total entries" value={summary.total} />
-        <StatCard label="Admin actions" value={summary.adminActions} />
-        <StatCard label="Collector actions" value={summary.collectorActions} />
-        <StatCard label="Resident actions" value={summary.residentActions} />
+        <StatCard label="Total entries" value={summary.total} icon={Activity} accent="blue" />
+        <StatCard label="Admin actions" value={summary.adminActions} icon={ShieldCheck} accent="green" />
+        <StatCard label="Billing Associate actions" value={summary.collectorActions} icon={UsersRound} accent="red" />
+        <StatCard label="Resident actions" value={summary.residentActions} icon={UserRound} accent="blue" />
       </div>
 
       <Panel title="Filter activity" description="Choose a category to find a specific activity.">
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="block text-sm font-bold text-slate-700">
-            What changed?
-            <select value={entity} onChange={(event) => setEntity(event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
-              {entityOptions.map((option) => <option key={option} value={option}>{option === 'ALL' ? 'Everything' : labelFor(option, entityLabels)}</option>)}
-            </select>
-          </label>
-          <label className="block text-sm font-bold text-slate-700">
-            What happened?
-            <select value={action} onChange={(event) => setAction(event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
-              {actionOptions.map((option) => <option key={option} value={option}>{option === 'ALL' ? 'Everything' : labelFor(option, actionLabels)}</option>)}
-            </select>
-          </label>
+          <div className="block text-sm font-bold text-slate-700">
+            <p>What changed?</p>
+            <div className="relative mt-2">
+              <button type="button" aria-expanded={entityMenuOpen} onClick={() => { setEntityMenuOpen((current) => !current); setActionMenuOpen(false) }} style={{ fontWeight: 400 }} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#b8d9c2] bg-white px-3.5 text-left text-sm text-[#345744] shadow-sm transition hover:border-[#2f8f5b]">
+                <span className="truncate">{entity === 'ALL' ? 'Everything' : labelFor(entity, entityLabels)}</span>
+                <ChevronDown size={17} className={`shrink-0 text-[#587064] transition ${entityMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+              </button>
+              {entityMenuOpen && (
+                <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
+                  {entityGroups.map((group) => (
+                    <div key={group.label} className="not-first:mt-3">
+                      <p style={{ fontWeight: 400 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">{group.label}</p>
+                      <div className="grid gap-1 sm:grid-cols-2">
+                        {group.options.map((option) => {
+                          const label = option === 'ALL' ? 'Everything' : labelFor(option, entityLabels)
+                          return <button key={option} type="button" onClick={() => { setEntity(option); setEntityMenuOpen(false) }} style={{ fontWeight: 400 }} className={`rounded-lg px-2.5 py-2 text-left text-xs transition ${entity === option ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{label}</button>
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="block text-sm font-bold text-slate-700">
+            <p>What happened?</p>
+            <div className="relative mt-2">
+              <button type="button" aria-expanded={actionMenuOpen} onClick={() => { setActionMenuOpen((current) => !current); setEntityMenuOpen(false) }} style={{ fontWeight: 400 }} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#b8d9c2] bg-white px-3.5 text-left text-sm text-[#345744] shadow-sm transition hover:border-[#2f8f5b]">
+                <span className="truncate">{action === 'ALL' ? 'Everything' : labelFor(action, actionFilterLabels)}</span>
+                <ChevronDown size={17} className={`shrink-0 text-[#587064] transition ${actionMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+              </button>
+              {actionMenuOpen && (
+                <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
+                  {actionGroups.map((group) => (
+                    <div key={group.label} className="not-first:mt-3">
+                      <p style={{ fontWeight: 400 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">{group.label}</p>
+                      <div className="grid gap-1 sm:grid-cols-2">
+                        {group.options.map((option) => {
+                          const label = option === 'ALL' ? 'Everything' : labelFor(option, actionFilterLabels)
+                          return <button key={option} type="button" onClick={() => { setAction(option); setActionMenuOpen(false) }} style={{ fontWeight: 400 }} className={`rounded-lg px-2.5 py-2 text-left text-xs transition ${action === option ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{label}</button>
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </Panel>
 
       <Panel title="Activity feed" description="Each row explains one action in plain language.">
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-slate-300">
           {logs.map((log) => {
             const ActionIcon = actionIcons[log.action] || CircleUserRound
 
@@ -148,7 +207,7 @@ export default function AdminAuditLogsPage() {
                     <p className="truncate text-sm text-slate-700">
                       <span className="font-bold text-slate-950">{log.actorName}</span>
                       <span className="mx-1.5">{describeLog(log)}.</span>
-                      <span className="text-xs text-slate-500">{log.actorRole ? log.actorRole.toLowerCase() : 'deleted account'}</span>
+                      <span className="text-xs text-slate-500">{actorRoleLabel(log.actorRole)}</span>
                     </p>
                   </div>
                 </div>
@@ -166,11 +225,16 @@ export default function AdminAuditLogsPage() {
   )
 }
 
-function StatCard({ label, value }) {
+function StatCard({ accent, icon: Icon, label, value }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-3 text-3xl font-black text-slate-950">{value}</p>
+    <div className={`collector-metric collector-metric-${accent} rounded-2xl border border-[var(--border)] p-5 shadow-sm`}>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold text-[var(--muted)]">{label}</p>
+          <p className="mt-3 text-3xl font-black text-[var(--ink)]">{value}</p>
+        </div>
+        <span className="grid size-11 place-items-center rounded-xl"><Icon size={21} /></span>
+      </div>
     </div>
   )
 }

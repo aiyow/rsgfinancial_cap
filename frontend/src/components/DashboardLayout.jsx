@@ -8,6 +8,8 @@ import {
   ChevronDown,
   CreditCard,
   FileText,
+  FolderKanban,
+  CircleAlert,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -15,7 +17,6 @@ import {
   PanelLeftOpen,
   ScrollText,
   Settings2,
-  ShieldCheck,
   Upload,
   UserRound,
   Users,
@@ -23,41 +24,47 @@ import {
   X,
 } from 'lucide-react'
 import useAuth from '../hooks/useAuth'
+import BrandMark from './BrandMark'
+import NotificationCenter from './NotificationCenter'
 
 const navigationByRole = {
   ADMIN: {
     view: [
-      { label: 'Dashboard', to: '/admin', end: true, icon: LayoutDashboard },
+      { label: 'Executive Dashboard', to: '/admin', end: true, icon: LayoutDashboard },
       { label: 'Unit Directory', to: '/admin/units', end: true, icon: Building2 },
-      { label: 'Forwarded SOAs', to: '/admin/soa', icon: FileText },
-      { label: 'Payments', to: '/admin/payments', icon: CreditCard },
-      { label: 'Audit Logs', to: '/admin/audit-logs', icon: ScrollText },
+      { label: 'Forwarded Billings', to: '/admin/soa', icon: FileText },
+      { label: 'Payment Records', to: '/admin/payments', icon: CreditCard },
       { label: 'Water Analytics', to: '/admin/analytics', icon: BarChart3 },
+      { label: 'Financial Reports', to: '/admin/reports', icon: FolderKanban },
+      { label: 'Activity Log', to: '/admin/audit-logs', icon: ScrollText },
     ],
     manage: [
       { label: 'User Management', to: '/admin/users', icon: Users },
-      { label: 'Manage Units', to: '/admin/units/manage', icon: Settings2 },
+      { label: 'Unit Management', to: '/admin/units/manage', icon: Settings2 },
+      { label: 'SOA Template', to: '/admin/soa-template', icon: BookOpen },
+      { label: 'Billing Errors', to: '/admin/billing-errors', icon: CircleAlert },
     ],
   },
   COLLECTOR: {
     view: [
-      { label: 'Dashboard', to: '/collector', end: true, icon: LayoutDashboard },
-      { label: 'Bills & SOAs', to: '/collector/bills', icon: FileText },
-      { label: 'Units', to: '/collector/units', icon: Building2 },
-      { label: 'Verified Payments', to: '/collector/payments', icon: WalletCards },
+      { label: 'Executive Dashboard', to: '/collector', end: true, icon: LayoutDashboard },
+      { label: 'Unit Directory', to: '/collector/units', icon: Building2 },
+      { label: 'Forwarded Billings', to: '/collector/bills', icon: FileText },
+      { label: 'Payment Records', to: '/collector/payments', icon: WalletCards },
       { label: 'Water Analytics', to: '/collector/analytics', icon: BarChart3 },
+      { label: 'Financial Reports', to: '/collector/reports', icon: FolderKanban },
     ],
     manage: [
-      { label: 'Monthly Billing', to: '/collector/billing', icon: Calculator },
-      { label: 'SOA Template', to: '/collector/soa-template', icon: BookOpen },
-      { label: 'Analytics Import', to: '/collector/history-import', icon: Upload },
+      { label: 'Create Billing', to: '/collector/billing', icon: Calculator },
+      { label: 'Upload Water History', to: '/collector/history-import', icon: Upload },
+      { label: 'Billing Errors', to: '/collector/billing-errors', icon: CircleAlert },
     ],
   },
   RESIDENT: {
     view: [
-      { label: 'Dashboard', to: '/resident', end: true, icon: LayoutDashboard },
-      { label: 'My SOAs', to: '/resident/bills', icon: FileText },
-      { label: 'Payment History', to: '/resident/payments', icon: CreditCard },
+      { label: 'Overview', to: '/resident', end: true, icon: LayoutDashboard },
+      { label: 'My Bills', to: '/resident/bills', icon: FileText },
+      { label: 'My Payments', to: '/resident/payments', icon: CreditCard },
     ],
     manage: [],
   },
@@ -66,6 +73,18 @@ const navigationByRole = {
 const sectionLabels = {
   view: 'View',
   manage: 'Manage',
+}
+
+function displayName(value) {
+  return String(value || '').split(/\s+/).filter(Boolean).map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`).join(' ')
+}
+
+function roleLabel(role) {
+  return {
+    ADMIN: 'Admin',
+    COLLECTOR: 'Billing Associate',
+    RESIDENT: 'Resident',
+  }[role] || displayName(role)
 }
 
 function NavigationLinks({ sections, collapsed, onNavigate }) {
@@ -110,13 +129,36 @@ function NavigationLinks({ sections, collapsed, onNavigate }) {
   )
 }
 
+function ResidentMobileNavigation() {
+  const items = [
+    { label: 'Home', to: '/resident', end: true, icon: LayoutDashboard },
+    { label: 'Bills', to: '/resident/bills', icon: FileText },
+    { label: 'Payments', to: '/resident/payments', icon: CreditCard },
+    { label: 'Profile', to: '/profile', icon: UserRound },
+  ]
+
+  return <nav className="print-hidden fixed inset-x-3 bottom-3 z-40 rounded-2xl border border-[var(--border)] bg-white/95 px-2 py-2 shadow-[0_12px_30px_rgba(28,78,48,0.18)] backdrop-blur lg:hidden" aria-label="Resident mobile navigation">
+    <div className="grid grid-cols-4 gap-1">
+      {items.map((item) => {
+        const Icon = item.icon
+        return <NavLink key={item.label} to={item.to} end={item.end} className={({ isActive }) => `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-bold transition ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-[var(--muted)] hover:bg-[var(--app-bg)] hover:text-emerald-700'}`}>
+          <Icon size={19} strokeWidth={2.2} aria-hidden="true" />
+          <span>{item.label}</span>
+        </NavLink>
+      })}
+    </div>
+  </nav>
+}
+
 export default function DashboardLayout({ title, description, children }) {
-  const { user, logout } = useAuth()
+  const { user, logout, token } = useAuth()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('rsg_sidebar_collapsed') === 'true')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const profileMenuRef = useRef(null)
   const sections = navigationByRole[user.role] || navigationByRole.RESIDENT
+  const usesGreenSidebar = user.role === 'ADMIN' || user.role === 'RESIDENT' || user.role === 'COLLECTOR'
+  const usesResidentMobileNavigation = user.role === 'RESIDENT'
 
   useEffect(() => {
     localStorage.setItem('rsg_sidebar_collapsed', String(collapsed))
@@ -155,14 +197,15 @@ export default function DashboardLayout({ title, description, children }) {
 
   const portalLabel = {
     ADMIN: 'Admin Portal',
-    COLLECTOR: 'Collector Portal',
+    COLLECTOR: 'Billing Associate Portal',
     RESIDENT: 'Resident Portal',
   }[user.role] || 'RSG Condo'
+  const formattedName = displayName(user.fullName)
   const initials = user.fullName.split(' ').map((name) => name[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <div className={`dashboard-shell min-h-screen bg-[var(--app-bg)] text-[var(--ink)] lg:grid lg:transition-[grid-template-columns] lg:duration-200 lg:ease-out motion-reduce:transition-none ${collapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
-      {mobileOpen && (
+    <div className={`dashboard-shell min-h-screen bg-[var(--app-bg)] text-[var(--ink)] lg:grid lg:transition-[grid-template-columns] lg:duration-200 lg:ease-out motion-reduce:transition-none ${usesGreenSidebar ? 'green-shell' : ''} ${collapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
+      {mobileOpen && !usesResidentMobileNavigation && (
         <button
           type="button"
           aria-label="Close navigation"
@@ -171,17 +214,15 @@ export default function DashboardLayout({ title, description, children }) {
         />
       )}
 
-      <aside className={`print-hidden fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 motion-reduce:transition-none ${
+      <aside className={`print-hidden fixed inset-y-0 left-0 z-40 ${usesResidentMobileNavigation ? 'hidden lg:flex' : 'flex'} w-[280px] flex-col border-r border-[var(--border)] bg-[var(--sidebar-bg)] transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:translate-x-0 motion-reduce:transition-none ${usesGreenSidebar ? 'green-sidebar' : ''} ${
         mobileOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className={`flex h-14 shrink-0 items-center justify-between border-b border-[var(--border)] px-5 ${collapsed ? 'lg:justify-center lg:px-3' : ''}`}>
           <div className={`flex items-center gap-3 ${collapsed ? 'lg:gap-0' : ''}`}>
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--primary)] text-white shadow-sm">
-              <ShieldCheck size={22} strokeWidth={2.2} aria-hidden="true" />
-            </span>
+            <BrandMark />
             <div className={collapsed ? 'lg:sr-only' : ''}>
-              <p className="text-sm font-black tracking-tight text-[var(--ink)]">RSG Condo</p>
-              <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">{user.role}</p>
+              <p className="text-sm font-black tracking-tight text-[var(--ink)]">The ResiDens</p>
+              <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">Water Billing</p>
             </div>
           </div>
           <button
@@ -195,7 +236,7 @@ export default function DashboardLayout({ title, description, children }) {
           </button>
         </div>
 
-        <div className={`min-h-0 flex-1 overflow-y-auto px-3 py-5 ${collapsed ? 'lg:px-2' : ''}`}>
+        <div className={`sidebar-scroll min-h-0 flex-1 overflow-y-auto px-3 py-5 ${collapsed ? 'lg:px-2' : ''}`}>
           <NavigationLinks sections={sections} collapsed={collapsed} onNavigate={() => setMobileOpen(false)} />
         </div>
 
@@ -213,11 +254,11 @@ export default function DashboardLayout({ title, description, children }) {
         </div>
       </aside>
 
-      <main className="min-w-0 bg-[var(--app-bg)]">
+      <main className={`min-w-0 bg-[var(--app-bg)] ${usesResidentMobileNavigation ? 'pb-24 lg:pb-0' : ''}`}>
         <header className="print-hidden sticky top-0 z-20 border-b border-[var(--border)] bg-white/95 shadow-[0_4px_18px_rgba(28,78,48,0.06)] backdrop-blur">
           <div className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
-              <button
+              {!usesResidentMobileNavigation && <button
                 type="button"
                 aria-label="Open navigation"
                 title="Open navigation"
@@ -225,7 +266,7 @@ export default function DashboardLayout({ title, description, children }) {
                 className="rounded-lg border border-[var(--border)] bg-[var(--app-bg)] p-2 text-[var(--primary)] hover:bg-[var(--active-bg)] lg:hidden"
               >
                 <Menu size={19} aria-hidden="true" />
-              </button>
+              </button>}
               <div className="flex min-w-0 items-center gap-2 text-sm">
                 <span className="truncate font-bold text-[var(--ink)]">{portalLabel}</span>
                 <span className="text-[var(--muted)]">/</span>
@@ -233,19 +274,21 @@ export default function DashboardLayout({ title, description, children }) {
               </div>
             </div>
 
-            <div ref={profileMenuRef} className="relative shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <NotificationCenter token={token} />
+              <div ref={profileMenuRef} className="relative shrink-0">
               <button
                 type="button"
                 aria-expanded={profileOpen}
                 aria-haspopup="menu"
-                aria-label={`Open account menu for ${user.fullName}`}
+                aria-label={`Open account menu for ${formattedName}`}
                 onClick={() => setProfileOpen((value) => !value)}
                 className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-2 py-1.5 text-left hover:bg-[var(--app-bg)] sm:gap-3 sm:px-2.5"
               >
                 <span className="grid size-7 place-items-center rounded-sm bg-[var(--primary)] text-[10px] font-black text-white">{initials}</span>
                 <span className="hidden min-w-0 sm:block">
-                  <span className="block max-w-36 truncate text-xs font-bold text-[var(--ink)]">{user.fullName}</span>
-                  <span className="block max-w-36 truncate text-[10px] text-[var(--muted)]">{user.role}</span>
+                  <span className="block max-w-36 truncate text-xs font-bold text-[var(--ink)]">{formattedName}</span>
+                  <span className="block max-w-36 truncate text-[10px] text-[var(--muted)]">{roleLabel(user.role)}</span>
                 </span>
                 <ChevronDown size={14} className={`text-[var(--muted)] transition ${profileOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
               </button>
@@ -253,7 +296,7 @@ export default function DashboardLayout({ title, description, children }) {
               {profileOpen && (
                 <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-lg" role="menu">
                   <div className="border-b border-[var(--border)] px-4 py-3">
-                    <p className="truncate text-sm font-bold text-[var(--ink)]">{user.fullName}</p>
+                    <p className="truncate text-sm font-bold text-[var(--ink)]">{formattedName}</p>
                     <p className="mt-0.5 truncate text-xs text-[var(--muted)]">{user.email}</p>
                   </div>
                   <Link to="/profile" role="menuitem" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--ink)] hover:bg-[var(--app-bg)]">
@@ -272,6 +315,7 @@ export default function DashboardLayout({ title, description, children }) {
                   </div>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </header>
@@ -283,13 +327,14 @@ export default function DashboardLayout({ title, description, children }) {
           <div className="space-y-8">{children}</div>
         </div>
       </main>
+      {usesResidentMobileNavigation && <ResidentMobileNavigation />}
     </div>
   )
 }
 
-export function Panel({ id, title, description, children }) {
+export function Panel({ accent, id, title, description, children }) {
   return (
-    <section id={id} className="rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm sm:p-6">
+    <section id={id} className={`${accent ? `collector-step-card collector-step-${accent}` : ''} rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm sm:p-6`}>
       <h2 className="text-lg font-black text-[var(--ink)]">{title}</h2>
       {description && <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>}
       <div className="mt-5">{children}</div>

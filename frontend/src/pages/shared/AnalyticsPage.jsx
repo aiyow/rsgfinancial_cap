@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Activity, CalendarDays, ChartNoAxesCombined, ChevronDown, Gauge, ListChecks, RefreshCw } from 'lucide-react'
 import {
-  CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Area, AreaChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
@@ -59,6 +60,9 @@ export default function AnalyticsPage() {
   const [recommendations, setRecommendations] = useState([])
   const [recommendationBusyId, setRecommendationBusyId] = useState(null)
   const [showAllRecommendations, setShowAllRecommendations] = useState(false)
+  const [recommendationSort, setRecommendationSort] = useState('PRIORITY')
+  const [expandedRecommendationId, setExpandedRecommendationId] = useState(null)
+  const [refreshingForecasts, setRefreshingForecasts] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -90,6 +94,21 @@ export default function AnalyticsPage() {
     }
   }
 
+  async function refreshForecasts() {
+    if (!window.confirm('Recalculate all saved forecasts using the current model? This may take a moment.')) return
+    setRefreshingForecasts(true)
+    setError('')
+    try {
+      await apiRequest('/api/analytics/refresh-forecasts', { method: 'POST', token })
+      const analyticsData = await apiRequest('/api/analytics/overview', { token })
+      setData(analyticsData)
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setRefreshingForecasts(false)
+    }
+  }
+
   const metrics = data?.metrics || {}
   const hasAnalyticsData = Boolean(data && ((data.latestForecast?.total || 0) > 0 || data.diagnostics.length > 0 || data.flaggedReadings.length > 0))
   const rawChartData = (data?.chartSeries || []).map((row) => ({
@@ -111,7 +130,17 @@ export default function AnalyticsPage() {
     viewed: recommendations.filter((recommendation) => recommendation.status === 'VIEWED').length,
     high: recommendations.filter((recommendation) => recommendation.priority === 'HIGH').length,
   }
-  const visibleRecommendations = showAllRecommendations ? recommendations : recommendations.slice(0, 5)
+  const sortedRecommendations = useMemo(() => {
+    const priority = { HIGH: 0, MEDIUM: 1, LOW: 2 }
+    const status = { OPEN: 0, VIEWED: 1, RESOLVED: 2 }
+    return [...recommendations].sort((left, right) => {
+      if (recommendationSort === 'UNIT') return String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true })
+      if (recommendationSort === 'STATUS') return (status[left.status] ?? 9) - (status[right.status] ?? 9) || String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true })
+      return (priority[left.priority] ?? 9) - (priority[right.priority] ?? 9) || String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true })
+    })
+  }, [recommendationSort, recommendations])
+  const visibleRecommendations = showAllRecommendations ? sortedRecommendations : sortedRecommendations.slice(0, 5)
+  const analyticsAccents = ['blue', 'green', 'red', 'blue', 'green']
 
   return (
     <DashboardLayout title="Predictive & Prescriptive Water Analytics" description="Review forecasts and the recommended actions generated from water use, occupancy, readings, and billing status.">
@@ -121,18 +150,11 @@ export default function AnalyticsPage() {
         <Panel title="No analytics data yet" description="No analytics data yet. Import historical readings first.">
           {user.role === 'COLLECTOR'
             ? <Link to="/collector/history-import" className="inline-flex rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white">Open analytics import</Link>
-            : <EmptyRow message="Collector needs to import historical readings before analytics and predictions appear." />}
+            : <EmptyRow message="A Billing Associate needs to import historical readings before analytics and predictions appear." />}
         </Panel>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <Metric label="Holdout month" value={month(data?.evaluationMonth)} />
-            <Metric label="WAPE accuracy" value={valueOrDash(metrics.accuracy, '%')} />
-            <Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} />
-            <Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} />
-            <Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} />
-          </div>
-
+          <div className="mb-4 flex justify-end"><button type="button" onClick={refreshForecasts} disabled={refreshingForecasts} className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"><RefreshCw size={16} className={refreshingForecasts ? 'animate-spin' : ''} />{refreshingForecasts ? 'Refreshing forecasts...' : 'Refresh forecasts'}</button></div>
           <Panel title="Latest forecast coverage" description="A unit needs five consecutive valid monthly readings after any meter reset or continuity break.">
             {!data ? <EmptyRow message="Loading forecast coverage..." /> : (
               <div className="grid gap-4 sm:grid-cols-3">
@@ -146,32 +168,32 @@ export default function AnalyticsPage() {
           <div className="grid gap-6 xl:grid-cols-2">
             <ChartCard title="Historical vs Projected Water Consumption" description="Monthly total consumption in cubic meters.">
               {chartData.length ? (
-                <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
                     <YAxis unit=" m3" tick={{ fontSize: 12 }} />
                     <Tooltip formatter={consumptionTooltip} />
                     <Legend />
-                    <Line type="monotone" dataKey="actualConsumption" name="Historical actual" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#fff', strokeWidth: 3 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="forecastConsumption" name="Projected forecast" stroke="#7c3aed" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 4, fill: '#fff', strokeWidth: 3 }} activeDot={{ r: 6 }} connectNulls />
-                  </LineChart>
+                    <Area type="monotone" dataKey="actualConsumption" name="Historical actual" stroke="#2563eb" fill="#93c5fd" fillOpacity={0.28} strokeWidth={3} dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} animationBegin={0} animationDuration={1200} animationEasing="ease-out" />
+                    <Area type="monotone" dataKey="forecastConsumption" name="Projected forecast" stroke="#7c3aed" fill="#c4b5fd" fillOpacity={0.2} strokeWidth={3} strokeDasharray="7 5" dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} connectNulls animationBegin={140} animationDuration={1200} animationEasing="ease-out" />
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : <EmptyRow message="No chart data is available yet." />}
             </ChartCard>
 
             <ChartCard title="Historical vs Projected Water Bill" description="Monthly total water charges from actual readings and forecasts.">
               {chartData.length ? (
-                <ResponsiveContainer width="100%" height={320}>
-                  <LineChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip formatter={billTooltip} />
                     <Legend />
-                    <Line type="monotone" dataKey="actualWaterBill" name="Historical actual" stroke="#059669" strokeWidth={3} dot={{ r: 4, fill: '#fff', strokeWidth: 3 }} activeDot={{ r: 6 }} />
-                    <Line type="monotone" dataKey="forecastWaterBill" name="Projected forecast" stroke="#ea580c" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 4, fill: '#fff', strokeWidth: 3 }} activeDot={{ r: 6 }} connectNulls />
-                  </LineChart>
+                    <Area type="monotone" dataKey="actualWaterBill" name="Historical actual" stroke="#059669" fill="#86efac" fillOpacity={0.24} strokeWidth={3} dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} animationBegin={0} animationDuration={1200} animationEasing="ease-out" />
+                    <Area type="monotone" dataKey="forecastWaterBill" name="Projected forecast" stroke="#ea580c" fill="#fdba74" fillOpacity={0.18} strokeWidth={3} strokeDasharray="7 5" dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} connectNulls animationBegin={140} animationDuration={1200} animationEasing="ease-out" />
+                  </AreaChart>
                 </ResponsiveContainer>
               ) : <EmptyRow message="No chart data is available yet." />}
             </ChartCard>
@@ -185,30 +207,32 @@ export default function AnalyticsPage() {
             </div>
             {recommendations.length ? (
               <div className="space-y-3">
-                {visibleRecommendations.map((recommendation) => {
-                  const busy = recommendationBusyId === recommendation.id
-                  return (
-                    <article key={recommendation.id} className="rounded-xl border border-slate-200 p-4">
-                      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${recommendation.priority === 'HIGH' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-800'}`}>{recommendation.priority}</span>
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{recommendation.status}</span>
-                            {recommendation.residentVisibleAt && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Visible to Resident</span>}
+                <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-500">Showing concise recommendations by unit. Select one to view its full details.</p><label className="flex items-center gap-2 text-sm font-bold text-slate-700">Sort by<select value={recommendationSort} onChange={(event) => setRecommendationSort(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="PRIORITY">Priority: high first</option><option value="UNIT">Unit number</option><option value="STATUS">Status: open first</option></select></label></div>
+                <div className={showAllRecommendations ? 'max-h-[42rem] space-y-3 overflow-y-auto overscroll-contain pr-2' : 'space-y-3'} aria-label="Prescriptive recommendations">
+                  {visibleRecommendations.map((recommendation) => {
+                    const busy = recommendationBusyId === recommendation.id
+                    const expanded = expandedRecommendationId === recommendation.id
+                    return (
+                      <article key={recommendation.id} className="rounded-xl border border-slate-200 p-4">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                          <button type="button" onClick={() => setExpandedRecommendationId((current) => current === recommendation.id ? null : recommendation.id)} aria-expanded={expanded} className="min-w-0 flex-1 text-left">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${recommendation.priority === 'HIGH' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-800'}`}>{recommendation.priority}</span>
+                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{recommendation.status}</span>
+                              {recommendation.residentVisibleAt && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Visible to Resident</span>}
+                            </div>
+                            <div className="mt-3 flex items-center justify-between gap-4"><p className="font-black text-slate-900">Unit {recommendation.unitNumber}</p><span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">{expanded ? 'Hide details' : 'View details'} <ChevronDown size={15} className={`transition ${expanded ? 'rotate-180' : ''}`} /></span></div>
+                            <p className="mt-1 truncate text-sm text-slate-600">{recommendation.message}</p>
+                          </button>
+                          <div className="flex flex-wrap gap-2 lg:justify-end">
+                            <ActionButton disabled={busy} onClick={() => deleteRecommendation(recommendation)}>{busy ? 'Deleting...' : 'Delete'}</ActionButton>
                           </div>
-                          <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Condition detected</p>
-                          <p className="mt-1 font-bold text-slate-900">Unit {recommendation.unitNumber}: {recommendation.evidence?.condition || recommendationEvidence(recommendation)}</p>
-                          <p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Recommended action</p>
-                          <p className="mt-1 font-black text-slate-950">{recommendation.message}</p>
-                          <p className="mt-2 text-sm text-slate-500">{recommendationEvidence(recommendation)}</p>
                         </div>
-                        <div className="flex flex-wrap gap-2 lg:justify-end">
-                          <ActionButton disabled={busy} onClick={() => deleteRecommendation(recommendation)}>{busy ? 'Deleting...' : 'Delete'}</ActionButton>
-                        </div>
-                      </div>
-                    </article>
-                  )
-                })}
+                        {expanded && <div className="mt-4 border-t border-slate-100 pt-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Condition detected</p><p className="mt-1 font-bold text-slate-900">{recommendation.evidence?.condition || recommendationEvidence(recommendation)}</p><p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Recommended action</p><p className="mt-1 font-black text-slate-950">{recommendation.message}</p><p className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{recommendationEvidence(recommendation)}</p></div>}
+                      </article>
+                    )
+                  })}
+                </div>
                 {recommendations.length > 5 && (
                   <button
                     type="button"
@@ -222,16 +246,17 @@ export default function AnalyticsPage() {
             ) : <EmptyRow message="No action is recommended for the latest live billing period." />}
           </Panel>
 
-          <Panel title="Predicted versus actual" description={`Visible to ${user.role === 'ADMIN' ? 'Admin' : 'Collector'} staff only. WAPE avoids division problems for units with zero consumption.`}>
+          <Panel title="Predicted versus actual" description={`Visible to ${user.role === 'ADMIN' ? 'Admin' : 'Billing Associate'} staff only. WAPE avoids division problems for units with zero consumption.`}>
             {data?.diagnostics.length ? (
-              <div className="overflow-auto rounded-xl border border-slate-200">
+              <div className="max-h-[31rem] overflow-auto overscroll-contain rounded-xl border border-slate-200" aria-label="Predicted versus actual results">
                 <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Model</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
+                  <tbody className="divide-y divide-slate-300">
                     {data.diagnostics.map((row) => (
                       <tr key={`${row.unitId}-${row.forecastForMonth}`} className={row.status !== 'READY' || row.actualValidationStatus !== 'VALID' ? 'bg-amber-50' : ''}>
                         <td className="p-3 font-bold">Unit {row.unitNumber}</td>
                         <td>{String(row.forecastForMonth).slice(0, 10)}</td>
+                        <td className="text-xs font-semibold text-slate-600">{String(row.modelName || 'LINEAR_REGRESSION').replaceAll('_', ' ')}</td>
                         <td>{row.predictedConsumption === null ? '-' : `${Number(row.predictedConsumption).toFixed(3)} m3`}</td>
                         <td>{row.actualConsumption === null ? '-' : `${Number(row.actualConsumption).toFixed(3)} m3`}</td>
                         <td>{row.absoluteError === null ? '-' : `${Number(row.absoluteError).toFixed(3)} m3`}</td>
@@ -243,6 +268,14 @@ export default function AnalyticsPage() {
               </div>
             ) : <EmptyRow message="No forecast has a matching actual month yet. Import five months, then import the holdout month." />}
           </Panel>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <Metric label="Holdout month" value={month(data?.evaluationMonth)} accent={analyticsAccents[0]} icon={CalendarDays} />
+            <Metric label="WAPE accuracy" value={valueOrDash(metrics.accuracy, '%')} accent={analyticsAccents[1]} icon={Gauge} />
+            <Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} accent={analyticsAccents[2]} icon={Activity} />
+            <Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} accent={analyticsAccents[3]} icon={ChartNoAxesCombined} />
+            <Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} accent={analyticsAccents[4]} icon={ListChecks} />
+          </div>
 
           <Panel title="Flagged meter readings" description="These readings remain visible for correction but do not train the model.">
             {data?.flaggedReadings.length ? (
@@ -263,16 +296,16 @@ export default function AnalyticsPage() {
   )
 }
 
-function Metric({ label, value, compact = false }) {
-  return <div className={`rounded-2xl border border-slate-200 bg-white ${compact ? 'p-4 shadow-none' : 'p-5 shadow-sm'}`}><p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p><p className={`${compact ? 'mt-2 text-xl' : 'mt-3 text-2xl'} font-black text-slate-950`}>{value}</p></div>
+function Metric({ accent, icon: Icon, label, value, compact = false }) {
+  return <div className={`${accent ? `collector-metric collector-metric-${accent}` : ''} rounded-2xl border border-slate-200 bg-white ${compact ? 'p-4 shadow-none' : 'p-5 shadow-sm'}`}><div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p><p className={`${compact ? 'mt-2 text-xl' : 'mt-3 text-2xl'} font-black text-[var(--ink)]`}>{value}</p></div>{Icon && <span className="grid size-10 shrink-0 place-items-center rounded-xl"><Icon size={19} /></span>}</div></div>
 }
 
 function ChartCard({ title, description, children }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 className="font-black text-slate-950">{title}</h3>
-      <p className="mt-1 text-sm text-slate-500">{description}</p>
-      <div className="mt-5">{children}</div>
+    <div className="collector-chart-panel min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <h3 className="text-base font-black text-[var(--ink)]">{title}</h3>
+      <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>
+      <div className="mt-5 h-72">{children}</div>
     </div>
   )
 }

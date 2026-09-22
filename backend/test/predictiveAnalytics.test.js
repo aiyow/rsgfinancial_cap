@@ -3,7 +3,9 @@ import test from "node:test";
 import {
   buildForecast,
   calculateAccuracy,
+  forecastCandidates,
   linearRegression,
+  selectForecastModel,
   selectConsecutiveReadings,
 } from "../services/predictiveAnalytics.js";
 
@@ -20,6 +22,19 @@ test("linear regression predicts the next point", () => {
 
 test("linear regression clamps a negative prediction to zero", () => {
   assert.equal(linearRegression([10, 7, 4, 1, 0]).predicted, 0);
+});
+
+test("adaptive selection retains linear regression for a small, clear trend", () => {
+  const model = selectForecastModel([2, 4, 6, 8, 10]);
+  assert.equal(model.name, "LINEAR_REGRESSION");
+  assert.equal(model.predicted, 12);
+});
+
+test("adaptive selection can choose a stable model after back-testing irregular use", () => {
+  const values = [10, 10, 10, 10, 10, 30, 10, 10];
+  const models = forecastCandidates(values);
+  assert.equal(models.length, 3);
+  assert.equal(selectForecastModel(values).name, "RECENT_3_MONTH_AVERAGE");
 });
 
 test("only the latest consecutive valid segment is selected", () => {

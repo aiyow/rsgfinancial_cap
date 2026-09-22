@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import pool from "./config/db.js";
+
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import unitRoutes from "./routes/unitRoutes.js";
@@ -15,29 +16,16 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 import prescriptiveRecommendationRoutes from "./routes/prescriptiveRecommendationRoutes.js";
 import soaTemplateRoutes from "./routes/soaTemplateRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import financialReportRoutes from "./routes/financialReportRoutes.js";
+import billingErrorRoutes from "./routes/billingErrorRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 dotenv.config({ path: new URL("./.env", import.meta.url) });
 
 const app = express();
 
-const allowedOrigins = (process.env.CLIENT_URL || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
-app.use(
-  cors({
-    origin(origin, callback) {
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-
-      callback(new Error("Origin is not allowed by CORS"));
-    },
-  })
-);
+app.use(cors());
 app.use(express.json());
 
 // Testing backend if running try entering http://localhost:5000/ in the browser or Postman
@@ -61,6 +49,9 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/prescriptive-recommendations", prescriptiveRecommendationRoutes);
 app.use("/api/soa-template", soaTemplateRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/reports", financialReportRoutes);
+app.use("/api/billing-errors", billingErrorRoutes);
 
 app.get("/api/health", async (req, res) => {
   try {

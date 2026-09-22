@@ -1,7 +1,8 @@
 import express from "express";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
-import { ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
+import { applyDueLatePenalties, billAppliedSql, billTotalSql, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
+import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
 
 const router = express.Router();
 
@@ -10,6 +11,8 @@ router.use(requireAuth, allowRoles("ADMIN", "COLLECTOR"));
 router.get("/overview", async (req, res, next) => {
   try {
     await ensurePaymentLedgerSchema(pool);
+    await applyDueLatePenalties(pool);
+    await regeneratePrescriptiveRecommendations(pool);
     const [summaryResult, trendResult, statusResult] = await Promise.all([
       pool.query(
         `WITH latest_period AS (
@@ -17,18 +20,22 @@ router.get("/overview", async (req, res, next) => {
            WHERE period_type = 'LIVE_BILLING' ORDER BY period_start DESC LIMIT 1
          ), bill_balances AS (
            SELECT b.id, b.billing_period_id, b.due_date_snapshot AS due_date,
-             COALESCE(SUM(c.quantity * c.rate_applied), 0) AS total,
-             COALESCE((SELECT SUM(pa.amount_applied) FROM payment_applications pa WHERE pa.unit_bill_id = b.id), 0) AS applied
-           FROM unit_bills b LEFT JOIN bill_charges c ON c.unit_bill_id = b.id
-           GROUP BY b.id
+             ${billTotalSql} AS total, ${billAppliedSql} AS applied
+           FROM unit_bills b
          )
          SELECT
            (SELECT period_start FROM latest_period) AS "latestPeriodStart",
            (SELECT status FROM latest_period) AS "latestPeriodStatus",
            COALESCE((SELECT SUM(total) FROM bill_balances WHERE billing_period_id = (SELECT id FROM latest_period)), 0) AS "currentBilled",
            COALESCE((SELECT SUM(applied) FROM bill_balances WHERE billing_period_id = (SELECT id FROM latest_period)), 0) AS "currentCollected",
+           (SELECT COUNT(*)::int FROM bill_balances WHERE billing_period_id = (SELECT id FROM latest_period)) AS "currentBills",
+           (SELECT COUNT(*)::int FROM bill_balances WHERE billing_period_id = (SELECT id FROM latest_period) AND total > 0 AND applied >= total) AS "currentPaidBills",
+           (SELECT COUNT(*)::int FROM bill_balances WHERE billing_period_id = (SELECT id FROM latest_period) AND applied > 0 AND applied < total) AS "currentPartialBills",
+           (SELECT COUNT(*)::int FROM bill_balances WHERE billing_period_id = (SELECT id FROM latest_period) AND applied <= 0) AS "currentUnpaidBills",
            COALESCE((SELECT SUM(GREATEST(total - applied, 0)) FROM bill_balances), 0) AS "outstandingBalance",
            (SELECT COUNT(*)::int FROM bill_balances WHERE due_date < CURRENT_DATE AND total > applied) AS "overdueBills",
+           COALESCE((SELECT SUM(GREATEST(total - applied, 0)) FROM bill_balances WHERE due_date < CURRENT_DATE AND total > applied), 0) AS "overdueAmount",
+           (SELECT COUNT(*)::int FROM units) AS "totalUnits",
            (SELECT COUNT(*)::int FROM units WHERE occupancy_status = 'OCCUPIED') AS "occupiedUnits",
            (SELECT COUNT(*)::int FROM units WHERE occupancy_status = 'VACANT') AS "vacantUnits",
            (SELECT COUNT(*)::int FROM payment_submissions WHERE review_status = 'PENDING') AS "pendingPayments",
@@ -41,11 +48,9 @@ router.get("/overview", async (req, res, next) => {
            WHERE period_type = 'LIVE_BILLING' ORDER BY period_start DESC LIMIT 6
          ), bill_balances AS (
            SELECT b.id, b.billing_period_id,
-             COALESCE(SUM(c.quantity * c.rate_applied), 0) AS billed,
-             COALESCE((SELECT SUM(pa.amount_applied) FROM payment_applications pa WHERE pa.unit_bill_id = b.id), 0) AS collected
-           FROM unit_bills b LEFT JOIN bill_charges c ON c.unit_bill_id = b.id
+             ${billTotalSql} AS billed, ${billAppliedSql} AS collected
+           FROM unit_bills b
            WHERE b.billing_period_id IN (SELECT id FROM recent_periods)
-           GROUP BY b.id
          ), bill_totals AS (
            SELECT billing_period_id, SUM(billed) AS billed, SUM(collected) AS collected
            FROM bill_balances
@@ -65,10 +70,8 @@ router.get("/overview", async (req, res, next) => {
       pool.query(
         `WITH bill_balances AS (
            SELECT b.id, b.due_date_snapshot AS due_date,
-             COALESCE(SUM(c.quantity * c.rate_applied), 0) AS total,
-             COALESCE((SELECT SUM(pa.amount_applied) FROM payment_applications pa WHERE pa.unit_bill_id = b.id), 0) AS applied
-           FROM unit_bills b LEFT JOIN bill_charges c ON c.unit_bill_id = b.id
-           GROUP BY b.id
+             ${billTotalSql} AS total, ${billAppliedSql} AS applied
+           FROM unit_bills b
          )
          SELECT CASE
            WHEN total > 0 AND applied >= total THEN 'Paid'

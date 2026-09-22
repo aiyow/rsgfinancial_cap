@@ -11,7 +11,7 @@ async function seedUsers() {
       role: "ADMIN",
     },
     {
-      fullName: "Billing Collector",
+      fullName: "Billing Associate",
       email: process.env.SEED_COLLECTOR_EMAIL,
       password: process.env.SEED_COLLECTOR_PASSWORD,
       role: "COLLECTOR",
@@ -52,8 +52,8 @@ async function seedUsers() {
       const passwordHash = await bcrypt.hash(user.password, 12);
 
       await pool.query(
-        `INSERT INTO users (full_name, email, password_hash, role)
-         VALUES ($1, $2, $3, $4)`,
+        `INSERT INTO users (full_name, email, password_hash, role, email_verified)
+         VALUES ($1, $2, $3, $4, TRUE)`,
         [
           user.fullName,
           user.email.toLowerCase(),

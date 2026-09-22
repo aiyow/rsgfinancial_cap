@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { allocateCredit, manualReference } from "../services/paymentLedger.js";
+import { allocateCredit, calculateLatePenalty, manualReference } from "../services/paymentLedger.js";
 
 test("allocates one payment across a bill and leaves advance balance", () => {
   const result = allocateCredit({
@@ -40,4 +40,10 @@ test("keeps bill balance when credit is insufficient", () => {
 test("generates traceable manual references", () => {
   assert.equal(manualReference("CASH", 12), "CASH-00000012");
   assert.equal(manualReference("BANK_TRANSFER", 12), "BANKTRANSFER-00000012");
+});
+
+test("applies a one-time percentage penalty only after the due date", () => {
+  assert.equal(calculateLatePenalty(1000, 5, true), 50);
+  assert.equal(calculateLatePenalty(1000, 5, false), 0);
+  assert.equal(calculateLatePenalty(1000, 0, true), 0);
 });

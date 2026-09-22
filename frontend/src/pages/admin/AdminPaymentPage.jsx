@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Download, RotateCcw, Share2, ZoomIn, ZoomOut } from 'lucide-react'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
+import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiFile, apiRequest } from '../../services/api'
 
@@ -37,6 +39,7 @@ export default function AdminPaymentPage() {
   const [payment, setPayment] = useState(null)
   const [form, setForm] = useState(null)
   const [receiptUrl, setReceiptUrl] = useState('')
+  const [receiptZoom, setReceiptZoom] = useState(1)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
   const urlRef = useRef('')
@@ -115,21 +118,66 @@ export default function AdminPaymentPage() {
     }
   }
 
+  function downloadReceipt() {
+    if (!receiptUrl) return
+    const link = document.createElement('a')
+    link.href = receiptUrl
+    link.download = `payment-receipt-${id}.${payment?.receiptMimeType === 'image/png' ? 'png' : 'jpg'}`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+  }
+
+  async function shareReceipt() {
+    if (!receiptUrl) return
+    try {
+      const blob = await fetch(receiptUrl).then((response) => response.blob())
+      const file = new File([blob], `payment-receipt-${id}.${payment?.receiptMimeType === 'image/png' ? 'png' : 'jpg'}`, { type: blob.type || payment?.receiptMimeType || 'image/jpeg' })
+      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
+        await navigator.share({ title: 'Resident payment receipt', text: `Payment receipt for Unit ${payment?.unitNumber || ''}`, files: [file] })
+        return
+      }
+      downloadReceipt()
+      setNotice({ error: '', message: 'Sharing is not supported in this browser, so the receipt was downloaded instead.' })
+    } catch (error) {
+      if (error?.name !== 'AbortError') setNotice({ error: 'The receipt could not be shared. Try downloading it instead.', message: '' })
+    }
+  }
+
   return (
     <DashboardLayout title="Payment verification" description="Compare uploaded receipts or review Admin-recorded payment details.">
       <div className="flex flex-wrap gap-3">
-        <Link to="/admin/payments" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Back to payments</Link>
-        {payment?.targetBillId && <Link to={`/admin/soa/bills/${payment.targetBillId}`} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Open target SOA</Link>}
+        <Link to="/admin/payments" className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:!text-white hover:shadow-md">Back to payments</Link>
+        {payment?.targetBillId && <Link to={`/admin/soa/bills/${payment.targetBillId}`} className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:!text-white hover:shadow-md">Open SOA & add invoice</Link>}
         {payment?.reviewStatus === 'REJECTED' && <button disabled={busy} onClick={removeRejectedPayment} className="rounded-lg border border-rose-300 px-4 py-2 text-sm font-bold text-rose-700 disabled:opacity-50">Delete rejected proof</button>}
       </div>
 
-      {(notice.error || notice.message) && <p className={`rounded-lg p-3 text-sm ${notice.error ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>{notice.error || notice.message}</p>}
+      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
       {!payment && !notice.error && <p className="text-sm text-slate-500">Loading payment...</p>}
 
       {payment && (
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <Panel title={`${payment.entryType === 'MANUAL' ? 'Manual payment' : 'Receipt'} for Unit ${payment.unitNumber}`} description={`Submitted by ${payment.submittedByName} on ${dateTime(payment.submittedAt)}.`}>
-            {receiptUrl && <img src={receiptUrl} alt="Uploaded payment receipt" className="w-full rounded-xl border border-slate-200 bg-slate-50 object-contain" />}
+            {receiptUrl && <div className="relative flex min-h-56 max-h-[440px] items-center justify-center overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <img src={receiptUrl} alt="Uploaded payment receipt" className="max-h-[410px] w-full object-contain" style={{ transform: `scale(${receiptZoom})`, transformOrigin: 'center center' }} />
+              <div className="absolute right-3 top-3 flex gap-2 rounded-lg border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur">
+                <button type="button" onClick={() => setReceiptZoom((value) => Math.max(0.75, Number((value - 0.25).toFixed(2))))} disabled={receiptZoom <= 0.75} aria-label="Zoom out receipt" title="Zoom out" className="grid size-9 place-items-center rounded-md text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">
+                  <ZoomOut size={18} aria-hidden="true" />
+                </button>
+                <button type="button" onClick={() => setReceiptZoom((value) => Math.min(2.5, Number((value + 0.25).toFixed(2))))} disabled={receiptZoom >= 2.5} aria-label="Zoom in receipt" title="Zoom in" className="grid size-9 place-items-center rounded-md text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">
+                  <ZoomIn size={18} aria-hidden="true" />
+                </button>
+                {receiptZoom !== 1 && <button type="button" onClick={() => setReceiptZoom(1)} aria-label="Reset receipt zoom" title="Reset zoom" className="grid size-9 place-items-center rounded-md text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700">
+                  <RotateCcw size={17} aria-hidden="true" />
+                </button>}
+                <button type="button" onClick={downloadReceipt} aria-label="Download receipt image" title="Download receipt image" className="grid size-9 place-items-center rounded-md text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700">
+                  <Download size={18} aria-hidden="true" />
+                </button>
+                <button type="button" onClick={shareReceipt} aria-label="Share receipt image" title="Share receipt image" className="grid size-9 place-items-center rounded-md text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700">
+                  <Share2 size={18} aria-hidden="true" />
+                </button>
+              </div>
+            </div>}
             {payment.entryType === 'MANUAL' && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">This payment was recorded by Admin and does not have an uploaded receipt image.</p>}
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
               <Fact label="Review status" value={payment.reviewStatus} />

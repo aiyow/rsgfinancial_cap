@@ -36,8 +36,8 @@ router.get("/", async (req, res, next) => {
           a.old_values AS "oldValues",
           a.new_values AS "newValues",
           a.actor_user_id AS "actorUserId",
-          COALESCE(usr.full_name, 'Deleted user') AS "actorName",
-          usr.role AS "actorRole"
+          COALESCE(usr.full_name, a.actor_name_snapshot, 'Deleted user') AS "actorName",
+          COALESCE(usr.role, a.actor_role_snapshot, 'DELETED') AS "actorRole"
         FROM audit_logs a
         LEFT JOIN users usr ON usr.id = a.actor_user_id
         ${auditWhere}

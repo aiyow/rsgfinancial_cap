@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff } from 'lucide-react'
+import BrandMark from '../components/BrandMark'
 import { apiRequest } from '../services/api'
 
 function fullName({ firstName, middleInitial, lastName }) {
@@ -9,7 +10,7 @@ function fullName({ firstName, middleInitial, lastName }) {
 
 export default function Register() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ firstName: '', middleInitial: '', lastName: '', email: '', password: '', confirmPassword: '' })
+  const [form, setForm] = useState({ firstName: '', middleInitial: '', lastName: '', email: '', password: '', confirmPassword: '', role: 'RESIDENT' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -28,19 +29,25 @@ export default function Register() {
     }
     setLoading(true)
     try {
-      await apiRequest('/api/auth/register', { method: 'POST', body: { email: form.email, password: form.password, fullName: fullName(form) } })
-      navigate('/login', { replace: true })
+      await apiRequest('/api/auth/register', { method: 'POST', body: { email: form.email, password: form.password, role: form.role, fullName: fullName(form) } })
+      navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}`, { replace: true })
     } catch (requestError) {
-      setError(requestError.message)
+      if (requestError.data?.code === 'EMAIL_DELIVERY_UNAVAILABLE') {
+        navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}&delivery=unavailable`, { replace: true })
+      } else {
+        setError(requestError.message)
+      }
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-slate-100 p-5">
-      <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-xl bg-indigo-600 text-white"><ShieldCheck size={23} strokeWidth={2.2} /></span><div><h1 className="font-black">RSG Condo</h1><p className="text-xs text-slate-500">Create an account</p></div></div>
+    <main className="auth-green-shell min-h-screen px-5 py-8 sm:px-8 sm:py-12">
+      <section className="auth-form-card mx-auto w-full max-w-lg rounded-2xl border border-white/70 bg-white p-6 shadow-xl sm:p-9">
+        <div className="flex items-center gap-4"><BrandMark size="lg" /><div><h1 className="font-black text-slate-900">RSG Condo</h1><p className="text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Financial platform</p></div></div>
+        <div className="mt-8"><p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Get started</p><h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Create your account</h2><p className="mt-2 text-sm leading-6 text-slate-500">Set up your access to the RSG Condo management platform.</p></div>
+        <p className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">Development only: all roles are available.</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
           <div className="grid gap-4 sm:grid-cols-2">
@@ -51,9 +58,10 @@ export default function Register() {
           <label className="block text-sm font-bold">Email<input required type="email" value={form.email} onChange={(event) => update('email', event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" /></label>
           <PasswordInput label="Password" visible={showPassword} onToggle={() => setShowPassword((current) => !current)} value={form.password} onChange={(event) => update('password', event.target.value)} />
           <PasswordInput label="Confirm password" visible={showConfirmation} onToggle={() => setShowConfirmation((current) => !current)} value={form.confirmPassword} onChange={(event) => update('confirmPassword', event.target.value)} />
-          <button disabled={loading} className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">{loading ? 'Creating...' : 'Create account'}</button>
+          <label className="block text-sm font-bold">Role<select value={form.role} onChange={(event) => update('role', event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"><option value="ADMIN">Admin</option><option value="COLLECTOR">Billing Associate</option><option value="RESIDENT">Resident</option></select></label>
+          <button disabled={loading} className="login-submit">{loading ? 'Creating...' : 'Create account'}<ArrowRight size={19} /></button>
         </form>
-        <p className="mt-5 text-center text-sm"><Link to="/login" className="font-bold text-indigo-600">Back to login</Link></p>
+        <p className="mt-6 text-center text-sm text-slate-500">Already have an account? <Link to="/login" className="font-bold text-[var(--primary)] hover:underline">Back to sign in</Link></p>
       </section>
     </main>
   )
