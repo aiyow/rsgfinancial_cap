@@ -100,7 +100,7 @@ export default function CollectorBillsPage() {
               <div className="flex flex-wrap gap-2 print-hidden">
                 {period.status === 'DRAFT' && <><Link to={`/collector/billing?periodId=${period.id}`} className={actionClass}>Edit draft</Link><button disabled={busyId === period.id} onClick={() => remove(period)} className={actionClass}>Delete batch</button></>}
                 {period.status === 'GENERATED' && <><Link to={`/collector/bills/batches/${period.id}`} className={actionClass}>View batch</Link><button disabled={busyId === period.id} onClick={() => reopen(period)} className={actionClass}>Reopen batch</button><button disabled={busyId === period.id} onClick={() => remove(period)} className={actionClass}>Delete batch</button><button disabled={busyId === period.id} onClick={() => forward(period)} className={actionClass}>Forward to Admin</button></>}
-                {period.status === 'FORWARDED' && <button disabled={busyId === period.id} onClick={() => remove(period)} className={deleteForwardedClass}>Delete forwarded batch</button>}
+                {period.status === 'FORWARDED' && <><Link to={`/collector/bills/batches/${period.id}`} className={actionClass}>View batch</Link><button disabled={busyId === period.id} onClick={() => remove(period)} className={deleteForwardedClass}>Delete forwarded batch</button></>}
               </div>
             </div>
           </section>

@@ -310,6 +310,65 @@ function FilterPopover({ label, onSelect, onToggle, open, options, value }) {
   )
 }
 
+function ResidentSearchPicker({ onChange, residents, value }) {
+  const selectedResident = residents.find((resident) => String(resident.id) === String(value))
+  const [searchTerm, setSearchTerm] = useState(selectedResident?.fullName || '')
+  const [open, setOpen] = useState(false)
+  const matchingResidents = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    return residents
+      .filter((resident) => !term || `${resident.fullName} ${resident.email || ''}`.toLowerCase().includes(term))
+      .sort((left, right) => left.fullName.localeCompare(right.fullName))
+      .slice(0, 10)
+  }, [residents, searchTerm])
+
+  useEffect(() => {
+    setSearchTerm(selectedResident?.fullName || '')
+  }, [selectedResident?.fullName, value])
+
+  function selectResident(resident) {
+    onChange(String(resident.id))
+    setSearchTerm(resident.fullName)
+    setOpen(false)
+  }
+
+  return <div className="mt-1.5">
+    <div className="relative">
+      <Search size={17} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" aria-hidden="true" />
+      <input
+        type="search"
+        value={searchTerm}
+        onChange={(event) => {
+          setSearchTerm(event.target.value)
+          setOpen(true)
+          if (value) onChange('')
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') setOpen(false)
+          if (event.key === 'Enter' && matchingResidents.length === 1) {
+            event.preventDefault()
+            selectResident(matchingResidents[0])
+          }
+        }}
+        placeholder="Search name or email"
+        autoComplete="off"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={open}
+        aria-controls="resident-search-results"
+        className="w-full rounded-lg border border-[var(--border)] bg-white py-2 pl-10 pr-3 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--active-bg)]"
+      />
+    </div>
+    {open && <div id="resident-search-results" role="listbox" className="relative z-20 mt-1 max-h-48 overflow-y-auto rounded-lg border border-[var(--border)] bg-white p-1 shadow-lg">
+      {matchingResidents.map((resident) => <button key={resident.id} type="button" role="option" aria-selected={String(resident.id) === String(value)} onMouseDown={(event) => event.preventDefault()} onClick={() => selectResident(resident)} className={`block w-full rounded-md px-3 py-2 text-left text-sm transition ${String(resident.id) === String(value) ? 'bg-[var(--active-bg)] text-[var(--primary)]' : 'text-[var(--ink)] hover:bg-[var(--app-bg)]'}`}><span className="block font-bold">{resident.fullName}</span><span className="block text-xs text-[var(--muted)]">{resident.email}</span></button>)}
+      {matchingResidents.length === 0 && <p className="px-3 py-2 text-sm text-[var(--muted)]">No active residents match that search.</p>}
+    </div>}
+    {selectedResident ? <p className="mt-1 text-xs font-semibold text-[var(--primary)]">Selected: {selectedResident.fullName}</p> : <p className="mt-1 text-xs text-[var(--muted)]">Choose a resident from the matching results.</p>}
+  </div>
+}
+
 function UnitModal({ assignments, assignmentBusy, assignmentForm, form, mode, residents, selectedUnit, onAssignmentChange, onClose, onCreateAssignment, onEndAssignment, onFormChange, onSave }) {
   const readOnly = mode === 'view'
   const editing = mode === 'edit'
@@ -354,7 +413,7 @@ function UnitModal({ assignments, assignmentBusy, assignmentForm, form, mode, re
               <div><h3 className="text-base font-black text-[var(--ink)]">Resident assignments</h3><p className="mt-1 text-sm text-[var(--muted)]">Add or end the active residents assigned to this unit.</p></div>
               <AssignmentSummary assignments={assignments} onEnd={onEndAssignment} />
               <form onSubmit={onCreateAssignment} className="mt-4 grid gap-3 rounded-xl bg-[var(--app-bg)] p-4 sm:grid-cols-2">
-                <Field label="Resident"><select required value={assignmentForm.userId} onChange={(event) => onAssignmentChange('userId', event.target.value)} className={inputClass}><option value="">Select resident</option>{residents.map((resident) => <option key={resident.id} value={resident.id}>{resident.fullName}</option>)}</select></Field>
+                <Field label="Resident"><ResidentSearchPicker residents={residents} value={assignmentForm.userId} onChange={(value) => onAssignmentChange('userId', value)} /></Field>
                 <Field label="Relationship"><select value={assignmentForm.relationshipType} onChange={(event) => onAssignmentChange('relationshipType', event.target.value)} className={inputClass}><option value="OWNER">Owner</option><option value="TENANT">Tenant</option></select></Field>
                 <label className="flex items-center gap-2 text-sm font-bold text-[var(--ink)] sm:col-span-2"><input type="checkbox" checked={assignmentForm.isPrimaryPayer} onChange={(event) => onAssignmentChange('isPrimaryPayer', event.target.checked)} /> Primary payer for this unit</label>
                 <div className="sm:col-span-2"><button disabled={assignmentBusy || !assignmentForm.userId} className="rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white disabled:bg-slate-300">{assignmentBusy ? 'Assigning...' : 'Add resident assignment'}</button></div>

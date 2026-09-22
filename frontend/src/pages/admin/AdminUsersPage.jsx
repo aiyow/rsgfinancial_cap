@@ -116,7 +116,7 @@ export default function AdminUsersPage() {
     }
     const saved = await runAction(
       () => apiRequest(editingId ? `/api/users/${editingId}` : '/api/users', { method: editingId ? 'PATCH' : 'POST', token, body }),
-      editingId ? 'User updated.' : 'User created.',
+      editingId ? 'User updated.' : 'User created. They can sign in immediately.',
     )
     if (saved) closeModal()
   }

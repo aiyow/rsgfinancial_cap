@@ -55,7 +55,7 @@ const navigationByRole = {
       { label: 'Financial Reports', to: '/collector/reports', icon: FolderKanban },
     ],
     manage: [
-      { label: 'Unit Management', to: '/collector/billing', icon: Calculator },
+      { label: 'Create Billing', to: '/collector/billing', icon: Calculator },
       { label: 'Upload Water History', to: '/collector/history-import', icon: Upload },
       { label: 'Billing Errors', to: '/collector/billing-errors', icon: CircleAlert },
     ],

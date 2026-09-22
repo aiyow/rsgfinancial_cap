@@ -9,7 +9,8 @@ import { writeAuditLog } from "../services/auditLog.js";
 const router = express.Router();
 const roleSchema = z.enum(["ADMIN", "COLLECTOR", "RESIDENT"]);
 const userColumns = `id, full_name AS "fullName", email, role,
-  is_active AS "isActive", created_at AS "createdAt", updated_at AS "updatedAt"`;
+  is_active AS "isActive", email_verified AS "emailVerified",
+  created_at AS "createdAt", updated_at AS "updatedAt"`;
 
 const createUserSchema = z.object({
   fullName: z.string().trim().min(1).max(150),
@@ -61,8 +62,8 @@ router.post("/", validateBody(createUserSchema), async (req, res, next) => {
     client = await pool.connect();
     await client.query("BEGIN");
     const result = await client.query(
-      `INSERT INTO users (full_name, email, password_hash, role, is_active)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO users (full_name, email, password_hash, role, is_active, email_verified)
+       VALUES ($1, $2, $3, $4, $5, TRUE)
        RETURNING ${userColumns}`,
       [fullName, email, passwordHash, role, isActive]
     );
