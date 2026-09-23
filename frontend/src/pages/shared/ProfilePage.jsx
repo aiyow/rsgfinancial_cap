@@ -9,7 +9,7 @@ export default function ProfilePage() {
   return (
     <DashboardLayout title="Profile" description="View your account information and role access.">
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <Panel title="Account information" description="Your current RSG Condo account details.">
+        <Panel title="Account information" description="Your current The ResiDens account details.">
           <dl className="divide-y divide-[var(--border)]">
             <div className="flex items-center justify-between gap-4 py-3">
               <dt className="text-sm text-[var(--muted)]">Full name</dt>

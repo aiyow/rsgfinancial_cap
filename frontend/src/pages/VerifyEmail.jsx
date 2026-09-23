@@ -67,7 +67,7 @@ export default function VerifyEmail() {
 
   return (
     <main className="verify-overlay-shell relative grid min-h-screen place-items-center overflow-hidden p-5">
-      <div className="verify-background-card" aria-hidden="true"><div className="flex items-center gap-4"><BrandMark size="lg" /><div><p className="font-black text-slate-900">RSG Condo</p><p className="text-xs uppercase tracking-[0.15em] text-slate-500">Financial platform</p></div></div><div className="mt-10 h-3 w-3/4 rounded bg-slate-200" /><div className="mt-4 h-3 w-1/2 rounded bg-slate-200" /></div>
+      <div className="verify-background-card" aria-hidden="true"><div className="flex items-center gap-4"><BrandMark size="lg" /><div><p className="font-black text-slate-900">The ResiDens</p><p className="text-xs uppercase tracking-[0.15em] text-slate-500">Financial platform</p></div></div><div className="mt-10 h-3 w-3/4 rounded bg-slate-200" /><div className="mt-4 h-3 w-1/2 rounded bg-slate-200" /></div>
       <div className="verify-backdrop" aria-hidden="true" />
       <section className="verify-modal relative z-10 w-full max-w-md rounded-2xl border border-white/80 bg-white p-7 text-center shadow-2xl sm:p-9">
         <div className="flex justify-center"><BrandMark size="lg" /></div>

@@ -149,7 +149,7 @@ export default function ResidentDashboard() {
     <DashboardLayout title="Resident dashboard" description="View published SOAs, payment status, water analytics, and personalized recommendations.">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
-      <section className="resident-welcome"><div><p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Resident portal</p><h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Welcome back, {displayName(user.fullName)}</h1><p className="mt-2 text-sm text-slate-500">Unit {selectedUnit?.unitNumber || '—'} <span className="mx-1 text-slate-300">·</span> RSG Residences</p></div><div className="resident-welcome-mark"><Activity size={22} /></div></section>
+      <section className="resident-welcome"><div><p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Resident portal</p><h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Welcome back, {displayName(user.fullName)}</h1><p className="mt-2 text-sm text-slate-500">Unit {selectedUnit?.unitNumber || '—'} <span className="mx-1 text-slate-300">·</span> The ResiDens</p></div><div className="resident-welcome-mark"><Activity size={22} /></div></section>
 
       <div className="grid gap-4 md:grid-cols-3">
         <DashboardCard icon={FileCheck2} label="Published SOAs" value={summary.publishedSoas} accent="blue" />

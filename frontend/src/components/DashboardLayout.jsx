@@ -199,7 +199,7 @@ export default function DashboardLayout({ title, description, children }) {
     ADMIN: 'Admin Portal',
     COLLECTOR: 'Billing Associate Portal',
     RESIDENT: 'Resident Portal',
-  }[user.role] || 'RSG Condo'
+  }[user.role] || 'The ResiDens'
   const formattedName = displayName(user.fullName)
   const initials = user.fullName.split(' ').map((name) => name[0]).join('').slice(0, 2).toUpperCase()
 

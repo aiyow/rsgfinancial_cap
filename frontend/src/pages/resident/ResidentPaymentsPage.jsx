@@ -70,7 +70,7 @@ export default function ResidentPaymentsPage() {
             <article key={payment.id} className="payment-record-card">
               <div className="flex flex-col gap-5 border-b border-[#d9e7dd] pb-5 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--primary)]">RSG Condo</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--primary)]">The ResiDens</p>
                   <h2 className="mt-2 flex items-center gap-2 text-xl font-black text-slate-950"><CreditCard size={20} className="text-[var(--primary)]" />Payment submission</h2>
                   <p className="mt-2 text-sm text-slate-500">Unit {payment.unitNumber} <span className="mx-1 text-slate-300">·</span> Submitted {new Date(payment.submittedAt).toLocaleString()}</p>
                 </div>

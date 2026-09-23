@@ -45,8 +45,8 @@ export default function Register() {
   return (
     <main className="auth-green-shell min-h-screen px-5 py-8 sm:px-8 sm:py-12">
       <section className="auth-form-card mx-auto w-full max-w-lg rounded-2xl border border-white/70 bg-white p-6 shadow-xl sm:p-9">
-        <div className="flex items-center gap-4"><BrandMark size="lg" /><div><h1 className="font-black text-slate-900">RSG Condo</h1><p className="text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Financial platform</p></div></div>
-        <div className="mt-8"><p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Get started</p><h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Create your account</h2><p className="mt-2 text-sm leading-6 text-slate-500">Set up your access to the RSG Condo management platform.</p></div>
+        <div className="flex items-center gap-4"><BrandMark size="lg" /><div><h1 className="font-black text-slate-900">The ResiDens</h1><p className="text-xs font-medium uppercase tracking-[0.15em] text-slate-500">Financial platform</p></div></div>
+        <div className="mt-8"><p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Get started</p><h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Create your account</h2><p className="mt-2 text-sm leading-6 text-slate-500">Set up your access to The ResiDens management platform.</p></div>
         <p className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">Development only: all roles are available.</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}

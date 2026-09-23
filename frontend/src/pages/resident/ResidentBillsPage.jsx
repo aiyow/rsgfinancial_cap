@@ -44,7 +44,7 @@ export default function ResidentBillsPage() {
             <article key={bill.id} className="resident-soa-card">
               <div className="flex flex-col gap-5 border-b border-[#d9e7dd] pb-5 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--primary)]">RSG Condo</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--primary)]">The ResiDens</p>
                   <h2 className="mt-2 text-xl font-black text-slate-950">Statement of Account</h2>
                 </div>
                 <div className="text-left sm:text-right">
