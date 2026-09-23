@@ -11,20 +11,33 @@ const { Pool, types } = pg;
 // Manila's UTC offset cannot shift May 1 back to April 30 in API responses.
 types.setTypeParser(1082, (value) => value);
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: Number(process.env.DB_PORT),
-});
+const pool = process.env.DATABASE_URL
+  ? new Pool({
+      connectionString: process.env.DATABASE_URL,
+      // Neon requires TLS. Render sets DB_SSL=true; keeping it opt-in
+      // preserves the existing local PostgreSQL workflow.
+      ...(process.env.DB_SSL === "true"
+        ? { ssl: { rejectUnauthorized: false } }
+        : {}),
+    })
+  : new Pool({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      port: Number(process.env.DB_PORT),
+    });
 
 pool.on("connect", () => {
-  console.log("Connected to the database");
+  console.log(
+    process.env.DATABASE_URL
+      ? "Connected to Neon PostgreSQL"
+      : "Connected to local PostgreSQL"
+  );
 });
 
 pool.on("error", (err) => {
-  console.error("Unexpected error on idle PostgreSQL client", err);
+  console.error("Unexpected PostgreSQL error:", err);
 });
 
 export default pool;
