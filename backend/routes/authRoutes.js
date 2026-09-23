@@ -74,10 +74,10 @@ router.post("/register", validateBody(registerSchema), async (req, res, next) =>
     try {
       await deliverVerificationEmail({ user, token });
     } catch (error) {
-      if (error?.code === "EMAIL_NOT_CONFIGURED") {
+      if (["EMAIL_NOT_CONFIGURED", "EMAIL_DELIVERY_FAILED"].includes(error?.code)) {
         return res.status(503).json({
           code: "EMAIL_DELIVERY_UNAVAILABLE",
-          message: "Account created, but email delivery is not configured. Configure SMTP, then request a new verification email from the sign-in page.",
+          message: "Account created, but the verification email could not be delivered. Check the email provider configuration, then request a new verification email from the sign-in page.",
           email: user.email,
         });
       }
@@ -201,8 +201,8 @@ router.post("/resend-verification", validateBody(resendVerificationSchema), asyn
          WHERE id = $1 AND email_verification_token_hash = $2`,
         [user.id, tokenHash],
       );
-      if (error?.code === "EMAIL_NOT_CONFIGURED") {
-        return res.status(503).json({ message: "Email delivery is not configured. Ask an administrator to configure SMTP first." });
+      if (["EMAIL_NOT_CONFIGURED", "EMAIL_DELIVERY_FAILED"].includes(error?.code)) {
+        return res.status(503).json({ message: "The verification email could not be delivered. Check the email provider configuration and try again." });
       }
       return next(error);
     }
