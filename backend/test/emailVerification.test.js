@@ -34,6 +34,25 @@ test("verification email service uses the configured SMTP transport", async () =
   assert.match(calls.mail[0].html, /verify-email\?token=test-token/);
 });
 
+test("verification email service uses Resend when its API key is configured", async () => {
+  const calls = { apiKeys: [], messages: [] };
+  const service = createEmailVerificationService({
+    environment: {
+      RESEND_API_KEY: "re_test_key", RESEND_FROM: "Condo <billing@example.com>",
+      CLIENT_URL: "https://condo.example",
+    },
+    createResend(apiKey) {
+      calls.apiKeys.push(apiKey);
+      return { emails: { async send(message) { calls.messages.push(message); return { data: { id: "email_123" }, error: null }; } } };
+    },
+  });
+
+  await service.sendVerificationEmail({ fullName: "Ava", email: "ava@example.com", token: "test-token" });
+  assert.deepEqual(calls.apiKeys, ["re_test_key"]);
+  assert.equal(calls.messages[0].from, "Condo <billing@example.com>");
+  assert.equal(calls.messages[0].to, "ava@example.com");
+});
+
 test("tokens are stored as stable SHA-256 hashes and expire in 24 hours", () => {
   assert.equal(hashVerificationToken("test-token").length, 64);
   const now = new Date("2026-08-28T00:00:00.000Z");
