@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
   role VARCHAR(20) NOT NULL DEFAULT 'RESIDENT'
     CHECK (role IN ('ADMIN', 'COLLECTOR', 'RESIDENT')),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  approval_status VARCHAR(20) NOT NULL DEFAULT 'APPROVED'
+    CHECK (approval_status IN ('PENDING', 'APPROVED')),
   email_verified BOOLEAN NOT NULL DEFAULT FALSE,
   email_verification_token_hash VARCHAR(64) NULL,
   email_verification_expires_at TIMESTAMPTZ NULL,

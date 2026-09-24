@@ -9,7 +9,7 @@ import { writeAuditLog } from "../services/auditLog.js";
 const router = express.Router();
 const roleSchema = z.enum(["ADMIN", "COLLECTOR", "RESIDENT"]);
 const userColumns = `id, full_name AS "fullName", email, role,
-  is_active AS "isActive", email_verified AS "emailVerified",
+  is_active AS "isActive", approval_status AS "approvalStatus", email_verified AS "emailVerified",
   created_at AS "createdAt", updated_at AS "updatedAt"`;
 
 const createUserSchema = z.object({
@@ -26,6 +26,7 @@ const updateUserSchema = z.object({
   password: z.string().min(8).max(72).optional(),
   role: roleSchema.optional(),
   isActive: z.boolean().optional(),
+  approvalStatus: z.enum(["PENDING", "APPROVED"]).optional(),
 }).strict().refine((body) => Object.keys(body).length > 0, {
   message: "At least one field must be provided.",
 });
@@ -62,8 +63,8 @@ router.post("/", validateBody(createUserSchema), async (req, res, next) => {
     client = await pool.connect();
     await client.query("BEGIN");
     const result = await client.query(
-      `INSERT INTO users (full_name, email, password_hash, role, is_active, email_verified)
-       VALUES ($1, $2, $3, $4, $5, TRUE)
+      `INSERT INTO users (full_name, email, password_hash, role, is_active, approval_status, email_verified)
+       VALUES ($1, $2, $3, $4, $5, 'APPROVED', TRUE)
        RETURNING ${userColumns}`,
       [fullName, email, passwordHash, role, isActive]
     );
@@ -125,6 +126,7 @@ router.patch("/:id", requireId, validateBody(updateUserSchema), async (req, res,
       email: "email",
       role: "role",
       isActive: "is_active",
+      approvalStatus: "approval_status",
     };
 
     for (const [field, column] of Object.entries(columnMap)) {

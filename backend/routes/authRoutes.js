@@ -5,12 +5,7 @@ import { z } from "zod";
 import pool from "../config/db.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { validateBody } from "../middleware/validate.js";
-import {
-  createVerificationToken,
-  hashVerificationToken,
-  sendVerificationEmail,
-  verificationExpiryDate,
-} from "../services/emailVerification.js";
+import { createUserNotifications } from "../services/notifications.js";
 
 const router = express.Router();
 const roleSchema = z.enum(["ADMIN", "COLLECTOR", "RESIDENT"]);
@@ -27,69 +22,52 @@ const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
   password: z.string().min(1).max(72),
 }).strict();
-const resendVerificationSchema = z.object({
-  email: z.string().trim().toLowerCase().email().max(255),
-}).strict();
-const RESEND_COOLDOWN_MS = 15 * 60 * 1000;
-
 const userColumns = `
   id,
   full_name AS "fullName",
   email,
   role,
   is_active AS "isActive",
+  approval_status AS "approvalStatus",
   email_verified AS "emailVerified",
   created_at AS "createdAt",
   updated_at AS "updatedAt"`;
 
-function tokenFromQuery(value) {
-  return typeof value === "string" && /^[A-Za-z0-9_-]{40,100}$/.test(value) ? value : null;
-}
-
-async function deliverVerificationEmail({ user, token }) {
-  await sendVerificationEmail({ fullName: user.fullName, email: user.email, token });
-  await pool.query(
-    `UPDATE users SET email_verification_last_sent_at = NOW()
-     WHERE id = $1 AND email_verification_token_hash = $2`,
-    [user.id, hashVerificationToken(token)],
-  );
-}
-
-// Development helper: public registration is intentionally enabled for all roles.
 router.post("/register", validateBody(registerSchema), async (req, res, next) => {
+  let client;
   try {
     const { fullName, email, password, role } = req.validatedBody;
     const passwordHash = await bcrypt.hash(password, 12);
-    const token = createVerificationToken();
-    const result = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const result = await client.query(
       `INSERT INTO users (
-        full_name, email, password_hash, role, email_verified,
-        email_verification_token_hash, email_verification_expires_at
-       ) VALUES ($1, $2, $3, $4, FALSE, $5, $6)
+        full_name, email, password_hash, role, approval_status, email_verified
+       ) VALUES ($1, $2, $3, $4, 'PENDING', TRUE)
        RETURNING ${userColumns}`,
-      [fullName, email, passwordHash, role, hashVerificationToken(token), verificationExpiryDate()]
+      [fullName, email, passwordHash, role]
     );
     const user = result.rows[0];
-
-    try {
-      await deliverVerificationEmail({ user, token });
-    } catch (error) {
-      if (["EMAIL_NOT_CONFIGURED", "EMAIL_DELIVERY_FAILED"].includes(error?.code)) {
-        return res.status(503).json({
-          code: "EMAIL_DELIVERY_UNAVAILABLE",
-          message: "Account created, but the verification email could not be delivered. Check the email provider configuration, then request a new verification email from the sign-in page.",
-          email: user.email,
-        });
-      }
-      return next(error);
-    }
+    const admins = await client.query("SELECT id FROM users WHERE role = 'ADMIN' AND is_active = TRUE");
+    await createUserNotifications(client, admins.rows.map((admin) => ({
+      recipientUserId: admin.id,
+      type: "ACCOUNT_APPROVAL",
+      title: "New account awaiting approval",
+      message: `${user.fullName} (${user.email}) requested a ${user.role.toLowerCase()} account.`,
+      href: "/admin/users",
+      dedupeKey: `account-approval:${user.id}`,
+    })));
+    await client.query("COMMIT");
 
     return res.status(201).json({
-      message: "Account created. Check your email to verify it before signing in.",
+      message: "Account created. An administrator must approve it before you can sign in.",
       user,
     });
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
+  } finally {
+    client?.release();
   }
 });
 
@@ -115,10 +93,10 @@ router.post("/login", validateBody(loginSchema), async (req, res, next) => {
       return res.status(403).json({ message: "This account has been deactivated." });
     }
 
-    if (!user.emailVerified) {
+    if (user.approvalStatus !== "APPROVED") {
       return res.status(403).json({
-        code: "EMAIL_VERIFICATION_REQUIRED",
-        message: "Verify your email address before signing in.",
+        code: "ACCOUNT_APPROVAL_REQUIRED",
+        message: "Your account is waiting for administrator approval.",
         email: user.email,
       });
     }
@@ -134,83 +112,6 @@ router.post("/login", validateBody(loginSchema), async (req, res, next) => {
   } catch (error) {
     return next(error);
   }
-});
-
-router.get("/verify-email", async (req, res, next) => {
-  const token = tokenFromQuery(req.query.token);
-  if (!token) return res.status(400).json({ message: "This verification link is invalid or incomplete." });
-
-  try {
-    const result = await pool.query(
-      `UPDATE users
-       SET email_verified = TRUE,
-           email_verification_token_hash = NULL,
-           email_verification_expires_at = NULL
-       WHERE email_verified = FALSE
-         AND email_verification_token_hash = $1
-         AND email_verification_expires_at > NOW()
-       RETURNING id`,
-      [hashVerificationToken(token)],
-    );
-    if (!result.rows[0]) return res.status(400).json({ message: "This verification link is invalid, expired, or has already been used." });
-    return res.json({ message: "Your email has been verified. You can now sign in." });
-  } catch (error) { return next(error); }
-});
-
-router.post("/resend-verification", validateBody(resendVerificationSchema), async (req, res, next) => {
-  let client;
-  try {
-    client = await pool.connect();
-    await client.query("BEGIN");
-    const result = await client.query(
-      `SELECT id, full_name AS "fullName", email,
-        email_verified AS "emailVerified", email_verification_last_sent_at AS "lastSentAt"
-       FROM users WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
-      [req.validatedBody.email],
-    );
-    const user = result.rows[0];
-    if (!user || user.emailVerified) {
-      await client.query("COMMIT");
-      return res.json({ message: "If this account needs verification, a new email will be sent shortly." });
-    }
-
-    const elapsed = user.lastSentAt ? Date.now() - new Date(user.lastSentAt).getTime() : Infinity;
-    if (elapsed < RESEND_COOLDOWN_MS) {
-      await client.query("ROLLBACK");
-      const retryAfterSeconds = Math.ceil((RESEND_COOLDOWN_MS - elapsed) / 1000);
-      return res.status(429).json({ message: "Please wait before requesting another verification email.", retryAfterSeconds });
-    }
-
-    const token = createVerificationToken();
-    const tokenHash = hashVerificationToken(token);
-    await client.query(
-      `UPDATE users
-       SET email_verification_token_hash = $2,
-           email_verification_expires_at = $3,
-           email_verification_last_sent_at = NOW()
-       WHERE id = $1`,
-      [user.id, tokenHash, verificationExpiryDate()],
-    );
-    await client.query("COMMIT");
-
-    try {
-      await sendVerificationEmail({ fullName: user.fullName, email: user.email, token });
-    } catch (error) {
-      await pool.query(
-        `UPDATE users SET email_verification_last_sent_at = NULL
-         WHERE id = $1 AND email_verification_token_hash = $2`,
-        [user.id, tokenHash],
-      );
-      if (["EMAIL_NOT_CONFIGURED", "EMAIL_DELIVERY_FAILED"].includes(error?.code)) {
-        return res.status(503).json({ message: "The verification email could not be delivered. Check the email provider configuration and try again." });
-      }
-      return next(error);
-    }
-    return res.json({ message: "If this account needs verification, a new email will be sent shortly." });
-  } catch (error) {
-    if (client) await client.query("ROLLBACK").catch(() => {});
-    return next(error);
-  } finally { client?.release(); }
 });
 
 router.get("/me", requireAuth, async (req, res, next) => {

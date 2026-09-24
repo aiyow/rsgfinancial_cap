@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
 import { apiRequest } from '../services/api'
 
@@ -30,13 +30,9 @@ export default function Register() {
     setLoading(true)
     try {
       await apiRequest('/api/auth/register', { method: 'POST', body: { email: form.email, password: form.password, role: form.role, fullName: fullName(form) } })
-      navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}`, { replace: true })
+      navigate(`/pending-approval?email=${encodeURIComponent(form.email.trim())}`, { replace: true })
     } catch (requestError) {
-      if (requestError.data?.code === 'EMAIL_DELIVERY_UNAVAILABLE') {
-        navigate(`/verify-email?email=${encodeURIComponent(form.email.trim())}&delivery=unavailable`, { replace: true })
-      } else {
-        setError(requestError.message)
-      }
+      setError(requestError.message)
     } finally {
       setLoading(false)
     }
@@ -59,7 +55,7 @@ export default function Register() {
           <PasswordInput label="Password" visible={showPassword} onToggle={() => setShowPassword((current) => !current)} value={form.password} onChange={(event) => update('password', event.target.value)} />
           <PasswordInput label="Confirm password" visible={showConfirmation} onToggle={() => setShowConfirmation((current) => !current)} value={form.confirmPassword} onChange={(event) => update('confirmPassword', event.target.value)} />
           <label className="block text-sm font-bold">Role<select value={form.role} onChange={(event) => update('role', event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"><option value="ADMIN">Admin</option><option value="COLLECTOR">Billing Associate</option><option value="RESIDENT">Resident</option></select></label>
-          <button disabled={loading} className="login-submit">{loading ? 'Creating...' : 'Create account'}<ArrowRight size={19} /></button>
+          <button disabled={loading} aria-busy={loading} className="login-submit">{loading && <span className="login-spinner" aria-hidden="true" />}{loading ? 'Creating...' : 'Create account'}</button>
         </form>
         <p className="mt-6 text-center text-sm text-slate-500">Already have an account? <Link to="/login" className="font-bold text-[var(--primary)] hover:underline">Back to sign in</Link></p>
       </section>

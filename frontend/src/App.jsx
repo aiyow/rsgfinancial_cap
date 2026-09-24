@@ -5,6 +5,7 @@ import useAuth from './hooks/useAuth'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import VerifyEmail from './pages/VerifyEmail'
+import PendingApproval from './pages/PendingApproval'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUnitsPage from './pages/admin/AdminUnitsPage'
 import AdminUnitsViewPage from './pages/admin/AdminUnitsViewPage'
@@ -48,6 +49,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/pending-approval" element={<PendingApproval />} />
       <Route path="/profile" element={<ProtectedRoute allowedRoles={authenticatedRoles}><ProfilePage /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute allowedRoles={authenticatedRoles}><SettingsPage /></ProtectedRoute>} />
 
