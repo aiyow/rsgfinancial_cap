@@ -36,11 +36,11 @@ export default function CollectorBillPage() {
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
-  const [references, setReferences] = useState({ officialReceiptNumber: '', invoiceNumber: '', paymentNote: '' })
+  const [references, setReferences] = useState({ invoiceNumber: '', paymentNote: '' })
 
   useEffect(() => {
     apiRequest(`/api/bills/${id}`, { token })
-      .then((data) => { setBill(data.bill); setForm(formFromBill(data.bill)); setReferences({ officialReceiptNumber: data.bill.officialReceiptNumber || '', invoiceNumber: data.bill.invoiceNumber || '', paymentNote: data.bill.paymentNote || '' }) })
+      .then((data) => { setBill(data.bill); setForm(formFromBill(data.bill)); setReferences({ invoiceNumber: data.bill.invoiceNumber || '', paymentNote: data.bill.paymentNote || '' }) })
       .catch((error) => setNotice({ error: error.message, message: '' }))
   }, [id, token])
 
@@ -79,7 +79,7 @@ export default function CollectorBillPage() {
       setBill(data.bill)
       setForm(formFromBill(data.bill))
       setEditing(false)
-      setNotice({ error: '', message: 'Payment references saved. The official receipt, invoice number, and payment note are now up to date.' })
+      setNotice({ error: '', message: 'Invoice details and payment note are now up to date.' })
     } catch (error) {
       setNotice({ error: error.message, message: '' })
     } finally { setBusy(false) }
@@ -90,9 +90,9 @@ export default function CollectorBillPage() {
     setBusy(true)
     setNotice({ error: '', message: '' })
     try {
-      const data = await apiRequest(`/api/bills/${id}/payment-references`, { method: 'PATCH', token, body: { officialReceiptNumber: references.officialReceiptNumber || null, invoiceNumber: references.invoiceNumber || null, paymentNote: references.paymentNote || null } })
+      const data = await apiRequest(`/api/bills/${id}/payment-references`, { method: 'PATCH', token, body: { invoiceNumber: references.invoiceNumber || null, paymentNote: references.paymentNote || null } })
       setBill(data.bill)
-      setReferences({ officialReceiptNumber: data.bill.officialReceiptNumber || '', invoiceNumber: data.bill.invoiceNumber || '', paymentNote: data.bill.paymentNote || '' })
+      setReferences({ invoiceNumber: data.bill.invoiceNumber || '', paymentNote: data.bill.paymentNote || '' })
       setNotice({ error: '', message: data.message })
     } catch (error) { setNotice({ error: error.message, message: '' }) } finally { setBusy(false) }
   }
@@ -101,7 +101,7 @@ export default function CollectorBillPage() {
   const billingErrorReportId = Number(new URLSearchParams(location.search).get('reportId'))
   const hasBillingErrorContext = openedFromBillingErrors && Number.isSafeInteger(billingErrorReportId) && billingErrorReportId > 0
   const correctionBlockedReason = bill && Number(bill.approvedAmount || 0) > 0
-    ? 'This SOA has an approved payment, so billing amounts are protected. You can still add its Official Receipt, invoice number, or payment note below.'
+    ? 'This SOA has an approved payment, so billing amounts are protected. You can still add its invoice number or payment note below.'
     : bill?.hasPendingPayment
       ? 'This SOA has a payment awaiting review, so billing amounts are temporarily protected until the payment is reviewed.'
       : ''
@@ -121,7 +121,7 @@ export default function CollectorBillPage() {
           <button disabled={busy} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white disabled:bg-slate-300">Save corrected SOA</button>
         </form>
       </Panel>}
-      {bill && Number(bill.approvedAmount || 0) > 0 && <Panel title="Official Receipt / invoice details" description="Payment references remain editable after payment approval; billing amounts remain protected."><form onSubmit={saveReferences} className="grid gap-4 md:grid-cols-2"><Field label="Official Receipt number"><input value={references.officialReceiptNumber} onChange={(event) => setReferences((current) => ({ ...current, officialReceiptNumber: event.target.value }))} className={inputClass} /></Field><Field label="Invoice number"><input value={references.invoiceNumber} onChange={(event) => setReferences((current) => ({ ...current, invoiceNumber: event.target.value }))} className={inputClass} /></Field><div className="md:col-span-2"><Field label="Payment note"><textarea value={references.paymentNote} onChange={(event) => setReferences((current) => ({ ...current, paymentNote: event.target.value }))} className={`${inputClass} min-h-20`} /></Field></div><button disabled={busy} className="w-fit rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Save payment references</button></form></Panel>}
+      {bill && Number(bill.approvedAmount || 0) > 0 && <Panel title="Invoice details" description="Invoice details remain editable after payment approval; billing amounts remain protected."><form onSubmit={saveReferences} className="grid gap-4 md:grid-cols-2"><Field label="Invoice number"><input value={references.invoiceNumber} onChange={(event) => setReferences((current) => ({ ...current, invoiceNumber: event.target.value }))} className={inputClass} /></Field><div className="md:col-span-2"><Field label="Payment note"><textarea value={references.paymentNote} onChange={(event) => setReferences((current) => ({ ...current, paymentNote: event.target.value }))} className={`${inputClass} min-h-20`} /></Field></div><button disabled={busy} className="w-fit rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Save invoice details</button></form></Panel>}
       {!bill && !notice.error && <p className="text-sm text-slate-500">Loading statement...</p>}
       {bill && <SoaDocument bill={bill} />}
     </DashboardLayout>

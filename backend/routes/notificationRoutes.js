@@ -11,22 +11,30 @@ router.get("/", async (req, res, next) => {
   try {
     const requestedLimit = Number(req.query.limit || 20);
     const limit = Number.isSafeInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 20;
-    const [notifications, unread] = await Promise.all([
+    const requestedOffset = Number(req.query.offset || 0);
+    const offset = Number.isSafeInteger(requestedOffset) ? Math.max(requestedOffset, 0) : 0;
+    const unreadOnly = req.query.status === "unread";
+    const statusClause = unreadOnly ? " AND read_at IS NULL" : "";
+    const [notifications, unread, total] = await Promise.all([
       pool.query(
         `SELECT id, notification_type AS "type", title, message, href,
           read_at AS "readAt", created_at AS "createdAt"
          FROM user_notifications
-         WHERE recipient_user_id = $1
+         WHERE recipient_user_id = $1${statusClause}
          ORDER BY created_at DESC, id DESC
-         LIMIT $2`,
-        [req.user.id, limit],
+         LIMIT $2 OFFSET $3`,
+        [req.user.id, limit, offset],
       ),
       pool.query(
         "SELECT COUNT(*)::int AS count FROM user_notifications WHERE recipient_user_id = $1 AND read_at IS NULL",
         [req.user.id],
       ),
+      pool.query(
+        `SELECT COUNT(*)::int AS count FROM user_notifications WHERE recipient_user_id = $1${statusClause}`,
+        [req.user.id],
+      ),
     ]);
-    return res.json({ notifications: notifications.rows, unreadCount: unread.rows[0].count });
+    return res.json({ notifications: notifications.rows, unreadCount: unread.rows[0].count, totalCount: total.rows[0].count });
   } catch (error) { return next(error); }
 });
 

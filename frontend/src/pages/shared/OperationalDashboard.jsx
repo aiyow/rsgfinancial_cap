@@ -13,6 +13,9 @@ const paymentStatusColors = {
   Unpaid: '#64748b',
 }
 
+const dashboardCache = new Map()
+const dashboardCacheLifetimeMs = 90 * 1000
+
 function money(value) {
   return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(Number(value || 0))
 }
@@ -98,15 +101,32 @@ export default function OperationalDashboard({ role }) {
 
   useEffect(() => {
     let active = true
+    const cacheKey = `${role}:${token}`
+    const cached = dashboardCache.get(cacheKey)
+    const isManualRefresh = refreshKey > 0
+
+    if (cached && !isManualRefresh && Date.now() - cached.savedAt < dashboardCacheLifetimeMs) {
+      setData(cached.data)
+      setError('')
+      setRefreshing(false)
+      return () => { active = false }
+    }
+
     Promise.all([
       apiRequest('/api/dashboard/overview', { token }),
       apiRequest('/api/analytics/overview', { token }),
     ])
-      .then(([dashboard, analytics]) => { if (active) { setData({ ...dashboard, analytics }); setError('') } })
+      .then(([dashboard, analytics]) => {
+        if (!active) return
+        const nextData = { ...dashboard, analytics }
+        dashboardCache.set(cacheKey, { data: nextData, savedAt: Date.now() })
+        setData(nextData)
+        setError('')
+      })
       .catch((requestError) => { if (active) setError(requestError.message) })
       .finally(() => { if (active) setRefreshing(false) })
     return () => { active = false }
-  }, [refreshKey, token])
+  }, [refreshKey, role, token])
 
   const metrics = data?.metrics || {}
   const monthly = (data?.monthly || []).map((row) => ({ ...row, label: month(row.month), billed: Number(row.billed), collected: Number(row.collected), consumption: Number(row.consumption) }))
@@ -137,19 +157,24 @@ export default function OperationalDashboard({ role }) {
       { title: 'Water recommendations', value: metrics.openRecommendations || 0, description: `${metrics.highPriorityRecommendations || 0} high priority`, to: '/collector/analytics', icon: Gauge },
     ]
 
-  return <DashboardLayout title={roleIsAdmin ? 'Executive dashboard' : 'Billing Associate dashboard'} description="Live operational overview of billing, payments, occupancy, and water use.">
+  return <DashboardLayout title={roleIsAdmin ? 'Dashboard' : 'Billing Associate dashboard'} description="Live operational overview of billing, payments, occupancy, and water use.">
     {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {!data ? <Panel title="Loading dashboard"><EmptyRow message="Loading your latest billing summary..." /></Panel> : <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">{roleIsAdmin ? 'Executive dashboard' : 'Billing operations dashboard'}</h1><p className="mt-1 text-sm text-[var(--muted)]">Current billing period: <strong className="text-[var(--ink)]">{month(metrics.latestPeriodStart)}</strong>{metrics.latestPeriodStatus ? ` (${metrics.latestPeriodStatus.toLowerCase()})` : ''}</p></div><button type="button" onClick={() => { setRefreshing(true); setRefreshKey((value) => value + 1) }} disabled={refreshing} className="inline-flex w-fit items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-bold text-[var(--ink)] shadow-sm transition hover:bg-[var(--app-bg)] disabled:opacity-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{refreshing ? 'Refreshing…' : 'Refresh overview'}</button></div>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
-        <BillingTrendChart monthly={monthly} />
-        <BillStatusChart billStatus={billStatus} />
-      </div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">{roleIsAdmin ? 'Dashboard' : 'Billing operations dashboard'}</h1><p className="mt-1 text-sm text-[var(--muted)]">Current billing period: <strong className="text-[var(--ink)]">{month(metrics.latestPeriodStart)}</strong>{metrics.latestPeriodStatus ? ` (${metrics.latestPeriodStatus.toLowerCase()})` : ''}</p></div><button type="button" onClick={() => { setRefreshing(true); setRefreshKey((value) => value + 1) }} disabled={refreshing} className="inline-flex w-fit items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-bold text-[var(--ink)] shadow-sm transition hover:bg-[var(--app-bg)] disabled:opacity-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{refreshing ? 'Refreshing…' : 'Refresh overview'}</button></div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Current billing" value={money(currentBilled)} detail={`${metrics.currentBills || 0} statement(s) issued`} icon={FileText} accent="blue" />
         <Metric label="Collected so far" value={money(currentCollected)} detail="payments applied to current billing" icon={WalletCards} tone="blue" accent="green" />
         <Metric label="Collection efficiency" value={percent(collectionRate)} detail={collectionRate === null ? 'No current billing to measure' : `${money(collectionGap)} still to collect`} icon={TrendingUp} tone={collectionRate !== null && collectionRate < 70 ? 'amber' : 'green'} accent="blue" />
         <Metric label="Overdue balance" value={money(metrics.overdueAmount)} detail={`${metrics.overdueBills || 0} overdue statement(s)`} icon={CircleDollarSign} tone={metrics.overdueBills ? 'red' : 'green'} accent="red" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Metric label="Homes occupied" value={`${metrics.occupiedUnits || 0} / ${metrics.totalUnits || 0}`} detail={`${metrics.vacantUnits || 0} vacant homes`} icon={Building2} tone="blue" accent="blue" />
+        <Metric label="Payment reviews" value={metrics.pendingPayments || 0} detail={roleIsAdmin ? 'proofs waiting for verification' : 'waiting for Admin verification'} icon={ReceiptText} tone={metrics.pendingPayments ? 'amber' : 'green'} accent="green" />
+        <Metric label="High-priority water alerts" value={metrics.highPriorityRecommendations || 0} detail={`${metrics.openRecommendations || 0} recommendations open`} icon={Gauge} tone={metrics.highPriorityRecommendations ? 'red' : 'green'} accent="red" />
+      </div>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
+        <BillingTrendChart monthly={monthly} />
+        <BillStatusChart billStatus={billStatus} />
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
         <Panel title="Financial health" description="Track the current billing period at a glance.">
@@ -158,11 +183,6 @@ export default function OperationalDashboard({ role }) {
         <Panel title="Water outlook" description="Latest validated use and the next available forecast.">
           <div className="space-y-4"><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1"><div className="rounded-xl bg-sky-50 p-4"><div className="flex items-center gap-2 text-sky-800"><Droplets size={17} /><p className="text-xs font-black uppercase tracking-wide">Latest actual use</p></div><p className="mt-2 text-2xl font-black text-slate-900">{latestActualWater ? `${latestActualWater.actualConsumption.toFixed(1)} m³` : '—'}</p><p className="mt-1 text-xs text-slate-600">{latestActualWater ? `${latestActualWater.label} · ${money(latestActualWater.actualWaterBill)}` : 'No validated reading yet'}</p></div><div className="rounded-xl bg-violet-50 p-4"><div className="flex items-center gap-2 text-violet-800"><TrendingUp size={17} /><p className="text-xs font-black uppercase tracking-wide">Next forecast</p></div><p className="mt-2 text-2xl font-black text-slate-900">{latestWaterForecast ? `${latestWaterForecast.projectedConsumption.toFixed(1)} m³` : '—'}</p><p className="mt-1 text-xs text-slate-600">{latestWaterForecast ? `${latestWaterForecast.label} · est. ${money(latestWaterForecast.projectedWaterBill)}` : 'No ready forecast yet'}</p></div></div><div className="rounded-xl border border-[var(--border)] bg-[var(--app-bg)] p-3"><p className="text-sm font-bold text-[var(--ink)]">Forecast coverage</p><p className="mt-1 text-xs text-[var(--muted)]">{data.analytics?.latestForecast?.ready || 0} of {data.analytics?.latestForecast?.total || 0} homes have a ready forecast; {data.analytics?.latestForecast?.excluded || 0} need more valid meter history.</p></div><Link to={roleIsAdmin ? '/admin/analytics' : '/collector/analytics'} className="inline-flex items-center gap-2 text-sm font-bold text-[var(--primary)] hover:underline">Open Water Usage <span aria-hidden="true">→</span></Link></div>
         </Panel>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Metric label="Homes occupied" value={`${metrics.occupiedUnits || 0} / ${metrics.totalUnits || 0}`} detail={`${metrics.vacantUnits || 0} vacant homes`} icon={Building2} tone="blue" accent="blue" />
-        <Metric label="Payment reviews" value={metrics.pendingPayments || 0} detail={roleIsAdmin ? 'proofs waiting for verification' : 'waiting for Admin verification'} icon={ReceiptText} tone={metrics.pendingPayments ? 'amber' : 'green'} accent="green" />
-        <Metric label="High-priority water alerts" value={metrics.highPriorityRecommendations || 0} detail={`${metrics.openRecommendations || 0} recommendations open`} icon={Gauge} tone={metrics.highPriorityRecommendations ? 'red' : 'green'} accent="red" />
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
         <WaterTrendChart waterTrend={waterTrend} />

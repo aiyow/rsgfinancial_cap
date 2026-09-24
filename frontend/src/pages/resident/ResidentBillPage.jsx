@@ -132,10 +132,11 @@ export default function ResidentBillPage() {
     setBusy(true)
     setNotice({ error: '', message: '' })
     try {
-      await apiRequest(`/api/billing-errors/bills/${id}`, { method: 'POST', token, body: errorReport })
+      const result = await apiRequest(`/api/billing-errors/bills/${id}`, { method: 'POST', token, body: errorReport })
       setErrorReport({ category: 'METER_READING', description: '' })
       setReportingError(false)
-      setNotice({ error: '', message: 'SOA error report submitted. An Admin will review it shortly.' })
+      const remaining = Number(result.reportsRemaining)
+      setNotice({ error: '', message: `SOA error report submitted. An Admin will review it shortly.${Number.isFinite(remaining) ? ` You have ${remaining} report${remaining === 1 ? '' : 's'} remaining for this SOA.` : ''}` })
     } catch (error) { setNotice({ error: error.message, message: '' }) } finally { setBusy(false) }
   }
 
@@ -236,7 +237,7 @@ function ReportSoaErrorModal({ busy, errorReport, onChange, onClose, onSubmit })
       <section role="dialog" aria-modal="true" aria-labelledby="soa-error-title" className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4"><div><h2 id="soa-error-title" className="text-xl font-black text-slate-900">Report an SOA error</h2><p className="mt-1 text-sm text-slate-600">Tell the billing staff what appears incorrect. They will review it and notify you when it is resolved.</p></div><button type="button" disabled={busy} onClick={onClose} aria-label="Close SOA error form" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100"><X size={19} /></button></div>
         <form onSubmit={onSubmit} className="mt-5 space-y-4">
-          <label className="block text-sm font-bold text-slate-700">Issue category<select value={errorReport.category} onChange={(event) => onChange('category', event.target.value)} className={inputClass}><option value="METER_READING">Meter reading</option><option value="WATER_CHARGE">Water charge</option><option value="ASSOCIATION_DUES">Association dues</option><option value="PAYMENT_OR">Payment / Official Receipt</option><option value="OTHER">Other</option></select></label>
+          <label className="block text-sm font-bold text-slate-700">Issue category<select value={errorReport.category} onChange={(event) => onChange('category', event.target.value)} className={inputClass}><option value="METER_READING">Meter reading</option><option value="WATER_CHARGE">Water charge</option><option value="ASSOCIATION_DUES">Association dues</option><option value="PAYMENT_OR">Payment / Invoice</option><option value="OTHER">Other</option></select></label>
           <label className="block text-sm font-bold text-slate-700">What is incorrect?<textarea required minLength="3" maxLength="1500" value={errorReport.description} onChange={(event) => onChange('description', event.target.value)} placeholder="Describe the issue clearly..." className={`${inputClass} min-h-32`} /></label>
           <div className="flex justify-end gap-3"><button type="button" disabled={busy} onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Cancel</button><button disabled={busy} className="rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-amber-700 disabled:opacity-50">{busy ? 'Sending...' : 'Send error report'}</button></div>
         </form>

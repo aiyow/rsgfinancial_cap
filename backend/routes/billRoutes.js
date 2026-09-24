@@ -35,7 +35,6 @@ const editBillSchema = z.object({
   message: "Change at least one SOA field.",
 });
 const paymentReferenceSchema = z.object({
-  officialReceiptNumber: z.union([z.string().trim().min(1).max(100), z.null()]).optional(),
   invoiceNumber: z.union([z.string().trim().min(1).max(100), z.null()]).optional(),
   paymentNote: z.union([z.string().trim().min(1).max(1000), z.null()]).optional(),
 }).strict().refine((body) => Object.keys(body).length > 0, { message: "Update at least one payment reference field." });
@@ -54,7 +53,7 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
   b.current_reading_snapshot - b.previous_reading_snapshot AS consumption,
   b.payer_name_snapshot AS "payerName", b.payer_email_snapshot AS "payerEmail",
   b.generation_warning AS "generationWarning",
-  b.official_receipt_number AS "officialReceiptNumber", b.invoice_number AS "invoiceNumber",
+  b.invoice_number AS "invoiceNumber",
   b.payment_note AS "paymentNote", b.soa_revision AS "soaRevision",
   b.corrected_at AS "correctedAt", b.corrected_by AS "correctedBy", b.correction_reason AS "correctionReason",
   b.late_penalty_percent_snapshot AS "latePenaltyPercent",
@@ -165,7 +164,7 @@ router.patch("/:id/payment-references", allowRoles("ADMIN", "COLLECTOR"), requir
       await client.query("ROLLBACK");
       return res.status(409).json({ message: "Add payment references after a payment has been approved." });
     }
-    const fields = { officialReceiptNumber: "official_receipt_number", invoiceNumber: "invoice_number", paymentNote: "payment_note" };
+    const fields = { invoiceNumber: "invoice_number", paymentNote: "payment_note" };
     const values = [];
     const updates = [];
     for (const [field, column] of Object.entries(fields)) {

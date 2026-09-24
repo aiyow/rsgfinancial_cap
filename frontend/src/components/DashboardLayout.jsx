@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
 import {
   BarChart3,
+  Bell,
   BookOpen,
   Building2,
   Calculator,
@@ -30,7 +31,7 @@ import NotificationCenter from './NotificationCenter'
 const navigationByRole = {
   ADMIN: {
     view: [
-      { label: 'Executive Dashboard', to: '/admin', end: true, icon: LayoutDashboard },
+      { label: 'Dashboard', to: '/admin', end: true, icon: LayoutDashboard },
       { label: 'Unit Directory', to: '/admin/units', end: true, icon: Building2 },
       { label: 'Forwarded Billings', to: '/admin/soa', icon: FileText },
       { label: 'Payment Records', to: '/admin/payments', icon: CreditCard },
@@ -43,6 +44,7 @@ const navigationByRole = {
       { label: 'Unit Management', to: '/admin/units/manage', icon: Settings2 },
       { label: 'SOA Template', to: '/admin/soa-template', icon: BookOpen },
       { label: 'Billing Errors', to: '/admin/billing-errors', icon: CircleAlert },
+      { label: 'Notifications', to: '/notifications', icon: Bell },
     ],
   },
   COLLECTOR: {
@@ -58,6 +60,7 @@ const navigationByRole = {
       { label: 'Create Billing', to: '/collector/billing', icon: Calculator },
       { label: 'Upload Water History', to: '/collector/history-import', icon: Upload },
       { label: 'Billing Errors', to: '/collector/billing-errors', icon: CircleAlert },
+      { label: 'Notifications', to: '/notifications', icon: Bell },
     ],
   },
   RESIDENT: {

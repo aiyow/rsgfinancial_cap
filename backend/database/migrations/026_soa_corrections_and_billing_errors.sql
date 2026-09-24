@@ -7,17 +7,12 @@ ALTER TABLE soa_templates
   ADD COLUMN IF NOT EXISTS qr_asset_mime_type VARCHAR(100) NULL;
 
 ALTER TABLE unit_bills
-  ADD COLUMN IF NOT EXISTS official_receipt_number VARCHAR(100) NULL,
   ADD COLUMN IF NOT EXISTS invoice_number VARCHAR(100) NULL,
   ADD COLUMN IF NOT EXISTS payment_note VARCHAR(1000) NULL,
   ADD COLUMN IF NOT EXISTS soa_revision INTEGER NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS corrected_at TIMESTAMPTZ NULL,
   ADD COLUMN IF NOT EXISTS corrected_by BIGINT NULL REFERENCES users(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS correction_reason VARCHAR(500) NULL;
-
-CREATE UNIQUE INDEX IF NOT EXISTS unit_bills_official_receipt_number_unique
-  ON unit_bills (LOWER(official_receipt_number))
-  WHERE official_receipt_number IS NOT NULL AND BTRIM(official_receipt_number) <> '';
 
 CREATE UNIQUE INDEX IF NOT EXISTS unit_bills_invoice_number_unique
   ON unit_bills (LOWER(invoice_number))
@@ -36,10 +31,6 @@ CREATE TABLE IF NOT EXISTS billing_error_reports (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS billing_error_reports_open_reporter_bill_unique
-  ON billing_error_reports (unit_bill_id, reported_by)
-  WHERE status = 'OPEN';
 
 CREATE INDEX IF NOT EXISTS billing_error_reports_status_created_idx
   ON billing_error_reports (status, created_at DESC);

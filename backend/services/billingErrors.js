@@ -14,6 +14,9 @@ export async function ensureBillingErrorSchema(client) {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
-  await client.query("CREATE UNIQUE INDEX IF NOT EXISTS billing_error_reports_open_reporter_bill_unique ON billing_error_reports (unit_bill_id, reported_by) WHERE status = 'OPEN'");
+  // A resident may submit up to three reports for a given SOA. The route
+  // enforces that limit while holding the SOA row lock, rather than using a
+  // one-open-report unique index.
+  await client.query("DROP INDEX IF EXISTS billing_error_reports_open_reporter_bill_unique");
   await client.query("CREATE INDEX IF NOT EXISTS billing_error_reports_status_created_idx ON billing_error_reports (status, created_at DESC)");
 }

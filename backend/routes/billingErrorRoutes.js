@@ -8,6 +8,7 @@ import { createUserNotifications } from '../services/notifications.js';
 import { writeAuditLog } from '../services/auditLog.js';
 
 const router = express.Router();
+const MAX_REPORTS_PER_SOA = 3;
 const categories = ['METER_READING', 'WATER_CHARGE', 'ASSOCIATION_DUES', 'PAYMENT_OR', 'OTHER'];
 const createSchema = z.object({ category: z.enum(categories), description: z.string().trim().min(3).max(1500) }).strict();
 const resolveSchema = z.object({ resolutionNote: z.string().trim().min(3).max(1500) }).strict();
@@ -32,10 +33,23 @@ router.post('/bills/:id', allowRoles('RESIDENT'), requireId, validateBody(create
     const bill = await client.query(
       `SELECT b.id, b.unit_id FROM unit_bills b JOIN billing_periods p ON p.id = b.billing_period_id
        WHERE b.id = $1 AND b.published_at IS NOT NULL AND p.status IN ('FORWARDED', 'CLOSED')
-         AND EXISTS (SELECT 1 FROM unit_assignments a WHERE a.unit_id = b.unit_id AND a.user_id = $2 AND a.end_date IS NULL)`,
+         AND EXISTS (SELECT 1 FROM unit_assignments a WHERE a.unit_id = b.unit_id AND a.user_id = $2 AND a.end_date IS NULL)
+       FOR UPDATE OF b`,
       [req.resourceId, req.user.id],
     );
     if (!bill.rows[0]) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Published SOA not found.' }); }
+    const reportCount = await client.query(
+      'SELECT COUNT(*)::int AS count FROM billing_error_reports WHERE unit_bill_id = $1 AND reported_by = $2',
+      [req.resourceId, req.user.id],
+    );
+    const submittedReports = reportCount.rows[0].count;
+    if (submittedReports >= MAX_REPORTS_PER_SOA) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        code: 'SOA_REPORT_LIMIT_REACHED',
+        message: 'You can submit a maximum of 3 error reports for this SOA.',
+      });
+    }
     const inserted = await client.query(
       `INSERT INTO billing_error_reports (unit_bill_id, reported_by, category, description)
        VALUES ($1, $2, $3, $4) RETURNING id`,
@@ -50,10 +64,14 @@ router.post('/bills/:id', allowRoles('RESIDENT'), requireId, validateBody(create
     })));
     await writeAuditLog({ client, actorUserId: req.user.id, entityName: 'BILLING_ERROR_REPORT', entityId: inserted.rows[0].id, action: 'CREATE', newValues: req.validatedBody });
     await client.query('COMMIT');
-    return res.status(201).json({ message: 'Your SOA error report was sent to the billing staff.', reportId: inserted.rows[0].id });
+    return res.status(201).json({
+      message: 'Your SOA error report was sent to the billing staff.',
+      reportId: inserted.rows[0].id,
+      reportsRemaining: MAX_REPORTS_PER_SOA - submittedReports - 1,
+    });
   } catch (error) {
     if (client) await client.query('ROLLBACK').catch(() => {});
-    if (error?.code === '23505') return res.status(409).json({ message: 'You already have an open error report for this SOA.' });
+    if (error?.code === '23505') return res.status(409).json({ message: 'This report could not be submitted. Please try again.' });
     return next(error);
   } finally { client?.release(); }
 });

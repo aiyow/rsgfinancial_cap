@@ -33,6 +33,7 @@ import FinancialReportsPage from './pages/shared/FinancialReportsPage'
 import BillingErrorsPage from './pages/shared/BillingErrorsPage'
 import ProfilePage from './pages/shared/ProfilePage'
 import SettingsPage from './pages/shared/SettingsPage'
+import NotificationsPage from './pages/shared/NotificationsPage'
 
 const authenticatedRoles = ['ADMIN', 'COLLECTOR', 'RESIDENT']
 
@@ -52,6 +53,7 @@ export default function App() {
       <Route path="/pending-approval" element={<PendingApproval />} />
       <Route path="/profile" element={<ProtectedRoute allowedRoles={authenticatedRoles}><ProfilePage /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute allowedRoles={authenticatedRoles}><SettingsPage /></ProtectedRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute allowedRoles={authenticatedRoles}><NotificationsPage /></ProtectedRoute>} />
 
       {/* ADMIN ROUTES */}
       <Route path="/admin" element={<ProtectedRoute allowedRole="ADMIN"><AdminDashboard /></ProtectedRoute>} />

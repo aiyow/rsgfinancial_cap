@@ -146,6 +146,7 @@ export default function NotificationCenter({ token }) {
                 </button>
               )) : <p className="px-3 py-6 text-center text-xs text-[var(--muted)] sm:px-4 sm:py-8 sm:text-sm">No notifications yet.</p>}
             </div>
+            <button type="button" onClick={() => { setOpen(false); navigate('/notifications') }} className="w-full border-t border-[var(--border)] px-2.5 py-2 text-center text-[11px] font-bold text-[var(--primary)] hover:bg-[var(--app-bg)] sm:px-4 sm:py-3 sm:text-xs">View all notifications</button>
             {browserPermission === 'default' && <button type="button" onClick={enableBrowserAlerts} className="w-full border-t border-[var(--border)] px-2.5 py-2 text-left text-[11px] font-bold text-[var(--primary)] hover:bg-[var(--app-bg)] sm:px-4 sm:py-3 sm:text-xs">Enable browser alerts on this device</button>}
             {browserPermission === 'denied' && <p className="border-t border-[var(--border)] px-2.5 py-2 text-[11px] text-[var(--muted)] sm:px-4 sm:py-3 sm:text-xs">Browser alerts are blocked. Enable them in your browser settings.</p>}
           </div>
