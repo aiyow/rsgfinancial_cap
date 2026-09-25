@@ -14,6 +14,8 @@ export const defaultSoaTemplate = {
   footerText: "T H A N K   Y O U!",
   logoPlacement: "LEFT",
   accentColor: "#166534",
+  secondaryColor: "#a9cbe8",
+  highlightColor: "#cceabd",
 };
 
 export async function ensureSoaTemplateSchema(client) {

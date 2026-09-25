@@ -62,7 +62,7 @@ router.post('/bills/:id', allowRoles('RESIDENT'), requireId, validateBody(create
       href: user.role === 'ADMIN' ? '/admin/billing-errors' : '/collector/billing-errors',
       dedupeKey: `billing-error:${inserted.rows[0].id}`,
     })));
-    await writeAuditLog({ client, actorUserId: req.user.id, entityName: 'BILLING_ERROR_REPORT', entityId: inserted.rows[0].id, action: 'CREATE', newValues: req.validatedBody });
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: 'BILLING_ERROR_REPORT', entityId: inserted.rows[0].id, action: 'SUBMIT', newValues: req.validatedBody });
     await client.query('COMMIT');
     return res.status(201).json({
       message: 'Your SOA error report was sent to the billing staff.',

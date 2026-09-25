@@ -5,7 +5,7 @@ import { allowRoles, requireAuth } from '../middleware/authMiddleware.js';
 import { getFinancialReport, parseFinancialReportFilters } from '../services/financialReports.js';
 
 const router = express.Router();
-const tabs = new Set(['overview', 'dues', 'water', 'receivables']);
+const tabs = new Set(['overview', 'dues', 'water', 'paidDues', 'receivables']);
 
 function queryFilters(req) {
   try {
@@ -62,7 +62,7 @@ function addTable(sheet, headers, rows, moneyColumns = []) {
 
 function createWorkbook(report, tab) {
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet({ overview: 'Overview', dues: 'Association Dues', water: 'Water Billing', receivables: 'Accounts Receivable' }[tab]);
+  const sheet = workbook.addWorksheet({ overview: 'Overview', dues: 'Association Dues', water: 'Water Billing', paidDues: 'Paid Monthly Dues', receivables: 'Accounts Receivable' }[tab]);
   sheet.columns = [{ width: 16 }, { width: 24 }, { width: 16 }, { width: 16 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 18 }];
   sheet.addRow(['ResiDens Financial Report']);
   sheet.getRow(1).font = { size: 16, bold: true, color: { argb: 'FF1C4E30' } };
@@ -72,6 +72,13 @@ function createWorkbook(report, tab) {
     const section = report[tab];
     addTable(sheet, ['Unit', 'Resident / payer', 'Billing period', 'Batch status', 'Billed'], section.billedRows.map((row) => [row.unitNumber, row.payerName, `${date(row.periodStart)} to ${date(row.periodEnd)}`, row.batchStatus, money(row.billed)]), [5]);
     addTable(sheet, ['Payment date', 'Unit', 'Resident / payer', 'Bill period', 'Applied payment', 'Collected for charge'], section.collectionRows.map((row) => [date(row.paymentDate), row.unitNumber, row.payerName, date(row.periodStart), money(row.appliedAmount), money(row.collected)]), [5, 6]);
+  }
+  if (tab === 'paidDues') {
+    const rows = report.paidDues.rows;
+    addTable(sheet, ['Payment date', 'Unit', 'Resident / payer', 'SOA period', 'Association dues paid', 'Water paid', 'Combined paid'], rows.map((row) => [date(row.paymentDate), row.unitNumber, row.payerName, date(row.periodStart), money(row.duesCollected), money(row.waterCollected), money(row.combinedCollected)]), [5, 6, 7]);
+    const total = sheet.addRow(['Total', '', '', '', money(rows.reduce((sum, row) => sum + Number(row.duesCollected || 0), 0)), money(rows.reduce((sum, row) => sum + Number(row.waterCollected || 0), 0)), money(rows.reduce((sum, row) => sum + Number(row.combinedCollected || 0), 0))]);
+    total.font = { bold: true };
+    [5, 6, 7].forEach((column) => { total.getCell(column).numFmt = '₱#,##0.00'; });
   }
   if (tab === 'receivables') {
     addTable(sheet, ['Unit', 'Resident / payer', 'Bill period', 'Due date', 'Billed', 'Paid', 'Balance', 'Status'], report.receivables.map((row) => [row.unitNumber, row.payerName, date(row.periodStart), date(row.dueDate), money(row.totalBilled), money(row.paidAmount), money(row.remainingBalance), row.paymentStatus]), [5, 6, 7]);

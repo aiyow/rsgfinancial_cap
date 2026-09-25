@@ -16,8 +16,13 @@ router.get("/", async (req, res, next) => {
     }
 
     if (req.query.action) {
-      params.push(String(req.query.action).trim().toUpperCase());
-      auditConditions.push(`a.action = $${params.length}`);
+      const requestedAction = String(req.query.action).trim().toUpperCase();
+      params.push(requestedAction);
+      // Include legacy resident reports that were stored as CREATE before the
+      // audit action was renamed to SUBMIT.
+      auditConditions.push(requestedAction === 'SUBMIT'
+        ? `(a.action = $${params.length} OR (a.entity_name = 'BILLING_ERROR_REPORT' AND a.action = 'CREATE'))`
+        : `a.action = $${params.length}`);
     }
 
     const auditWhere = auditConditions.length ? `WHERE ${auditConditions.join(" AND ")}` : "";

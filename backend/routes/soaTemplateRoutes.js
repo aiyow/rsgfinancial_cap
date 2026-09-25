@@ -27,6 +27,8 @@ const templateSchema = z.object({
   footerText: z.string().trim().min(1).max(100),
   logoPlacement: z.enum(["LEFT", "CENTER", "RIGHT"]),
   accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a six-digit hex color."),
+  secondaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a six-digit hex color."),
+  highlightColor: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a six-digit hex color."),
 }).strict();
 
 const assetUpload = multer({

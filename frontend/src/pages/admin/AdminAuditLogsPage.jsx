@@ -9,11 +9,12 @@ const entityGroups = [
   { label: 'All activity', options: ['ALL'] },
   { label: 'Records', options: ['USER_ACCOUNT', 'UNIT', 'UNIT_ASSIGNMENT', 'BILLING_PERIOD', 'UNIT_BILL'] },
   { label: 'Payments & insights', options: ['PAYMENT_SUBMISSION', 'PRESCRIPTIVE_RECOMMENDATION'] },
+  { label: 'Resident reports', options: ['BILLING_ERROR_REPORT'] },
 ]
 const actionGroups = [
   { label: 'General', options: ['ALL', 'CREATE', 'CREATE_MANUAL', 'UPDATE'] },
   { label: 'Records', options: ['DELETE', 'DELETED', 'END', 'GENERATED', 'REOPENED', 'FORWARDED', 'PUBLISHED', 'UNPUBLISHED', 'SOA_EDITED', 'VIEWED', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED', 'SHARED_WITH_RESIDENT'] },
-  { label: 'Payments', options: ['SUBMIT', 'APPROVE', 'REJECT'] },
+  { label: 'Payments & resident reports', options: ['SUBMIT', 'APPROVE', 'REJECT', 'RESOLVE'] },
 ]
 
 const entityLabels = {
@@ -23,6 +24,7 @@ const entityLabels = {
   PAYMENT_SUBMISSION: 'Payment',
   BILLING_PERIOD: 'Billing Batch',
   UNIT_BILL: 'Unit Bill',
+  BILLING_ERROR_REPORT: 'Report',
   SOA_TEMPLATE: 'SOA Template',
   PRESCRIPTIVE_RECOMMENDATION: 'Recommended Action',
 }
@@ -48,6 +50,7 @@ const actionLabels = {
   RESOLVED: 'Resolved',
   DISMISSED: 'Dismissed',
   SHARED_WITH_RESIDENT: 'Shared with the Resident',
+  RESOLVE: 'Resolved',
 }
 
 const actionFilterLabels = {
@@ -71,6 +74,7 @@ const actionIcons = {
   PUBLISHED: CheckCircle2,
   UNPUBLISHED: XCircle,
   SOA_EDITED: Pencil,
+  RESOLVE: CheckCircle2,
 }
 
 function formatDate(value) {
@@ -82,6 +86,7 @@ function labelFor(value, labels) {
 }
 
 function describeLog(log) {
+  if (log.entityName === 'BILLING_ERROR_REPORT' && ['CREATE', 'SUBMIT'].includes(log.action)) return 'Submitted report'
   const action = actionLabels[log.action] || log.action.toLowerCase().replaceAll('_', ' ')
   const entity = entityLabels[log.entityName] || 'record'
   return `${action} ${entity}`
@@ -108,6 +113,8 @@ export default function AdminAuditLogsPage() {
   const [actionMenuOpen, setActionMenuOpen] = useState(false)
   const [logs, setLogs] = useState([])
   const [notice, setNotice] = useState({ error: '', message: '' })
+  const [currentPage, setCurrentPage] = useState(1)
+  const pageSize = 10
 
   useEffect(() => {
     let active = true
@@ -117,7 +124,7 @@ export default function AdminAuditLogsPage() {
     const query = params.toString() ? `?${params.toString()}` : ''
 
     apiRequest(`/api/audit-logs${query}`, { token })
-      .then((data) => { if (active) setLogs(data.logs) })
+      .then((data) => { if (active) { setLogs(data.logs); setCurrentPage(1) } })
       .catch((error) => { if (active) setNotice({ error: error.message, message: '' }) })
 
     return () => { active = false }
@@ -129,6 +136,10 @@ export default function AdminAuditLogsPage() {
     collectorActions: logs.filter((log) => log.actorRole === 'COLLECTOR').length,
     residentActions: logs.filter((log) => log.actorRole === 'RESIDENT').length,
   }), [logs])
+  const totalPages = Math.max(1, Math.ceil(logs.length / pageSize))
+  const safePage = Math.min(currentPage, totalPages)
+  const firstLogIndex = (safePage - 1) * pageSize
+  const visibleLogs = logs.slice(firstLogIndex, firstLogIndex + pageSize)
 
   return (
     <DashboardLayout title="Audit logs" description="A simple history of important actions in the system.">
@@ -196,7 +207,7 @@ export default function AdminAuditLogsPage() {
 
       <Panel title="Activity feed" description="Each row explains one action in plain language.">
         <div className="divide-y divide-slate-300">
-          {logs.map((log) => {
+          {visibleLogs.map((log) => {
             const ActionIcon = actionIcons[log.action] || CircleUserRound
 
             return (
@@ -220,6 +231,7 @@ export default function AdminAuditLogsPage() {
           })}
         </div>
         {logs.length === 0 && <EmptyRow message="No activity matches the selected filters." />}
+        {logs.length > 0 && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4"><p className="text-sm text-slate-500">Showing {firstLogIndex + 1} to {Math.min(firstLogIndex + pageSize, logs.length)} of {logs.length} entries</p><div className="flex items-center gap-3"><button type="button" disabled={safePage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 transition hover:border-emerald-700 hover:bg-emerald-700 hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-white disabled:hover:text-slate-300">Previous</button><span className="text-sm font-bold text-slate-700">Page {safePage} of {totalPages}</span><button type="button" disabled={safePage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 transition hover:border-emerald-700 hover:bg-emerald-700 hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-white disabled:hover:text-slate-300">Next</button></div></div>}
       </Panel>
     </DashboardLayout>
   )

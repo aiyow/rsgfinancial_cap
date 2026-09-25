@@ -9,6 +9,7 @@ const tabs = [
   { key: 'overview', label: 'Overview' },
   { key: 'dues', label: 'Association Dues' },
   { key: 'water', label: 'Water Billing' },
+  { key: 'paidDues', label: 'Paid Monthly Dues' },
   { key: 'receivables', label: 'Accounts Receivable' },
 ]
 
@@ -63,11 +64,11 @@ function Metric({ label, value, detail, icon: Icon, tone = 'green' }) {
 }
 
 function Table({ children }) {
-  return <div className="overflow-x-auto rounded-xl border border-slate-200"><table className="financial-report-table w-full min-w-[720px] text-left text-sm">{children}</table></div>
+  return <div className="financial-report-table-scroll max-h-[500px] overflow-auto rounded-xl border border-slate-200"><table className="financial-report-table w-full min-w-[720px] text-left text-sm">{children}</table></div>
 }
 
 function TableHead({ children }) {
-  return <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr>{children}</tr></thead>
+  return <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm"><tr>{children}</tr></thead>
 }
 
 function HeaderCell({ children }) {
@@ -76,6 +77,10 @@ function HeaderCell({ children }) {
 
 function DataCell({ children, moneyValue = false }) {
   return <td className={`px-4 py-3 ${moneyValue ? 'text-right font-semibold tabular-nums' : ''}`}>{children}</td>
+}
+
+function TotalRow({ colSpan, label = 'Total', total }) {
+  return <tfoot className="border-t-2 border-emerald-200 bg-emerald-50/70"><tr><td colSpan={colSpan} className="px-4 py-3 text-right text-sm font-black text-emerald-950">{label}</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(total)}</td></tr></tfoot>
 }
 
 function ChargeReport({ report, kind }) {
@@ -90,10 +95,23 @@ function ChargeReport({ report, kind }) {
       <Metric label={`${label} collected`} value={money(totalCollected)} detail="Approved payments verified in the selected filter" icon={WalletCards} />
     </div>
     <Panel title={`${label} billed`} description="Charges issued in live billing batches during the selected reporting period.">
-      {billedRows.length ? <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Billing period</HeaderCell><HeaderCell>Batch status</HeaderCell><HeaderCell>{label} billed</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{billedRows.map((row) => <tr key={row.billId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)} – {date(row.periodEnd)}</DataCell><DataCell>{row.batchStatus}</DataCell><DataCell moneyValue>{money(row.billed)}</DataCell></tr>)}</tbody></Table> : <EmptyRow message={`No ${label.toLowerCase()} charges were billed in this period.`} />}
+      {billedRows.length ? <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Billing period</HeaderCell><HeaderCell>Batch status</HeaderCell><HeaderCell>{label} billed</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{billedRows.map((row) => <tr key={row.billId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)} – {date(row.periodEnd)}</DataCell><DataCell>{row.batchStatus}</DataCell><DataCell moneyValue>{money(row.billed)}</DataCell></tr>)}</tbody><TotalRow colSpan={4} total={totalBilled} /></Table> : <EmptyRow message={`No ${label.toLowerCase()} charges were billed in this period.`} />}
     </Panel>
     <Panel title={`${label} collections`} description="Approved payments received in the selected period, allocated proportionally across each SOA’s charge lines.">
-      {collectionRows.length ? <Table><TableHead><HeaderCell>Payment date</HeaderCell><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>SOA period</HeaderCell><HeaderCell>Applied payment</HeaderCell><HeaderCell>{label} collected</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{collectionRows.map((row) => <tr key={`${row.paymentId}-${row.billId}`}><DataCell>{date(row.paymentDate)}</DataCell><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)}</DataCell><DataCell moneyValue>{money(row.appliedAmount)}</DataCell><DataCell moneyValue>{money(row.collected)}</DataCell></tr>)}</tbody></Table> : <EmptyRow message={`No ${label.toLowerCase()} collections were received in this period.`} />}
+      {collectionRows.length ? <Table><TableHead><HeaderCell>Payment date</HeaderCell><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>SOA period</HeaderCell><HeaderCell>Applied payment</HeaderCell><HeaderCell>{label} collected</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{collectionRows.map((row) => <tr key={`${row.paymentId}-${row.billId}`}><DataCell>{date(row.paymentDate)}</DataCell><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)}</DataCell><DataCell moneyValue>{money(row.appliedAmount)}</DataCell><DataCell moneyValue>{money(row.collected)}</DataCell></tr>)}</tbody><tfoot className="border-t-2 border-emerald-200 bg-emerald-50/70"><tr><td colSpan={4} className="px-4 py-3 text-right text-sm font-black text-emerald-950">Total</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(collectionRows.reduce((total, row) => total + Number(row.appliedAmount || 0), 0))}</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(totalCollected)}</td></tr></tfoot></Table> : <EmptyRow message={`No ${label.toLowerCase()} collections were received in this period.`} />}
+    </Panel>
+  </div>
+}
+
+function PaidMonthlyDues({ report }) {
+  const rows = report?.rows || []
+  const duesPaid = rows.reduce((total, row) => total + Number(row.duesCollected || 0), 0)
+  const waterPaid = rows.reduce((total, row) => total + Number(row.waterCollected || 0), 0)
+  const totalPaid = rows.reduce((total, row) => total + Number(row.combinedCollected || 0), 0)
+  return <div className="space-y-6">
+    <div className="grid gap-4 sm:grid-cols-3"><Metric label="Association dues paid" value={money(duesPaid)} detail="Approved payment allocations" icon={FileText} tone="amber" /><Metric label="Water paid" value={money(waterPaid)} detail="Approved payment allocations" icon={Waves} tone="blue" /><Metric label="Combined monthly dues paid" value={money(totalPaid)} detail="Association dues and water only" icon={WalletCards} /></div>
+    <Panel title="Paid Monthly Dues" description="Approved payments in the selected period, showing Association Dues and Water allocations together for each SOA.">
+      {rows.length ? <Table><TableHead><HeaderCell>Payment date</HeaderCell><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>SOA period</HeaderCell><HeaderCell>Association dues paid</HeaderCell><HeaderCell>Water paid</HeaderCell><HeaderCell>Combined paid</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={`${row.paymentId}-${row.billId}`}><DataCell>{date(row.paymentDate)}</DataCell><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)}</DataCell><DataCell moneyValue>{money(row.duesCollected)}</DataCell><DataCell moneyValue>{money(row.waterCollected)}</DataCell><DataCell moneyValue>{money(row.combinedCollected)}</DataCell></tr>)}</tbody><tfoot className="border-t-2 border-emerald-200 bg-emerald-50/70"><tr><td colSpan={4} className="px-4 py-3 text-right text-sm font-black text-emerald-950">Total</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(duesPaid)}</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(waterPaid)}</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(totalPaid)}</td></tr></tfoot></Table> : <EmptyRow message="No Association Dues or Water payments were approved in this period." />}
     </Panel>
   </div>
 }
@@ -140,9 +158,48 @@ function FinancialCharts({ overview }) {
 }
 
 function Receivables({ rows }) {
+  const totalBilled = rows.reduce((total, row) => total + Number(row.totalBilled || 0), 0)
+  const totalPaid = rows.reduce((total, row) => total + Number(row.paidAmount || 0), 0)
+  const totalBalance = rows.reduce((total, row) => total + Number(row.remainingBalance || 0), 0)
   return <Panel title="Accounts Receivable" description="Outstanding resident balances as of the selected reporting end date.">
-    {rows.length ? <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Bill period</HeaderCell><HeaderCell>Due date</HeaderCell><HeaderCell>Billed</HeaderCell><HeaderCell>Paid</HeaderCell><HeaderCell>Balance</HeaderCell><HeaderCell>Status</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={row.billId} className={row.paymentStatus === 'OVERDUE' ? 'bg-red-50/50' : ''}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)}</DataCell><DataCell>{date(row.dueDate)}</DataCell><DataCell moneyValue>{money(row.totalBilled)}</DataCell><DataCell moneyValue>{money(row.paidAmount)}</DataCell><DataCell moneyValue>{money(row.remainingBalance)}</DataCell><DataCell><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${row.paymentStatus === 'OVERDUE' ? 'bg-red-100 text-red-700' : row.paymentStatus === 'PARTIAL' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}`}>{row.paymentStatus}</span></DataCell></tr>)}</tbody></Table> : <EmptyRow message="No outstanding resident balances exist as of this date." />}
+    {rows.length ? <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Bill period</HeaderCell><HeaderCell>Due date</HeaderCell><HeaderCell>Billed</HeaderCell><HeaderCell>Paid</HeaderCell><HeaderCell>Balance</HeaderCell><HeaderCell>Status</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={row.billId} className={row.paymentStatus === 'OVERDUE' ? 'bg-red-50/50' : ''}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)}</DataCell><DataCell>{date(row.dueDate)}</DataCell><DataCell moneyValue>{money(row.totalBilled)}</DataCell><DataCell moneyValue>{money(row.paidAmount)}</DataCell><DataCell moneyValue>{money(row.remainingBalance)}</DataCell><DataCell><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${row.paymentStatus === 'OVERDUE' ? 'bg-red-100 text-red-700' : row.paymentStatus === 'PARTIAL' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}`}>{row.paymentStatus}</span></DataCell></tr>)}</tbody><tfoot className="border-t-2 border-emerald-200 bg-emerald-50/70"><tr><td colSpan={4} className="px-4 py-3 text-right text-sm font-black text-emerald-950">Total</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(totalBilled)}</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(totalPaid)}</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(totalBalance)}</td><td /></tr></tfoot></Table> : <EmptyRow message="No outstanding resident balances exist as of this date." />}
   </Panel>
+}
+
+function FinancialReportPrint({ activeLabel, report, tab }) {
+  const overviewRows = [
+    ['Total monthly billing', report.overview.totalBilling],
+    ['Total collections', report.overview.totalCollections],
+    ['Association dues billed', report.overview.duesBilled],
+    ['Association dues collected', report.overview.duesCollected],
+    ['Water billed', report.overview.waterBilled],
+    ['Water collected', report.overview.waterCollected],
+    ['Outstanding balance', report.overview.outstandingBalance],
+  ]
+  return <section className="financial-report-print"><h1 className="text-xl font-black text-slate-900">{activeLabel}</h1><p className="mb-4 text-sm text-slate-600">Reporting period: {report.filters.label}</p>{tab === 'overview' && <Table><TableHead><HeaderCell>Financial summary</HeaderCell><HeaderCell>Amount</HeaderCell></TableHead><tbody>{overviewRows.map(([label, amount]) => <tr key={label}><DataCell>{label}</DataCell><DataCell moneyValue>{money(amount)}</DataCell></tr>)}</tbody><TotalRow colSpan={1} label="Total billing" total={report.overview.totalBilling} /></Table>}{(tab === 'dues' || tab === 'water') && <PrintChargeTables report={report[tab]} kind={tab} />}{tab === 'paidDues' && <PrintPaidMonthlyDues rows={report.paidDues.rows} />}{tab === 'receivables' && <PrintReceivables rows={report.receivables} />}</section>
+}
+
+function PrintChargeTables({ report, kind }) {
+  const label = kind === 'water' ? 'Water' : 'Association dues'
+  const billedRows = report.billedRows || []
+  const collectionRows = report.collectionRows || []
+  const totalBilled = billedRows.reduce((total, row) => total + Number(row.billed || 0), 0)
+  const totalCollected = collectionRows.reduce((total, row) => total + Number(row.collected || 0), 0)
+  return <div className="space-y-5"><h2 className="text-base font-black">{label} billed</h2><Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Billing period</HeaderCell><HeaderCell>Batch status</HeaderCell><HeaderCell>Billed</HeaderCell></TableHead><tbody>{billedRows.map((row) => <tr key={row.billId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)} – {date(row.periodEnd)}</DataCell><DataCell>{row.batchStatus}</DataCell><DataCell moneyValue>{money(row.billed)}</DataCell></tr>)}</tbody><TotalRow colSpan={4} total={totalBilled} /></Table><h2 className="text-base font-black">{label} collections</h2><Table><TableHead><HeaderCell>Payment date</HeaderCell><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>SOA period</HeaderCell><HeaderCell>Applied payment</HeaderCell><HeaderCell>Collected</HeaderCell></TableHead><tbody>{collectionRows.map((row) => <tr key={`${row.paymentId}-${row.billId}`}><DataCell>{date(row.paymentDate)}</DataCell><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)}</DataCell><DataCell moneyValue>{money(row.appliedAmount)}</DataCell><DataCell moneyValue>{money(row.collected)}</DataCell></tr>)}</tbody><tfoot><tr><td colSpan={4} /><DataCell moneyValue>{money(collectionRows.reduce((total, row) => total + Number(row.appliedAmount || 0), 0))}</DataCell><DataCell moneyValue>{money(totalCollected)}</DataCell></tr></tfoot></Table></div>
+}
+
+function PrintPaidMonthlyDues({ rows }) {
+  const duesPaid = rows.reduce((total, row) => total + Number(row.duesCollected || 0), 0)
+  const waterPaid = rows.reduce((total, row) => total + Number(row.waterCollected || 0), 0)
+  const totalPaid = rows.reduce((total, row) => total + Number(row.combinedCollected || 0), 0)
+  return <Table><TableHead><HeaderCell>Payment date</HeaderCell><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>SOA period</HeaderCell><HeaderCell>Association dues paid</HeaderCell><HeaderCell>Water paid</HeaderCell><HeaderCell>Combined paid</HeaderCell></TableHead><tbody>{rows.map((row) => <tr key={`${row.paymentId}-${row.billId}`}><DataCell>{date(row.paymentDate)}</DataCell><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)}</DataCell><DataCell moneyValue>{money(row.duesCollected)}</DataCell><DataCell moneyValue>{money(row.waterCollected)}</DataCell><DataCell moneyValue>{money(row.combinedCollected)}</DataCell></tr>)}</tbody><tfoot><tr><td colSpan={4} className="px-4 py-3 text-right font-black">Total</td><DataCell moneyValue>{money(duesPaid)}</DataCell><DataCell moneyValue>{money(waterPaid)}</DataCell><DataCell moneyValue>{money(totalPaid)}</DataCell></tr></tfoot></Table>
+}
+
+function PrintReceivables({ rows }) {
+  const totalBilled = rows.reduce((total, row) => total + Number(row.totalBilled || 0), 0)
+  const totalPaid = rows.reduce((total, row) => total + Number(row.paidAmount || 0), 0)
+  const totalBalance = rows.reduce((total, row) => total + Number(row.remainingBalance || 0), 0)
+  return <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Bill period</HeaderCell><HeaderCell>Due date</HeaderCell><HeaderCell>Billed</HeaderCell><HeaderCell>Paid</HeaderCell><HeaderCell>Balance</HeaderCell><HeaderCell>Status</HeaderCell></TableHead><tbody>{rows.map((row) => <tr key={row.billId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)}</DataCell><DataCell>{date(row.dueDate)}</DataCell><DataCell moneyValue>{money(row.totalBilled)}</DataCell><DataCell moneyValue>{money(row.paidAmount)}</DataCell><DataCell moneyValue>{money(row.remainingBalance)}</DataCell><DataCell>{row.paymentStatus}</DataCell></tr>)}</tbody><tfoot><tr><td colSpan={4} className="px-4 py-3 text-right font-black">Total</td><DataCell moneyValue>{money(totalBilled)}</DataCell><DataCell moneyValue>{money(totalPaid)}</DataCell><DataCell moneyValue>{money(totalBalance)}</DataCell><td /></tr></tfoot></Table>
 }
 
 export default function FinancialReportsPage() {
@@ -198,7 +255,7 @@ export default function FinancialReportsPage() {
       </form>
       {error && <p className="print-hidden rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <div className="print-hidden flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2" role="tablist" aria-label="Financial report tabs">{tabs.map((item) => <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} onClick={() => setTab(item.key)} className={`rounded-lg px-3 py-2 text-sm font-bold ${tab === item.key ? 'bg-emerald-700 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>{item.label}</button>)}</div><div className="flex gap-2"><button type="button" disabled={exporting || !report} onClick={exportExcel} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 disabled:opacity-50"><Download size={16} />{exporting ? 'Exporting…' : 'Export Excel'}</button><button type="button" disabled={!report} onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><Printer size={16} />Print / Save PDF</button></div></div>
-      {report && <div className="print:block"><div className="mb-5 hidden print:block"><h1 className="text-2xl font-black">{activeLabel}</h1><p>Reporting period: {report.filters.label}</p></div>{loading ? <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel> : <>{tab === 'overview' && <Overview overview={report.overview} />}{tab === 'dues' && <ChargeReport report={report.dues} kind="dues" />}{tab === 'water' && <ChargeReport report={report.water} kind="water" />}{tab === 'receivables' && <Receivables rows={report.receivables} />}</>}</div>}
+      {report && <><div className="print-hidden">{loading ? <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel> : <>{tab === 'overview' && <Overview overview={report.overview} />}{tab === 'dues' && <ChargeReport report={report.dues} kind="dues" />}{tab === 'water' && <ChargeReport report={report.water} kind="water" />}{tab === 'paidDues' && <PaidMonthlyDues report={report.paidDues} />}{tab === 'receivables' && <Receivables rows={report.receivables} />}</>}</div><div className="hidden print:block"><FinancialReportPrint activeLabel={activeLabel} report={report} tab={tab} /></div></>}
       {!report && loading && <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel>}
     </div>
   </DashboardLayout>

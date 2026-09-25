@@ -97,6 +97,15 @@ router.get("/", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
     }
     const params = [];
     const conditions = [];
+    // The operational analytics view represents the current billing cycle.
+    // Older recommendations remain stored for audit/history but are not mixed
+    // into the latest cycle's actionable list.
+    conditions.push(`r.based_on_period_id = (
+      SELECT id FROM billing_periods
+      WHERE period_type = 'LIVE_BILLING' AND status IN ('FORWARDED', 'CLOSED')
+      ORDER BY period_start DESC
+      LIMIT 1
+    )`);
     if (requestedStatus === "ACTIVE") {
       params.push(["OPEN", "VIEWED"]);
       conditions.push(`r.status = ANY($${params.length}::varchar[])`);

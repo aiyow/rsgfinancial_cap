@@ -13,11 +13,14 @@ router.get("/overview", async (req, res, next) => {
       pool.query(
         `WITH latest_period AS (
            SELECT id, period_start, status FROM billing_periods
-           WHERE period_type = 'LIVE_BILLING' ORDER BY period_start DESC LIMIT 1
+           WHERE period_type = 'LIVE_BILLING' AND status IN ('FORWARDED', 'CLOSED')
+           ORDER BY period_start DESC LIMIT 1
          ), bill_balances AS (
            SELECT b.id, b.billing_period_id, b.due_date_snapshot AS due_date,
              ${billTotalSql} AS total, ${billAppliedSql} AS applied
            FROM unit_bills b
+           JOIN billing_periods p ON p.id = b.billing_period_id
+           WHERE p.period_type = 'LIVE_BILLING' AND p.status IN ('FORWARDED', 'CLOSED')
          )
          SELECT
            (SELECT period_start FROM latest_period) AS "latestPeriodStart",
@@ -35,18 +38,27 @@ router.get("/overview", async (req, res, next) => {
            (SELECT COUNT(*)::int FROM units WHERE occupancy_status = 'OCCUPIED') AS "occupiedUnits",
            (SELECT COUNT(*)::int FROM units WHERE occupancy_status = 'VACANT') AS "vacantUnits",
            (SELECT COUNT(*)::int FROM payment_submissions WHERE review_status = 'PENDING') AS "pendingPayments",
-           (SELECT COUNT(*)::int FROM prescriptive_recommendations WHERE status IN ('OPEN', 'VIEWED')) AS "openRecommendations",
-           (SELECT COUNT(*)::int FROM prescriptive_recommendations WHERE status IN ('OPEN', 'VIEWED') AND priority = 'HIGH') AS "highPriorityRecommendations"`,
+           (SELECT COUNT(*)::int FROM payment_submissions WHERE review_status = 'APPROVED') AS "approvedPayments",
+           (SELECT COUNT(*)::int FROM users WHERE approval_status = 'PENDING') AS "pendingAccountVerifications",
+           (SELECT COUNT(*)::int FROM prescriptive_recommendations
+            WHERE based_on_period_id = (SELECT id FROM latest_period)
+              AND status IN ('OPEN', 'VIEWED')) AS "openRecommendations",
+           (SELECT COUNT(*)::int FROM prescriptive_recommendations
+            WHERE based_on_period_id = (SELECT id FROM latest_period)
+              AND status IN ('OPEN', 'VIEWED') AND priority = 'HIGH') AS "highPriorityRecommendations"`,
       ),
       pool.query(
         `WITH recent_periods AS (
            SELECT id, period_start FROM billing_periods
-           WHERE period_type = 'LIVE_BILLING' ORDER BY period_start DESC LIMIT 6
+           WHERE period_type = 'LIVE_BILLING' AND status IN ('FORWARDED', 'CLOSED')
+           ORDER BY period_start DESC LIMIT 6
          ), bill_balances AS (
            SELECT b.id, b.billing_period_id,
              ${billTotalSql} AS billed, ${billAppliedSql} AS collected
            FROM unit_bills b
-           WHERE b.billing_period_id IN (SELECT id FROM recent_periods)
+           JOIN billing_periods p ON p.id = b.billing_period_id
+           WHERE p.period_type = 'LIVE_BILLING' AND p.status IN ('FORWARDED', 'CLOSED')
+             AND b.billing_period_id IN (SELECT id FROM recent_periods)
          ), bill_totals AS (
            SELECT billing_period_id, SUM(billed) AS billed, SUM(collected) AS collected
            FROM bill_balances
@@ -68,6 +80,8 @@ router.get("/overview", async (req, res, next) => {
            SELECT b.id, b.due_date_snapshot AS due_date,
              ${billTotalSql} AS total, ${billAppliedSql} AS applied
            FROM unit_bills b
+           JOIN billing_periods p ON p.id = b.billing_period_id
+           WHERE p.period_type = 'LIVE_BILLING' AND p.status IN ('FORWARDED', 'CLOSED')
          )
          SELECT CASE
            WHEN total > 0 AND applied >= total THEN 'Paid'

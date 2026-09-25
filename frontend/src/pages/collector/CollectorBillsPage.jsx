@@ -7,6 +7,7 @@ import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
 const actionClass = 'inline-flex items-center justify-center whitespace-nowrap rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-bold leading-5 text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:text-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50'
+const batchNavigationClass = `${actionClass} batch-navigation-action`
 const deleteForwardedClass = actionClass
 function displayDate(value) {
   if (!value) return '—'
@@ -98,9 +99,9 @@ export default function CollectorBillsPage() {
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
               <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-black">{displayDate(period.periodStart)} to {displayDate(period.periodEnd)}</h2><span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">{period.status}</span></div><p className="mt-1 text-sm text-slate-500">Due {displayDate(period.dueDate)} | Water PHP {period.waterRatePerCubicM}/m3 | Dues PHP {period.associationDuesRatePerSqm}/sqm | {Number(period.latePenaltyPercent || 0) > 0 ? `Late penalty ${Number(period.latePenaltyPercent).toFixed(2)}% once | ` : ''}{periodBills.length} SOAs</p></div>
               <div className="flex flex-wrap gap-2 print-hidden">
-                {period.status === 'DRAFT' && <><Link to={`/collector/billing?periodId=${period.id}`} className={actionClass}>Edit draft</Link><button disabled={busyId === period.id} onClick={() => remove(period)} className={actionClass}>Delete batch</button></>}
-                {period.status === 'GENERATED' && <><Link to={`/collector/bills/batches/${period.id}`} className={actionClass}>View batch</Link><button disabled={busyId === period.id} onClick={() => reopen(period)} className={actionClass}>Reopen batch</button><button disabled={busyId === period.id} onClick={() => remove(period)} className={actionClass}>Delete batch</button><button disabled={busyId === period.id} onClick={() => forward(period)} className={actionClass}>Forward to Admin</button></>}
-                {period.status === 'FORWARDED' && <><Link to={`/collector/bills/batches/${period.id}`} className={actionClass}>View batch</Link><button disabled={busyId === period.id} onClick={() => remove(period)} className={deleteForwardedClass}>Delete forwarded batch</button></>}
+                {period.status === 'DRAFT' && <><Link to={`/collector/billing?periodId=${period.id}`} className={batchNavigationClass}>Edit draft</Link><button disabled={busyId === period.id} onClick={() => remove(period)} className={actionClass}>Delete batch</button></>}
+                {period.status === 'GENERATED' && <><Link to={`/collector/bills/batches/${period.id}`} className={batchNavigationClass}>View batch</Link><button disabled={busyId === period.id} onClick={() => reopen(period)} className={actionClass}>Reopen batch</button><button disabled={busyId === period.id} onClick={() => remove(period)} className={actionClass}>Delete batch</button><button disabled={busyId === period.id} onClick={() => forward(period)} className={actionClass}>Forward to Admin</button></>}
+                {period.status === 'FORWARDED' && <><Link to={`/collector/bills/batches/${period.id}`} className={batchNavigationClass}>View batch</Link><button disabled={busyId === period.id} onClick={() => remove(period)} className={deleteForwardedClass}>Delete forwarded batch</button></>}
               </div>
             </div>
           </section>

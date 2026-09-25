@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { AlertTriangle, Building2, CircleDollarSign, Droplets, FileText, Gauge, ReceiptText, RefreshCw, TrendingUp, WalletCards } from 'lucide-react'
+import { AlertTriangle, Building2, CircleDollarSign, Droplets, FileText, Gauge, ReceiptText, RefreshCw, TrendingUp, UserRoundCheck, WalletCards } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -34,31 +34,48 @@ function percent(value) {
   return value === null || value === undefined ? '—' : `${Number(value).toFixed(1)}%`
 }
 
-function connectForecastLine(rows) {
-  const result = rows.map((row) => ({ ...row, forecastConsumption: row.projectedConsumption }))
-  const firstForecastIndex = result.findIndex((row) => row.projectedConsumption !== null)
+function connectForecastLine(rows, actualKey, projectedKey, forecastKey) {
+  const result = rows.map((row) => ({ ...row, [forecastKey]: row[projectedKey] }))
+  const firstForecastIndex = result.findIndex((row) => row[projectedKey] !== null)
   if (firstForecastIndex === -1) return result
 
   for (let index = firstForecastIndex; index >= 0; index -= 1) {
-    if (result[index].actualConsumption !== null) {
-      result[index].forecastConsumption = result[index].actualConsumption
+    if (result[index][actualKey] !== null) {
+      result[index][forecastKey] = result[index][actualKey]
       break
     }
   }
   return result
 }
 
-function Metric({ label, value, detail, icon: Icon, tone = 'green', accent }) {
+function Metric({ label, value, detail, subdetail, icon: Icon, tone = 'green', accent }) {
   const tones = { green: 'border-l-[var(--primary)] bg-emerald-50/40', amber: 'border-l-amber-500 bg-amber-50/40', red: 'border-l-red-500 bg-red-50/40', blue: 'border-l-sky-600 bg-sky-50/40' }
   return <article className={`min-w-0 rounded-2xl border border-[var(--border)] border-l-[3px] p-5 shadow-sm ${tones[tone]} ${accent ? `collector-metric collector-metric-${accent}` : ''}`}>
     <div className="flex items-start justify-between gap-3"><p className="text-[11px] font-black uppercase tracking-[0.12em] text-[var(--muted)]">{label}</p><span className="grid size-9 place-items-center rounded-lg bg-white text-[var(--primary)] shadow-sm"><Icon size={18} /></span></div>
     <p className="mt-4 truncate text-2xl font-black tracking-tight text-[var(--ink)]">{value}</p>
     <p className="mt-1 min-h-5 text-xs text-[var(--muted)]">{detail}</p>
+    {subdetail && <p className="mt-1 min-h-4 text-xs font-semibold text-[var(--primary)]">{subdetail}</p>}
   </article>
 }
 
-function ChartPanel({ title, description, variant, children }) {
-  return <section className={`collector-chart-panel overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-b from-white to-slate-50/60 p-5 shadow-sm sm:p-6 ${variant === 'trend' ? 'collector-trend-chart' : ''}`}><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--primary)]">Live insight</p><h2 className="mt-1 text-base font-black text-[var(--ink)]">{title}</h2><p className="mt-1 text-sm text-[var(--muted)]">{description}</p><div className="mt-5 h-72">{children}</div></section>
+function ChartPanel({ title, description, variant, filter, children }) {
+  return <section className={`collector-chart-panel overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-b from-white to-slate-50/60 p-5 shadow-sm sm:p-6 ${variant === 'trend' ? 'collector-trend-chart' : ''}`}><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--primary)]">Live insight</p><h2 className="mt-1 text-base font-black text-[var(--ink)]">{title}</h2><p className="mt-1 text-sm text-[var(--muted)]">{description}</p></div>{filter}</div><div className="mt-5 h-72">{children}</div></section>
+}
+
+const waterBillStatisticalRanges = [
+  { value: 'twoMonths', label: '2 months', months: 2 },
+  { value: 'fourMonths', label: '4 months', months: 4 },
+  { value: 'sixMonths', label: '6 months', months: 6 },
+  { value: 'twelveMonths', label: '12 months', months: 12 },
+]
+
+function filterChartRows(rows, range, ranges) {
+  const months = ranges.find((option) => option.value === range)?.months || 12
+  return rows.slice(-months)
+}
+
+function StatisticalFilter({ ranges, value, onChange }) {
+  return <div className="shrink-0"><p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--muted)]">Statistical filter</p><div className="flex flex-wrap gap-1" role="group" aria-label="Statistical filter">{ranges.map((option) => <button key={option.value} type="button" onClick={() => onChange(option.value)} className={`rounded-md px-2 py-1 text-[11px] font-bold transition ${value === option.value ? 'bg-[var(--primary)] text-white shadow-sm' : 'bg-white text-[var(--muted)] ring-1 ring-inset ring-[var(--border)] hover:bg-[var(--app-bg)]'}`}>{option.label}</button>)}</div></div>
 }
 
 function ProgressRow({ label, value, amount, tone = 'emerald' }) {
@@ -75,8 +92,9 @@ function QuickStat({ label, value, detail, tone = 'slate' }) {
 const chartTooltipStyle = { borderRadius: 12, border: '1px solid #dbe5df', boxShadow: '0 10px 28px rgba(15, 44, 29, 0.12)', fontSize: 12 }
 
 function BillingTrendChart({ monthly }) {
-  return <ChartPanel title="Billing and collection trend" description="Billed amounts compared with payments applied across the latest six billing periods." variant="trend">
-    {monthly.length ? <ResponsiveContainer width="100%" height="100%"><BarChart data={monthly} margin={{ top: 8, right: 8, left: -10, bottom: 0 }} barGap={7}><defs><linearGradient id="dashboardBilled" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#3b82f6" /><stop offset="100%" stopColor="#1d4ed8" /></linearGradient><linearGradient id="dashboardCollected" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#4ade80" /><stop offset="100%" stopColor="#15803d" /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" /><XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={false} /><YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={(value) => `₱${Math.round(value / 1000)}k`} /><Tooltip contentStyle={chartTooltipStyle} cursor={{ fill: 'rgba(37, 99, 235, 0.06)' }} formatter={(value) => money(value)} /><Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} /><Bar dataKey="billed" name="Billed" fill="url(#dashboardBilled)" radius={[6, 6, 0, 0]} maxBarSize={36} animationBegin={0} animationDuration={900} animationEasing="ease-out" /><Bar dataKey="collected" name="Collected" fill="url(#dashboardCollected)" radius={[6, 6, 0, 0]} maxBarSize={36} animationBegin={120} animationDuration={900} animationEasing="ease-out" /></BarChart></ResponsiveContainer> : <EmptyRow message="No billing periods are available yet." />}
+  const latestLiveBilling = monthly.slice(-1)
+  return <ChartPanel title="Billing and collection trend" description="Billed amounts compared with payments applied in the current live billing month." variant="trend">
+    {latestLiveBilling.length ? <ResponsiveContainer width="100%" height="100%"><BarChart data={latestLiveBilling} margin={{ top: 8, right: 8, left: -10, bottom: 0 }} barGap={7}><defs><linearGradient id="dashboardBilled" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#3b82f6" /><stop offset="100%" stopColor="#1d4ed8" /></linearGradient><linearGradient id="dashboardCollected" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#4ade80" /><stop offset="100%" stopColor="#15803d" /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" /><XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={false} /><YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={(value) => `₱${Math.round(value / 1000)}k`} /><Tooltip contentStyle={chartTooltipStyle} cursor={{ fill: 'rgba(37, 99, 235, 0.06)' }} formatter={(value) => money(value)} /><Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} /><Bar dataKey="billed" name="Billed" fill="url(#dashboardBilled)" radius={[6, 6, 0, 0]} maxBarSize={36} animationBegin={0} animationDuration={900} animationEasing="ease-out" /><Bar dataKey="collected" name="Collected" fill="url(#dashboardCollected)" radius={[6, 6, 0, 0]} maxBarSize={36} animationBegin={120} animationDuration={900} animationEasing="ease-out" /></BarChart></ResponsiveContainer> : <EmptyRow message="No billing periods are available yet." />}
   </ChartPanel>
 }
 
@@ -87,8 +105,10 @@ function BillStatusChart({ billStatus }) {
 }
 
 function WaterTrendChart({ waterTrend }) {
-  return <ChartPanel title="Historical vs projected water consumption" description="Validated use compared with the next available water-use forecast.">
-    {waterTrend.length ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={waterTrend} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}><defs><linearGradient id="dashboardActualWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#60a5fa" stopOpacity={0.34} /><stop offset="100%" stopColor="#60a5fa" stopOpacity={0.02} /></linearGradient><linearGradient id="dashboardForecastWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#a78bfa" stopOpacity={0.28} /><stop offset="100%" stopColor="#a78bfa" stopOpacity={0.02} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" /><XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={false} /><YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} unit=" m³" /><Tooltip contentStyle={chartTooltipStyle} formatter={(value, name) => [`${Number(value).toFixed(2)} m³`, name === 'Projected forecast' ? 'Projected forecast' : 'Historical actual']} /><Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} /><Area type="monotone" dataKey="actualConsumption" name="Historical actual" stroke="#2563eb" fill="url(#dashboardActualWater)" strokeWidth={3} dot={{ r: 3, fill: '#2563eb', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#2563eb' }} isAnimationActive animationBegin={0} animationDuration={1000} animationEasing="ease-out" /><Area type="monotone" dataKey="forecastConsumption" name="Projected forecast" stroke="#7c3aed" fill="url(#dashboardForecastWater)" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 3, fill: '#7c3aed', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#7c3aed' }} connectNulls isAnimationActive animationBegin={140} animationDuration={1000} animationEasing="ease-out" /></AreaChart></ResponsiveContainer> : <EmptyRow message="No water analytics data is available yet." />}
+  const [range, setRange] = useState('sixMonths')
+  const filteredWaterTrend = filterChartRows(waterTrend, range, waterBillStatisticalRanges)
+  return <ChartPanel title="Historical vs Projected Water Bill" description="Actual water charges compared with the projected water bill for the selected periods." filter={<StatisticalFilter ranges={waterBillStatisticalRanges} value={range} onChange={setRange} />}>
+    {filteredWaterTrend.length ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={filteredWaterTrend} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}><defs><linearGradient id="dashboardActualWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#60a5fa" stopOpacity={0.34} /><stop offset="100%" stopColor="#60a5fa" stopOpacity={0.02} /></linearGradient><linearGradient id="dashboardForecastWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#a78bfa" stopOpacity={0.28} /><stop offset="100%" stopColor="#a78bfa" stopOpacity={0.02} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" /><XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={false} /><YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={(value) => `₱${Math.round(value / 1000)}k`} /><Tooltip contentStyle={chartTooltipStyle} formatter={(value, name) => [money(value), name]} /><Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} /><Area type="monotone" dataKey="actualWaterBill" name="Historical water bill" stroke="#2563eb" fill="url(#dashboardActualWater)" strokeWidth={3} dot={{ r: 3, fill: '#2563eb', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#2563eb' }} isAnimationActive animationBegin={0} animationDuration={1000} animationEasing="ease-out" /><Area type="monotone" dataKey="forecastWaterBill" name="Projected water bill" stroke="#7c3aed" fill="url(#dashboardForecastWater)" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 3, fill: '#7c3aed', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#7c3aed' }} connectNulls isAnimationActive animationBegin={140} animationDuration={1000} animationEasing="ease-out" /></AreaChart></ResponsiveContainer> : <EmptyRow message="No water analytics data is available yet." />}
   </ChartPanel>
 }
 
@@ -137,17 +157,26 @@ export default function OperationalDashboard({ role }) {
     projectedConsumption: row.projectedConsumption === null ? null : Number(row.projectedConsumption),
     actualWaterBill: row.actualWaterBill === null ? null : Number(row.actualWaterBill),
     projectedWaterBill: row.projectedWaterBill === null ? null : Number(row.projectedWaterBill),
-  })))
+  })), 'actualWaterBill', 'projectedWaterBill', 'forecastWaterBill')
   const currentBilled = Number(metrics.currentBilled || 0)
   const currentCollected = Number(metrics.currentCollected || 0)
   const collectionRate = ratio(currentCollected, currentBilled)
   const collectionGap = Math.max(currentBilled - currentCollected, 0)
+  const previousPeriod = monthly.length > 1 ? monthly.at(-2) : null
+  const previousCollectionRate = previousPeriod ? ratio(previousPeriod.collected, previousPeriod.billed) : null
+  const collectionRateChange = collectionRate !== null && previousCollectionRate !== null
+    ? Number((collectionRate - previousCollectionRate).toFixed(1))
+    : null
+  const collectionComparison = collectionRateChange === null
+    ? 'No previous month to compare'
+    : `${collectionRateChange >= 0 ? '↗' : '↘'} ${collectionRateChange >= 0 ? '+' : ''}${collectionRateChange.toFixed(1)}% vs last month`
   const latestActualWater = [...waterTrend].reverse().find((row) => row.actualConsumption !== null)
   const latestWaterForecast = [...waterTrend].reverse().find((row) => row.projectedConsumption !== null)
   const roleIsAdmin = role === 'ADMIN'
   const actions = roleIsAdmin
     ? [
       { title: 'Payment verification', value: metrics.pendingPayments || 0, description: 'payment proof(s) waiting for review', to: '/admin/payments', icon: ReceiptText },
+      { title: 'Pending account verification', value: metrics.pendingAccountVerifications || 0, description: 'account(s) awaiting approval', to: '/admin/users', icon: UserRoundCheck },
       { title: 'Overdue SOAs', value: metrics.overdueBills || 0, description: 'account(s) still have a balance', to: '/admin/soa', icon: AlertTriangle },
       { title: 'Water recommendations', value: metrics.openRecommendations || 0, description: `${metrics.highPriorityRecommendations || 0} high priority`, to: '/admin/analytics', icon: Gauge },
     ]
@@ -162,14 +191,14 @@ export default function OperationalDashboard({ role }) {
     {!data ? <Panel title="Loading dashboard"><EmptyRow message="Loading your latest billing summary..." /></Panel> : <>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">{roleIsAdmin ? 'Dashboard' : 'Billing operations dashboard'}</h1><p className="mt-1 text-sm text-[var(--muted)]">Current billing period: <strong className="text-[var(--ink)]">{month(metrics.latestPeriodStart)}</strong>{metrics.latestPeriodStatus ? ` (${metrics.latestPeriodStatus.toLowerCase()})` : ''}</p></div><button type="button" onClick={() => { setRefreshing(true); setRefreshKey((value) => value + 1) }} disabled={refreshing} className="inline-flex w-fit items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-bold text-[var(--ink)] shadow-sm transition hover:bg-[var(--app-bg)] disabled:opacity-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{refreshing ? 'Refreshing…' : 'Refresh overview'}</button></div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Current billing" value={money(currentBilled)} detail={`${metrics.currentBills || 0} statement(s) issued`} icon={FileText} accent="blue" />
-        <Metric label="Collected so far" value={money(currentCollected)} detail="payments applied to current billing" icon={WalletCards} tone="blue" accent="green" />
-        <Metric label="Collection efficiency" value={percent(collectionRate)} detail={collectionRate === null ? 'No current billing to measure' : `${money(collectionGap)} still to collect`} icon={TrendingUp} tone={collectionRate !== null && collectionRate < 70 ? 'amber' : 'green'} accent="blue" />
-        <Metric label="Overdue balance" value={money(metrics.overdueAmount)} detail={`${metrics.overdueBills || 0} overdue statement(s)`} icon={CircleDollarSign} tone={metrics.overdueBills ? 'red' : 'green'} accent="red" />
+        <Metric label="Monthly billing" value={money(currentBilled)} detail={`${metrics.currentBills || 0} statement(s) issued`} icon={FileText} accent="blue" />
+        <Metric label="Monthly collection" value={money(currentCollected)} detail={collectionRate === null ? 'No current billing to collect' : `${money(collectionGap)} still to collect`} icon={WalletCards} tone="blue" accent="green" />
+        <Metric label="Collection efficiency" value={percent(collectionRate)} detail={collectionComparison} icon={TrendingUp} tone={collectionRate !== null && collectionRate < 70 ? 'amber' : 'green'} accent="blue" />
+        <Metric label="Outstanding bills" value={metrics.overdueBills || 0} detail={`${money(metrics.overdueAmount)} overdue balance`} icon={CircleDollarSign} tone={metrics.overdueBills ? 'red' : 'green'} accent="red" />
       </div>
       <div className="grid gap-4 sm:grid-cols-3">
-        <Metric label="Homes occupied" value={`${metrics.occupiedUnits || 0} / ${metrics.totalUnits || 0}`} detail={`${metrics.vacantUnits || 0} vacant homes`} icon={Building2} tone="blue" accent="blue" />
-        <Metric label="Payment reviews" value={metrics.pendingPayments || 0} detail={roleIsAdmin ? 'proofs waiting for verification' : 'waiting for Admin verification'} icon={ReceiptText} tone={metrics.pendingPayments ? 'amber' : 'green'} accent="green" />
+        <Metric label="Occupied units" value={`${metrics.occupiedUnits || 0} / ${metrics.totalUnits || 0}`} detail={`${metrics.vacantUnits || 0} vacant units`} icon={Building2} tone="blue" accent="blue" />
+        <Metric label="Pending payments" value={metrics.pendingPayments || 0} detail={roleIsAdmin ? 'proofs waiting for verification' : 'waiting for Admin verification'} subdetail={`${metrics.approvedPayments || 0} approved payment(s)`} icon={ReceiptText} tone={metrics.pendingPayments ? 'amber' : 'green'} accent="green" />
         <Metric label="High-priority water alerts" value={metrics.highPriorityRecommendations || 0} detail={`${metrics.openRecommendations || 0} recommendations open`} icon={Gauge} tone={metrics.highPriorityRecommendations ? 'red' : 'green'} accent="red" />
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">

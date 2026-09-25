@@ -19,7 +19,9 @@ const defaultTemplate = {
   noticeLine2: 'our Official Bank Passbook and Cheque book to the Elected Board of Trustees.',
   footerText: 'T H A N K   Y O U!',
   logoPlacement: 'LEFT',
-  accentColor: '#617c40',
+  accentColor: '#166534',
+  secondaryColor: '#a9cbe8',
+  highlightColor: '#cceabd',
 }
 
 function billingDate(bill) {
@@ -83,7 +85,11 @@ export default function SoaDocument({ bill }) {
   return (
     <article
       className="print-document soa-sheet overflow-hidden rounded-sm border-2 border-[#285b78] bg-white shadow-sm"
-      style={{ '--soa-accent': template.accentColor || defaultTemplate.accentColor }}
+      style={{
+        '--soa-accent': template.accentColor || defaultTemplate.accentColor,
+        '--soa-secondary': template.secondaryColor || defaultTemplate.secondaryColor,
+        '--soa-highlight': template.highlightColor || defaultTemplate.highlightColor,
+      }}
     >
       {bill.generationWarning && <p className="print-hidden m-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm font-bold text-amber-800">Warning: {bill.generationWarning}</p>}
 

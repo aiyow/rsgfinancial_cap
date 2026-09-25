@@ -33,7 +33,7 @@ const navigationByRole = {
     view: [
       { label: 'Dashboard', to: '/admin', end: true, icon: LayoutDashboard },
       { label: 'Unit Directory', to: '/admin/units', end: true, icon: Building2 },
-      { label: 'Forwarded Billings', to: '/admin/soa', icon: FileText },
+      { label: 'Forward Billings', to: '/admin/soa', icon: FileText },
       { label: 'Payment Records', to: '/admin/payments', icon: CreditCard },
       { label: 'Water Analytics', to: '/admin/analytics', icon: BarChart3 },
       { label: 'Financial Reports', to: '/admin/reports', icon: FolderKanban },
@@ -49,9 +49,9 @@ const navigationByRole = {
   },
   COLLECTOR: {
     view: [
-      { label: 'Executive Dashboard', to: '/collector', end: true, icon: LayoutDashboard },
+      { label: 'Dashboard', to: '/collector', end: true, icon: LayoutDashboard },
       { label: 'Unit Directory', to: '/collector/units', icon: Building2 },
-      { label: 'Forwarded Billings', to: '/collector/bills', icon: FileText },
+      { label: 'Forward Billings', to: '/collector/bills', icon: FileText },
       { label: 'Payment Records', to: '/collector/payments', icon: WalletCards },
       { label: 'Water Analytics', to: '/collector/analytics', icon: BarChart3 },
       { label: 'Financial Reports', to: '/collector/reports', icon: FolderKanban },

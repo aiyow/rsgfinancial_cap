@@ -7,6 +7,12 @@ import useAuth from '../../hooks/useAuth'
 import { apiFile, apiRequest } from '../../services/api'
 
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal'
+const defaultColorPalette = {
+  accentColor: '#166534',
+  secondaryColor: '#a9cbe8',
+  highlightColor: '#cceabd',
+}
+
 const defaultTemplate = {
   companyName: '',
   companyAddress: '',
@@ -22,7 +28,7 @@ const defaultTemplate = {
   noticeLine2: '',
   footerText: '',
   logoPlacement: 'LEFT',
-  accentColor: '#166534',
+  ...defaultColorPalette,
 }
 
 const previewBill = {
@@ -91,6 +97,10 @@ export default function CollectorSoaTemplatePage() {
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  function resetColorsToDefault() {
+    setForm((current) => ({ ...current, ...defaultColorPalette }))
   }
 
   async function save(event) {
@@ -178,7 +188,16 @@ export default function CollectorSoaTemplatePage() {
             <Field label="Payment account name"><input required value={form.paymentAccountName} onChange={(event) => update('paymentAccountName', event.target.value)} className={inputClass} /></Field>
             <Field label="Payment account number"><input required value={form.paymentAccountNumber} onChange={(event) => update('paymentAccountNumber', event.target.value)} className={inputClass} /></Field>
             <Field label="Logo placement"><select value={form.logoPlacement} onChange={(event) => update('logoPlacement', event.target.value)} className={inputClass}><option value="LEFT">Left</option><option value="CENTER">Center</option><option value="RIGHT">Right</option></select></Field>
-            <Field label="Header/accent color"><input required type="color" value={form.accentColor} onChange={(event) => update('accentColor', event.target.value)} className={`${inputClass} h-10 p-1`} /></Field>
+            <Field label="Table header color"><input required type="color" value={form.accentColor} onChange={(event) => update('accentColor', event.target.value)} className={`${inputClass} h-10 p-1`} /></Field>
+            <Field label="Information band color"><input required type="color" value={form.secondaryColor} onChange={(event) => update('secondaryColor', event.target.value)} className={`${inputClass} h-10 p-1`} /></Field>
+            <Field label="Highlight color"><input required type="color" value={form.highlightColor} onChange={(event) => update('highlightColor', event.target.value)} className={`${inputClass} h-10 p-1`} /></Field>
+            <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-sm text-slate-600">Restore the three SOA colors to the standard template palette.</p>
+              <button type="button" onClick={resetColorsToDefault} className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50">
+                <RotateCcw size={16} />
+                Reset colors to default
+              </button>
+            </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

@@ -54,6 +54,18 @@ function connectForecastLine(rows, actualKey, projectedKey, forecastKey) {
   return result
 }
 
+const forecastRanges = [
+  { value: 'twoMonths', label: '2 months', months: 2 },
+  { value: 'fourMonths', label: '4 months', months: 4 },
+  { value: 'sixMonths', label: '6 months', months: 6 },
+  { value: 'twelveMonths', label: '12 months', months: 12 },
+]
+
+function filterChartRows(rows, range) {
+  const months = forecastRanges.find((option) => option.value === range)?.months || 12
+  return rows.slice(-months)
+}
+
 export default function AnalyticsPage() {
   const { token, user } = useAuth()
   const [data, setData] = useState(null)
@@ -61,7 +73,12 @@ export default function AnalyticsPage() {
   const [recommendationBusyId, setRecommendationBusyId] = useState(null)
   const [showAllRecommendations, setShowAllRecommendations] = useState(false)
   const [recommendationSort, setRecommendationSort] = useState('PRIORITY')
+  const [recommendationPriority, setRecommendationPriority] = useState('ALL')
+  const [recommendationSearch, setRecommendationSearch] = useState('')
   const [expandedRecommendationId, setExpandedRecommendationId] = useState(null)
+  const [consumptionRange, setConsumptionRange] = useState('sixMonths')
+  const [waterBillRange, setWaterBillRange] = useState('sixMonths')
+  const [showForecastQuality, setShowForecastQuality] = useState(false)
   const [refreshingForecasts, setRefreshingForecasts] = useState(false)
   const [error, setError] = useState('')
 
@@ -125,21 +142,26 @@ export default function AnalyticsPage() {
     'projectedWaterBill',
     'forecastWaterBill',
   )
+  const consumptionChartData = filterChartRows(chartData, consumptionRange)
+  const waterBillChartData = filterChartRows(chartData, waterBillRange)
   const recommendationSummary = {
-    open: recommendations.filter((recommendation) => recommendation.status === 'OPEN').length,
-    viewed: recommendations.filter((recommendation) => recommendation.status === 'VIEWED').length,
+    active: recommendations.length,
     high: recommendations.filter((recommendation) => recommendation.priority === 'HIGH').length,
+    units: new Set(recommendations.map((recommendation) => recommendation.unitId)).size,
   }
   const sortedRecommendations = useMemo(() => {
     const priority = { HIGH: 0, MEDIUM: 1, LOW: 2 }
-    const status = { OPEN: 0, VIEWED: 1, RESOLVED: 2 }
-    return [...recommendations].sort((left, right) => {
+    const query = recommendationSearch.trim().toLowerCase()
+    return recommendations.filter((recommendation) => {
+      const matchesPriority = recommendationPriority === 'ALL' || recommendation.priority === recommendationPriority
+      const searchable = `Unit ${recommendation.unitNumber} ${recommendation.message} ${recommendation.recommendationType}`.toLowerCase()
+      return matchesPriority && (!query || searchable.includes(query))
+    }).sort((left, right) => {
       if (recommendationSort === 'UNIT') return String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true })
-      if (recommendationSort === 'STATUS') return (status[left.status] ?? 9) - (status[right.status] ?? 9) || String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true })
       return (priority[left.priority] ?? 9) - (priority[right.priority] ?? 9) || String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true })
     })
-  }, [recommendationSort, recommendations])
-  const visibleRecommendations = showAllRecommendations ? sortedRecommendations : sortedRecommendations.slice(0, 5)
+  }, [recommendationPriority, recommendationSearch, recommendationSort, recommendations])
+  const visibleRecommendations = showAllRecommendations ? sortedRecommendations : sortedRecommendations.slice(0, 10)
   const analyticsAccents = ['blue', 'green', 'red', 'blue', 'green']
 
   return (
@@ -166,10 +188,10 @@ export default function AnalyticsPage() {
           </Panel>
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <ChartCard title="Historical vs Projected Water Consumption" description="Monthly total consumption in cubic meters.">
-              {chartData.length ? (
+            <ChartCard title="Historical vs Projected Water Consumption" description="Monthly total consumption in cubic meters." filter={<ForecastRangeFilter value={consumptionRange} onChange={setConsumptionRange} />}>
+              {consumptionChartData.length ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
+                  <AreaChart data={consumptionChartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
                     <YAxis unit=" m3" tick={{ fontSize: 12 }} />
@@ -182,10 +204,10 @@ export default function AnalyticsPage() {
               ) : <EmptyRow message="No chart data is available yet." />}
             </ChartCard>
 
-            <ChartCard title="Historical vs Projected Water Bill" description="Monthly total water charges from actual readings and forecasts.">
-              {chartData.length ? (
+            <ChartCard title="Historical vs Projected Water Bill" description="Monthly total water charges from actual readings and forecasts." filter={<ForecastRangeFilter value={waterBillRange} onChange={setWaterBillRange} />}>
+              {waterBillChartData.length ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
+                  <AreaChart data={waterBillChartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
@@ -199,26 +221,26 @@ export default function AnalyticsPage() {
             </ChartCard>
           </div>
 
-          <Panel title="Prescriptive recommendations" description="Detected conditions are translated into practical actions for staff and residents.">
+          <Panel title="Prescriptive Recommendations" description="A prioritized action queue for the latest billing batch forwarded to Admin.">
             <div className="mb-5 grid gap-3 sm:grid-cols-3">
-              <Metric label="Open" value={recommendationSummary.open} compact />
-              <Metric label="Viewed" value={recommendationSummary.viewed} compact />
+              <Metric label="Action needed" value={recommendationSummary.active} compact />
               <Metric label="High priority" value={recommendationSummary.high} compact />
+              <Metric label="Units affected" value={recommendationSummary.units} compact />
             </div>
             {recommendations.length ? (
               <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-500">Showing concise recommendations by unit. Select one to view its full details.</p><label className="flex items-center gap-2 text-sm font-bold text-slate-700">Sort by<select value={recommendationSort} onChange={(event) => setRecommendationSort(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="PRIORITY">Priority: high first</option><option value="UNIT">Unit number</option><option value="STATUS">Status: open first</option></select></label></div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-black text-slate-900">Action queue</p><p className="mt-0.5 text-sm text-slate-500">Find the most urgent recommendation, then open it for the supporting evidence.</p></div><p className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200">{sortedRecommendations.length} matching</p></div><div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_170px_180px]"><label className="text-xs font-bold text-slate-600">Search<input type="search" value={recommendationSearch} onChange={(event) => { setRecommendationSearch(event.target.value); setShowAllRecommendations(false) }} placeholder="Unit, action, or condition..." className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="text-xs font-bold text-slate-600">Priority<select value={recommendationPriority} onChange={(event) => { setRecommendationPriority(event.target.value); setShowAllRecommendations(false) }} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="ALL">All priorities</option><option value="HIGH">High priority</option><option value="MEDIUM">Medium priority</option></select></label><label className="text-xs font-bold text-slate-600">Sort by<select value={recommendationSort} onChange={(event) => setRecommendationSort(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="PRIORITY">Priority: high first</option><option value="UNIT">Unit number</option></select></label></div></div>
                 <div className={showAllRecommendations ? 'max-h-[42rem] space-y-3 overflow-y-auto overscroll-contain pr-2' : 'space-y-3'} aria-label="Prescriptive recommendations">
                   {visibleRecommendations.map((recommendation) => {
                     const busy = recommendationBusyId === recommendation.id
                     const expanded = expandedRecommendationId === recommendation.id
                     return (
-                      <article key={recommendation.id} className="rounded-xl border border-slate-200 p-4">
+                      <article key={recommendation.id} className={`rounded-xl border p-4 ${recommendation.priority === 'HIGH' ? 'border-rose-200 bg-rose-50/30' : 'border-slate-200 bg-white'}`}>
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                           <button type="button" onClick={() => setExpandedRecommendationId((current) => current === recommendation.id ? null : recommendation.id)} aria-expanded={expanded} className="min-w-0 flex-1 text-left">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${recommendation.priority === 'HIGH' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-800'}`}>{recommendation.priority}</span>
-                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{recommendation.status}</span>
+                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{recommendationTypeLabel(recommendation.recommendationType)}</span>
                               {recommendation.residentVisibleAt && <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Visible to Resident</span>}
                             </div>
                             <div className="mt-3 flex items-center justify-between gap-4"><p className="font-black text-slate-900">Unit {recommendation.unitNumber}</p><span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700">{expanded ? 'Hide details' : 'View details'} <ChevronDown size={15} className={`transition ${expanded ? 'rotate-180' : ''}`} /></span></div>
@@ -232,14 +254,15 @@ export default function AnalyticsPage() {
                       </article>
                     )
                   })}
+                  {sortedRecommendations.length === 0 && <EmptyRow message="No recommendations match the selected search or priority." />}
                 </div>
-                {recommendations.length > 5 && (
+                {sortedRecommendations.length > 10 && (
                   <button
                     type="button"
                     onClick={() => setShowAllRecommendations((value) => !value)}
                     className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
                   >
-                    {showAllRecommendations ? 'Show fewer recommendations' : `Show all ${recommendations.length} recommendations`}
+                    {showAllRecommendations ? 'Show fewer recommendations' : `Show all ${sortedRecommendations.length} matching recommendations`}
                   </button>
                 )}
               </div>
@@ -269,13 +292,7 @@ export default function AnalyticsPage() {
             ) : <EmptyRow message="No forecast has a matching actual month yet. Import five months, then import the holdout month." />}
           </Panel>
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <Metric label="Holdout month" value={month(data?.evaluationMonth)} accent={analyticsAccents[0]} icon={CalendarDays} />
-            <Metric label="WAPE accuracy" value={valueOrDash(metrics.accuracy, '%')} accent={analyticsAccents[1]} icon={Gauge} />
-            <Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} accent={analyticsAccents[2]} icon={Activity} />
-            <Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} accent={analyticsAccents[3]} icon={ChartNoAxesCombined} />
-            <Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} accent={analyticsAccents[4]} icon={ListChecks} />
-          </div>
+          <section><button type="button" onClick={() => setShowForecastQuality((current) => !current)} aria-expanded={showForecastQuality} className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-800 shadow-sm transition hover:border-emerald-700 hover:bg-emerald-700 hover:text-white"><ChartNoAxesCombined size={17} />{showForecastQuality ? 'Hide forecast quality metrics' : 'Show forecast quality metrics'}</button>{showForecastQuality && <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><Metric label="Holdout month" value={month(data?.evaluationMonth)} accent={analyticsAccents[0]} icon={CalendarDays} /><Metric label="WAPE accuracy" value={valueOrDash(metrics.accuracy, '%')} accent={analyticsAccents[1]} icon={Gauge} /><Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} accent={analyticsAccents[2]} icon={Activity} /><Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} accent={analyticsAccents[3]} icon={ChartNoAxesCombined} /><Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} accent={analyticsAccents[4]} icon={ListChecks} /></div>}</section>
 
           <Panel title="Flagged meter readings" description="These readings remain visible for correction but do not train the model.">
             {data?.flaggedReadings.length ? (
@@ -300,14 +317,37 @@ function Metric({ accent, icon: Icon, label, value, compact = false }) {
   return <div className={`${accent ? `collector-metric collector-metric-${accent}` : ''} rounded-2xl border border-slate-200 bg-white ${compact ? 'p-4 shadow-none' : 'p-5 shadow-sm'}`}><div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p><p className={`${compact ? 'mt-2 text-xl' : 'mt-3 text-2xl'} font-black text-[var(--ink)]`}>{value}</p></div>{Icon && <span className="grid size-10 shrink-0 place-items-center rounded-xl"><Icon size={19} /></span>}</div></div>
 }
 
-function ChartCard({ title, description, children }) {
+function ChartCard({ title, description, filter, children }) {
   return (
     <div className="collector-chart-panel min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <h3 className="text-base font-black text-[var(--ink)]">{title}</h3>
-      <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h3 className="text-base font-black text-[var(--ink)]">{title}</h3><p className="mt-1 text-sm text-[var(--muted)]">{description}</p></div>{filter}</div>
       <div className="mt-5 h-72">{children}</div>
     </div>
   )
+}
+
+function ForecastRangeFilter({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const selected = forecastRanges.find((option) => option.value === value) || forecastRanges[2]
+
+  function selectRange(nextValue) {
+    onChange(nextValue)
+    setOpen(false)
+  }
+
+  return <div className="relative w-44 shrink-0"><p className="mb-1 text-[11px] font-medium text-[var(--muted)]">Viewing</p><button type="button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-emerald-600 bg-white px-3 py-1.5 text-left text-xs font-bold text-emerald-700 shadow-sm outline-none transition hover:bg-emerald-50 focus:ring-2 focus:ring-emerald-200"><span>Last {selected.label}</span><ChevronDown size={15} className={`shrink-0 transition ${open ? 'rotate-180' : ''}`} /></button>{open && <div className="absolute right-0 top-[calc(100%+6px)] z-10 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl" role="listbox" aria-label="Forecast statistical filter"><p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--muted)]">Forecast range</p><div className="grid grid-cols-2 gap-1">{forecastRanges.map((option) => <button key={option.value} type="button" role="option" aria-selected={option.value === value} onClick={() => selectRange(option.value)} className={`rounded-md px-2 py-1.5 text-left text-[11px] font-bold transition ${option.value === value ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}`}>Last {option.label}</button>)}</div></div>}</div>
+}
+
+function recommendationTypeLabel(type) {
+  return {
+    CHECK_HIGH_USAGE: 'High water use',
+    VACANT_UNIT_USAGE: 'Vacant-unit usage',
+    RISING_CONSUMPTION: 'Rising consumption',
+    PAYMENT_REMINDER: 'Payment reminder',
+    MONITOR_HIGH_USAGE: 'Monitor high usage',
+    COLLECT_MORE_HISTORY: 'More reading history',
+    MONITOR_USAGE: 'Usage monitoring',
+  }[type] || String(type || 'Recommendation').replaceAll('_', ' ')
 }
 
 function recommendationEvidence(recommendation) {

@@ -252,6 +252,14 @@ export async function getFinancialReport(pool, filters) {
       billedRows: billedBills.map((bill) => toChargeBillingRow(bill, 'WATER')),
       collectionRows: applicationRows.filter((row) => row.waterCollected > 0).map((row) => ({ ...row, collected: row.waterCollected })),
     },
+    paidDues: {
+      rows: applicationRows
+        .filter((row) => row.duesCollected > 0 || row.waterCollected > 0)
+        .map((row) => ({
+          ...row,
+          combinedCollected: number(row.duesCollected + row.waterCollected),
+        })),
+    },
     receivables,
   };
 }
