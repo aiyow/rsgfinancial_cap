@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { AlertTriangle, Building2, CircleDollarSign, Droplets, FileText, Gauge, ReceiptText, RefreshCw, TrendingUp, UserRoundCheck, WalletCards } from 'lucide-react'
@@ -51,15 +51,15 @@ function connectForecastLine(rows, actualKey, projectedKey, forecastKey) {
 function Metric({ label, value, detail, subdetail, icon: Icon, tone = 'green', accent }) {
   const tones = { green: 'border-l-[var(--primary)] bg-emerald-50/40', amber: 'border-l-amber-500 bg-amber-50/40', red: 'border-l-red-500 bg-red-50/40', blue: 'border-l-sky-600 bg-sky-50/40' }
   return <article className={`min-w-0 rounded-2xl border border-[var(--border)] border-l-[3px] p-5 shadow-sm ${tones[tone]} ${accent ? `collector-metric collector-metric-${accent}` : ''}`}>
-    <div className="flex items-start justify-between gap-3"><p className="text-[11px] font-black uppercase tracking-[0.12em] text-[var(--muted)]">{label}</p><span className="grid size-9 place-items-center rounded-lg bg-white text-[var(--primary)] shadow-sm"><Icon size={18} /></span></div>
+    <div className="flex items-start justify-between gap-3"><p className="capitalize text-[11px] font-black tracking-[0.12em] text-[var(--muted)]">{label}</p><span className="grid size-9 place-items-center rounded-lg bg-white text-[var(--primary)] shadow-sm"><Icon size={18} /></span></div>
     <p className="mt-4 truncate text-2xl font-black tracking-tight text-[var(--ink)]">{value}</p>
     <p className="mt-1 min-h-5 text-xs text-[var(--muted)]">{detail}</p>
     {subdetail && <p className="mt-1 min-h-4 text-xs font-semibold text-[var(--primary)]">{subdetail}</p>}
   </article>
 }
 
-function ChartPanel({ title, description, variant, filter, children }) {
-  return <section className={`collector-chart-panel overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-b from-white to-slate-50/60 p-5 shadow-sm sm:p-6 ${variant === 'trend' ? 'collector-trend-chart' : ''}`}><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--primary)]">Live insight</p><h2 className="mt-1 text-base font-black text-[var(--ink)]">{title}</h2><p className="mt-1 text-sm text-[var(--muted)]">{description}</p></div>{filter}</div><div className="mt-5 h-72">{children}</div></section>
+function ChartPanel({ title, description, descriptionBelow = false, variant, filter, children }) {
+  return <section className={`collector-chart-panel overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-b from-white to-slate-50/60 p-5 shadow-sm sm:p-6 ${variant === 'trend' ? 'collector-trend-chart' : ''}`}><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="capitalize text-[10px] font-black tracking-[0.14em] text-[var(--primary)]">Live insight</p><h2 className="mt-1 capitalize text-base font-black text-[var(--ink)]">{title}</h2>{!descriptionBelow && <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>}</div>{filter}</div><div className="mt-5 h-72">{children}</div>{descriptionBelow && <p className="mt-5 text-sm text-[var(--muted)]">{description}</p>}</section>
 }
 
 const waterBillStatisticalRanges = [
@@ -75,18 +75,39 @@ function filterChartRows(rows, range, ranges) {
 }
 
 function StatisticalFilter({ ranges, value, onChange }) {
-  return <div className="shrink-0"><p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--muted)]">Statistical filter</p><div className="flex flex-wrap gap-1" role="group" aria-label="Statistical filter">{ranges.map((option) => <button key={option.value} type="button" onClick={() => onChange(option.value)} className={`rounded-md px-2 py-1 text-[11px] font-bold transition ${value === option.value ? 'bg-[var(--primary)] text-white shadow-sm' : 'bg-white text-[var(--muted)] ring-1 ring-inset ring-[var(--border)] hover:bg-[var(--app-bg)]'}`}>{option.label}</button>)}</div></div>
+  const [open, setOpen] = useState(false)
+  const filterRef = useRef(null)
+  const selectedOption = ranges.find((option) => option.value === value) || ranges[0]
+
+  useEffect(() => {
+    function closeOnOutsideClick(event) {
+      if (!filterRef.current?.contains(event.target)) setOpen(false)
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('mousedown', closeOnOutsideClick)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [])
+
+  return <div ref={filterRef} className="relative z-10 w-32 shrink-0"><p className="capitalize mb-1.5 text-[10px] font-black tracking-[0.12em] text-[var(--muted)]">Statistical filter</p><button type="button" onClick={() => setOpen((current) => !current)} aria-expanded={open} aria-haspopup="listbox" className="flex min-h-10 w-full items-center justify-between rounded-lg border border-[var(--primary)] bg-white px-3 text-left text-[11px] font-bold text-[var(--ink)] shadow-sm outline-none transition hover:border-emerald-700 focus:ring-2 focus:ring-emerald-100"><span>{selectedOption.label}</span><svg viewBox="0 0 20 20" aria-hidden="true" className={`size-4 text-[var(--primary)] transition ${open ? 'rotate-180' : ''}`} fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.09 1.03l-4.25 4.51a.75.75 0 0 1-1.1 0L5.21 8.26a.75.75 0 0 1 .02-1.05Z" clipRule="evenodd" /></svg></button>{open && <div role="listbox" aria-label="Statistical filter" className="absolute right-0 top-[calc(100%+6px)] w-full overflow-hidden rounded-xl border border-[var(--border)] bg-white p-1.5 shadow-[0_12px_28px_rgba(15,44,29,0.18)]">{ranges.map((option) => <button key={option.value} type="button" role="option" aria-selected={option.value === value} onClick={() => { onChange(option.value); setOpen(false) }} className={`block w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold transition ${option.value === value ? 'bg-[var(--primary)] text-white shadow-sm' : 'text-[var(--muted)] hover:bg-[var(--app-bg)] hover:text-[var(--primary)]'}`}>{option.label}</button>)}</div>}</div>
 }
 
 function ProgressRow({ label, value, amount, tone = 'emerald' }) {
   const colors = { emerald: 'bg-emerald-600', amber: 'bg-amber-500', red: 'bg-rose-600', blue: 'bg-sky-600' }
   const width = Math.min(Math.max(Number(value || 0), 0), 100)
-  return <div><div className="flex items-baseline justify-between gap-3 text-sm"><span className="font-bold text-[var(--ink)]">{label}</span><span className="text-right text-xs font-semibold text-[var(--muted)]">{amount} · {percent(value)}</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${colors[tone]}`} style={{ width: `${width}%` }} /></div></div>
+  return <div><div className="flex items-baseline justify-between gap-3 text-sm"><span className="capitalize font-bold text-[var(--ink)]">{label}</span><span className="text-right text-xs font-semibold text-[var(--muted)]">{amount} · {percent(value)}</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${colors[tone]}`} style={{ width: `${width}%` }} /></div></div>
 }
 
 function QuickStat({ label, value, detail, tone = 'slate' }) {
   const tones = { slate: 'bg-slate-50 text-slate-800', emerald: 'bg-emerald-50 text-emerald-800', amber: 'bg-amber-50 text-amber-800', red: 'bg-rose-50 text-rose-800' }
-  return <div className={`rounded-xl p-3 ${tones[tone]}`}><p className="text-[10px] font-black uppercase tracking-wide opacity-70">{label}</p><p className="mt-1 text-xl font-black">{value}</p><p className="text-xs opacity-75">{detail}</p></div>
+  return <div className={`rounded-xl p-3 ${tones[tone]}`}><p className="capitalize text-[10px] font-black tracking-wide opacity-70">{label}</p><p className="mt-1 text-xl font-black">{value}</p><p className="text-xs opacity-75">{detail}</p></div>
 }
 
 const chartTooltipStyle = { borderRadius: 12, border: '1px solid #dbe5df', boxShadow: '0 10px 28px rgba(15, 44, 29, 0.12)', fontSize: 12 }
@@ -107,7 +128,7 @@ function BillStatusChart({ billStatus }) {
 function WaterTrendChart({ waterTrend }) {
   const [range, setRange] = useState('sixMonths')
   const filteredWaterTrend = filterChartRows(waterTrend, range, waterBillStatisticalRanges)
-  return <ChartPanel title="Historical vs Projected Water Bill" description="Actual water charges compared with the projected water bill for the selected periods." filter={<StatisticalFilter ranges={waterBillStatisticalRanges} value={range} onChange={setRange} />}>
+  return <ChartPanel title="Historical vs Projected Water Bill" description="Actual water charges compared with the projected water bill for the selected periods." descriptionBelow filter={<StatisticalFilter ranges={waterBillStatisticalRanges} value={range} onChange={setRange} />}>
     {filteredWaterTrend.length ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={filteredWaterTrend} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}><defs><linearGradient id="dashboardActualWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#60a5fa" stopOpacity={0.34} /><stop offset="100%" stopColor="#60a5fa" stopOpacity={0.02} /></linearGradient><linearGradient id="dashboardForecastWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#a78bfa" stopOpacity={0.28} /><stop offset="100%" stopColor="#a78bfa" stopOpacity={0.02} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" /><XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={false} /><YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={(value) => `₱${Math.round(value / 1000)}k`} /><Tooltip contentStyle={chartTooltipStyle} formatter={(value, name) => [money(value), name]} /><Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} /><Area type="monotone" dataKey="actualWaterBill" name="Historical water bill" stroke="#2563eb" fill="url(#dashboardActualWater)" strokeWidth={3} dot={{ r: 3, fill: '#2563eb', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#2563eb' }} isAnimationActive animationBegin={0} animationDuration={1000} animationEasing="ease-out" /><Area type="monotone" dataKey="forecastWaterBill" name="Projected water bill" stroke="#7c3aed" fill="url(#dashboardForecastWater)" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 3, fill: '#7c3aed', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#7c3aed' }} connectNulls isAnimationActive animationBegin={140} animationDuration={1000} animationEasing="ease-out" /></AreaChart></ResponsiveContainer> : <EmptyRow message="No water analytics data is available yet." />}
   </ChartPanel>
 }
@@ -186,10 +207,10 @@ export default function OperationalDashboard({ role }) {
       { title: 'Water recommendations', value: metrics.openRecommendations || 0, description: `${metrics.highPriorityRecommendations || 0} high priority`, to: '/collector/analytics', icon: Gauge },
     ]
 
-  return <DashboardLayout title={roleIsAdmin ? 'Dashboard' : 'Billing Associate dashboard'} description="Live operational overview of billing, payments, occupancy, and water use.">
+  return <DashboardLayout title={roleIsAdmin ? 'Dashboard' : 'Billing Associate Dashboard'} description="Live operational overview of billing, payments, occupancy, and water use.">
     {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {!data ? <Panel title="Loading dashboard"><EmptyRow message="Loading your latest billing summary..." /></Panel> : <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">{roleIsAdmin ? 'Dashboard' : 'Billing operations dashboard'}</h1><p className="mt-1 text-sm text-[var(--muted)]">Current billing period: <strong className="text-[var(--ink)]">{month(metrics.latestPeriodStart)}</strong>{metrics.latestPeriodStatus ? ` (${metrics.latestPeriodStatus.toLowerCase()})` : ''}</p></div><button type="button" onClick={() => { setRefreshing(true); setRefreshKey((value) => value + 1) }} disabled={refreshing} className="inline-flex w-fit items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-bold text-[var(--ink)] shadow-sm transition hover:bg-[var(--app-bg)] disabled:opacity-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{refreshing ? 'Refreshing…' : 'Refresh overview'}</button></div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">{roleIsAdmin ? 'Dashboard' : 'Billing Operations Dashboard'}</h1><p className="mt-1 text-sm text-[var(--muted)]">Current billing period: <strong className="text-[var(--ink)]">{month(metrics.latestPeriodStart)}</strong>{metrics.latestPeriodStatus ? ` (${metrics.latestPeriodStatus.toLowerCase()})` : ''}</p></div><button type="button" onClick={() => { setRefreshing(true); setRefreshKey((value) => value + 1) }} disabled={refreshing} className="inline-flex w-fit items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-bold text-[var(--ink)] shadow-sm transition hover:bg-[var(--app-bg)] disabled:opacity-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{refreshing ? 'Refreshing…' : 'Refresh overview'}</button></div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Monthly billing" value={money(currentBilled)} detail={`${metrics.currentBills || 0} statement(s) issued`} icon={FileText} accent="blue" />
         <Metric label="Monthly collection" value={money(currentCollected)} detail={collectionRate === null ? 'No current billing to collect' : `${money(collectionGap)} still to collect`} icon={WalletCards} tone="blue" accent="green" />
@@ -210,13 +231,13 @@ export default function OperationalDashboard({ role }) {
           <div className="space-y-5"><ProgressRow label="Collected from current billing" value={collectionRate || 0} amount={`${money(currentCollected)} of ${money(currentBilled)}`} tone={collectionRate !== null && collectionRate < 70 ? 'amber' : 'emerald'} /><div className="grid gap-3 sm:grid-cols-3"><QuickStat label="Fully paid" value={metrics.currentPaidBills || 0} detail="statements cleared" tone="emerald" /><QuickStat label="Partly paid" value={metrics.currentPartialBills || 0} detail="need a balance payment" tone="amber" /><QuickStat label="Not yet paid" value={metrics.currentUnpaidBills || 0} detail="no payment applied" tone="red" /></div></div>
         </Panel>
         <Panel title="Water outlook" description="Latest validated use and the next available forecast.">
-          <div className="space-y-4"><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1"><div className="rounded-xl bg-sky-50 p-4"><div className="flex items-center gap-2 text-sky-800"><Droplets size={17} /><p className="text-xs font-black uppercase tracking-wide">Latest actual use</p></div><p className="mt-2 text-2xl font-black text-slate-900">{latestActualWater ? `${latestActualWater.actualConsumption.toFixed(1)} m³` : '—'}</p><p className="mt-1 text-xs text-slate-600">{latestActualWater ? `${latestActualWater.label} · ${money(latestActualWater.actualWaterBill)}` : 'No validated reading yet'}</p></div><div className="rounded-xl bg-violet-50 p-4"><div className="flex items-center gap-2 text-violet-800"><TrendingUp size={17} /><p className="text-xs font-black uppercase tracking-wide">Next forecast</p></div><p className="mt-2 text-2xl font-black text-slate-900">{latestWaterForecast ? `${latestWaterForecast.projectedConsumption.toFixed(1)} m³` : '—'}</p><p className="mt-1 text-xs text-slate-600">{latestWaterForecast ? `${latestWaterForecast.label} · est. ${money(latestWaterForecast.projectedWaterBill)}` : 'No ready forecast yet'}</p></div></div><div className="rounded-xl border border-[var(--border)] bg-[var(--app-bg)] p-3"><p className="text-sm font-bold text-[var(--ink)]">Forecast coverage</p><p className="mt-1 text-xs text-[var(--muted)]">{data.analytics?.latestForecast?.ready || 0} of {data.analytics?.latestForecast?.total || 0} homes have a ready forecast; {data.analytics?.latestForecast?.excluded || 0} need more valid meter history.</p></div><Link to={roleIsAdmin ? '/admin/analytics' : '/collector/analytics'} className="inline-flex items-center gap-2 text-sm font-bold text-[var(--primary)] hover:underline">Open Water Usage <span aria-hidden="true">→</span></Link></div>
+          <div className="space-y-4"><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1"><div className="rounded-xl bg-sky-50 p-4"><div className="flex items-center gap-2 text-sky-800"><Droplets size={17} /><p className="capitalize text-xs font-black tracking-wide">Latest actual use</p></div><p className="mt-2 text-2xl font-black text-slate-900">{latestActualWater ? `${latestActualWater.actualConsumption.toFixed(1)} m³` : '—'}</p><p className="mt-1 text-xs text-slate-600">{latestActualWater ? `${latestActualWater.label} · ${money(latestActualWater.actualWaterBill)}` : 'No validated reading yet'}</p></div><div className="rounded-xl bg-violet-50 p-4"><div className="flex items-center gap-2 text-violet-800"><TrendingUp size={17} /><p className="capitalize text-xs font-black tracking-wide">Next forecast</p></div><p className="mt-2 text-2xl font-black text-slate-900">{latestWaterForecast ? `${latestWaterForecast.projectedConsumption.toFixed(1)} m³` : '—'}</p><p className="mt-1 text-xs text-slate-600">{latestWaterForecast ? `${latestWaterForecast.label} · est. ${money(latestWaterForecast.projectedWaterBill)}` : 'No ready forecast yet'}</p></div></div><div className="rounded-xl border border-[var(--border)] bg-[var(--app-bg)] p-3"><p className="capitalize text-sm font-bold text-[var(--ink)]">Forecast coverage</p><p className="mt-1 text-xs text-[var(--muted)]">{data.analytics?.latestForecast?.ready || 0} of {data.analytics?.latestForecast?.total || 0} homes have a ready forecast; {data.analytics?.latestForecast?.excluded || 0} need more valid meter history.</p></div><Link to={roleIsAdmin ? '/admin/analytics' : '/collector/analytics'} className="capitalize inline-flex items-center gap-2 text-sm font-bold text-[var(--primary)] hover:underline">Open Water Usage <span aria-hidden="true">→</span></Link></div>
         </Panel>
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
         <WaterTrendChart waterTrend={waterTrend} />
         <Panel title="Needs attention" description="Open the right page to continue the work.">
-          <div className="space-y-3">{actions.map((action) => { const Icon = action.icon; return <Link key={action.title} to={action.to} className="flex items-center gap-3 rounded-xl border border-[var(--border)] p-3 transition hover:border-[var(--primary)] hover:bg-[var(--app-bg)]"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--active-bg)] text-[var(--primary)]"><Icon size={18} /></span><span className="min-w-0 flex-1"><span className="block text-sm font-bold text-[var(--ink)]">{action.title}</span><span className="block text-xs text-[var(--muted)]">{action.description}</span></span><strong className="text-lg font-black text-[var(--ink)]">{action.value}</strong></Link> })}</div>
+          <div className="space-y-3">{actions.map((action) => { const Icon = action.icon; return <Link key={action.title} to={action.to} className="flex items-center gap-3 rounded-xl border border-[var(--border)] p-3 transition hover:border-[var(--primary)] hover:bg-[var(--app-bg)]"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--active-bg)] text-[var(--primary)]"><Icon size={18} /></span><span className="min-w-0 flex-1"><span className="capitalize block text-sm font-bold text-[var(--ink)]">{action.title}</span><span className="block text-xs text-[var(--muted)]">{action.description}</span></span><strong className="text-lg font-black text-[var(--ink)]">{action.value}</strong></Link> })}</div>
         </Panel>
       </div>
     </>}

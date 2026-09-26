@@ -151,7 +151,7 @@ export async function getFinancialReport(pool, filters) {
     'AND b.period_start_snapshot <= $2::date',
   ], [filters.endDate]);
 
-  const [collectionResult, receivableAppliedResult] = await Promise.all([
+  const [collectionResult, receivableAppliedResult, occupancyResult] = await Promise.all([
     pool.query(
       `SELECT ps.id AS "paymentId", ps.verified_payment_date AS "paymentDate",
          ps.payment_method AS "paymentMethod", ps.verified_reference_no AS "paymentReference",
@@ -186,6 +186,16 @@ export async function getFinancialReport(pool, filters) {
          AND ps.verified_payment_date <= $1::date
        GROUP BY pa.unit_bill_id`,
       [filters.endDate],
+    ),
+    pool.query(
+      `SELECT u.id AS "unitId", u.unit_number AS "unitNumber", u.floor,
+         u.occupancy_status AS "occupancyStatus",
+         COALESCE(STRING_AGG(DISTINCT usr.full_name, ', ' ORDER BY usr.full_name), 'Unassigned resident') AS "residentNames"
+       FROM units u
+       LEFT JOIN unit_assignments a ON a.unit_id = u.id AND a.end_date IS NULL
+       LEFT JOIN users usr ON usr.id = a.user_id
+       GROUP BY u.id
+       ORDER BY u.unit_number`,
     ),
   ]);
 
@@ -228,6 +238,11 @@ export async function getFinancialReport(pool, filters) {
       : paidAmount > 0 ? 'PARTIAL' : bill.dueDate < filters.endDate ? 'OVERDUE' : 'UNPAID';
     return { ...bill, paidAmount, remainingBalance, paymentStatus };
   }).filter((row) => row.remainingBalance > 0).sort((left, right) => String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true }));
+  const occupancyRows = occupancyResult.rows.map((row) => ({
+    ...row,
+    unitId: Number(row.unitId),
+  }));
+  const occupiedUnits = occupancyRows.filter((row) => row.occupancyStatus === 'OCCUPIED').length;
 
   return {
     filters,
@@ -261,5 +276,11 @@ export async function getFinancialReport(pool, filters) {
         })),
     },
     receivables,
+    occupancy: {
+      rows: occupancyRows,
+      occupiedUnits,
+      vacantUnits: occupancyRows.length - occupiedUnits,
+      totalUnits: occupancyRows.length,
+    },
   };
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { Download, LoaderCircle, Maximize2, QrCode, RotateCcw, X, ZoomIn, ZoomOut } from 'lucide-react'
-import DashboardLayout, { Panel } from '../../components/DashboardLayout'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ArrowLeft, Download, FileClock, LoaderCircle, Maximize2, Printer, QrCode, RotateCcw, Upload, X, ZoomIn, ZoomOut } from 'lucide-react'
+import DashboardLayout from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import SoaDocument from '../../components/SoaDocument'
 import useAuth from '../../hooks/useAuth'
@@ -16,6 +16,7 @@ function money(value) {
 export default function ResidentBillPage() {
   const { id } = useParams()
   const { token } = useAuth()
+  const navigate = useNavigate()
   const [bill, setBill] = useState(null)
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
@@ -27,6 +28,7 @@ export default function ResidentBillPage() {
   const [notice, setNotice] = useState({ error: '', message: '' })
   const [reportingError, setReportingError] = useState(false)
   const [qrFullscreen, setQrFullscreen] = useState(false)
+  const [paymentProofOpen, setPaymentProofOpen] = useState(false)
   const [errorReport, setErrorReport] = useState({ category: 'METER_READING', description: '' })
 
   useEffect(() => {
@@ -111,13 +113,18 @@ export default function ResidentBillPage() {
     try {
       const body = new FormData()
       body.append('receipt', file)
-      const data = await apiRequest(`/api/payments/bills/${id}`, { method: 'POST', token, body })
+      await apiRequest(`/api/payments/bills/${id}`, { method: 'POST', token, body })
       setPreview(data.analysis)
       setFile(null)
       setImagePreviewUrl('')
-      setNotice({ error: '', message: 'Payment proof submitted. Your receipt is now waiting for Admin verification.' })
-      const refreshed = await apiRequest(`/api/bills/${id}`, { token })
-      setBill(refreshed.bill)
+      setPaymentProofOpen(false)
+      navigate('/resident/payments', {
+        replace: true,
+        state: {
+          filter: 'PENDING',
+          submissionNotice: 'Your receipt was submitted successfully and is now waiting for Admin review. You will see the verified amount once it is approved.',
+        },
+      })
     } catch (error) {
       if (error.data?.analysis) setPreview(error.data.analysis)
       setNotice({ error: error.message, message: '' })
@@ -152,15 +159,15 @@ export default function ResidentBillPage() {
 
   return (
     <DashboardLayout title="My Statement of Account" description="Review the published SOA and submit your receipt image for Admin verification.">
-      <div className="print-hidden flex flex-wrap gap-3">
-        <Link to="/resident/bills" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Back to my SOAs</Link>
-        <Link to="/resident/payments" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">Open payment history</Link>
-        <button onClick={() => window.print()} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Print / Save PDF</button>
-        <button onClick={() => setReportingError(true)} className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-800 transition hover:bg-amber-600 hover:text-white">Report SOA error</button>
+      <div className="print-hidden flex flex-wrap gap-2 rounded-2xl border border-emerald-100 bg-white p-2 shadow-sm">
+        <Link to="/resident/bills" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"><ArrowLeft size={17} />Back to my SOAs</Link>
+        <Link to="/resident/payments" className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2.5 text-sm font-bold text-sky-800 transition hover:border-sky-400 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"><FileClock size={17} />Payment history</Link>
+        <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-3.5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"><Printer size={17} />Print / Save PDF</button>
+        <button type="button" onClick={() => setReportingError(true)} className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-sm font-bold text-amber-800 transition hover:border-amber-600 hover:bg-amber-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">Report SOA error</button>
       </div>
 
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
-      {!bill && !notice.error && <p className="text-sm text-slate-500">Loading your SOA...</p>}
+      {!bill && !notice.error && <BillPageSkeleton />}
 
       {bill && (
         <>
@@ -172,51 +179,13 @@ export default function ResidentBillPage() {
             <SummaryCard label="Advance balance" value={money(bill.advanceBalance)} accent="blue" />
           </div>
 
-          {paymentQrUrl && <section className="print-hidden overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
-            <div className="grid items-center gap-5 p-5 sm:grid-cols-[1fr_auto] sm:p-6">
-              <div><div className="flex items-center gap-2 text-emerald-700"><span className="grid size-9 place-items-center rounded-lg bg-emerald-100"><QrCode size={20} /></span><p className="font-black">Scan to pay</p></div><p className="mt-3 max-w-xl text-sm text-slate-600">Use your payment app to scan this official QR code, then upload your receipt below for verification.</p><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={() => setQrFullscreen(true)} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800"><Maximize2 size={17} />View full screen</button><button type="button" onClick={downloadPaymentQr} className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-700 hover:text-white"><Download size={17} />Download QR code</button></div></div>
-              <button type="button" onClick={() => setQrFullscreen(true)} aria-label="View payment QR code full screen" className="group justify-self-center rounded-xl border border-emerald-100 bg-emerald-50 p-3 shadow-sm transition hover:border-emerald-400 hover:shadow-md"><figure><img src={paymentQrUrl} alt="Official payment QR code" className="size-40 object-contain sm:size-44" /><figcaption className="mt-2 flex items-center justify-center gap-1 text-center text-xs font-black tracking-[0.12em] text-emerald-800">OFFICIAL PAYMENT QR <Maximize2 size={13} /></figcaption></figure></button>
+          <section className="print-hidden rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div><p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">Payment actions</p><h2 className="mt-1 text-lg font-black text-slate-950">Pay and submit your receipt when you are ready</h2><p className="mt-1 text-sm text-slate-600">The QR code and upload form open only when you select an action.</p></div>
+              <div className="flex flex-wrap gap-2.5"><button type="button" disabled={!paymentQrUrl} onClick={() => setQrFullscreen(true)} className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-3.5 py-2.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"><QrCode size={17} />Scan to pay</button><button type="button" disabled={!canSubmit} onClick={() => setPaymentProofOpen(true)} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"><Upload size={17} />{canSubmit ? 'Submit payment proof' : 'SOA fully paid'}</button></div>
             </div>
-          </section>}
-
-          <Panel title="Submit payment proof" description="Upload a clear receipt image so OCR can extract the amount, reference number, and payment date for Admin review.">
-            {!canSubmit && <p className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-700">This SOA is already fully paid.</p>}
-            <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-              <form onSubmit={previewReceipt} className="space-y-4">
-                <label className="block text-sm font-bold text-slate-700">
-                  Receipt image
-                  <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={selectReceipt} className={inputClass} />
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  <button disabled={busy || !canSubmit} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50">{ocrPreviewing ? <><LoaderCircle size={16} className="animate-spin" />Reading receipt…</> : 'Preview OCR'}</button>
-                  <button type="button" disabled={busy || !canSubmit || !file} onClick={submitReceipt} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:bg-slate-300">{submittingReceipt ? <><LoaderCircle size={16} className="animate-spin" />Submitting proof…</> : 'Submit payment proof'}</button>
-                </div>
-                {submittingReceipt && <div role="status" className="flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-950"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-indigo-600 shadow-sm"><LoaderCircle size={18} className="animate-spin" /></span><div><p className="font-black">Submitting your payment proof…</p><p className="mt-0.5 text-indigo-800">Please keep this page open while we securely upload your receipt.</p></div></div>}
-                <p className="text-xs text-slate-500">Accepted files: JPG or PNG, up to 5 MB.</p>
-                {preview && imagePreviewUrl && (
-                  <figure className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-                    <figcaption className="mb-2 text-sm font-black text-slate-900">Receipt image preview</figcaption>
-                    <img src={imagePreviewUrl} alt="Selected payment receipt" className="max-h-[35rem] w-full rounded-xl bg-white object-contain" />
-                  </figure>
-                )}
-              </form>
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-black text-slate-900">OCR preview</p>
-                {ocrPreviewing && <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50 p-5 text-center"><span className="mx-auto grid size-11 place-items-center rounded-full bg-white text-indigo-600 shadow-sm"><LoaderCircle size={22} className="animate-spin" /></span><p className="mt-3 font-bold text-slate-900">Reading your receipt…</p><p className="mt-1 text-sm text-slate-600">Checking the image and looking for the amount, reference number, and payment date.</p><div className="mt-4 space-y-2"><div className="h-3 animate-pulse rounded-full bg-indigo-100" /><div className="h-3 w-4/5 animate-pulse rounded-full bg-indigo-100" /><div className="h-3 w-3/5 animate-pulse rounded-full bg-indigo-100" /></div></div>}
-                {!preview && !ocrPreviewing && <p className="mt-3 text-sm text-slate-500">Run a preview first to see what the system can read from the receipt.</p>}
-                {preview && (
-                  <div className="mt-4 space-y-3 text-sm">
-                    <InfoRow label="Image quality" value={preview.quality?.status || '—'} />
-                    <InfoRow label="Detected amount" value={preview.amount ? money(preview.amount) : 'Not detected'} />
-                    <InfoRow label="Detected reference" value={preview.referenceNo || 'Not detected'} />
-                    <InfoRow label="Detected payment date" value={preview.paymentDate || 'Not detected'} />
-                    <InfoRow label="OCR confidence" value={preview.confidence ? `${preview.confidence}%` : '—'} />
-                  </div>
-                )}
-              </div>
-            </div>
-          </Panel>
+            <ol className="mt-4 grid gap-2 border-t border-emerald-100 pt-4 text-sm text-slate-700 sm:grid-cols-2 xl:grid-cols-4"><li className="flex items-center gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">1</span>Open <strong>Scan to pay</strong>.</li><li className="flex items-center gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">2</span>Pay the amount shown on your SOA.</li><li className="flex items-center gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">3</span>Choose your receipt image.</li><li className="flex items-center gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">4</span>Preview OCR, then submit proof.</li></ol>
+          </section>
 
           <div className="resident-soa-scroll">
             <div>
@@ -227,7 +196,42 @@ export default function ResidentBillPage() {
       )}
       {reportingError && <ReportSoaErrorModal busy={busy} errorReport={errorReport} onChange={(field, value) => setErrorReport((current) => ({ ...current, [field]: value }))} onClose={() => setReportingError(false)} onSubmit={submitBillingError} />}
       {qrFullscreen && paymentQrUrl && <PaymentQrModal qrUrl={paymentQrUrl} onClose={() => setQrFullscreen(false)} onDownload={downloadPaymentQr} />}
+      {paymentProofOpen && <SubmitPaymentProofModal busy={busy} file={file} preview={preview} imagePreviewUrl={imagePreviewUrl} ocrPreviewing={ocrPreviewing} submittingReceipt={submittingReceipt} onClose={() => setPaymentProofOpen(false)} onSelectReceipt={selectReceipt} onPreview={previewReceipt} onSubmit={submitReceipt} />}
     </DashboardLayout>
+  )
+}
+
+function SubmitPaymentProofModal({ busy, file, preview, imagePreviewUrl, ocrPreviewing, submittingReceipt, onClose, onSelectReceipt, onPreview, onSubmit }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-3 sm:p-5" role="presentation" onMouseDown={busy ? undefined : onClose}>
+      <section role="dialog" aria-modal="true" aria-labelledby="payment-proof-title" className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[90vh]" onMouseDown={(event) => event.stopPropagation()}>
+        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6"><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-700">Payment proof</p><h2 id="payment-proof-title" className="mt-1 text-xl font-black text-slate-950">Submit your receipt</h2><p className="mt-1 text-sm text-slate-600">Upload a clear JPG or PNG receipt, preview the extracted details, then submit it for Admin review.</p></div><button type="button" disabled={busy} onClick={onClose} aria-label="Close payment proof form" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"><X size={20} /></button></header>
+        <div className="grid min-h-0 gap-5 overflow-y-auto p-5 lg:grid-cols-[0.9fr_1.1fr] sm:p-6">
+          <form onSubmit={onPreview} className="space-y-4">
+            <ol className="grid gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-950 sm:grid-cols-3"><li><strong>1. Choose</strong> a receipt image</li><li><strong>2. Preview OCR</strong> and check the details</li><li><strong>3. Submit</strong> for Admin review</li></ol>
+            <label className="block text-sm font-bold text-slate-700">Receipt image<input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={onSelectReceipt} className={inputClass} /></label>
+            <p className="text-xs text-slate-500">Accepted files: JPG or PNG, up to 5 MB.</p>
+            <div className="flex flex-wrap gap-3"><button disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{ocrPreviewing ? <><LoaderCircle size={16} className="animate-spin" />Reading receipt…</> : 'Preview OCR'}</button><button type="button" disabled={busy || !file} onClick={onSubmit} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300">{submittingReceipt ? <><LoaderCircle size={16} className="animate-spin" />Submitting proof…</> : 'Submit payment proof'}</button></div>
+            {submittingReceipt && <div role="status" className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-emerald-700 shadow-sm"><LoaderCircle size={18} className="animate-spin" /></span><div><p className="font-black">Submitting your payment proof…</p><p className="mt-0.5 text-emerald-800">Please keep this window open while we upload your receipt.</p></div></div>}
+            {preview && imagePreviewUrl && <figure className="rounded-2xl border border-slate-200 bg-slate-50 p-3"><figcaption className="mb-2 text-sm font-black text-slate-900">Receipt image preview</figcaption><img src={imagePreviewUrl} alt="Selected payment receipt" className="max-h-[28rem] w-full rounded-xl bg-white object-contain" /></figure>}
+          </form>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-black text-slate-900">OCR preview</p>{ocrPreviewing && <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-5 text-center"><span className="mx-auto grid size-11 place-items-center rounded-full bg-white text-emerald-700 shadow-sm"><LoaderCircle size={22} className="animate-spin" /></span><p className="mt-3 font-bold text-slate-900">Reading your receipt…</p><p className="mt-1 text-sm text-slate-600">Checking the image for the amount, reference number, and payment date.</p><div className="mt-4 space-y-2"><div className="h-3 animate-pulse rounded-full bg-emerald-100" /><div className="h-3 w-4/5 animate-pulse rounded-full bg-emerald-100" /><div className="h-3 w-3/5 animate-pulse rounded-full bg-emerald-100" /></div></div>}{!preview && !ocrPreviewing && <p className="mt-3 text-sm text-slate-500">Choose a receipt, then run Preview OCR to check what the system can read.</p>}{preview && <div className="mt-4 space-y-3 text-sm"><InfoRow label="Image quality" value={preview.quality?.status || '—'} /><InfoRow label="Detected amount" value={preview.amount ? money(preview.amount) : 'Not detected'} /><InfoRow label="Detected reference" value={preview.referenceNo || 'Not detected'} /><InfoRow label="Detected payment date" value={preview.paymentDate || 'Not detected'} /><InfoRow label="OCR confidence" value={preview.confidence ? `${preview.confidence}%` : '—'} /></div>}</div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function BillPageSkeleton() {
+  return (
+    <div className="animate-pulse" aria-label="Loading statement of account" role="status">
+      <span className="sr-only">Loading your statement of account…</span>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        {Array.from({ length: 5 }, (_, index) => <div key={index} className="h-24 rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"><div className="h-3 w-2/3 rounded bg-emerald-100" /><div className="mt-4 h-6 w-4/5 rounded bg-emerald-200" /></div>)}
+      </div>
+      <section className="mt-6 rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div className="space-y-2"><div className="h-3 w-28 rounded bg-emerald-100" /><div className="h-5 w-72 max-w-full rounded bg-emerald-200" /><div className="h-3 w-56 max-w-full rounded bg-slate-100" /></div><div className="flex gap-2"><div className="h-10 w-32 rounded-lg bg-emerald-100" /><div className="h-10 w-44 rounded-lg bg-emerald-200" /></div></div><div className="mt-4 grid gap-2 border-t border-emerald-100 pt-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-7 rounded-lg bg-emerald-50" />)}</div></section>
+      <section className="mt-6 overflow-hidden rounded-sm border-2 border-slate-200 bg-white shadow-sm"><div className="grid gap-px bg-slate-200 sm:grid-cols-2"><div className="h-40 bg-slate-50" /><div className="h-40 bg-emerald-50" /></div><div className="space-y-px bg-slate-200 p-px">{Array.from({ length: 5 }, (_, index) => <div key={index} className="h-12 bg-white" />)}</div></section>
+    </div>
   )
 }
 

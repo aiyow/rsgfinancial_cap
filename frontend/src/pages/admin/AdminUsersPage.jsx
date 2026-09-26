@@ -44,6 +44,7 @@ export default function AdminUsersPage() {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [roleMenuOpen, setRoleMenuOpen] = useState(false)
   const [statusMenuOpen, setStatusMenuOpen] = useState(false)
+  const [deactivateTarget, setDeactivateTarget] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [notice, setNotice] = useState({ error: '', message: '' })
   const editingSelf = Number(editingId) === Number(currentUser.id)
@@ -137,6 +138,15 @@ export default function AdminUsersPage() {
     setDeleteTarget(user)
   }
 
+  async function deactivateUser(user) {
+    const updated = await runAction(
+      () => apiRequest(`/api/users/${user.id}`, { method: 'PATCH', token, body: { isActive: false } }),
+      'Account deactivated.',
+    )
+    if (updated) setDeactivateTarget(null)
+    return updated
+  }
+
   return (
     <DashboardLayout title="User management" description="Manage Admin, Billing Associate, and Resident accounts.">
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
@@ -157,7 +167,7 @@ export default function AdminUsersPage() {
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="sticky top-0 z-10 bg-[var(--app-bg)] text-[11px] uppercase tracking-[0.08em] text-[var(--muted)] shadow-sm"><tr><th className="px-4 py-3 font-bold">User</th><th className="px-4 py-3 font-bold">Email</th><th className="px-4 py-3 font-bold">Role</th><th className="px-4 py-3 font-bold">Status</th><th className="px-4 py-3 text-right font-bold">Actions</th></tr></thead>
             <tbody className="divide-y divide-slate-300">
-              {filteredUsers.map((user) => <tr key={user.id} className="transition hover:bg-[var(--app-bg)]"><td className="px-4 py-3.5 font-bold text-[var(--ink)]">{user.fullName}</td><td className="px-4 py-3.5 text-[var(--muted)]">{user.email}</td><td className="px-4 py-3.5"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{roleLabel(user.role)}</span></td><td className="px-4 py-3.5">{user.approvalStatus === 'PENDING' ? <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">Awaiting approval</span> : <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{user.isActive ? 'Active' : 'Inactive'}</span>}</td><td className="px-4 py-3.5"><div className="flex justify-end gap-2">{user.approvalStatus === 'PENDING' && <button type="button" className="rounded-md bg-[var(--primary)] px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#237147]" onClick={() => runAction(() => apiRequest(`/api/users/${user.id}`, { method: 'PATCH', token, body: { approvalStatus: 'APPROVED' } }), 'Account approved. The user can now sign in.')}>Approve</button>}<button type="button" className={actionClass} onClick={() => startEdit(user)}>Edit</button>{Number(user.id) !== Number(currentUser.id) && <button type="button" className={actionClass} onClick={() => runAction(() => apiRequest(`/api/users/${user.id}`, { method: 'PATCH', token, body: { isActive: !user.isActive } }), 'User updated.')}>{user.isActive ? 'Deactivate' : 'Activate'}</button>}{Number(user.id) !== Number(currentUser.id) && <button type="button" className={`${actionClass} text-red-600`} onClick={() => requestDelete(user)}>Delete</button>}</div></td></tr>)}
+              {filteredUsers.map((user) => <tr key={user.id} className="transition hover:bg-[var(--app-bg)]"><td className="px-4 py-3.5 font-bold text-[var(--ink)]">{user.fullName}</td><td className="px-4 py-3.5 text-[var(--muted)]">{user.email}</td><td className="px-4 py-3.5"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{roleLabel(user.role)}</span></td><td className="px-4 py-3.5">{user.approvalStatus === 'PENDING' ? <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">Awaiting approval</span> : <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{user.isActive ? 'Active' : 'Inactive'}</span>}</td><td className="px-4 py-3.5"><div className="flex justify-end gap-2">{user.approvalStatus === 'PENDING' && <button type="button" className="rounded-md bg-[var(--primary)] px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#237147]" onClick={() => runAction(() => apiRequest(`/api/users/${user.id}`, { method: 'PATCH', token, body: { approvalStatus: 'APPROVED' } }), 'Account approved. The user can now sign in.')}>Approve</button>}<button type="button" className={actionClass} onClick={() => startEdit(user)}>Edit</button>{Number(user.id) !== Number(currentUser.id) && <button type="button" className={actionClass} onClick={() => user.isActive ? setDeactivateTarget(user) : runAction(() => apiRequest(`/api/users/${user.id}`, { method: 'PATCH', token, body: { isActive: true } }), 'Account activated.')}>{user.isActive ? 'Deactivate' : 'Activate'}</button>}{Number(user.id) !== Number(currentUser.id) && <button type="button" className={`${actionClass} text-red-600`} onClick={() => requestDelete(user)}>Delete</button>}</div></td></tr>)}
             </tbody>
           </table>
         </div>
@@ -165,6 +175,7 @@ export default function AdminUsersPage() {
       </section>
 
       {modalOpen && <UserModal editingSelf={editingSelf} editing={Boolean(editingId)} form={form} onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))} onClose={closeModal} onSave={saveUser} />}
+      {deactivateTarget && <DeactivateUserModal user={deactivateTarget} onCancel={() => setDeactivateTarget(null)} onConfirm={() => deactivateUser(deactivateTarget)} />}
       {deleteTarget && <DeleteUserModal user={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={(password) => deleteUser(deleteTarget, password)} />}
     </DashboardLayout>
   )
@@ -208,6 +219,38 @@ function UserModal({ editing, editingSelf, form, onChange, onClose, onSave }) {
           <div className="sm:col-span-3"><Field label="Role"><div className="mt-1.5"><FilterPopover disabled={editingSelf} label="Role" value={form.role} open={roleMenuOpen} onToggle={() => setRoleMenuOpen((current) => !current)} onSelect={(value) => { onChange('role', value); setRoleMenuOpen(false) }} options={[{ value: 'ADMIN', label: 'Admin' }, { value: 'COLLECTOR', label: 'Billing Associate' }, { value: 'RESIDENT', label: 'Resident' }]} /></div></Field></div>
           <div className="flex justify-end gap-3 sm:col-span-6"><button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-bold text-[var(--ink)]">Cancel</button><button className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white">{editing ? 'Save changes' : 'Add user'}</button></div>
         </form>
+      </section>
+    </div>
+  )
+}
+
+function DeactivateUserModal({ onCancel, onConfirm, user }) {
+  const [submitting, setSubmitting] = useState(false)
+
+  async function confirmDeactivation() {
+    setSubmitting(true)
+    const success = await onConfirm()
+    if (!success) setSubmitting(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4 backdrop-blur-[1px]" role="presentation" onMouseDown={() => { if (!submitting) onCancel() }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="deactivate-user-title" className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700"><TriangleAlert size={21} aria-hidden="true" /></span>
+          <div>
+            <h2 id="deactivate-user-title" className="text-xl font-black text-slate-900">Deactivate this account?</h2>
+            <p className="mt-1 text-sm text-slate-600">The user will no longer be able to sign in.</p>
+          </div>
+        </div>
+        <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-slate-700">
+          <p>Deactivate <strong className="text-slate-900">{user.fullName}</strong>?</p>
+          <p className="mt-1 text-xs text-slate-600">Their records will be retained, and you can reactivate the account later.</p>
+        </div>
+        <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" disabled={submitting} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Keep active</button>
+          <button type="button" disabled={submitting} onClick={confirmDeactivation} className="rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-amber-700 disabled:opacity-50">{submitting ? 'Deactivating...' : 'Deactivate account'}</button>
+        </div>
       </section>
     </div>
   )

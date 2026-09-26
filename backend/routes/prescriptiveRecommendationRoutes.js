@@ -7,7 +7,7 @@ import { ensurePrescriptiveAnalyticsSchema } from "../services/prescriptiveAnaly
 
 const router = express.Router();
 const statuses = new Set(["ACTIVE", "ALL", "OPEN", "VIEWED", "SUPERSEDED"]);
-const priorities = new Set(["ALL", "HIGH", "MEDIUM"]);
+const priorities = new Set(["ALL", "HIGH", "LOW"]);
 const residentRecommendationTypes = ["CHECK_HIGH_USAGE", "RISING_CONSUMPTION", "PAYMENT_REMINDER", "MONITOR_HIGH_USAGE", "MONITOR_USAGE"];
 
 const recommendationSelect = `SELECT r.id, r.unit_id AS "unitId", u.unit_number AS "unitNumber",

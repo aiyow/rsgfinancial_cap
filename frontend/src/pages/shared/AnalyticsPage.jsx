@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Activity, CalendarDays, ChartNoAxesCombined, ChevronDown, Gauge, ListChecks, RefreshCw } from 'lucide-react'
 import {
@@ -76,10 +76,12 @@ export default function AnalyticsPage() {
   const [recommendationPriority, setRecommendationPriority] = useState('ALL')
   const [recommendationSearch, setRecommendationSearch] = useState('')
   const [expandedRecommendationId, setExpandedRecommendationId] = useState(null)
+  const prescriptiveRecommendationsRef = useRef(null)
   const [consumptionRange, setConsumptionRange] = useState('sixMonths')
   const [waterBillRange, setWaterBillRange] = useState('sixMonths')
   const [showForecastQuality, setShowForecastQuality] = useState(false)
   const [refreshingForecasts, setRefreshingForecasts] = useState(false)
+  const [confirmation, setConfirmation] = useState(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -98,8 +100,11 @@ export default function AnalyticsPage() {
     return () => { active = false }
   }, [token])
 
+  useEffect(() => {
+    if (showAllRecommendations) prescriptiveRecommendationsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [showAllRecommendations])
+
   async function deleteRecommendation(recommendation) {
-    if (!window.confirm(`Permanently delete the recommendation for Unit ${recommendation.unitNumber}?`)) return
     setRecommendationBusyId(recommendation.id)
     try {
       await apiRequest(`/api/prescriptive-recommendations/${recommendation.id}`, { method: 'DELETE', token })
@@ -112,7 +117,6 @@ export default function AnalyticsPage() {
   }
 
   async function refreshForecasts() {
-    if (!window.confirm('Recalculate all saved forecasts using the current model? This may take a moment.')) return
     setRefreshingForecasts(true)
     setError('')
     try {
@@ -124,6 +128,15 @@ export default function AnalyticsPage() {
     } finally {
       setRefreshingForecasts(false)
     }
+  }
+
+  async function confirmAction() {
+    const action = confirmation
+    if (!action) return
+
+    if (action.type === 'REFRESH_FORECASTS') await refreshForecasts()
+    if (action.type === 'DELETE_RECOMMENDATION') await deleteRecommendation(action.recommendation)
+    setConfirmation(null)
   }
 
   const metrics = data?.metrics || {}
@@ -150,7 +163,7 @@ export default function AnalyticsPage() {
     units: new Set(recommendations.map((recommendation) => recommendation.unitId)).size,
   }
   const sortedRecommendations = useMemo(() => {
-    const priority = { HIGH: 0, MEDIUM: 1, LOW: 2 }
+    const priority = { HIGH: 0, LOW: 1 }
     const query = recommendationSearch.trim().toLowerCase()
     return recommendations.filter((recommendation) => {
       const matchesPriority = recommendationPriority === 'ALL' || recommendation.priority === recommendationPriority
@@ -161,7 +174,7 @@ export default function AnalyticsPage() {
       return (priority[left.priority] ?? 9) - (priority[right.priority] ?? 9) || String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true })
     })
   }, [recommendationPriority, recommendationSearch, recommendationSort, recommendations])
-  const visibleRecommendations = showAllRecommendations ? sortedRecommendations : sortedRecommendations.slice(0, 10)
+  const visibleRecommendations = showAllRecommendations ? sortedRecommendations : sortedRecommendations.slice(0, 5)
   const analyticsAccents = ['blue', 'green', 'red', 'blue', 'green']
 
   return (
@@ -176,7 +189,7 @@ export default function AnalyticsPage() {
         </Panel>
       ) : (
         <>
-          <div className="mb-4 flex justify-end"><button type="button" onClick={refreshForecasts} disabled={refreshingForecasts} className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"><RefreshCw size={16} className={refreshingForecasts ? 'animate-spin' : ''} />{refreshingForecasts ? 'Refreshing forecasts...' : 'Refresh forecasts'}</button></div>
+          <div className="mb-4 flex justify-end"><button type="button" onClick={() => setConfirmation({ type: 'REFRESH_FORECASTS' })} disabled={refreshingForecasts} className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 bg-white px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"><RefreshCw size={16} className={refreshingForecasts ? 'animate-spin' : ''} />{refreshingForecasts ? 'Refreshing forecasts...' : 'Refresh forecasts'}</button></div>
           <Panel title="Latest forecast coverage" description="A unit needs five consecutive valid monthly readings after any meter reset or continuity break.">
             {!data ? <EmptyRow message="Loading forecast coverage..." /> : (
               <div className="grid gap-4 sm:grid-cols-3">
@@ -221,6 +234,7 @@ export default function AnalyticsPage() {
             </ChartCard>
           </div>
 
+          <div ref={prescriptiveRecommendationsRef} className="scroll-mt-20">
           <Panel title="Prescriptive Recommendations" description="A prioritized action queue for the latest billing batch forwarded to Admin.">
             <div className="mb-5 grid gap-3 sm:grid-cols-3">
               <Metric label="Action needed" value={recommendationSummary.active} compact />
@@ -229,8 +243,8 @@ export default function AnalyticsPage() {
             </div>
             {recommendations.length ? (
               <div className="space-y-3">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-black text-slate-900">Action queue</p><p className="mt-0.5 text-sm text-slate-500">Find the most urgent recommendation, then open it for the supporting evidence.</p></div><p className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200">{sortedRecommendations.length} matching</p></div><div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_170px_180px]"><label className="text-xs font-bold text-slate-600">Search<input type="search" value={recommendationSearch} onChange={(event) => { setRecommendationSearch(event.target.value); setShowAllRecommendations(false) }} placeholder="Unit, action, or condition..." className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="text-xs font-bold text-slate-600">Priority<select value={recommendationPriority} onChange={(event) => { setRecommendationPriority(event.target.value); setShowAllRecommendations(false) }} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="ALL">All priorities</option><option value="HIGH">High priority</option><option value="MEDIUM">Medium priority</option></select></label><label className="text-xs font-bold text-slate-600">Sort by<select value={recommendationSort} onChange={(event) => setRecommendationSort(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="PRIORITY">Priority: high first</option><option value="UNIT">Unit number</option></select></label></div></div>
-                <div className={showAllRecommendations ? 'max-h-[42rem] space-y-3 overflow-y-auto overscroll-contain pr-2' : 'space-y-3'} aria-label="Prescriptive recommendations">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-black text-slate-900">Action queue</p><p className="mt-0.5 text-sm text-slate-500">Find the most urgent recommendation, then open it for the supporting evidence.</p></div><p className="rounded-full bg-white px-3 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200">{sortedRecommendations.length} matching</p></div><div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_170px_180px]"><label className="text-xs font-bold text-slate-600">Search<input type="search" value={recommendationSearch} onChange={(event) => { setRecommendationSearch(event.target.value); setShowAllRecommendations(false) }} placeholder="Unit, action, or condition..." className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100" /></label><label className="text-xs font-bold text-slate-600">Priority<select value={recommendationPriority} onChange={(event) => { setRecommendationPriority(event.target.value); setShowAllRecommendations(false) }} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="ALL">All priorities</option><option value="LOW">Low priority</option><option value="HIGH">High priority</option></select></label><label className="text-xs font-bold text-slate-600">Sort by<select value={recommendationSort} onChange={(event) => setRecommendationSort(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"><option value="PRIORITY">Priority: high first</option><option value="UNIT">Unit number</option></select></label></div></div>
+                <div className={showAllRecommendations ? 'max-h-[40rem] space-y-3 overflow-y-auto overscroll-contain pr-2' : 'space-y-3'} aria-label="Prescriptive recommendations">
                   {visibleRecommendations.map((recommendation) => {
                     const busy = recommendationBusyId === recommendation.id
                     const expanded = expandedRecommendationId === recommendation.id
@@ -247,7 +261,7 @@ export default function AnalyticsPage() {
                             <p className="mt-1 truncate text-sm text-slate-600">{recommendation.message}</p>
                           </button>
                           <div className="flex flex-wrap gap-2 lg:justify-end">
-                            <ActionButton disabled={busy} onClick={() => deleteRecommendation(recommendation)}>{busy ? 'Deleting...' : 'Delete'}</ActionButton>
+                            <ActionButton disabled={busy} onClick={() => setConfirmation({ type: 'DELETE_RECOMMENDATION', recommendation })}>{busy ? 'Deleting...' : 'Delete'}</ActionButton>
                           </div>
                         </div>
                         {expanded && <div className="mt-4 border-t border-slate-100 pt-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Condition detected</p><p className="mt-1 font-bold text-slate-900">{recommendation.evidence?.condition || recommendationEvidence(recommendation)}</p><p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Recommended action</p><p className="mt-1 font-black text-slate-950">{recommendation.message}</p><p className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{recommendationEvidence(recommendation)}</p></div>}
@@ -256,7 +270,7 @@ export default function AnalyticsPage() {
                   })}
                   {sortedRecommendations.length === 0 && <EmptyRow message="No recommendations match the selected search or priority." />}
                 </div>
-                {sortedRecommendations.length > 10 && (
+                {sortedRecommendations.length > 5 && (
                   <button
                     type="button"
                     onClick={() => setShowAllRecommendations((value) => !value)}
@@ -268,6 +282,7 @@ export default function AnalyticsPage() {
               </div>
             ) : <EmptyRow message="No action is recommended for the latest live billing period." />}
           </Panel>
+          </div>
 
           <Panel title="Predicted versus actual" description={`Visible to ${user.role === 'ADMIN' ? 'Admin' : 'Billing Associate'} staff only. WAPE avoids division problems for units with zero consumption.`}>
             {data?.diagnostics.length ? (
@@ -309,6 +324,15 @@ export default function AnalyticsPage() {
           </Panel>
         </>
       )}
+      {confirmation && <ConfirmationModal
+        busy={confirmation.type === 'REFRESH_FORECASTS' ? refreshingForecasts : recommendationBusyId === confirmation.recommendation.id}
+        confirmLabel={confirmation.type === 'REFRESH_FORECASTS' ? 'Refresh Forecasts' : 'Delete Recommendation'}
+        danger={confirmation.type === 'DELETE_RECOMMENDATION'}
+        message={confirmation.type === 'REFRESH_FORECASTS' ? 'Recalculate all saved forecasts using the current model? This may take a moment.' : `Permanently delete the recommendation for Unit ${confirmation.recommendation.unitNumber}?`}
+        onCancel={() => setConfirmation(null)}
+        onConfirm={confirmAction}
+        title={confirmation.type === 'REFRESH_FORECASTS' ? 'Refresh Forecasts?' : 'Delete Recommendation?'}
+      />}
     </DashboardLayout>
   )
 }
@@ -335,7 +359,7 @@ function ForecastRangeFilter({ value, onChange }) {
     setOpen(false)
   }
 
-  return <div className="relative w-44 shrink-0"><p className="mb-1 text-[11px] font-medium text-[var(--muted)]">Viewing</p><button type="button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-emerald-600 bg-white px-3 py-1.5 text-left text-xs font-bold text-emerald-700 shadow-sm outline-none transition hover:bg-emerald-50 focus:ring-2 focus:ring-emerald-200"><span>Last {selected.label}</span><ChevronDown size={15} className={`shrink-0 transition ${open ? 'rotate-180' : ''}`} /></button>{open && <div className="absolute right-0 top-[calc(100%+6px)] z-10 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl" role="listbox" aria-label="Forecast statistical filter"><p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--muted)]">Forecast range</p><div className="grid grid-cols-2 gap-1">{forecastRanges.map((option) => <button key={option.value} type="button" role="option" aria-selected={option.value === value} onClick={() => selectRange(option.value)} className={`rounded-md px-2 py-1.5 text-left text-[11px] font-bold transition ${option.value === value ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}`}>Last {option.label}</button>)}</div></div>}</div>
+  return <div className="relative w-44 shrink-0"><p className="mb-1 text-[11px] font-medium text-[var(--muted)]">Viewing</p><button type="button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-emerald-600 bg-white px-3 py-1.5 text-left text-xs font-bold text-emerald-700 shadow-sm outline-none transition hover:bg-emerald-50 focus:ring-2 focus:ring-emerald-200"><span>Last {selected.label}</span><ChevronDown size={15} className={`shrink-0 transition ${open ? 'rotate-180' : ''}`} /></button>{open && <div className="absolute right-0 top-[calc(100%+6px)] z-10 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl" role="listbox" aria-label="Forecast statistical filter"><p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--muted)]">Forecast range</p><div className="grid grid-cols-1 gap-1">{forecastRanges.map((option) => <button key={option.value} type="button" role="option" aria-selected={option.value === value} onClick={() => selectRange(option.value)} className={`rounded-md px-2 py-1.5 text-left text-[11px] font-bold transition ${option.value === value ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}`}>Last {option.label}</button>)}</div></div>}</div>
 }
 
 function recommendationTypeLabel(type) {
@@ -368,4 +392,17 @@ function recommendationEvidence(recommendation) {
 
 function ActionButton({ children, ...props }) {
   return <button {...props} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50">{children}</button>
+}
+
+function ConfirmationModal({ busy, confirmLabel, danger, message, onCancel, onConfirm, title }) {
+  return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4" role="presentation" onMouseDown={() => { if (!busy) onCancel() }}>
+    <section role="dialog" aria-modal="true" aria-labelledby="analytics-confirmation-title" className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+      <h2 id="analytics-confirmation-title" className="text-lg font-black text-slate-900">{title}</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{message}</p>
+      <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <button type="button" disabled={busy} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">Cancel</button>
+        <button type="button" disabled={busy} onClick={onConfirm} className={`rounded-lg px-4 py-2.5 text-sm font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-700 hover:bg-emerald-800'}`}>{busy ? 'Working...' : confirmLabel}</button>
+      </div>
+    </section>
+  </div>
 }

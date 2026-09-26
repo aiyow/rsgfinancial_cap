@@ -67,7 +67,7 @@ const navigationByRole = {
     view: [
       { label: 'Overview', to: '/resident', end: true, icon: LayoutDashboard },
       { label: 'My Bills', to: '/resident/bills', icon: FileText },
-      { label: 'My Payments', to: '/resident/payments', icon: CreditCard },
+      { label: 'Payment History', to: '/resident/payments', icon: CreditCard },
     ],
     manage: [],
   },
@@ -338,7 +338,7 @@ export default function DashboardLayout({ title, description, children }) {
 export function Panel({ accent, id, title, description, children }) {
   return (
     <section id={id} className={`${accent ? `collector-step-card collector-step-${accent}` : ''} rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm sm:p-6`}>
-      <h2 className="text-lg font-black text-[var(--ink)]">{title}</h2>
+      <h2 className="capitalize text-lg font-black text-[var(--ink)]">{title}</h2>
       {description && <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>}
       <div className="mt-5">{children}</div>
     </section>

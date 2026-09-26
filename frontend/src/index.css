@@ -422,11 +422,22 @@ button { cursor: pointer; }
   .resident-soa-scroll .soa-table th, .resident-soa-scroll .soa-table td { padding: 6px 5px; }
 }
 
+@page {
+  size: A4 landscape;
+  margin: 8mm;
+}
+
 @media print {
   .print-hidden { display: none !important; }
   .dashboard-shell { display: block !important; }
-  body { background: white; }
-  main { padding: 0 !important; }
+  html, body { width: 100%; background: white; }
+  main { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .resident-soa-scroll,
+  .resident-soa-scroll > div {
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
   .print-document {
     border: 0 !important;
     box-shadow: none !important;
@@ -435,15 +446,16 @@ button { cursor: pointer; }
     max-width: 100% !important;
   }
   .soa-sheet {
-    font-size: 10px;
+    width: 100% !important;
+    font-size: 12px;
     page-break-inside: avoid;
   }
-  .soa-brand-panel { min-height: 98px; }
-  .soa-brand-logo { max-height: 68px; }
-  .soa-payment-band { min-height: 70px; }
+  .soa-brand-panel { min-height: 120px; }
+  .soa-brand-logo { max-height: 82px; }
+  .soa-payment-band { min-height: 84px; }
   .soa-table th,
   .soa-table td {
-    padding: 4px;
+    padding: 6px 5px;
   }
   .financial-report-table {
     min-width: 0 !important;

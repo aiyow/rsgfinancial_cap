@@ -19,8 +19,11 @@ function money(value) {
   return `PHP ${Number(value || 0).toFixed(2)}`
 }
 
-function dateTime(value) {
-  return value ? new Date(value).toLocaleString() : '-'
+function receivedDate(value) {
+  if (!value) return '-'
+  const date = new Date(value)
+  const monthNames = ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.']
+  return `${monthNames[date.getMonth()]} ${date.getDate()},${date.getFullYear()}`
 }
 
 function methodLabel(value) {
@@ -171,36 +174,44 @@ export default function AdminPaymentsPage() {
         </div>
 
         {payments.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="text-xs uppercase text-slate-400">
+          <div className="max-h-[620px] overflow-auto">
+            <table className="w-full min-w-[880px] table-fixed text-left text-sm">
+              <colgroup>
+                <col className="w-[18%]" />
+                <col className="w-[20%]" />
+                <col className="w-[14%]" />
+                <col className="w-[17%]" />
+                <col className="w-[14%]" />
+                <col className="w-[17%]" />
+              </colgroup>
+              <thead className="sticky top-0 z-10 bg-white text-xs uppercase text-slate-400 shadow-[0_1px_0_rgb(241,245,249)]">
                 <tr>
-                  <th className="pb-3">Resident / unit</th>
-                  <th>Received</th>
-                  <th>Amount</th>
-                  <th>Source</th>
-                  <th>Status</th>
-                  <th></th>
+                  <th className="px-3 py-3 font-semibold">Resident / unit</th>
+                  <th className="px-3 py-3 font-semibold">Date received</th>
+                  <th className="px-3 py-3 font-semibold">Amount</th>
+                  <th className="px-3 py-3 font-semibold">Source</th>
+                  <th className="px-3 py-3 font-semibold">Status</th>
+                  <th className="px-3 py-3 text-center font-semibold">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {payments.map((payment) => (
                   <tr key={payment.id}>
-                    <td className="py-3">
+                    <td className="px-3 py-3 align-top">
                       <p className="font-semibold text-slate-800">{payment.submittedByName}</p>
                       <p className="text-xs text-slate-500">Unit {payment.unitNumber}</p>
                     </td>
-                    <td>{dateTime(payment.submittedAt)}</td>
-                    <td>
+                    <td className="px-3 py-3 align-top text-slate-700">{receivedDate(payment.submittedAt)}</td>
+                    <td className="px-3 py-3 align-top">
                       <p className="font-semibold text-slate-800">{payment.reviewStatus === 'APPROVED' ? money(payment.verifiedAmount) : payment.ocrAmount ? money(payment.ocrAmount) : 'Not detected'}</p>
                       <p className="text-xs text-slate-500">{payment.reviewStatus === 'APPROVED' ? 'Verified' : 'OCR estimate'}</p>
                     </td>
-                    <td>
+                    <td className="px-3 py-3 align-top">
                       <p className="font-semibold text-slate-800">{payment.entryType === 'MANUAL' ? 'Manual entry' : 'Receipt upload'}</p>
                       <p className="text-xs text-slate-500">{methodLabel(payment.paymentMethod)}</p>
                     </td>
-                    <td><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${badgeClass[payment.reviewStatus]}`}>{payment.reviewStatus}</span></td>
-                    <td><Link to={`/admin/payments/${payment.id}`} className="font-medium text-indigo-600">{payment.reviewStatus === 'PENDING' ? 'Review' : 'View details'}</Link></td>
+                    <td className="px-3 py-3 align-top"><span className={`rounded-full px-2.5 py-1 text-xs mt-5 font-medium ${badgeClass[payment.reviewStatus]}`}>{payment.reviewStatus}</span></td>
+                    <td className="px-3 py-3 text-center align-top"><Link to={`/admin/payments/${payment.id}`} className="inline-flex min-w-28 justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-700 transition hover:border-indigo-600 hover:bg-indigo-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-200">{payment.reviewStatus === 'PENDING' ? 'Review' : 'View details'}</Link></td>
                   </tr>
                 ))}
               </tbody>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Download, FileText, Gauge, Printer, ReceiptText, WalletCards, Waves } from 'lucide-react'
+import { Building2, Download, FileText, Gauge, Printer, ReceiptText, Users, WalletCards, Waves } from 'lucide-react'
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
@@ -11,6 +11,7 @@ const tabs = [
   { key: 'water', label: 'Water Billing' },
   { key: 'paidDues', label: 'Paid Monthly Dues' },
   { key: 'receivables', label: 'Accounts Receivable' },
+  { key: 'occupancy', label: 'Unit Occupancy' },
 ]
 
 const inputClass = 'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100'
@@ -166,6 +167,24 @@ function Receivables({ rows }) {
   </Panel>
 }
 
+function OccupancyReport({ occupancy }) {
+  const rows = occupancy?.rows || []
+  const occupiedUnits = Number(occupancy?.occupiedUnits || 0)
+  const vacantUnits = Number(occupancy?.vacantUnits || 0)
+  const totalUnits = Number(occupancy?.totalUnits || 0)
+
+  return <div className="space-y-6">
+    <div className="grid gap-4 sm:grid-cols-3">
+      <Metric label="Total units" value={totalUnits} detail="Current unit directory" icon={Building2} tone="blue" />
+      <Metric label="Occupied units" value={occupiedUnits} detail={totalUnits ? `${percentage((occupiedUnits / totalUnits) * 100)} of all units` : 'No units recorded'} icon={Users} />
+      <Metric label="Vacant units" value={vacantUnits} detail={totalUnits ? `${percentage((vacantUnits / totalUnits) * 100)} of all units` : 'No units recorded'} icon={Building2} tone="amber" />
+    </div>
+    <Panel title="Unit Occupancy" description="Current occupied and vacant status for every unit. This is a live directory snapshot and is not affected by the selected financial date range.">
+      {rows.length ? <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Floor</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Occupancy</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={row.unitId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.floor || '—'}</DataCell><DataCell>{row.residentNames}</DataCell><DataCell><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${row.occupancyStatus === 'OCCUPIED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{row.occupancyStatus === 'OCCUPIED' ? 'Occupied' : 'Vacant'}</span></DataCell></tr>)}</tbody></Table> : <EmptyRow message="No units are available in the directory." />}
+    </Panel>
+  </div>
+}
+
 function FinancialReportPrint({ activeLabel, report, tab }) {
   const overviewRows = [
     ['Total monthly billing', report.overview.totalBilling],
@@ -176,7 +195,7 @@ function FinancialReportPrint({ activeLabel, report, tab }) {
     ['Water collected', report.overview.waterCollected],
     ['Outstanding balance', report.overview.outstandingBalance],
   ]
-  return <section className="financial-report-print"><h1 className="text-xl font-black text-slate-900">{activeLabel}</h1><p className="mb-4 text-sm text-slate-600">Reporting period: {report.filters.label}</p>{tab === 'overview' && <Table><TableHead><HeaderCell>Financial summary</HeaderCell><HeaderCell>Amount</HeaderCell></TableHead><tbody>{overviewRows.map(([label, amount]) => <tr key={label}><DataCell>{label}</DataCell><DataCell moneyValue>{money(amount)}</DataCell></tr>)}</tbody><TotalRow colSpan={1} label="Total billing" total={report.overview.totalBilling} /></Table>}{(tab === 'dues' || tab === 'water') && <PrintChargeTables report={report[tab]} kind={tab} />}{tab === 'paidDues' && <PrintPaidMonthlyDues rows={report.paidDues.rows} />}{tab === 'receivables' && <PrintReceivables rows={report.receivables} />}</section>
+  return <section className="financial-report-print"><h1 className="text-xl font-black text-slate-900">{activeLabel}</h1><p className="mb-4 text-sm text-slate-600">Reporting period: {report.filters.label}</p>{tab === 'overview' && <Table><TableHead><HeaderCell>Financial summary</HeaderCell><HeaderCell>Amount</HeaderCell></TableHead><tbody>{overviewRows.map(([label, amount]) => <tr key={label}><DataCell>{label}</DataCell><DataCell moneyValue>{money(amount)}</DataCell></tr>)}</tbody><TotalRow colSpan={1} label="Total billing" total={report.overview.totalBilling} /></Table>}{(tab === 'dues' || tab === 'water') && <PrintChargeTables report={report[tab]} kind={tab} />}{tab === 'paidDues' && <PrintPaidMonthlyDues rows={report.paidDues.rows} />}{tab === 'receivables' && <PrintReceivables rows={report.receivables} />}{tab === 'occupancy' && <PrintOccupancy rows={report.occupancy.rows} />}</section>
 }
 
 function PrintChargeTables({ report, kind }) {
@@ -200,6 +219,10 @@ function PrintReceivables({ rows }) {
   const totalPaid = rows.reduce((total, row) => total + Number(row.paidAmount || 0), 0)
   const totalBalance = rows.reduce((total, row) => total + Number(row.remainingBalance || 0), 0)
   return <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Bill period</HeaderCell><HeaderCell>Due date</HeaderCell><HeaderCell>Billed</HeaderCell><HeaderCell>Paid</HeaderCell><HeaderCell>Balance</HeaderCell><HeaderCell>Status</HeaderCell></TableHead><tbody>{rows.map((row) => <tr key={row.billId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)}</DataCell><DataCell>{date(row.dueDate)}</DataCell><DataCell moneyValue>{money(row.totalBilled)}</DataCell><DataCell moneyValue>{money(row.paidAmount)}</DataCell><DataCell moneyValue>{money(row.remainingBalance)}</DataCell><DataCell>{row.paymentStatus}</DataCell></tr>)}</tbody><tfoot><tr><td colSpan={4} className="px-4 py-3 text-right font-black">Total</td><DataCell moneyValue>{money(totalBilled)}</DataCell><DataCell moneyValue>{money(totalPaid)}</DataCell><DataCell moneyValue>{money(totalBalance)}</DataCell><td /></tr></tfoot></Table>
+}
+
+function PrintOccupancy({ rows }) {
+  return <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Floor</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Occupancy</HeaderCell></TableHead><tbody>{rows.map((row) => <tr key={row.unitId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.floor || '—'}</DataCell><DataCell>{row.residentNames}</DataCell><DataCell>{row.occupancyStatus}</DataCell></tr>)}</tbody></Table>
 }
 
 export default function FinancialReportsPage() {
@@ -249,13 +272,13 @@ export default function FinancialReportsPage() {
   const activeLabel = tabs.find((item) => item.key === tab)?.label
   return <DashboardLayout title="Financial Reports" description="Monthly and date-range financial records for billing, collections, and receivables.">
     <div className="financial-report space-y-6">
-      <div className="print-hidden"><h1 className="text-2xl font-black tracking-tight text-slate-900">Financial reports</h1><p className="mt-1 text-sm text-slate-500">View billing, payment collections, and outstanding resident balances.</p></div>
+      <div className="print-hidden"><h1 className="text-2xl font-black tracking-tight text-slate-900">Financial Reports</h1><p className="mt-1 text-sm text-slate-500">View billing, payment collections, and outstanding resident balances.</p></div>
       <form onSubmit={viewReport} className="print-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-end gap-4"><div className="flex gap-2"><button type="button" onClick={() => setForm((value) => ({ ...value, mode: 'month' }))} className={`rounded-lg px-3 py-2 text-sm font-bold ${form.mode === 'month' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700'}`}>Month</button><button type="button" onClick={() => setForm((value) => ({ ...value, mode: 'range' }))} className={`rounded-lg px-3 py-2 text-sm font-bold ${form.mode === 'range' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700'}`}>Date range</button></div>{form.mode === 'month' ? <label className="min-w-48 text-sm font-bold text-slate-700">Select month<input required type="month" value={form.month} onChange={(event) => setForm((value) => ({ ...value, month: event.target.value }))} className={inputClass} /></label> : <><label className="min-w-44 text-sm font-bold text-slate-700">Start date<input required type="date" value={form.startDate} onChange={(event) => setForm((value) => ({ ...value, startDate: event.target.value }))} className={inputClass} /></label><label className="min-w-44 text-sm font-bold text-slate-700">End date<input required type="date" value={form.endDate} onChange={(event) => setForm((value) => ({ ...value, endDate: event.target.value }))} className={inputClass} /></label></>}<button type="submit" className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-800">View report</button></div>
       </form>
       {error && <p className="print-hidden rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <div className="print-hidden flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2" role="tablist" aria-label="Financial report tabs">{tabs.map((item) => <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} onClick={() => setTab(item.key)} className={`rounded-lg px-3 py-2 text-sm font-bold ${tab === item.key ? 'bg-emerald-700 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>{item.label}</button>)}</div><div className="flex gap-2"><button type="button" disabled={exporting || !report} onClick={exportExcel} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 disabled:opacity-50"><Download size={16} />{exporting ? 'Exporting…' : 'Export Excel'}</button><button type="button" disabled={!report} onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><Printer size={16} />Print / Save PDF</button></div></div>
-      {report && <><div className="print-hidden">{loading ? <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel> : <>{tab === 'overview' && <Overview overview={report.overview} />}{tab === 'dues' && <ChargeReport report={report.dues} kind="dues" />}{tab === 'water' && <ChargeReport report={report.water} kind="water" />}{tab === 'paidDues' && <PaidMonthlyDues report={report.paidDues} />}{tab === 'receivables' && <Receivables rows={report.receivables} />}</>}</div><div className="hidden print:block"><FinancialReportPrint activeLabel={activeLabel} report={report} tab={tab} /></div></>}
+      {report && <><div className="print-hidden">{loading ? <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel> : <>{tab === 'overview' && <Overview overview={report.overview} />}{tab === 'dues' && <ChargeReport report={report.dues} kind="dues" />}{tab === 'water' && <ChargeReport report={report.water} kind="water" />}{tab === 'paidDues' && <PaidMonthlyDues report={report.paidDues} />}{tab === 'receivables' && <Receivables rows={report.receivables} />}{tab === 'occupancy' && <OccupancyReport occupancy={report.occupancy} />}</>}</div><div className="hidden print:block"><FinancialReportPrint activeLabel={activeLabel} report={report} tab={tab} /></div></>}
       {!report && loading && <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel>}
     </div>
   </DashboardLayout>

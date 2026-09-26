@@ -2,7 +2,7 @@ import express from "express";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId } from "../middleware/validate.js";
-import { calculateAccuracy, regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.js";
+import { calculateAccuracy, regenerateForecasts } from "../services/predictiveAnalytics.js";
 
 const router = express.Router();
 
@@ -27,6 +27,11 @@ const forecastSelect = `SELECT f.id, f.unit_id AS "unitId", u.unit_number AS "un
   JOIN units u ON u.id = f.unit_id
   JOIN billing_periods p ON p.id = f.based_on_period_id`;
 
+const analyticsPeriodCondition = (alias) => `(
+  (${alias}.period_type = 'LIVE_BILLING' AND ${alias}.status IN ('FORWARDED', 'CLOSED'))
+  OR (${alias}.period_type = 'HISTORICAL_ANALYTICS' AND ${alias}.readings_visible_at IS NOT NULL)
+)`;
+
 router.use(requireAuth);
 
 // Forecasts are persisted so a dashboard load is fast. Staff can explicitly
@@ -35,17 +40,17 @@ router.post("/refresh-forecasts", allowRoles("ADMIN", "COLLECTOR"), async (req, 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    const firstPeriodResult = await client.query(
+    const currentPeriodResult = await client.query(
       `SELECT id FROM billing_periods
-       WHERE period_type = 'LIVE_BILLING' OR readings_visible_at IS NOT NULL
-       ORDER BY period_start ASC LIMIT 1`,
+       WHERE period_type = 'LIVE_BILLING' AND status IN ('FORWARDED', 'CLOSED')
+       ORDER BY period_start DESC LIMIT 1`,
     );
-    const firstPeriod = firstPeriodResult.rows[0];
-    if (!firstPeriod) {
+    const currentPeriod = currentPeriodResult.rows[0];
+    if (!currentPeriod) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ message: "There are no billing periods with readings to refresh." });
+      return res.status(400).json({ message: "There are no forwarded or closed live billing periods to refresh." });
     }
-    await regenerateForecastsFromPeriod(client, firstPeriod.id);
+    await regenerateForecasts(client, currentPeriod.id);
     await client.query("COMMIT");
     return res.json({ message: "Forecasts were refreshed using the current model." });
   } catch (error) {
@@ -71,7 +76,7 @@ router.get("/resident", allowRoles("RESIDENT"), async (req, res, next) => {
       pool.query(
         `${historySelect}
          WHERE m.unit_id = ANY($1::bigint[])
-           AND (p.period_type = 'LIVE_BILLING' OR p.readings_visible_at IS NOT NULL)
+           AND ${analyticsPeriodCondition('p')}
          ORDER BY m.unit_id, p.period_start`,
         [unitIds],
       ),
@@ -84,7 +89,7 @@ router.get("/resident", allowRoles("RESIDENT"), async (req, res, next) => {
          FROM billing_forecasts f
          JOIN billing_periods source ON source.id = f.based_on_period_id
          WHERE f.unit_id = ANY($1::bigint[])
-           AND (source.period_type = 'LIVE_BILLING' OR source.readings_visible_at IS NOT NULL)
+           AND ${analyticsPeriodCondition('source')}
          ORDER BY f.unit_id, f.forecast_for_month DESC, f.generated_at DESC`,
         [unitIds],
       ),
@@ -112,12 +117,12 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
       `SELECT MAX(f.forecast_for_month) AS "evaluationMonth"
        FROM billing_forecasts f
        JOIN billing_periods source ON source.id = f.based_on_period_id
-       WHERE (source.period_type = 'LIVE_BILLING' OR source.readings_visible_at IS NOT NULL)
+       WHERE ${analyticsPeriodCondition('source')}
          AND EXISTS (
            SELECT 1 FROM meter_readings actual
            JOIN billing_periods ap ON ap.id = actual.billing_period_id
            WHERE actual.unit_id = f.unit_id
-             AND (ap.period_type = 'LIVE_BILLING' OR ap.readings_visible_at IS NOT NULL)
+             AND ${analyticsPeriodCondition('ap')}
              AND DATE_TRUNC('month', ap.period_start) = DATE_TRUNC('month', f.forecast_for_month))`,
     );
     const evaluationMonth = evaluationMonthResult.rows[0]?.evaluationMonth || null;
@@ -133,10 +138,10 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
          JOIN billing_periods source ON source.id = f.based_on_period_id
          JOIN units u ON u.id = f.unit_id
          LEFT JOIN billing_periods ap ON DATE_TRUNC('month', ap.period_start) = DATE_TRUNC('month', f.forecast_for_month)
-          AND (ap.period_type = 'LIVE_BILLING' OR ap.readings_visible_at IS NOT NULL)
+          AND ${analyticsPeriodCondition('ap')}
          LEFT JOIN meter_readings actual ON actual.billing_period_id = ap.id AND actual.unit_id = f.unit_id
          WHERE DATE_TRUNC('month', f.forecast_for_month) = DATE_TRUNC('month', $1::date)
-           AND (source.period_type = 'LIVE_BILLING' OR source.readings_visible_at IS NOT NULL)
+           AND ${analyticsPeriodCondition('source')}
          ORDER BY u.unit_number`,
         [evaluationMonth],
       );
@@ -159,10 +164,10 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
          SELECT f2.based_on_period_id
          FROM billing_forecasts f2
          JOIN billing_periods source2 ON source2.id = f2.based_on_period_id
-         WHERE (source2.period_type = 'LIVE_BILLING' OR source2.readings_visible_at IS NOT NULL)
+         WHERE ${analyticsPeriodCondition('source2')}
          ORDER BY source2.period_start DESC, f2.generated_at DESC LIMIT 1
        )
-       AND (source.period_type = 'LIVE_BILLING' OR source.readings_visible_at IS NOT NULL)
+       AND ${analyticsPeriodCondition('source')}
        GROUP BY f.forecast_for_month`,
     );
     const flaggedResult = await pool.query(
@@ -171,7 +176,7 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
         m.validation_notes AS reason
        FROM meter_readings m JOIN units u ON u.id = m.unit_id
        JOIN billing_periods p ON p.id = m.billing_period_id
-       WHERE (p.period_type = 'LIVE_BILLING' OR p.readings_visible_at IS NOT NULL)
+       WHERE ${analyticsPeriodCondition('p')}
          AND m.validation_status = 'FLAGGED'
        ORDER BY p.period_start DESC, u.unit_number LIMIT 100`,
     );
@@ -181,7 +186,7 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
         ROUND(SUM((m.current_reading - m.previous_reading) * p.water_rate_per_cubic_m), 2) AS "actualWaterBill"
        FROM meter_readings m
        JOIN billing_periods p ON p.id = m.billing_period_id
-       WHERE (p.period_type = 'LIVE_BILLING' OR p.readings_visible_at IS NOT NULL)
+       WHERE ${analyticsPeriodCondition('p')}
          AND m.validation_status = 'VALID'
        GROUP BY DATE_TRUNC('month', p.period_start)
        ORDER BY month`,
@@ -192,7 +197,7 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
         ROUND(SUM(f.estimated_water_charge), 2) AS "projectedWaterBill"
        FROM billing_forecasts f
        JOIN billing_periods source ON source.id = f.based_on_period_id
-       WHERE (source.period_type = 'LIVE_BILLING' OR source.readings_visible_at IS NOT NULL)
+       WHERE ${analyticsPeriodCondition('source')}
          AND f.forecast_status = 'READY'
        GROUP BY DATE_TRUNC('month', f.forecast_for_month)
        ORDER BY month`,
@@ -239,8 +244,8 @@ router.get("/units/:id", allowRoles("ADMIN", "COLLECTOR"), requireId, async (req
     const unitResult = await pool.query("SELECT id, unit_number AS \"unitNumber\" FROM units WHERE id = $1", [req.resourceId]);
     if (!unitResult.rows[0]) return res.status(404).json({ message: "Unit not found." });
     const [historyResult, forecastsResult] = await Promise.all([
-      pool.query(`${historySelect} WHERE m.unit_id = $1 AND (p.period_type = 'LIVE_BILLING' OR p.readings_visible_at IS NOT NULL) ORDER BY p.period_start`, [req.resourceId]),
-      pool.query(`${forecastSelect} WHERE f.unit_id = $1 AND (p.period_type = 'LIVE_BILLING' OR p.readings_visible_at IS NOT NULL) ORDER BY f.forecast_for_month`, [req.resourceId]),
+      pool.query(`${historySelect} WHERE m.unit_id = $1 AND ${analyticsPeriodCondition('p')} ORDER BY p.period_start`, [req.resourceId]),
+      pool.query(`${forecastSelect} WHERE f.unit_id = $1 AND ${analyticsPeriodCondition('p')} ORDER BY f.forecast_for_month`, [req.resourceId]),
     ]);
     return res.json({ unit: unitResult.rows[0], history: historyResult.rows, forecasts: forecastsResult.rows });
   } catch (error) { return next(error); }

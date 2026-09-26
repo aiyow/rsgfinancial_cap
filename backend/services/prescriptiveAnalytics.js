@@ -82,7 +82,7 @@ export function buildPrescriptiveRecommendations({ forecast, history = [], conte
     const missingMonths = Math.max(WINDOW_SIZE - sampleCount, 1);
     recommendations.push(action(
       RECOMMENDATION_TYPES.COLLECT_MORE_HISTORY,
-      'MEDIUM',
+      'LOW',
       `Only ${sampleCount} of the required ${WINDOW_SIZE} consecutive valid monthly readings are available.`,
       `Record ${missingMonths} more consecutive valid monthly meter reading${missingMonths === 1 ? '' : 's'} before relying on a forecast.`,
       { sampleCount, missingMonths, requiredMonths: WINDOW_SIZE },
@@ -93,7 +93,7 @@ export function buildPrescriptiveRecommendations({ forecast, history = [], conte
     || number(reading.consumption) > number(validThree[index - 1].consumption))) {
     recommendations.push(action(
       RECOMMENDATION_TYPES.RISING_CONSUMPTION,
-      'MEDIUM',
+      'LOW',
       'Three consecutive valid monthly readings show rising water consumption.',
       'Notify the resident and recommend water-saving actions while monitoring the next meter reading.',
       { periods: validThree.map((reading) => reading.periodStart), values: validThree.map((reading) => rounded(reading.consumption)) },
@@ -135,7 +135,7 @@ export function buildPrescriptiveRecommendations({ forecast, history = [], conte
         if (recentHigh > 0 && predicted >= recentHigh * EARLY_MONITORING_PERCENT) {
           recommendations.push(action(
             RECOMMENDATION_TYPES.MONITOR_HIGH_USAGE,
-            'MEDIUM',
+            'LOW',
             `Forecast is near the unit's usual high-consumption level of ${rounded(recentHigh)} m3.`,
             'Encourage early monitoring and water-saving actions before the next meter reading.',
             {
@@ -158,7 +158,7 @@ export function buildPrescriptiveRecommendations({ forecast, history = [], conte
   if (remainingBalance !== null && remainingBalance > 0 && days !== null && days >= 0 && days <= 5) {
     recommendations.push(action(
       RECOMMENDATION_TYPES.PAYMENT_REMINDER,
-      'MEDIUM',
+      'LOW',
       `An unpaid balance of PHP ${rounded(remainingBalance, 2).toFixed(2)} is due in ${days} day${days === 1 ? '' : 's'}.`,
       'Send an in-app payment reminder to the assigned payer with the due date and remaining balance.',
       { remainingBalance: rounded(remainingBalance, 2), dueDate: context.dueDate, daysUntilDue: days },
@@ -185,7 +185,7 @@ export function buildPrescriptiveRecommendations({ forecast, history = [], conte
       : 'Water use is currently within the monitoring thresholds. Continue checking the next monthly meter reading.';
     recommendations.push(action(
       RECOMMENDATION_TYPES.MONITOR_USAGE,
-      'MEDIUM',
+      'LOW',
       condition,
       message,
       {
@@ -212,7 +212,7 @@ export async function ensurePrescriptiveAnalyticsSchema(client) {
       based_on_period_id BIGINT NOT NULL REFERENCES billing_periods(id) ON DELETE CASCADE,
       forecast_id BIGINT NULL REFERENCES billing_forecasts(id) ON DELETE SET NULL,
       recommendation_type VARCHAR(50) NOT NULL,
-      priority VARCHAR(20) NOT NULL CHECK (priority IN ('HIGH', 'MEDIUM')),
+      priority VARCHAR(20) NOT NULL CHECK (priority IN ('HIGH', 'LOW')),
       status VARCHAR(20) NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'VIEWED', 'SUPERSEDED')),
       message VARCHAR(500) NOT NULL,
       evidence JSONB NOT NULL DEFAULT '{}'::jsonb,

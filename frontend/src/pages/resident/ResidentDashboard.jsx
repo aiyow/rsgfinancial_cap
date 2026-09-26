@@ -4,7 +4,7 @@ import {
   Bar, CartesianGrid, Cell, ComposedChart, Legend, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { Activity, ChevronDown, CreditCard, FileCheck2, Lightbulb, ListFilter, ReceiptText } from 'lucide-react'
+import { Activity, ChevronDown, Lightbulb, ListFilter, ReceiptText } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -52,41 +52,43 @@ function latestMeterResetIndex(history) {
 export default function ResidentDashboard() {
   const { token, user } = useAuth()
   const [bills, setBills] = useState([])
-  const [payments, setPayments] = useState([])
   const [analyticsUnits, setAnalyticsUnits] = useState([])
   const [recommendations, setRecommendations] = useState([])
   const [selectedUnitId, setSelectedUnitId] = useState('')
   const [chartRange, setChartRange] = useState('RESET')
   const [chartRangeMenuOpen, setChartRangeMenuOpen] = useState(false)
+  const [unitMenuOpen, setUnitMenuOpen] = useState(false)
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let active = true
+    setLoading(true)
     Promise.all([
       apiRequest('/api/bills', { token }),
-      apiRequest('/api/payments', { token }),
       apiRequest('/api/analytics/resident', { token }),
       apiRequest('/api/prescriptive-recommendations/resident', { token }),
     ])
-      .then(([billData, paymentData, analyticsData, recommendationData]) => {
+      .then(([billData, analyticsData, recommendationData]) => {
+        if (!active) return
         setBills(billData.bills)
-        setPayments(paymentData.payments)
         setAnalyticsUnits(analyticsData.units)
         setRecommendations(recommendationData.recommendations || [])
         setSelectedUnitId((current) => current || String(analyticsData.units[0]?.id || ''))
       })
-      .catch((requestError) => setError(requestError.message))
+      .catch((requestError) => { if (active) setError(requestError.message) })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
   }, [token])
-
-  const summary = useMemo(() => ({
-    publishedSoas: bills.length,
-    unpaid: bills.filter((bill) => ['UNPAID', 'OVERDUE'].includes(bill.paymentStatus)).length,
-    pendingPayments: payments.filter((payment) => payment.reviewStatus === 'PENDING').length,
-  }), [bills, payments])
 
   const selectedUnit = useMemo(
     () => analyticsUnits.find((unit) => String(unit.id) === selectedUnitId) || analyticsUnits[0],
     [analyticsUnits, selectedUnitId],
   )
+  const currentBill = useMemo(() => {
+    const billsForSelectedUnit = bills.filter((bill) => String(bill.unitId) === String(selectedUnit?.id))
+    return billsForSelectedUnit[0] || bills[0] || null
+  }, [bills, selectedUnit])
   const selectedRecommendations = useMemo(
     () => recommendations.filter((recommendation) => String(recommendation.unitId) === String(selectedUnit?.id)),
     [recommendations, selectedUnit],
@@ -149,13 +151,10 @@ export default function ResidentDashboard() {
     <DashboardLayout title="Resident dashboard" description="View published SOAs, payment status, water analytics, and personalized recommendations.">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
-      <section className="resident-welcome"><div><p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Resident portal</p><h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Welcome back, {displayName(user.fullName)}</h1><p className="mt-2 text-sm text-slate-500">Unit {selectedUnit?.unitNumber || '—'} <span className="mx-1 text-slate-300">·</span> The ResiDens</p></div><div className="resident-welcome-mark"><Activity size={22} /></div></section>
+      {loading ? <ResidentDashboardSkeleton /> : <>
+      <section className="resident-welcome"><div><p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Resident portal</p><h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Welcome back, {displayName(user.fullName)}</h1><p className="mt-2 text-sm text-slate-500">Unit {selectedUnit?.unitNumber || '—'}{selectedUnit?.relationshipType && <><span className="mx-1 text-slate-300">·</span><span>{relationshipLabel(selectedUnit.relationshipType)}</span></>}<span className="mx-1 text-slate-300">·</span>The ResiDens</p></div><div className="resident-welcome-mark"><Activity size={22} /></div></section>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <DashboardCard icon={FileCheck2} label="Published SOAs" value={summary.publishedSoas} accent="blue" />
-        <DashboardCard icon={CreditCard} label="Need payment" value={summary.unpaid} accent="green" />
-        <DashboardCard icon={ReceiptText} label="Pending payment reviews" value={summary.pendingPayments} accent="red" />
-      </div>
+      <CurrentBillCard bill={currentBill} relationshipType={selectedUnit?.relationshipType} />
 
       <Panel title="Water consumption analytics" description="Forecasts are estimates based on five consecutive valid monthly readings and do not replace your actual bill.">
         {analyticsUnits.length === 0 ? <EmptyRow message="No analytics data yet. Import historical readings first." /> : (
@@ -163,15 +162,17 @@ export default function ResidentDashboard() {
             <div className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Current unit</p>
-                <p className="mt-1 text-2xl font-black text-slate-950">Unit {selectedUnit?.unitNumber}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2"><p className="text-2xl font-black text-slate-950">Unit {selectedUnit?.unitNumber}</p>{selectedUnit?.relationshipType && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">{relationshipLabel(selectedUnit.relationshipType)}</span>}</div>
               </div>
               {analyticsUnits.length > 1 && (
-                <label className="block w-full max-w-xs text-sm font-bold text-slate-700">
-                  Change unit
-                  <select value={selectedUnitId} onChange={(event) => setSelectedUnitId(event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2">
-                    {analyticsUnits.map((unit) => <option key={unit.id} value={unit.id}>Unit {unit.unitNumber}</option>)}
-                  </select>
-                </label>
+                <div className="relative w-full max-w-[240px] text-sm font-bold text-slate-700">
+                  <p className="mb-1.5">Change unit</p>
+                  <button type="button" aria-expanded={unitMenuOpen} onClick={() => setUnitMenuOpen((current) => !current)} className="flex w-full items-center gap-3 rounded-xl border border-emerald-300 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-emerald-500 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                    <span className="min-w-0 flex-1 truncate text-sm font-black text-slate-900">Unit {selectedUnit?.unitNumber}<span className="ml-1.5 text-xs font-medium text-slate-500">· {relationshipLabel(selectedUnit?.relationshipType)}</span></span>
+                    <ChevronDown size={18} className={`shrink-0 text-emerald-700 transition ${unitMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                  </button>
+                  {unitMenuOpen && <div className="absolute right-0 top-[calc(100%+6px)] z-30 w-full overflow-hidden rounded-xl border border-emerald-100 bg-white p-1 shadow-xl">{analyticsUnits.map((unit) => <button key={unit.id} type="button" onClick={() => { setSelectedUnitId(String(unit.id)); setUnitMenuOpen(false) }} className={`flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition ${String(unit.id) === String(selectedUnit?.id) ? 'bg-emerald-600 text-white' : 'text-slate-700 hover:bg-emerald-50'}`}><span className="min-w-0 truncate text-sm font-black">Unit {unit.unitNumber}<span className={`ml-1.5 text-xs font-medium ${String(unit.id) === String(selectedUnit?.id) ? 'text-emerald-100' : 'text-slate-500'}`}>· {relationshipLabel(unit.relationshipType)}</span></span>{String(unit.id) === String(selectedUnit?.id) && <span className="shrink-0 text-[11px] font-black">Current</span>}</button>)}</div>}
+                </div>
               )}
             </div>
 
@@ -285,37 +286,63 @@ export default function ResidentDashboard() {
           </div>
         )}
       </Panel>
+      </>}
 
-      <Panel title="Recent published SOAs" description="Open any statement to print it or submit a receipt image for OCR review.">
-        <div className="space-y-4">
-          {bills.slice(0, 4).map((bill) => (
-            <article key={bill.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-lg font-black text-slate-950">Unit {bill.unitNumber}</p>
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${bill.paymentStatus === 'PAID' ? 'bg-emerald-50 text-emerald-700' : bill.paymentStatus === 'PARTIAL' ? 'bg-sky-50 text-sky-700' : bill.paymentStatus === 'OVERDUE' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}`}>{bill.paymentStatus}</span>
-                </div>
-                <p className="mt-1 text-sm text-slate-500">Due {String(bill.dueDate).slice(0, 10)} | Remaining PHP {Number(bill.remainingBalance || 0).toFixed(2)} | Advance PHP {Number(bill.advanceBalance || 0).toFixed(2)}</p>
-              </div>
-              <Link to={`/resident/bills/${bill.id}`} className="resident-soa-button resident-soa-button-green w-fit">Open SOA <span aria-hidden="true">→</span></Link>
-            </article>
-          ))}
-        </div>
-        {bills.length === 0 && <EmptyRow message="No published SOAs are visible yet. Admin needs to publish forwarded SOAs first." />}
-      </Panel>
-
-      <Panel title="Payment history shortcuts">
-        <div className="flex flex-wrap gap-3">
-          <Link to="/resident/bills" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">View all SOAs</Link>
-          <Link to="/resident/payments" className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold">View payment history</Link>
-        </div>
-      </Panel>
     </DashboardLayout>
   )
 }
 
-function DashboardCard({ icon: Icon, label, value, accent }) {
-  return <div className={`resident-summary-card resident-summary-${accent}`}><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{label}</p><p className="mt-2 text-3xl font-black text-slate-950">{value}</p></div><div className="resident-card-icon"><Icon size={19} /></div></div>
+function ResidentDashboardSkeleton() {
+  return (
+    <div className="animate-pulse" aria-label="Loading resident overview" role="status">
+      <span className="sr-only">Loading your overview…</span>
+      <section className="flex items-center justify-between rounded-2xl bg-emerald-50 p-6 sm:p-7"><div className="space-y-3"><div className="h-3 w-28 rounded bg-emerald-200" /><div className="h-9 w-72 max-w-[65vw] rounded bg-emerald-200" /><div className="h-4 w-44 rounded bg-emerald-100" /></div><div className="size-14 rounded-2xl bg-emerald-200" /></section>
+      <section className="mt-6 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm"><div className="flex flex-col gap-5 bg-emerald-50/70 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div className="space-y-3"><div className="h-3 w-40 rounded bg-emerald-200" /><div className="h-8 w-56 rounded bg-emerald-200" /><div className="h-4 w-72 max-w-[65vw] rounded bg-emerald-100" /></div><div className="h-14 w-44 rounded-xl bg-emerald-200" /></div><div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-20 rounded-xl bg-emerald-50" />)}</div></section>
+      <section className="mt-6 rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm sm:p-6"><div className="h-6 w-64 rounded bg-slate-200" /><div className="mt-3 h-4 w-4/5 rounded bg-slate-100" /><div className="mt-6 rounded-xl bg-slate-50 p-4"><div className="flex items-center justify-between"><div className="space-y-2"><div className="h-3 w-24 rounded bg-emerald-100" /><div className="h-7 w-36 rounded bg-emerald-200" /></div><div className="h-10 w-40 rounded-xl bg-emerald-100" /></div></div><div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-24 rounded-2xl border border-emerald-100 bg-emerald-50" />)}</div><div className="mt-6 grid gap-6 xl:grid-cols-2">{Array.from({ length: 2 }, (_, index) => <div key={index} className="h-72 rounded-2xl border border-emerald-100 bg-slate-50" />)}</div></section>
+    </div>
+  )
+}
+
+function CurrentBillCard({ bill, relationshipType }) {
+  if (!bill) {
+    return <section className="rounded-2xl border border-dashed border-emerald-200 bg-white p-6 text-center shadow-sm"><ReceiptText className="mx-auto text-emerald-700" size={26} /><h2 className="mt-3 text-lg font-black text-slate-950">No published SOA yet</h2><p className="mt-1 text-sm text-slate-500">Your current bill will appear here after it has been published.</p></section>
+  }
+
+  const paid = bill.paymentStatus === 'PAID'
+  const statusStyle = paid ? 'bg-emerald-100 text-emerald-800' : bill.paymentStatus === 'PARTIAL' ? 'bg-sky-100 text-sky-800' : bill.paymentStatus === 'OVERDUE' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
+      <div className="grid gap-6 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Current statement of account</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2"><h2 className="text-2xl font-black text-slate-950">Unit {bill.unitNumber}</h2>{relationshipType && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">{relationshipLabel(relationshipType)}</span>}<span className={`rounded-full px-2.5 py-1 text-xs font-black ${statusStyle}`}>{bill.paymentStatus}</span></div>
+          <p className="mt-2 text-sm text-slate-600">Billing period: {String(bill.periodStart).slice(0, 10)} – {String(bill.periodEnd).slice(0, 10)} <span className="mx-1 text-slate-300">·</span> Due {String(bill.dueDate).slice(0, 10)}</p>
+        </div>
+        <div className="flex items-center gap-3"><span className="grid size-12 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><ReceiptText size={23} /></span><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{paid ? 'Paid amount' : 'Amount due'}</p><p className="mt-1 text-2xl font-black text-slate-950">{money(paid ? bill.approvedAmount : bill.remainingBalance)}</p></div></div>
+      </div>
+      <div className="grid gap-3 border-t border-emerald-100 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">
+        <Info label="Total amount" value={money(bill.totalAmount)} />
+        <Info label="Approved payments" value={money(bill.approvedAmount)} />
+        <Info label="Remaining balance" value={money(bill.remainingBalance)} />
+        <Info label="Payment review" value={bill.hasPendingPayment ? 'Receipt awaiting review' : paid ? 'Payment complete' : 'No receipt pending'} />
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-emerald-100 bg-emerald-50/40 px-5 py-4 sm:px-6"><Link to="/resident/bills" className="rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100">View all SOAs</Link><Link to={`/resident/bills/${bill.id}`} className="resident-soa-button resident-soa-button-green">Open SOA</Link></div>
+    </section>
+  )
+}
+
+function relationshipLabel(value) {
+  return value === 'OWNER' ? 'Owner' : value === 'TENANT' ? 'Tenant' : 'Resident'
+}
+
+function Info({ label, value }) {
+  return (
+    <div className="resident-soa-info rounded-xl p-3">
+      <p className="text-xs font-bold uppercase text-slate-400">{label}</p>
+      <p className="mt-1 font-semibold text-slate-900">{value}</p>
+    </div>
+  )
 }
 
 function MetricCard({ label, value }) {

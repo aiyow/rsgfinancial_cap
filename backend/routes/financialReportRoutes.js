@@ -5,7 +5,7 @@ import { allowRoles, requireAuth } from '../middleware/authMiddleware.js';
 import { getFinancialReport, parseFinancialReportFilters } from '../services/financialReports.js';
 
 const router = express.Router();
-const tabs = new Set(['overview', 'dues', 'water', 'paidDues', 'receivables']);
+const tabs = new Set(['overview', 'dues', 'water', 'paidDues', 'receivables', 'occupancy']);
 
 function queryFilters(req) {
   try {
@@ -62,7 +62,7 @@ function addTable(sheet, headers, rows, moneyColumns = []) {
 
 function createWorkbook(report, tab) {
   const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet({ overview: 'Overview', dues: 'Association Dues', water: 'Water Billing', paidDues: 'Paid Monthly Dues', receivables: 'Accounts Receivable' }[tab]);
+  const sheet = workbook.addWorksheet({ overview: 'Overview', dues: 'Association Dues', water: 'Water Billing', paidDues: 'Paid Monthly Dues', receivables: 'Accounts Receivable', occupancy: 'Unit Occupancy' }[tab]);
   sheet.columns = [{ width: 16 }, { width: 24 }, { width: 16 }, { width: 16 }, { width: 18 }, { width: 18 }, { width: 18 }, { width: 18 }];
   sheet.addRow(['ResiDens Financial Report']);
   sheet.getRow(1).font = { size: 16, bold: true, color: { argb: 'FF1C4E30' } };
@@ -82,6 +82,11 @@ function createWorkbook(report, tab) {
   }
   if (tab === 'receivables') {
     addTable(sheet, ['Unit', 'Resident / payer', 'Bill period', 'Due date', 'Billed', 'Paid', 'Balance', 'Status'], report.receivables.map((row) => [row.unitNumber, row.payerName, date(row.periodStart), date(row.dueDate), money(row.totalBilled), money(row.paidAmount), money(row.remainingBalance), row.paymentStatus]), [5, 6, 7]);
+  }
+  if (tab === 'occupancy') {
+    addTable(sheet, ['Unit', 'Floor', 'Resident / payer', 'Occupancy'], report.occupancy.rows.map((row) => [row.unitNumber, row.floor || '—', row.residentNames, row.occupancyStatus]));
+    const total = sheet.addRow(['Total units', report.occupancy.totalUnits, 'Occupied', report.occupancy.occupiedUnits, 'Vacant', report.occupancy.vacantUnits]);
+    total.font = { bold: true };
   }
   for (const row of sheet.getRows(1, sheet.rowCount) || []) row.alignment = { vertical: 'middle' };
   return workbook;

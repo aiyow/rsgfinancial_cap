@@ -121,7 +121,7 @@ export default function AdminUnitsViewPage() {
       </div>
 
       <Panel title="All units" description={`Search and filter all ${units.length} condominium units.`}>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
           <input type="search" value={search} onChange={(event) => updateSearch(event.target.value)} placeholder="Search unit or resident..." aria-label="Search units" className={`${controlClass} min-w-0 flex-1`} />
           <FilterPopover label="Floor" value={floor} open={floorMenuOpen} onToggle={() => { setFloorMenuOpen((current) => !current); setStatusMenuOpen(false) }} onSelect={(value) => { updateFloor(value); setFloorMenuOpen(false) }} options={[{ value: 'ALL', label: 'All floors' }, ...floors.map((floorOption) => ({ value: floorOption, label: floorOption }))]} />
           <FilterPopover label="Occupancy" value={status} open={statusMenuOpen} onToggle={() => { setStatusMenuOpen((current) => !current); setFloorMenuOpen(false) }} onSelect={(value) => { updateStatus(value); setStatusMenuOpen(false) }} options={[{ value: 'ALL', label: 'All statuses' }, { value: 'OCCUPIED', label: 'Occupied' }, { value: 'VACANT', label: 'Vacant' }]} />
