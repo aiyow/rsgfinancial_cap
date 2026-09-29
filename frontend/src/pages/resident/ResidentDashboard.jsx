@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Bar, CartesianGrid, Cell, ComposedChart, Legend, Line, LineChart,
+  Bar, CartesianGrid, ComposedChart, Legend, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import { Activity, ChevronDown, Lightbulb, ListFilter, ReceiptText } from 'lucide-react'
@@ -19,6 +19,10 @@ function monthLabel(value) {
 
 function money(value) {
   return value === null || value === undefined ? 'Unavailable' : `PHP ${Number(value).toFixed(2)}`
+}
+
+function waterBillMoney(value) {
+  return `PHP ${Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 function displayName(value) {
@@ -110,18 +114,18 @@ export default function ResidentDashboard() {
     : null
   const forecast = selectedUnit?.forecast
 
-  const consumptionData = useMemo(() => {
+  const waterBillData = useMemo(() => {
     const rows = chartHistory.map((reading) => ({
       label: monthLabel(reading.periodStart),
-      actual: reading.validationStatus === 'VALID' ? number(reading.consumption) : null,
-      predicted: null,
+      actualWaterBill: reading.validationStatus === 'VALID' ? number(reading.waterCharge) : null,
+      estimatedWaterBill: null,
       status: reading.validationStatus,
     }))
     if (forecast?.status === 'READY' && rows.length) {
       rows.push({
         label: `${monthLabel(forecast.forecastForMonth)} estimate`,
-        actual: null,
-        predicted: number(forecast.predictedConsumption),
+        actualWaterBill: null,
+        estimatedWaterBill: number(forecast.estimatedWaterCharge),
         status: 'FORECAST',
       })
     }
@@ -224,22 +228,20 @@ export default function ResidentDashboard() {
             {forecast && forecast.status !== 'READY' && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{forecast.reason}</p>}
 
             <div className="grid gap-6 xl:grid-cols-2">
-              <ChartCard title="Monthly consumption" description="Actual and predicted consumption in cubic meters.">
-                {consumptionData.length ? (
+              <ChartCard title="Monthly Water Bill" description="Actual water charges and the estimated charge for the next month.">
+                {waterBillData.length ? (
                   <ResponsiveContainer width="100%" height={320}>
-                    <ComposedChart data={consumptionData} margin={{ top: 10, right: 12, left: 0, bottom: 20 }}>
+                    <ComposedChart data={waterBillData} margin={{ top: 10, right: 12, left: 28, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#dceee2" />
                       <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
-                      <YAxis unit=" m³" tick={{ fontSize: 12 }} />
-                      <Tooltip formatter={(value) => [`${Number(value).toFixed(3)} m³`]} />
+                      <YAxis width={88} tick={{ fontSize: 12 }} tickFormatter={waterBillMoney} />
+                      <Tooltip formatter={(value) => [waterBillMoney(value)]} />
                       <Legend />
-                      <Bar dataKey="actual" name="Actual consumption" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={0} animationDuration={1000} animationEasing="ease-out">
-                        {consumptionData.map((row, index) => <Cell key={`actual-${row.label}-${index}`} fill={index % 2 === 0 ? '#2563eb' : '#2f8f5b'} />)}
-                      </Bar>
-                      {forecast?.status === 'READY' && <Bar dataKey="predicted" name="Predicted consumption" fill="#f59e0b" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={120} animationDuration={1000} animationEasing="ease-out" />}
+                      <Bar dataKey="actualWaterBill" name="Actual Water Bill" fill="#2563eb" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={0} animationDuration={1000} animationEasing="ease-out" />
+                      {forecast?.status === 'READY' && <Bar dataKey="estimatedWaterBill" name="Estimated Water Bill" fill="#f59e0b" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={120} animationDuration={1000} animationEasing="ease-out" />}
                     </ComposedChart>
                   </ResponsiveContainer>
-                ) : <EmptyRow message="Meter-reading history is not available yet." />}
+                ) : <EmptyRow message="Water-bill history is not available yet." />}
               </ChartCard>
 
               <ChartCard title="Meter-reading forecast" description="Recorded monthly meter readings and the predicted next reading.">
