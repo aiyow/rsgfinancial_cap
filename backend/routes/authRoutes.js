@@ -6,17 +6,25 @@ import pool from "../config/db.js";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { validateBody } from "../middleware/validate.js";
 import { createUserNotifications } from "../services/notifications.js";
+import { writeAuditLog } from "../services/auditLog.js";
 import {
   createVerificationToken,
   hashVerificationToken,
   sendVerificationEmail,
   verificationExpiryDate,
 } from "../services/emailVerification.js";
+import {
+  createPasswordResetToken,
+  hashPasswordResetToken,
+  passwordResetExpiryDate,
+  sendPasswordResetEmail,
+} from "../services/passwordReset.js";
 
 const router = express.Router();
 const roleSchema = z.enum(["ADMIN", "COLLECTOR", "RESIDENT"]);
 const passwordSchema = z.string().min(8).max(72);
 const VERIFICATION_RESEND_COOLDOWN_MS = 60 * 1000;
+const PASSWORD_RESET_RESEND_COOLDOWN_MS = 60 * 1000;
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(1).max(150),
@@ -31,6 +39,13 @@ const loginSchema = z.object({
 }).strict();
 const resendVerificationSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
+}).strict();
+const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(255),
+}).strict();
+const resetPasswordSchema = z.object({
+  token: z.string().trim().min(1).max(512),
+  password: passwordSchema,
 }).strict();
 const userColumns = `
   id,
@@ -99,7 +114,7 @@ router.post("/login", validateBody(loginSchema), async (req, res, next) => {
   try {
     const { email, password } = req.validatedBody;
     const result = await pool.query(
-      `SELECT ${userColumns}, password_hash AS "passwordHash"
+      `SELECT ${userColumns}, auth_version AS "authVersion", password_hash AS "passwordHash"
        FROM users
        WHERE LOWER(email) = LOWER($1)`,
       [email]
@@ -129,12 +144,108 @@ router.post("/login", validateBody(loginSchema), async (req, res, next) => {
       throw new Error("JWT_SECRET is not configured.");
     }
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: "8h" });
+    const token = jwt.sign({ id: user.id, authVersion: user.authVersion }, process.env.JWT_SECRET, { expiresIn: "8h" });
     delete user.passwordHash;
+    delete user.authVersion;
 
     return res.json({ message: "Login successful.", token, user });
   } catch (error) {
     return next(error);
+  }
+});
+
+router.post("/forgot-password", validateBody(forgotPasswordSchema), async (req, res, next) => {
+  const genericMessage = "If an eligible account exists for that email, a password-reset link has been sent.";
+  try {
+    const { email } = req.validatedBody;
+    const result = await pool.query(
+      `SELECT id, full_name AS "fullName", email, password_reset_last_sent_at AS "lastSentAt"
+       FROM users
+       WHERE LOWER(email) = LOWER($1)
+         AND is_active = TRUE
+         AND (approval_status = 'APPROVED' OR email_verified = TRUE)`,
+      [email]
+    );
+    const user = result.rows[0];
+    if (!user) return res.json({ message: genericMessage });
+
+    const lastSentAt = user.lastSentAt ? new Date(user.lastSentAt).getTime() : 0;
+    if (PASSWORD_RESET_RESEND_COOLDOWN_MS - (Date.now() - lastSentAt) > 0) {
+      return res.json({ message: genericMessage });
+    }
+
+    const token = createPasswordResetToken();
+    await pool.query(
+      `UPDATE users
+       SET password_reset_token_hash = $1,
+           password_reset_expires_at = $2,
+           password_reset_last_sent_at = NOW()
+       WHERE id = $3`,
+      [hashPasswordResetToken(token), passwordResetExpiryDate(), user.id]
+    );
+    try {
+      await sendPasswordResetEmail({ fullName: user.fullName, email: user.email, token });
+    } catch (error) {
+      console.error("Unable to send password reset email:", error.message);
+      const unavailable = new Error("Password reset emails are unavailable right now. Please contact an administrator.");
+      unavailable.status = 503;
+      return next(unavailable);
+    }
+    return res.json({ message: genericMessage });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+router.post("/reset-password", validateBody(resetPasswordSchema), async (req, res, next) => {
+  let client;
+  try {
+    const { token, password } = req.validatedBody;
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const userResult = await client.query(
+      `SELECT id
+       FROM users
+       WHERE password_reset_token_hash = $1
+         AND password_reset_expires_at > NOW()
+         AND is_active = TRUE
+         AND (approval_status = 'APPROVED' OR email_verified = TRUE)
+       FOR UPDATE`,
+      [hashPasswordResetToken(token)]
+    );
+    const user = userResult.rows[0];
+    if (!user) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ message: "This password-reset link is invalid or has expired. Request a new link to continue." });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    await client.query(
+      `UPDATE users
+       SET password_hash = $1,
+           password_reset_token_hash = NULL,
+           password_reset_expires_at = NULL,
+           password_reset_last_sent_at = NULL,
+           auth_version = auth_version + 1
+       WHERE id = $2`,
+      [passwordHash, user.id]
+    );
+    await writeAuditLog({
+      client,
+      actorUserId: user.id,
+      entityName: "USER_ACCOUNT",
+      entityId: user.id,
+      action: "PASSWORD_RESET",
+      newValues: { sessionsInvalidated: true },
+      remarks: "Password reset through emailed link.",
+    });
+    await client.query("COMMIT");
+    return res.json({ message: "Your password was changed. Sign in with your new password." });
+  } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
+    return next(error);
+  } finally {
+    client?.release();
   }
 });
 

@@ -36,7 +36,7 @@ export default function ReadOnlyRecords({ title, description, residentView = fal
 
       <Panel id="section-2" title={residentView ? 'My assignments' : 'Assignments'} description="Owner and tenant relationships for the available units.">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px] text-left text-sm"><thead className="text-xs uppercase text-slate-400"><tr><th className="pb-3">Resident</th><th>Unit</th><th>Relationship</th><th>Payer</th><th>Status</th></tr></thead><tbody className="divide-y divide-slate-100">
+          <table className="w-full min-w-[600px] text-left text-sm"><thead className="text-xs capitalize text-slate-400"><tr><th className="pb-3">Resident</th><th>Unit</th><th>Relationship</th><th>Payer</th><th>Status</th></tr></thead><tbody className="divide-y divide-slate-100">
             {assignments.map((assignment) => <tr key={assignment.id}><td className="py-3 font-bold">{assignment.residentName}</td><td>{assignment.unitNumber}</td><td>{assignment.relationshipType}</td><td>{assignment.isPrimaryPayer ? 'Primary' : 'No'}</td><td>{assignment.endDate ? 'Ended' : 'Active'}</td></tr>)}
           </tbody></table>
           {assignments.length === 0 && <EmptyRow message="No assignments available." />}

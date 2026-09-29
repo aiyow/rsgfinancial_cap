@@ -98,7 +98,7 @@ function NavigationLinks({ sections, collapsed, onNavigate }) {
 
         return (
           <div key={sectionKey}>
-            <p className={`mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.18em] text-[var(--muted)] ${collapsed ? 'lg:text-center' : ''}`}>
+            <p className={`mb-2 px-3 text-[9px] font-bold capitalize tracking-[0.18em] text-[var(--muted)] ${collapsed ? 'lg:text-center' : ''}`}>
               {collapsed ? sectionKey.slice(0, 1) : sectionLabels[sectionKey]}
             </p>
             <div className="space-y-1">
@@ -225,7 +225,7 @@ export default function DashboardLayout({ title, description, children }) {
             <BrandMark />
             <div className={collapsed ? 'lg:sr-only' : ''}>
               <p className="text-sm font-black tracking-tight text-[var(--ink)]">The ResiDens</p>
-              <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">Water Billing</p>
+              <p className="mt-0.5 text-[10px] font-black capitalize tracking-[0.16em] text-[var(--muted)]">Water Billing</p>
             </div>
           </div>
           <button
@@ -273,7 +273,7 @@ export default function DashboardLayout({ title, description, children }) {
               <div className="flex min-w-0 items-center gap-2 text-sm">
                 <span className="truncate font-bold text-[var(--ink)]">{portalLabel}</span>
                 <span className="text-[var(--muted)]">/</span>
-                <span className="truncate text-[var(--muted)]">{title}</span>
+                <span className="ui-title truncate text-[var(--muted)]">{title}</span>
               </div>
             </div>
 

@@ -165,7 +165,7 @@ export default function AdminAuditLogsPage() {
                 <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
                   {entityGroups.map((group) => (
                     <div key={group.label} className="not-first:mt-3">
-                      <p style={{ fontWeight: 400 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">{group.label}</p>
+                      <p style={{ fontWeight: 400 }} className="px-2 pb-1.5 text-[10px] capitalize tracking-[0.14em] text-[#668074]">{group.label}</p>
                       <div className="grid gap-1 sm:grid-cols-2">
                         {group.options.map((option) => {
                           const label = option === 'ALL' ? 'Everything' : labelFor(option, entityLabels)
@@ -189,7 +189,7 @@ export default function AdminAuditLogsPage() {
                 <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
                   {actionGroups.map((group) => (
                     <div key={group.label} className="not-first:mt-3">
-                      <p style={{ fontWeight: 400 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">{group.label}</p>
+                      <p style={{ fontWeight: 400 }} className="px-2 pb-1.5 text-[10px] capitalize tracking-[0.14em] text-[#668074]">{group.label}</p>
                       <div className="grid gap-1 sm:grid-cols-2">
                         {group.options.map((option) => {
                           const label = option === 'ALL' ? 'Everything' : labelFor(option, actionFilterLabels)

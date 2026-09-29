@@ -264,7 +264,7 @@ export default function AnalyticsPage() {
                             <ActionButton disabled={busy} onClick={() => setConfirmation({ type: 'DELETE_RECOMMENDATION', recommendation })}>{busy ? 'Deleting...' : 'Delete'}</ActionButton>
                           </div>
                         </div>
-                        {expanded && <div className="mt-4 border-t border-slate-100 pt-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">Condition detected</p><p className="mt-1 font-bold text-slate-900">{recommendation.evidence?.condition || recommendationEvidence(recommendation)}</p><p className="mt-3 text-xs font-bold uppercase tracking-wide text-slate-400">Recommended action</p><p className="mt-1 font-black text-slate-950">{recommendation.message}</p><p className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{recommendationEvidence(recommendation)}</p></div>}
+                        {expanded && <div className="mt-4 border-t border-slate-100 pt-4"><p className="text-xs font-bold capitalize tracking-wide text-slate-400">Condition detected</p><p className="mt-1 font-bold text-slate-900">{recommendation.evidence?.condition || recommendationEvidence(recommendation)}</p><p className="mt-3 text-xs font-bold capitalize tracking-wide text-slate-400">Recommended action</p><p className="mt-1 font-black text-slate-950">{recommendation.message}</p><p className="mt-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{recommendationEvidence(recommendation)}</p></div>}
                       </article>
                     )
                   })}
@@ -288,7 +288,7 @@ export default function AnalyticsPage() {
             {data?.diagnostics.length ? (
               <div className="max-h-[31rem] overflow-auto overscroll-contain rounded-xl border border-slate-200" aria-label="Predicted versus actual results">
                 <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Model</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
+                  <thead className="sticky top-0 z-10 bg-slate-50 text-xs capitalize text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Model</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
                   <tbody className="divide-y divide-slate-300">
                     {data.diagnostics.map((row) => (
                       <tr key={`${row.unitId}-${row.forecastForMonth}`} className={row.status !== 'READY' || row.actualValidationStatus !== 'VALID' ? 'bg-amber-50' : ''}>
@@ -338,7 +338,7 @@ export default function AnalyticsPage() {
 }
 
 function Metric({ accent, icon: Icon, label, value, compact = false }) {
-  return <div className={`${accent ? `collector-metric collector-metric-${accent}` : ''} rounded-2xl border border-slate-200 bg-white ${compact ? 'p-4 shadow-none' : 'p-5 shadow-sm'}`}><div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p><p className={`${compact ? 'mt-2 text-xl' : 'mt-3 text-2xl'} font-black text-[var(--ink)]`}>{value}</p></div>{Icon && <span className="grid size-10 shrink-0 place-items-center rounded-xl"><Icon size={19} /></span>}</div></div>
+  return <div className={`${accent ? `collector-metric collector-metric-${accent}` : ''} rounded-2xl border border-slate-200 bg-white ${compact ? 'p-4 shadow-none' : 'p-5 shadow-sm'}`}><div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="text-xs font-bold capitalize tracking-wide text-slate-400">{label}</p><p className={`${compact ? 'mt-2 text-xl' : 'mt-3 text-2xl'} font-black text-[var(--ink)]`}>{value}</p></div>{Icon && <span className="grid size-10 shrink-0 place-items-center rounded-xl"><Icon size={19} /></span>}</div></div>
 }
 
 function ChartCard({ title, description, filter, children }) {
@@ -359,7 +359,7 @@ function ForecastRangeFilter({ value, onChange }) {
     setOpen(false)
   }
 
-  return <div className="relative w-44 shrink-0"><p className="mb-1 text-[11px] font-medium text-[var(--muted)]">Viewing</p><button type="button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-emerald-600 bg-white px-3 py-1.5 text-left text-xs font-bold text-emerald-700 shadow-sm outline-none transition hover:bg-emerald-50 focus:ring-2 focus:ring-emerald-200"><span>Last {selected.label}</span><ChevronDown size={15} className={`shrink-0 transition ${open ? 'rotate-180' : ''}`} /></button>{open && <div className="absolute right-0 top-[calc(100%+6px)] z-10 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl" role="listbox" aria-label="Forecast statistical filter"><p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--muted)]">Forecast range</p><div className="grid grid-cols-1 gap-1">{forecastRanges.map((option) => <button key={option.value} type="button" role="option" aria-selected={option.value === value} onClick={() => selectRange(option.value)} className={`rounded-md px-2 py-1.5 text-left text-[11px] font-bold transition ${option.value === value ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}`}>Last {option.label}</button>)}</div></div>}</div>
+  return <div className="relative w-44 shrink-0"><p className="mb-1 text-[11px] font-medium text-[var(--muted)]">Viewing</p><button type="button" aria-haspopup="listbox" aria-expanded={open} onClick={() => setOpen((current) => !current)} className="flex w-full items-center justify-between gap-2 rounded-lg border border-emerald-600 bg-white px-3 py-1.5 text-left text-xs font-bold text-emerald-700 shadow-sm outline-none transition hover:bg-emerald-50 focus:ring-2 focus:ring-emerald-200"><span>Last {selected.label}</span><ChevronDown size={15} className={`shrink-0 transition ${open ? 'rotate-180' : ''}`} /></button>{open && <div className="absolute right-0 top-[calc(100%+6px)] z-10 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl" role="listbox" aria-label="Forecast statistical filter"><p className="px-2 pb-1.5 text-[10px] font-black capitalize tracking-[0.14em] text-[var(--muted)]">Forecast range</p><div className="grid grid-cols-1 gap-1">{forecastRanges.map((option) => <button key={option.value} type="button" role="option" aria-selected={option.value === value} onClick={() => selectRange(option.value)} className={`rounded-md px-2 py-1.5 text-left text-[11px] font-bold transition ${option.value === value ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'}`}>Last {option.label}</button>)}</div></div>}</div>
 }
 
 function recommendationTypeLabel(type) {

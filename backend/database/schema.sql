@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS users (
   email_verification_token_hash VARCHAR(64) NULL,
   email_verification_expires_at TIMESTAMPTZ NULL,
   email_verification_last_sent_at TIMESTAMPTZ NULL,
+  password_reset_token_hash VARCHAR(64) NULL,
+  password_reset_expires_at TIMESTAMPTZ NULL,
+  password_reset_last_sent_at TIMESTAMPTZ NULL,
+  auth_version INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -22,3 +26,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique
 CREATE INDEX IF NOT EXISTS users_email_verification_token_hash_idx
   ON users (email_verification_token_hash)
   WHERE email_verification_token_hash IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS users_password_reset_token_hash_idx
+  ON users (password_reset_token_hash)
+  WHERE password_reset_token_hash IS NOT NULL;

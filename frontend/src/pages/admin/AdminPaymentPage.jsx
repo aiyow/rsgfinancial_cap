@@ -192,7 +192,7 @@ export default function AdminPaymentPage() {
             </dl>
             {payment.entryType === 'RECEIPT_UPLOAD' && (
               <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                <p className="text-xs font-bold uppercase text-slate-500">Raw OCR text</p>
+                <p className="text-xs font-bold capitalize text-slate-500">Raw OCR text</p>
                 <pre className="mt-3 whitespace-pre-wrap break-words text-sm text-slate-700">{payment.ocrRawText || 'No OCR text was extracted.'}</pre>
               </div>
             )}
@@ -273,7 +273,7 @@ export default function AdminPaymentPage() {
 function Fact({ label, value }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs font-bold uppercase text-slate-500">{label}</p>
+      <p className="text-xs font-bold capitalize text-slate-500">{label}</p>
       <p className="mt-2 text-sm font-semibold text-slate-900">{value}</p>
     </div>
   )

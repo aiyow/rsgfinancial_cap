@@ -69,13 +69,13 @@ export default function ResidentPaymentsPage() {
             <article key={payment.id} className="payment-record-card overflow-hidden">
               <div className="flex flex-col gap-4 border-b border-[#d9e7dd] bg-emerald-50/50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Payment submission</p>
+                  <p className="text-xs font-bold capitalize tracking-[0.16em] text-[var(--primary)]">Payment submission</p>
                   <h2 className="mt-1 text-xl font-black text-slate-950">Unit {payment.unitNumber}</h2>
                   <p className="mt-1 text-sm text-slate-500">Submitted {dateTimeLabel(payment.submittedAt)}</p>
                 </div>
                 <div className="flex items-center justify-between gap-4 sm:block sm:text-right">
                   <span className={`payment-status-badge ${payment.reviewStatus === 'APPROVED' ? 'payment-status-approved' : payment.reviewStatus === 'REJECTED' ? 'payment-status-rejected' : 'payment-status-pending'}`}>{payment.reviewStatus}</span>
-                  <div><p className="mt-0 text-xs font-bold uppercase tracking-[0.12em] text-slate-400 sm:mt-3">Verified amount</p>
+                  <div><p className="mt-0 text-xs font-bold capitalize tracking-[0.12em] text-slate-400 sm:mt-3">Verified amount</p>
                   <p className="mt-1 text-2xl font-black text-slate-950">{payment.verifiedAmount ? money(payment.verifiedAmount) : 'Pending'}</p>
                   </div>
                 </div>
@@ -105,7 +105,7 @@ export default function ResidentPaymentsPage() {
 function MiniInfo({ label, value }) {
   return (
     <div className="payment-info-box rounded-xl p-3">
-      <p className="text-xs font-bold uppercase text-slate-400">{label}</p>
+      <p className="text-xs font-bold capitalize text-slate-400">{label}</p>
       <p className="mt-1 font-semibold text-slate-900">{value}</p>
     </div>
   )

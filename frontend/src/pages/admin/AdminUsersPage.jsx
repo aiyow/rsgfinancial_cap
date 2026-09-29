@@ -165,7 +165,7 @@ export default function AdminUsersPage() {
         </div>
         <div className="max-h-[665px] overflow-auto">
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead className="sticky top-0 z-10 bg-[var(--app-bg)] text-[11px] uppercase tracking-[0.08em] text-[var(--muted)] shadow-sm"><tr><th className="px-4 py-3 font-bold">User</th><th className="px-4 py-3 font-bold">Email</th><th className="px-4 py-3 font-bold">Role</th><th className="px-4 py-3 font-bold">Status</th><th className="px-4 py-3 text-right font-bold">Actions</th></tr></thead>
+            <thead className="sticky top-0 z-10 bg-[var(--app-bg)] text-[11px] capitalize tracking-[0.08em] text-[var(--muted)] shadow-sm"><tr><th className="px-4 py-3 font-bold">User</th><th className="px-4 py-3 font-bold">Email</th><th className="px-4 py-3 font-bold">Role</th><th className="px-4 py-3 font-bold">Status</th><th className="px-4 py-3 text-right font-bold">Actions</th></tr></thead>
             <tbody className="divide-y divide-slate-300">
               {filteredUsers.map((user) => <tr key={user.id} className="transition hover:bg-[var(--app-bg)]"><td className="px-4 py-3.5 font-bold text-[var(--ink)]">{user.fullName}</td><td className="px-4 py-3.5 text-[var(--muted)]">{user.email}</td><td className="px-4 py-3.5"><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{roleLabel(user.role)}</span></td><td className="px-4 py-3.5">{user.approvalStatus === 'PENDING' ? <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">Awaiting approval</span> : <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${user.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>{user.isActive ? 'Active' : 'Inactive'}</span>}</td><td className="px-4 py-3.5"><div className="flex justify-end gap-2">{user.approvalStatus === 'PENDING' && <button type="button" className="rounded-md bg-[var(--primary)] px-2.5 py-1.5 text-xs font-bold text-white transition hover:bg-[#237147]" onClick={() => runAction(() => apiRequest(`/api/users/${user.id}`, { method: 'PATCH', token, body: { approvalStatus: 'APPROVED' } }), 'Account approved. The user can now sign in.')}>Approve</button>}<button type="button" className={actionClass} onClick={() => startEdit(user)}>Edit</button>{Number(user.id) !== Number(currentUser.id) && <button type="button" className={actionClass} onClick={() => user.isActive ? setDeactivateTarget(user) : runAction(() => apiRequest(`/api/users/${user.id}`, { method: 'PATCH', token, body: { isActive: true } }), 'Account activated.')}>{user.isActive ? 'Deactivate' : 'Activate'}</button>}{Number(user.id) !== Number(currentUser.id) && <button type="button" className={`${actionClass} text-red-600`} onClick={() => requestDelete(user)}>Delete</button>}</div></td></tr>)}
             </tbody>
@@ -192,7 +192,7 @@ function FilterPopover({ disabled = false, label, onSelect, onToggle, open, opti
       </button>
       {open && (
         <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-60 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
-          <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">{label}</p>
+          <p className="px-2 pb-1.5 text-[10px] font-black capitalize tracking-[0.14em] text-[#668074]">{label}</p>
           <div className="grid gap-1">
             {options.map((option) => <button key={option.value} type="button" onClick={() => onSelect(option.value)} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${value === option.value ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{option.label}</button>)}
           </div>
@@ -280,7 +280,7 @@ function DeleteUserModal({ onCancel, onConfirm, user }) {
         </div>
         <div className="mt-5 rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-slate-700">
           <p>Delete <strong className="text-slate-900">{user.fullName}</strong> and remove their unit assignment records.</p>
-          <p className="mt-1 text-xs font-bold uppercase tracking-wide text-rose-700">{roleLabel(user.role)} account</p>
+          <p className="mt-1 text-xs font-bold capitalize tracking-wide text-rose-700">{roleLabel(user.role)} account</p>
         </div>
         <form onSubmit={submit} className="mt-5 space-y-4">
           {requiresPassword && <><p className="text-sm text-slate-600">To protect privileged accounts, enter your current Admin password to continue.</p><PasswordField label="Your current password" required value={password} onChange={(event) => setPassword(event.target.value)} /></>}

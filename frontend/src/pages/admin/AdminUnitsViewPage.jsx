@@ -4,6 +4,7 @@ import { Building2, ChevronDown, Users } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import { formatLabel } from '../../utils/formatText'
 
 const PAGE_SIZE = 15
 const controlClass = 'rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100'
@@ -12,7 +13,7 @@ function SummaryCard({ accent, icon: Icon, label, value }) {
   return (
     <article className={`collector-metric collector-metric-${accent} rounded-2xl border border-[var(--border)] p-5 shadow-sm`}>
       <div className="flex items-center justify-between gap-4">
-        <div><p className="text-sm font-bold text-[var(--muted)]">{label}</p><p className="mt-2 text-3xl font-black text-[var(--ink)]">{value}</p></div>
+        <div><p className="ui-title text-sm font-bold text-[var(--muted)]">{label}</p><p className="mt-2 text-3xl font-black text-[var(--ink)]">{value}</p></div>
         <span className="grid size-11 place-items-center rounded-xl"><Icon size={20} /></span>
       </div>
     </article>
@@ -130,17 +131,17 @@ export default function AdminUnitsViewPage() {
 
         <div className="mt-6 overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
+            <thead className="border-b border-slate-200 text-xs capitalize tracking-wide text-slate-400">
               <tr><th className="px-3 py-3">Unit</th><th className="px-3 py-3">Floor</th><th className="px-3 py-3">Size</th><th className="px-3 py-3">Resident</th><th className="px-3 py-3">Relationship</th><th className="px-3 py-3">Status</th></tr>
             </thead>
             <tbody className="divide-y divide-slate-300">
               {visibleUnits.map((unit) => (
                 <tr key={unit.id} className="hover:bg-slate-50">
                   <td className="px-3 py-4 font-black text-slate-900">Unit {unit.unitNumber}</td>
-                  <td className="px-3 py-4 text-slate-600">{unit.floor || '—'}</td>
+                  <td className="px-3 py-4 text-slate-600">{formatLabel(unit.floor)}</td>
                   <td className="px-3 py-4 text-slate-600">{unit.billableAreaSqm ? `${unit.billableAreaSqm} sqm` : 'Not set'}</td>
                   <td className="px-3 py-4 text-slate-700">{unit.activeAssignments.length ? unit.activeAssignments.map((assignment) => assignment.residentName).join(', ') : '—'}</td>
-                  <td className="px-3 py-4 text-slate-600">{unit.activeAssignments.length ? unit.activeAssignments.map((assignment) => assignment.relationshipType).join(', ') : '—'}</td>
+                  <td className="px-3 py-4 text-slate-600">{unit.activeAssignments.length ? unit.activeAssignments.map((assignment) => formatLabel(assignment.relationshipType)).join(', ') : '—'}</td>
                   <td className="px-3 py-4"><StatusBadge status={unit.occupancyStatus} /></td>
                 </tr>
               ))}

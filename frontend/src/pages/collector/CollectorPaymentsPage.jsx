@@ -44,7 +44,7 @@ export default function CollectorPaymentsPage() {
         {payments.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1060px] text-left text-sm">
-              <thead className="text-xs uppercase tracking-wide text-slate-500">
+              <thead className="text-xs capitalize tracking-wide text-slate-500">
                 <tr>
                   <th className="px-3 py-3 text-left font-bold">Unit</th>
                   <th className="px-3 py-3 text-left font-bold">Resident</th>

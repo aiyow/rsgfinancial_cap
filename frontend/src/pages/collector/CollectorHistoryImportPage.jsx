@@ -161,7 +161,7 @@ export default function CollectorHistoryImportPage() {
             </div>
             <div className="max-h-[520px] overflow-auto rounded-xl border border-slate-200">
               <table className="w-full min-w-[920px] text-left text-sm">
-                <thead className="sticky top-0 bg-white text-xs uppercase text-slate-400"><tr><th className="p-3">Row</th><th>Unit</th><th>Previous</th><th>Present</th><th>Consumption</th><th>Water charge</th><th>Validation</th></tr></thead>
+                <thead className="sticky top-0 bg-white text-xs capitalize text-slate-400"><tr><th className="p-3">Row</th><th>Unit</th><th>Previous</th><th>Present</th><th>Consumption</th><th>Water charge</th><th>Validation</th></tr></thead>
                 <tbody className="divide-y divide-slate-100">
                   {preview.rows.map((row) => (
                     <tr key={row.rowNumber} className={row.errors.length ? 'bg-red-50' : row.warnings.length ? 'bg-amber-50' : ''}>
@@ -190,7 +190,7 @@ export default function CollectorHistoryImportPage() {
         {sortedImports.length ? (
           <div className="overflow-auto rounded-xl border border-slate-200">
             <table className="w-full min-w-[780px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-400"><tr><th className="p-3">Month</th><th>Readings</th><th>Flagged</th><th>Forecast month</th><th>Ready forecasts</th><th></th></tr></thead>
+              <thead className="bg-slate-50 text-xs capitalize text-slate-400"><tr><th className="p-3">Month</th><th>Readings</th><th>Flagged</th><th>Forecast month</th><th>Ready forecasts</th><th></th></tr></thead>
               <tbody className="divide-y divide-slate-300">
                 {sortedImports.map((item) => (
                   <tr key={item.periodMonth}>
@@ -213,5 +213,5 @@ export default function CollectorHistoryImportPage() {
 
 function Metric({ label, value, tone = 'slate' }) {
   const toneClass = tone === 'red' ? 'text-red-700' : tone === 'amber' ? 'text-amber-700' : 'text-slate-950'
-  return <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs font-bold uppercase tracking-wide text-slate-400">{label}</p><p className={`mt-2 text-xl font-black ${toneClass}`}>{value}</p></div>
+  return <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-xs font-bold capitalize tracking-wide text-slate-400">{label}</p><p className={`mt-2 text-xl font-black ${toneClass}`}>{value}</p></div>
 }

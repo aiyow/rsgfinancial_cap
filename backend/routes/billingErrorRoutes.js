@@ -86,7 +86,7 @@ router.get('/', allowRoles('ADMIN', 'COLLECTOR'), async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
-router.patch('/:id/resolve', allowRoles('ADMIN', 'COLLECTOR'), requireId, validateBody(resolveSchema), async (req, res, next) => {
+router.patch('/:id/resolve', allowRoles('COLLECTOR'), requireId, validateBody(resolveSchema), async (req, res, next) => {
   let client;
   try {
     client = await pool.connect();

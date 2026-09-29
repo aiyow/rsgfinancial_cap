@@ -152,7 +152,7 @@ export default function ResidentDashboard() {
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
       {loading ? <ResidentDashboardSkeleton /> : <>
-      <section className="resident-welcome"><div><p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Resident portal</p><h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Welcome back, {displayName(user.fullName)}</h1><p className="mt-2 text-sm text-slate-500">Unit {selectedUnit?.unitNumber || '—'}{selectedUnit?.relationshipType && <><span className="mx-1 text-slate-300">·</span><span>{relationshipLabel(selectedUnit.relationshipType)}</span></>}<span className="mx-1 text-slate-300">·</span>The ResiDens</p></div><div className="resident-welcome-mark"><Activity size={22} /></div></section>
+      <section className="resident-welcome"><div><p className="text-sm font-bold capitalize tracking-[0.16em] text-[var(--primary)]">Resident portal</p><h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Welcome back, {displayName(user.fullName)}</h1><p className="mt-2 text-sm text-slate-500">Unit {selectedUnit?.unitNumber || '—'}{selectedUnit?.relationshipType && <><span className="mx-1 text-slate-300">·</span><span>{relationshipLabel(selectedUnit.relationshipType)}</span></>}<span className="mx-1 text-slate-300">·</span>The ResiDens</p></div><div className="resident-welcome-mark"><Activity size={22} /></div></section>
 
       <CurrentBillCard bill={currentBill} relationshipType={selectedUnit?.relationshipType} />
 
@@ -161,7 +161,7 @@ export default function ResidentDashboard() {
           <div className="space-y-6">
             <div className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Current unit</p>
+                <p className="text-xs font-bold capitalize tracking-wide text-slate-400">Current unit</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2"><p className="text-2xl font-black text-slate-950">Unit {selectedUnit?.unitNumber}</p>{selectedUnit?.relationshipType && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">{relationshipLabel(selectedUnit.relationshipType)}</span>}</div>
               </div>
               {analyticsUnits.length > 1 && (
@@ -202,17 +202,17 @@ export default function ResidentDashboard() {
                   {chartRangeMenuOpen && (
                     <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-full min-w-[230px] rounded-xl border border-[#d7eadc] bg-white p-3 text-left shadow-xl">
                       <div>
-                        <p style={{ fontWeight: 500 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">Recommended</p>
+                        <p style={{ fontWeight: 500 }} className="px-2 pb-1.5 text-[10px] capitalize tracking-[0.14em] text-[#668074]">Recommended</p>
                         <button type="button" onClick={() => { setChartRange('RESET'); setChartRangeMenuOpen(false) }} style={{ fontWeight: 500 }} className={`w-full rounded-lg px-2.5 py-2 text-left text-xs transition ${chartRange === 'RESET' ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{resetIndex >= 0 ? 'Since latest meter reset' : 'All available readings'}</button>
                       </div>
                       <div className="mt-3">
-                        <p style={{ fontWeight: 500 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">Recent</p>
+                        <p style={{ fontWeight: 500 }} className="px-2 pb-1.5 text-[10px] capitalize tracking-[0.14em] text-[#668074]">Recent</p>
                         <div className="grid gap-1 sm:grid-cols-2">
                           {['1', '2', '3', '6'].map((range) => <button key={range} type="button" onClick={() => { setChartRange(range); setChartRangeMenuOpen(false) }} style={{ fontWeight: 500 }} className={`rounded-lg px-2.5 py-2 text-left text-xs transition ${chartRange === range ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>Last {range} month{range === '1' ? '' : 's'}</button>)}
                         </div>
                       </div>
                       <div className="mt-3">
-                        <p style={{ fontWeight: 500 }} className="px-2 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-[#668074]">Full history</p>
+                        <p style={{ fontWeight: 500 }} className="px-2 pb-1.5 text-[10px] capitalize tracking-[0.14em] text-[#668074]">Full history</p>
                         <button type="button" onClick={() => { setChartRange('ALL'); setChartRangeMenuOpen(false) }} style={{ fontWeight: 500 }} className={`w-full rounded-lg px-2.5 py-2 text-left text-xs transition ${chartRange === 'ALL' ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>All readings</button>
                       </div>
                     </div>
@@ -273,9 +273,9 @@ export default function ResidentDashboard() {
                   {selectedRecommendations.map((recommendation) => {
                     const positive = isPositiveInsight(recommendation)
                     return <article key={recommendation.id} className={`rounded-xl border p-4 ${positive ? 'border-emerald-200 bg-emerald-50 text-emerald-950' : 'border-amber-200 bg-amber-50 text-amber-950'}`}>
-                      <p className={`text-xs font-bold uppercase tracking-wide ${positive ? 'text-emerald-700' : 'text-amber-700'}`}>{positive ? 'Everything looks normal' : 'Condition detected'}</p>
+                      <p className={`text-xs font-bold capitalize tracking-wide ${positive ? 'text-emerald-700' : 'text-amber-700'}`}>{positive ? 'Everything looks normal' : 'Condition detected'}</p>
                       <p className={`mt-1 text-sm ${positive ? 'text-emerald-900' : 'text-amber-900'}`}>{recommendation.evidence?.condition}</p>
-                      <p className={`mt-3 text-xs font-bold uppercase tracking-wide ${positive ? 'text-emerald-700' : 'text-amber-700'}`}>{positive ? 'Next step' : 'Recommended action'}</p>
+                      <p className={`mt-3 text-xs font-bold capitalize tracking-wide ${positive ? 'text-emerald-700' : 'text-amber-700'}`}>{positive ? 'Next step' : 'Recommended action'}</p>
                       <p className="mt-1 text-sm font-bold text-slate-950">{recommendation.message}</p>
                       <p className={`mt-2 text-xs ${positive ? 'text-emerald-800' : 'text-amber-800'}`}>{residentInsightEvidence(recommendation)}</p>
                     </article>
@@ -315,11 +315,11 @@ function CurrentBillCard({ bill, relationshipType }) {
     <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
       <div className="grid gap-6 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">Current statement of account</p>
+          <p className="text-xs font-bold capitalize tracking-[0.16em] text-emerald-700">Current statement of account</p>
           <div className="mt-2 flex flex-wrap items-center gap-2"><h2 className="text-2xl font-black text-slate-950">Unit {bill.unitNumber}</h2>{relationshipType && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">{relationshipLabel(relationshipType)}</span>}<span className={`rounded-full px-2.5 py-1 text-xs font-black ${statusStyle}`}>{bill.paymentStatus}</span></div>
           <p className="mt-2 text-sm text-slate-600">Billing period: {String(bill.periodStart).slice(0, 10)} – {String(bill.periodEnd).slice(0, 10)} <span className="mx-1 text-slate-300">·</span> Due {String(bill.dueDate).slice(0, 10)}</p>
         </div>
-        <div className="flex items-center gap-3"><span className="grid size-12 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><ReceiptText size={23} /></span><div><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">{paid ? 'Paid amount' : 'Amount due'}</p><p className="mt-1 text-2xl font-black text-slate-950">{money(paid ? bill.approvedAmount : bill.remainingBalance)}</p></div></div>
+        <div className="flex items-center gap-3"><span className="grid size-12 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><ReceiptText size={23} /></span><div><p className="text-xs font-bold capitalize tracking-[0.12em] text-slate-500">{paid ? 'Paid amount' : 'Amount due'}</p><p className="mt-1 text-2xl font-black text-slate-950">{money(paid ? bill.approvedAmount : bill.remainingBalance)}</p></div></div>
       </div>
       <div className="grid gap-3 border-t border-emerald-100 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">
         <Info label="Total amount" value={money(bill.totalAmount)} />
@@ -339,14 +339,14 @@ function relationshipLabel(value) {
 function Info({ label, value }) {
   return (
     <div className="resident-soa-info rounded-xl p-3">
-      <p className="text-xs font-bold uppercase text-slate-400">{label}</p>
+      <p className="text-xs font-bold capitalize text-slate-400">{label}</p>
       <p className="mt-1 font-semibold text-slate-900">{value}</p>
     </div>
   )
 }
 
 function MetricCard({ label, value }) {
-  return <div className="resident-metric-card"><p className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xl font-black text-slate-900">{value}</p></div>
+  return <div className="resident-metric-card"><p className="text-xs font-bold capitalize tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xl font-black text-slate-900">{value}</p></div>
 }
 
 function ChartCard({ title, description, children }) {

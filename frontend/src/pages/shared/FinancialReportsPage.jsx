@@ -58,7 +58,7 @@ function Metric({ label, value, detail, icon: Icon, tone = 'green' }) {
     red: 'border-l-red-500 bg-red-50/40',
   }
   return <article className={`rounded-2xl border border-slate-200 border-l-4 p-5 shadow-sm ${tones[tone]}`}>
-    <div className="flex items-start justify-between gap-3"><p className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">{label}</p><span className="grid size-9 place-items-center rounded-lg bg-white text-emerald-700 shadow-sm"><Icon size={18} /></span></div>
+    <div className="flex items-start justify-between gap-3"><p className="text-[11px] font-black capitalize tracking-[0.12em] text-slate-500">{label}</p><span className="grid size-9 place-items-center rounded-lg bg-white text-emerald-700 shadow-sm"><Icon size={18} /></span></div>
     <p className="mt-3 text-2xl font-black tracking-tight text-slate-900">{value}</p>
     {detail && <p className="mt-1 text-xs text-slate-500">{detail}</p>}
   </article>
@@ -69,7 +69,7 @@ function Table({ children }) {
 }
 
 function TableHead({ children }) {
-  return <thead className="sticky top-0 z-10 bg-slate-50 text-xs uppercase tracking-wide text-slate-500 shadow-sm"><tr>{children}</tr></thead>
+  return <thead className="sticky top-0 z-10 bg-slate-50 text-xs capitalize tracking-wide text-slate-500 shadow-sm"><tr>{children}</tr></thead>
 }
 
 function HeaderCell({ children }) {

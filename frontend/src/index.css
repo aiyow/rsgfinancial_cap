@@ -50,6 +50,15 @@ a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
 button { cursor: pointer; }
 
+/* Interface controls and short labels use title case. Descriptions, notices,
+   and other sentence content remain untouched. */
+button,
+a,
+th,
+dt,
+legend,
+.ui-title { text-transform: capitalize; }
+
 /* Links used as batch actions must retain the same colors as their button counterparts. */
 .batch-navigation-action,
 .batch-navigation-action:visited { color: #166534 !important; }

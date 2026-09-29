@@ -252,7 +252,7 @@ export default function AdminUnitsPage() {
         <FilterPopover value={balance} open={balanceMenuOpen} onToggle={() => { setBalanceMenuOpen((current) => !current); setFloorMenuOpen(false); setStatusMenuOpen(false) }} onSelect={(value) => { setBalance(value); setBalanceMenuOpen(false) }} options={[{ value: 'ALL', label: 'Balance: any' }, { value: 'OPEN', label: 'With balance' }, { value: 'CLEAR', label: 'Clear balance' }]} />
         <p className="whitespace-nowrap text-right text-xs font-bold text-[var(--muted)]">{filteredRows.length} of {units.length}</p>
       </div>
-      <div className="max-h-[690px] overflow-auto"><table className="w-full min-w-[1050px] text-left text-sm"><thead className="sticky top-0 z-10 bg-[var(--app-bg)] text-[11px] uppercase tracking-[0.08em] text-[var(--muted)] shadow-sm"><tr><th className="px-4 py-3 font-bold">Unit</th><th className="px-4 py-3 font-bold">Resident</th><th className="px-4 py-3 font-bold">Floor / area</th><th className="px-4 py-3 font-bold">Open balance</th><th className="px-4 py-3 font-bold">Occupancy</th><th className="px-4 py-3 font-bold">Last payment</th><th className="px-4 py-3 text-right font-bold">Actions</th></tr></thead><tbody className="divide-y divide-slate-300">
+      <div className="max-h-[690px] overflow-auto"><table className="w-full min-w-[1050px] text-left text-sm"><thead className="sticky top-0 z-10 bg-[var(--app-bg)] text-[11px] capitalize tracking-[0.08em] text-[var(--muted)] shadow-sm"><tr><th className="px-4 py-3 font-bold">Unit</th><th className="px-4 py-3 font-bold">Resident</th><th className="px-4 py-3 font-bold">Floor / area</th><th className="px-4 py-3 font-bold">Open balance</th><th className="px-4 py-3 font-bold">Occupancy</th><th className="px-4 py-3 font-bold">Last payment</th><th className="px-4 py-3 text-right font-bold">Actions</th></tr></thead><tbody className="divide-y divide-slate-300">
         {filteredRows.map((unit) => <tr key={unit.id} className="transition hover:bg-[var(--app-bg)]"><td className="px-4 py-3.5 font-black text-[var(--primary)]">{unit.unitNumber}</td><td className="px-4 py-3.5 text-[var(--ink)]">{unit.residents.length ? unit.residents.join(', ') : '-'}</td><td className="px-4 py-3.5 text-[var(--muted)]">Floor {unit.floor || '-'} · {unit.billableAreaSqm ? `${unit.billableAreaSqm} sqm` : 'Area not set'}</td><td className={`px-4 py-3.5 font-mono text-xs ${unit.outstandingBalance > 0 ? 'font-bold text-red-600' : 'text-[var(--muted)]'}`}>{money(unit.outstandingBalance)}</td><td className="px-4 py-3.5"><OccupancyBadge status={unit.occupancyStatus} /></td><td className="px-4 py-3.5 text-[var(--muted)]">{date(unit.lastPayment)}</td><td className="px-4 py-3.5"><div className="flex justify-end gap-2"><button type="button" onClick={() => openView(unit)} className={actionClass}>View</button><button type="button" onClick={() => startEdit(unit)} className={actionClass}>Edit</button><button type="button" onClick={() => setDeleteTarget(unit)} className={`${actionClass} text-red-600`}>Delete</button></div></td></tr>)}
       </tbody></table></div>
       {filteredRows.length === 0 ? <div className="p-4"><EmptyRow message={units.length ? 'No units match the selected filters.' : 'No units have been added yet.'} /></div> : null}
@@ -261,7 +261,7 @@ export default function AdminUnitsPage() {
 }
 
 function SummaryCard({ accent, icon: Icon, label, value }) {
-  return <article className={`collector-metric collector-metric-${accent} rounded-xl border border-[var(--border)] p-4 shadow-sm`}><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">{label}</p><p className="mt-2 text-2xl font-black text-[var(--ink)]">{value}</p></div><span className="grid size-10 place-items-center rounded-xl"><Icon size={19} /></span></div></article>
+  return <article className={`collector-metric collector-metric-${accent} rounded-xl border border-[var(--border)] p-4 shadow-sm`}><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-bold capitalize tracking-wide text-[var(--muted)]">{label}</p><p className="mt-2 text-2xl font-black text-[var(--ink)]">{value}</p></div><span className="grid size-10 place-items-center rounded-xl"><Icon size={19} /></span></div></article>
 }
 
 function DeleteUnitModal({ onCancel, onConfirm, unit }) {
@@ -300,7 +300,7 @@ function FilterPopover({ label, onSelect, onToggle, open, options, value }) {
       </button>
       {open && (
         <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 min-w-full rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
-          {label && <p className="px-2 pb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[#668074]">{label}</p>}
+          {label && <p className="px-2 pb-1.5 text-[10px] font-black capitalize tracking-[0.14em] text-[#668074]">{label}</p>}
           <div className="grid gap-1">
             {options.map((option) => <button key={option.value} type="button" onClick={() => onSelect(option.value)} className={`rounded-lg px-2.5 py-2 text-left text-xs font-bold transition ${value === option.value ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{option.label}</button>)}
           </div>
@@ -429,12 +429,12 @@ function UnitModal({ assignments, assignmentBusy, assignmentForm, form, mode, re
 function AssignmentSummary({ assignments, onEnd }) {
   return (
     <section className="mt-5 rounded-xl border border-[var(--border)] bg-white">
-      <div className="border-b border-[var(--border)] px-4 py-3 text-xs font-bold uppercase tracking-wide text-[var(--muted)]">Active residents</div>
+      <div className="border-b border-[var(--border)] px-4 py-3 text-xs font-bold capitalize tracking-wide text-[var(--muted)]">Active residents</div>
       {assignments.length ? assignments.map((assignment) => <div key={assignment.id} className="flex flex-col gap-2 border-b border-[var(--border)] px-4 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold text-[var(--ink)]">{assignment.residentName}</p><p className="text-xs text-[var(--muted)]">{assignment.relationshipType}{assignment.isPrimaryPayer ? ' · Primary payer' : ''}</p></div>{onEnd && <button type="button" onClick={() => onEnd(assignment)} className="w-fit rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50">End assignment</button>}</div>) : <p className="px-4 py-4 text-sm text-[var(--muted)]">No active residents assigned.</p>}
     </section>
   )
 }
 
 function ReadOnlyField({ label, value }) {
-  return <div className="rounded-xl bg-[var(--app-bg)] p-4"><dt className="text-xs font-bold uppercase tracking-wide text-[var(--muted)]">{label}</dt><dd className="mt-2 text-sm font-semibold text-[var(--ink)]">{value}</dd></div>
+  return <div className="rounded-xl bg-[var(--app-bg)] p-4"><dt className="text-xs font-bold capitalize tracking-wide text-[var(--muted)]">{label}</dt><dd className="mt-2 text-sm font-semibold text-[var(--ink)]">{value}</dd></div>
 }

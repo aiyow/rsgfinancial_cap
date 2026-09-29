@@ -184,7 +184,7 @@ export default function AdminPaymentsPage() {
                 <col className="w-[14%]" />
                 <col className="w-[17%]" />
               </colgroup>
-              <thead className="sticky top-0 z-10 bg-white text-xs uppercase text-slate-400 shadow-[0_1px_0_rgb(241,245,249)]">
+              <thead className="sticky top-0 z-10 bg-white text-xs capitalize text-slate-400 shadow-[0_1px_0_rgb(241,245,249)]">
                 <tr>
                   <th className="px-3 py-3 font-semibold">Resident / unit</th>
                   <th className="px-3 py-3 font-semibold">Date received</th>
@@ -302,7 +302,7 @@ function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, select
           </label>
 
           <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
-            <p className="text-xs font-bold uppercase text-slate-400">Selected unit advance balance</p>
+            <p className="text-xs font-bold capitalize text-slate-400">Selected unit advance balance</p>
             <p className="mt-1 text-2xl font-black text-slate-950">{money(selectedCredit?.advanceBalance || 0)}</p>
           </div>
           <div className="flex justify-end gap-3 sm:col-span-2">

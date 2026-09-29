@@ -42,10 +42,10 @@ export default function ResidentBillsPage() {
             <article key={bill.id} className="overflow-hidden rounded-2xl border border-[#d8e8dc] bg-white shadow-sm">
               <div className="flex flex-col gap-4 border-b border-[#d9e7dd] bg-emerald-50/60 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--primary)]">Statement of account</p>
+                  <p className="text-xs font-bold capitalize tracking-[0.16em] text-[var(--primary)]">Statement of account</p>
                   <div className="mt-1 flex flex-wrap items-center gap-2"><h2 className="text-xl font-black text-slate-950">Unit {bill.unitNumber}</h2><span className={`rounded-full px-2.5 py-1 text-xs font-black ${statusStyle(bill.paymentStatus)}`}>{bill.paymentStatus}</span></div>
                 </div>
-                <div className="flex flex-wrap items-center gap-3"><div className="text-left sm:text-right"><p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Remaining balance</p><p className="mt-1 text-xl font-black text-slate-950">{money(bill.remainingBalance)}</p></div><Link to={`/resident/bills/${bill.id}`} className="resident-soa-button resident-soa-button-green">Open SOA</Link></div>
+                <div className="flex flex-wrap items-center gap-3"><div className="text-left sm:text-right"><p className="text-xs font-bold capitalize tracking-[0.12em] text-slate-500">Remaining balance</p><p className="mt-1 text-xl font-black text-slate-950">{money(bill.remainingBalance)}</p></div><Link to={`/resident/bills/${bill.id}`} className="resident-soa-button resident-soa-button-green">Open SOA</Link></div>
               </div>
               <div className="grid gap-3 p-4 text-sm sm:grid-cols-2 lg:grid-cols-4 sm:p-5">
                 <BillDetail label="Billing period" value={`${dateLabel(bill.periodStart)} – ${dateLabel(bill.periodEnd)}`} />
@@ -71,7 +71,7 @@ function statusStyle(status) {
 }
 
 function BillDetail({ label, value, emphasis = false }) {
-  return <div className="rounded-xl border border-[#dceee1] bg-[#f5fbf6] p-3"><p className="text-xs font-bold uppercase tracking-[0.1em] text-slate-500">{label}</p><p className={`mt-1 font-bold ${emphasis ? 'text-rose-700' : 'text-slate-900'}`}>{value}</p></div>
+  return <div className="rounded-xl border border-[#dceee1] bg-[#f5fbf6] p-3"><p className="text-xs font-bold capitalize tracking-[0.1em] text-slate-500">{label}</p><p className={`mt-1 font-bold ${emphasis ? 'text-rose-700' : 'text-slate-900'}`}>{value}</p></div>
 }
 
 function BillsSkeleton() {
