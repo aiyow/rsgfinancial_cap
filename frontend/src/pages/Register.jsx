@@ -29,8 +29,9 @@ export default function Register() {
     }
     setLoading(true)
     try {
-      await apiRequest('/api/auth/register', { method: 'POST', body: { email: form.email, password: form.password, role: form.role, fullName: fullName(form) } })
-      navigate(`/pending-approval?email=${encodeURIComponent(form.email.trim())}`, { replace: true })
+      const result = await apiRequest('/api/auth/register', { method: 'POST', body: { email: form.email, password: form.password, role: form.role, fullName: fullName(form) } })
+      const delivery = result.verificationEmailSent ? '' : '&delivery=unavailable'
+      navigate(`/pending-approval?email=${encodeURIComponent(form.email.trim())}${delivery}`, { replace: true })
     } catch (requestError) {
       setError(requestError.message)
     } finally {

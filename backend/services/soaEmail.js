@@ -1,5 +1,4 @@
 import nodemailer from "nodemailer";
-import { Resend } from "resend";
 
 function smtpConfiguration(environment) {
   const missing = ["SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"]
@@ -24,20 +23,6 @@ function smtpConfiguration(environment) {
     auth: { user: environment.SMTP_USER.trim(), pass: environment.SMTP_PASSWORD },
     from: environment.SMTP_FROM.trim(),
   };
-}
-
-function resendConfiguration(environment) {
-  const apiKey = String(environment.RESEND_API_KEY || "").trim();
-  if (!apiKey) return null;
-
-  const from = String(environment.RESEND_FROM || "").trim();
-  if (!from) {
-    const error = new Error("RESEND_FROM is required when RESEND_API_KEY is configured.");
-    error.code = "EMAIL_NOT_CONFIGURED";
-    throw error;
-  }
-
-  return { apiKey, from };
 }
 
 function escapeHtml(value) {
@@ -72,28 +57,10 @@ export function buildSoaEmailMessage({ delivery, clientUrl }) {
 export function createSoaEmailService({
   environment = process.env,
   createTransport = nodemailer.createTransport,
-  createResend = (apiKey) => new Resend(apiKey),
 } = {}) {
   return {
     async sendSoaNotification(delivery) {
       const message = buildSoaEmailMessage({ delivery, clientUrl: environment.CLIENT_URL });
-      const resend = resendConfiguration(environment);
-      if (resend) {
-        const result = await createResend(resend.apiKey).emails.send({
-          from: resend.from,
-          to: delivery.recipientEmail,
-          subject: message.subject,
-          text: message.text,
-          html: message.html,
-        });
-        if (result.error) {
-          const error = new Error(result.error.message || "Resend could not send the SOA email.");
-          error.code = "EMAIL_DELIVERY_FAILED";
-          throw error;
-        }
-        return message;
-      }
-
       const smtp = smtpConfiguration(environment);
       const transporter = createTransport({ host: smtp.host, port: smtp.port, secure: smtp.secure, auth: smtp.auth });
       await transporter.sendMail({ from: smtp.from, to: delivery.recipientEmail, subject: message.subject, text: message.text, html: message.html });
