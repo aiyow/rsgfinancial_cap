@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildSoaEmailMessage, createSoaEmailService } from "../services/soaEmail.js";
+import { buildSoaEmailMessage, buildSoaReminderEmailMessage, createSoaEmailService } from "../services/soaEmail.js";
 
 const delivery = {
   billId: 42,
@@ -45,4 +45,17 @@ test("SOA email service uses the configured generic SMTP transport", async () =>
 test("SOA email service reports missing SMTP configuration", async () => {
   const service = createSoaEmailService({ environment: {} });
   await assert.rejects(() => service.sendSoaNotification(delivery), { code: "EMAIL_NOT_CONFIGURED" });
+});
+
+test("SOA reminder emails describe the due status and include the current balance", () => {
+  const message = buildSoaReminderEmailMessage({
+    delivery: { ...delivery, latePenaltyAmount: 50 },
+    reminderType: "OVERDUE",
+    clientUrl: "https://condo.example",
+  });
+
+  assert.match(message.subject, /overdue/i);
+  assert.match(message.text, /PHP 1234\.50/);
+  assert.match(message.text, /Late penalty included: PHP 50\.00/);
+  assert.match(message.html, /resident\/bills\/42/);
 });

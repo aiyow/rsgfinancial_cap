@@ -54,6 +54,45 @@ export function buildSoaEmailMessage({ delivery, clientUrl }) {
   return { subject, text, html, url };
 }
 
+const REMINDER_COPY = {
+  DUE_SOON: {
+    subject: "SOA payment reminder",
+    intro: "Your Statement of Account payment is coming due soon.",
+  },
+  DUE_TODAY: {
+    subject: "SOA payment due today",
+    intro: "Your Statement of Account payment is due today.",
+  },
+  OVERDUE: {
+    subject: "SOA payment overdue",
+    intro: "Your Statement of Account payment is overdue.",
+  },
+};
+
+export function buildSoaReminderEmailMessage({ delivery, reminderType, clientUrl }) {
+  const copy = REMINDER_COPY[reminderType];
+  if (!copy) throw new Error("Unknown SOA reminder type.");
+
+  const url = billUrl(clientUrl, delivery.billId);
+  const recipient = delivery.recipientName ? `Hello ${delivery.recipientName},` : "Hello,";
+  const latePenalty = Number(delivery.latePenaltyAmount || 0);
+  const penaltyText = latePenalty > 0 ? `\nLate penalty included: ${money(latePenalty)}` : "";
+  const penaltyHtml = latePenalty > 0
+    ? `<li>Late penalty included: ${escapeHtml(money(latePenalty))}</li>`
+    : "";
+  const subject = `${copy.subject} — Unit ${delivery.unitNumber}`;
+  const text = `${recipient}\n\n${copy.intro}\n`
+    + `Billing period: ${delivery.periodStart} to ${delivery.periodEnd}\n`
+    + `Due date: ${delivery.dueDate}\nRemaining balance: ${money(delivery.remainingBalance)}${penaltyText}\n\n`
+    + `Sign in to view and pay your SOA: ${url}`;
+  const html = `<p>${escapeHtml(recipient)}</p><p>${escapeHtml(copy.intro)}</p>`
+    + `<p>Your <strong>Statement of Account</strong> for Unit ${escapeHtml(delivery.unitNumber)}:</p>`
+    + `<ul><li>Billing period: ${escapeHtml(delivery.periodStart)} to ${escapeHtml(delivery.periodEnd)}</li>`
+    + `<li>Due date: ${escapeHtml(delivery.dueDate)}</li><li>Remaining balance: ${escapeHtml(money(delivery.remainingBalance))}</li>${penaltyHtml}</ul>`
+    + `<p><a href="${escapeHtml(url)}">Sign in to view and pay your SOA</a></p>`;
+  return { subject, text, html, url };
+}
+
 export function createSoaEmailService({
   environment = process.env,
   createTransport = nodemailer.createTransport,
@@ -66,9 +105,20 @@ export function createSoaEmailService({
       await transporter.sendMail({ from: smtp.from, to: delivery.recipientEmail, subject: message.subject, text: message.text, html: message.html });
       return message;
     },
+    async sendSoaReminder(delivery, reminderType) {
+      const message = buildSoaReminderEmailMessage({ delivery, reminderType, clientUrl: environment.CLIENT_URL });
+      const smtp = smtpConfiguration(environment);
+      const transporter = createTransport({ host: smtp.host, port: smtp.port, secure: smtp.secure, auth: smtp.auth });
+      await transporter.sendMail({ from: smtp.from, to: delivery.recipientEmail, subject: message.subject, text: message.text, html: message.html });
+      return message;
+    },
   };
 }
 
 export async function sendSoaNotification(delivery) {
   return createSoaEmailService().sendSoaNotification(delivery);
+}
+
+export async function sendSoaReminder(delivery, reminderType) {
+  return createSoaEmailService().sendSoaReminder(delivery, reminderType);
 }

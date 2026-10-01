@@ -19,6 +19,7 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import financialReportRoutes from "./routes/financialReportRoutes.js";
 import billingErrorRoutes from "./routes/billingErrorRoutes.js";
+import { startSoaReminderScheduler } from "./services/soaReminderScheduler.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 dotenv.config({ path: new URL("./.env", import.meta.url) });
@@ -80,4 +81,5 @@ const port = Number(process.env.PORT) || 5000;
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
+  startSoaReminderScheduler();
 });

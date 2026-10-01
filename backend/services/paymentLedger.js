@@ -62,14 +62,19 @@ export function calculateLatePenalty(baseTotal, percentage, isOverdue) {
   return Number((total * rate / 100).toFixed(2))
 }
 
-export async function applyDueLatePenalties(client, billId = null) {
+export async function applyDueLatePenalties(client, billId = null, asOfDate = null) {
   const conditions = [
-    "b.due_date_snapshot < CURRENT_DATE",
     "COALESCE(b.late_penalty_percent_snapshot, 0) > 0",
     "b.late_penalty_applied_at IS NULL",
     `${billAppliedSql} < ${billBaseTotalSql}`,
   ];
   const values = [];
+  if (asOfDate) {
+    values.push(asOfDate);
+    conditions.unshift(`b.due_date_snapshot < $${values.length}::date`);
+  } else {
+    conditions.unshift("b.due_date_snapshot < CURRENT_DATE");
+  }
   if (billId !== null) {
     values.push(billId);
     conditions.push(`b.id = $${values.length}`);

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { allocateCredit, calculateLatePenalty, manualReference } from "../services/paymentLedger.js";
+import { allocateCredit, applyDueLatePenalties, calculateLatePenalty, manualReference } from "../services/paymentLedger.js";
 
 test("allocates one payment across a bill and leaves advance balance", () => {
   const result = allocateCredit({
@@ -46,4 +46,17 @@ test("applies a one-time percentage penalty only after the due date", () => {
   assert.equal(calculateLatePenalty(1000, 5, true), 50);
   assert.equal(calculateLatePenalty(1000, 5, false), 0);
   assert.equal(calculateLatePenalty(1000, 0, true), 0);
+});
+
+test("uses an explicitly supplied local calendar date when applying late penalties", async () => {
+  const calls = [];
+  await applyDueLatePenalties({
+    async query(sql, values) {
+      calls.push({ sql, values });
+      return { rows: [] };
+    },
+  }, null, "2026-10-01");
+
+  assert.match(calls[0].sql, /b\.due_date_snapshot < \$1::date/);
+  assert.deepEqual(calls[0].values, ["2026-10-01"]);
 });
