@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import pool from "../config/db.js";
-import { requireAuth } from "../middleware/authMiddleware.js";
+import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { validateBody } from "../middleware/validate.js";
 import { createUserNotifications } from "../services/notifications.js";
 import { writeAuditLog } from "../services/auditLog.js";
@@ -46,6 +46,10 @@ const forgotPasswordSchema = z.object({
 const resetPasswordSchema = z.object({
   token: z.string().trim().min(1).max(512),
   password: passwordSchema,
+}).strict();
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(72),
+  newPassword: passwordSchema,
 }).strict();
 const userColumns = `
   id,
@@ -241,6 +245,63 @@ router.post("/reset-password", validateBody(resetPasswordSchema), async (req, re
     });
     await client.query("COMMIT");
     return res.json({ message: "Your password was changed. Sign in with your new password." });
+  } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
+    return next(error);
+  } finally {
+    client?.release();
+  }
+});
+
+router.post("/change-password", requireAuth, allowRoles("RESIDENT"), validateBody(changePasswordSchema), async (req, res, next) => {
+  let client;
+  try {
+    const { currentPassword, newPassword } = req.validatedBody;
+    client = await pool.connect();
+    await client.query("BEGIN");
+
+    const userResult = await client.query(
+      `SELECT password_hash AS "passwordHash"
+       FROM users
+       WHERE id = $1
+         AND role = 'RESIDENT'
+       FOR UPDATE`,
+      [req.user.id]
+    );
+    const user = userResult.rows[0];
+    const passwordMatches = user && await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!passwordMatches) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ message: "Your current password is incorrect." });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    const updateResult = await client.query(
+      `UPDATE users
+       SET password_hash = $1,
+           auth_version = auth_version + 1
+       WHERE id = $2
+       RETURNING auth_version AS "authVersion"`,
+      [passwordHash, req.user.id]
+    );
+    await writeAuditLog({
+      client,
+      actorUserId: req.user.id,
+      entityName: "USER_ACCOUNT",
+      entityId: req.user.id,
+      action: "PASSWORD_CHANGE",
+      remarks: "Resident changed their own password.",
+    });
+    if (!process.env.JWT_SECRET) {
+      throw new Error("JWT_SECRET is not configured.");
+    }
+    const token = jwt.sign(
+      { id: req.user.id, authVersion: updateResult.rows[0].authVersion },
+      process.env.JWT_SECRET,
+      { expiresIn: "8h" }
+    );
+    await client.query("COMMIT");
+    return res.json({ message: "Your password has been changed.", token });
   } catch (error) {
     if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);

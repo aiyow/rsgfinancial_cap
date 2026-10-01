@@ -47,8 +47,9 @@ All route files export an Express router. `server.js` mounts them at the base pa
 
 - `POST /register`: validates and creates a development account.
 - `POST /login`: verifies a password with bcrypt and returns a JWT/user payload.
+- `POST /change-password`: lets an authenticated Resident change only their own password after confirming the current password; returns a refreshed JWT and invalidates other sessions.
 - `GET /me`: returns the authenticated user.
-- **Roles:** Registration is public; `/me` requires authentication.
+- **Roles:** Registration is public; `/me` requires authentication; `/change-password` is Resident-only.
 - **Data/services:** `users` table, bcrypt, JWT, and audit-related account behavior.
 
 ### `backend/routes/userRoutes.js` — `/api/users`

@@ -306,10 +306,10 @@ This guide covers every application-owned `.jsx` and `.js` file under `frontend/
 
 ### `frontend/src/pages/shared/ProfilePage.jsx`
 
-- **Purpose:** Read-only current-user profile.
-- **Exports/logic:** Reads `useAuth` and renders name, email, and role inside `DashboardLayout`/`Panel`.
-- **API/data:** No direct API calls; identity is supplied by `AuthContext`.
-- **Role/usage:** All authenticated roles at `/profile`.
+- **Purpose:** Current-user profile, with resident self-service password changes.
+- **Exports/logic:** Renders read-only name, email, and role inside `DashboardLayout`/`Panel`. Residents can submit their current and new password, with confirmation and visibility controls.
+- **API/data:** Identity is supplied by `AuthContext`; residents call `POST /api/auth/change-password` and receive a refreshed session token.
+- **Role/usage:** All authenticated roles at `/profile`; the password form is shown only to residents.
 
 ### `frontend/src/pages/shared/SettingsPage.jsx`
 

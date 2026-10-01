@@ -48,8 +48,13 @@ export function AuthProvider({ children }) {
     return data.user
   }
 
+  function replaceToken(nextToken) {
+    localStorage.setItem('condo_token', nextToken)
+    setToken(nextToken)
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, initializing, login, logout: clearSession }}>
+    <AuthContext.Provider value={{ user, token, initializing, login, replaceToken, logout: clearSession }}>
       {children}
     </AuthContext.Provider>
   )
