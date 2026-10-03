@@ -6,6 +6,7 @@ import {
   forecastCandidates,
   linearRegression,
   selectForecastModel,
+  selectStableForecastModel,
   selectConsecutiveReadings,
   weightedLinearRegression,
   regenerateForecasts,
@@ -47,6 +48,23 @@ test('weighted regression preserves an exact trend and clamps negative predictio
 test('requires two internal comparison months and breaks ties in favor of last-month', () => {
   assert.equal(selectForecastModel([10, 10, 10, 10, 10, 10]).name, 'LINEAR_REGRESSION');
   assert.equal(selectForecastModel([10, 10, 10, 10, 10, 10, 10]).name, 'LAST_MONTH_CONSUMPTION');
+});
+
+test('stable policy preserves warm-up regression and exact increasing or decreasing trends', () => {
+  assert.equal(selectStableForecastModel([1, 3, 2, 4, 3, 5]).name, 'LINEAR_REGRESSION');
+  assert.equal(selectStableForecastModel([2, 4, 6, 8, 10, 12, 14]).predicted, 16);
+  assert.equal(selectStableForecastModel([7, 6, 5, 4, 3, 2, 1]).predicted, 0);
+});
+
+test('stable policy moderates spikes, stays within recent component forecasts, and handles numeric strings', () => {
+  const values = [10, 10, 10, 10, 10, 30, 10, 10];
+  const model = selectStableForecastModel(values);
+  assert.equal(model.name, 'STABLE_RECENT_ENSEMBLE');
+  assert.ok(model.predicted > 10 && model.predicted < 13);
+  assert.deepEqual(selectStableForecastModel(values.map(String)), model);
+  assert.equal(selectStableForecastModel([0, 0, 0, 0, 0, 0, 0]).predicted, 0);
+  assert.ok(selectStableForecastModel([0, 0, 0, 0, 0, 10, 10, 10]).predicted > 8);
+  assert.equal(selectStableForecastModel([1, 2, 3, null, 5, 6, 7]), null);
 });
 
 test('PostgreSQL numeric strings produce the same candidates and selected method as numbers', () => {

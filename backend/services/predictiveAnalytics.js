@@ -5,7 +5,7 @@ const MIN_WINDOW_SIZE = 5;
 const MAX_WINDOW_SIZE = 12;
 const WINDOW_SIZE = MAX_WINDOW_SIZE;
 // Promote only after a connected-history comparison passes every acceptance gate.
-export const ACTIVE_FORECAST_POLICY = 'revised';
+export const ACTIVE_FORECAST_POLICY = 'stable';
 
 function numeric(value) {
   if (value === null || value === undefined || typeof value === 'boolean'
@@ -145,6 +145,29 @@ export function selectForecastModel(values) {
   })[0];
 }
 
+export function selectStableForecastModel(values) {
+  const candidates = forecastCandidates(values);
+  if (!candidates.length) return null;
+  // Keep the established warm-up rule: two earlier comparison months are
+  // needed before using a method other than full-window regression.
+  if (values.length - MIN_WINDOW_SIZE < 2) return candidates[0];
+  const normalized = values.map(numeric);
+  const regression = candidates[0];
+  // An exact observed linear trend supports extrapolation. Irregular histories
+  // have too few holdouts to reliably pick one of six competing methods.
+  const exactTrend = regression.slope !== 0 && normalized.every((value, index) =>
+    Math.abs(value - (regression.intercept + regression.slope * index)) <= 0.000001);
+  if (exactTrend) return regression;
+  const stableNames = ['LAST_MONTH_CONSUMPTION', 'RECENT_3_MONTH_AVERAGE', 'RECENT_5_MONTH_MEDIAN'];
+  const stable = candidates.filter((candidate) => stableNames.includes(candidate.name));
+  return {
+    name: 'STABLE_RECENT_ENSEMBLE',
+    predicted: stable.reduce((sum, candidate) => sum + candidate.predicted, 0) / stable.length,
+    slope: null,
+    intercept: null,
+  };
+}
+
 export function selectConsecutiveReadings(history, windowSize = MAX_WINDOW_SIZE) {
   if (!Array.isArray(history) || history.length === 0) return [];
   const sorted = [...history].sort((a, b) => monthIndex(a.periodStart) - monthIndex(b.periodStart));
@@ -190,7 +213,8 @@ export function buildForecast(history, { waterRate = 0, minWindow = MIN_WINDOW_S
     };
   }
 
-  const selectModel = policy === 'revised' ? selectForecastModel : selectLegacyForecastModel;
+  const selectModel = policy === 'stable' ? selectStableForecastModel
+    : policy === 'revised' ? selectForecastModel : selectLegacyForecastModel;
   const model = selectModel(selected.map((reading) => reading.consumption));
   if (!model) return { status: 'INSUFFICIENT_DATA', reason: 'Valid numeric readings are required.', sampleCount: selected.length };
   const predictedConsumption = Number(model.predicted.toFixed(3));

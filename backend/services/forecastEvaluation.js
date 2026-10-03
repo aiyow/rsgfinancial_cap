@@ -1,8 +1,13 @@
 import { buildForecast, calculateAccuracy, forecastCandidates, nextMonthStart, selectConsecutiveReadings } from './predictiveAnalytics.js';
+import { summarizeUsageReview } from './usageChangeReview.js';
 
 function validNumber(value) {
   return value !== null && value !== undefined && typeof value !== 'boolean'
     && !(typeof value === 'string' && value.trim() === '') && Number.isFinite(Number(value)) && Number(value) >= 0;
+}
+
+function monthStart(value) {
+  return `${String(value).slice(0, 7)}-01`;
 }
 
 export function validEvaluationPair(row) {
@@ -47,7 +52,19 @@ export function summarizeEvaluationHistory(diagnostics, readings) {
       return baselines ? [{ ...row, baselines }] : [];
     });
     const metrics = { ...calculateAccuracy(paired), excludedCount: rows.length - paired.length };
+    const actualTotal = paired.reduce((sum, row) => sum + Number(row.actualConsumption), 0);
+    const absoluteErrorTotal = paired.reduce((sum, row) => sum + Math.abs(Number(row.predictedConsumption) - Number(row.actualConsumption)), 0);
+    const topErrorUnits = paired.map((row) => ({
+      unitId: row.unitId, unitNumber: row.unitNumber,
+      predictedConsumption: Number(row.predictedConsumption), actualConsumption: Number(row.actualConsumption),
+      absoluteError: Number(Math.abs(Number(row.predictedConsumption) - Number(row.actualConsumption)).toFixed(3)),
+      errorShare: absoluteErrorTotal > 0
+        ? Number((Math.abs(Number(row.predictedConsumption) - Number(row.actualConsumption)) / absoluteErrorTotal * 100).toFixed(2)) : 0,
+    })).sort((a, b) => b.absoluteError - a.absoluteError || String(a.unitId).localeCompare(String(b.unitId))).slice(0, 5);
     return { forecastForMonth, evaluationType: 'RETROSPECTIVE', metrics,
+      totals: { actualConsumption: Number(actualTotal.toFixed(3)), absoluteError: Number(absoluteErrorTotal.toFixed(3)) },
+      topErrorUnits,
+      usageReview: summarizeUsageReview(paired, byUnit),
       baselines: {
         lastMonth: calculateAccuracy(paired.map((row) => ({ ...row, predictedConsumption: row.baselines.lastMonth }))),
         recentAverage: calculateAccuracy(paired.map((row) => ({ ...row, predictedConsumption: row.baselines.recentAverage }))),
@@ -57,8 +74,8 @@ export function summarizeEvaluationHistory(diagnostics, readings) {
 
 export function benchmarkDataset(dataset) {
   const byUnit = groupHistory(dataset.readings);
-  const actuals = new Map(dataset.readings.map((row) => [`${row.unitId}:${row.periodStart}`, row]));
-  const periodMonths = new Set(dataset.periods.map((period) => period.periodStart));
+  const actuals = new Map(dataset.readings.map((row) => [`${row.unitId}:${monthStart(row.periodStart)}`, row]));
+  const periodMonths = new Set(dataset.periods.map((period) => monthStart(period.periodStart)));
   const captured = new Map((dataset.baseline || []).map((row) => [`${row.unitId}:${row.basedOnPeriodId}`, row]));
   const pairs = [];
   const coverage = [];

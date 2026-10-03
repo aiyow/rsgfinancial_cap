@@ -144,6 +144,8 @@ export default function AnalyticsPage() {
   }
 
   const metrics = data?.metrics || {}
+  const latestEvaluation = data?.evaluationHistory?.find((row) => row.forecastForMonth === data.evaluationMonth)
+  const usageReview = latestEvaluation?.usageReview
   const hasAnalyticsData = Boolean(data && ((data.latestForecast?.total || 0) > 0 || data.diagnostics.length > 0 || data.flaggedReadings.length > 0))
   const rawChartData = (data?.chartSeries || []).map((row) => ({
     ...row,
@@ -208,30 +210,35 @@ export default function AnalyticsPage() {
             {showForecastQuality && <div className="mt-4 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <Metric label="Holdout month" value={month(data?.evaluationMonth)} accent="blue" icon={CalendarDays} />
-                <Metric label="Derived accuracy" value={valueOrDash(metrics.accuracy, '%')} accent="green" icon={Gauge} />
+                <Metric label="Overall derived accuracy" value={valueOrDash(metrics.accuracy, '%')} accent="green" icon={Gauge} />
                 <Metric label="WAPE error" value={valueOrDash(metrics.wape, '%')} accent="red" icon={Activity} />
                 <Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} accent="green" icon={Activity} />
                 <Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} accent="blue" icon={ChartNoAxesCombined} />
                 <Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} accent="green" icon={ListChecks} />
               </div>
+              {usageReview && <UsageQualityPanel review={usageReview} overallCount={metrics.evaluatedCount || 0} evaluatedMonth={latestEvaluation.forecastForMonth} />}
               <Panel title="Monthly forecast comparison" description="Retrospective evaluation: each forecast uses only readings before the evaluated month. Historical forecasts may be recalculated when you refresh.">
                 <p className="mb-4 text-sm leading-6 text-slate-600">Lower MAE, RMSE, and WAPE indicate smaller prediction errors. Derived accuracy = max(0, 100 − WAPE); it is not a probability. WAPE and accuracy are unavailable when total actual consumption is zero.</p>
-                {data?.evaluationHistory?.length ? <div className="overflow-auto rounded-xl border border-slate-200">
-                  <table className="w-full min-w-[800px] text-left text-sm">
-                    <thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">Month</th><th className="p-3">Evaluated / excluded</th><th className="p-3">Model MAE (m³)</th><th className="p-3">Model RMSE (m³)</th><th className="p-3">Model WAPE</th><th className="p-3">Last-month WAPE</th><th className="p-3">3-month-average WAPE</th></tr></thead>
-                    <tbody className="divide-y divide-slate-200">{data.evaluationHistory.slice(-12).map((row) => <tr key={row.forecastForMonth} className="hover:bg-slate-50">
-                      <td className="p-3 font-bold">{monthLabel(row.forecastForMonth)}</td>
-                      <td className="p-3">{row.metrics.evaluatedCount} / {row.metrics.excludedCount}</td>
-                      <td className="p-3">{valueOrDash(row.metrics.mae)}</td>
-                      <td className="p-3">{valueOrDash(row.metrics.rmse)}</td>
-                      <td className="p-3">{valueOrDash(row.metrics.wape, '%')}</td>
-                      <td className="p-3">{valueOrDash(row.baselines.lastMonth.wape, '%')}</td>
-                      <td className="p-3">{valueOrDash(row.baselines.recentAverage.wape, '%')}</td>
-                    </tr>)}</tbody>
-                  </table>
-                </div> : <EmptyRow message="Import a later actual month to compare forecasts with readings." />}
+                {data?.evaluationHistory?.length ? <MonthlyComparisonTable rows={data.evaluationHistory.slice(-12)} /> : <EmptyRow message="Import a later actual month to compare forecasts with readings." />}
                 <p className="mt-3 text-xs text-slate-500">Model and baseline scores use the same eligible units in each month. Coverage can change between months.</p>
               </Panel>
+              {latestEvaluation?.metrics.evaluatedCount > 0 && latestEvaluation.totals && (
+                <Panel title={`What contributed to ${monthLabel(latestEvaluation.forecastForMonth)} errors?`} description="These totals and units use the same valid forecast and actual pairs as the quality score.">
+                  <div className="mb-4 grid gap-3 sm:grid-cols-2">
+                    <Metric label="Total actual consumption" value={valueOrDash(latestEvaluation.totals.actualConsumption, ' m³')} compact />
+                    <Metric label="Total absolute forecast error" value={valueOrDash(latestEvaluation.totals.absoluteError, ' m³')} compact />
+                  </div>
+                  <p className="mb-4 text-sm leading-6 text-slate-600">WAPE = total absolute error ÷ total actual consumption × 100. A lower actual total or a few large unit errors can lower the monthly accuracy score. Sudden usage changes may need a meter or occupancy review.</p>
+                  <div className="overflow-auto rounded-xl border border-slate-200">
+                    <table className="w-full min-w-[550px] text-left text-sm">
+                      <thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">Largest errors</th><th className="p-3">Predicted (m³)</th><th className="p-3">Actual (m³)</th><th className="p-3">Error (m³)</th><th className="p-3">Share of total error</th></tr></thead>
+                      <tbody className="divide-y divide-slate-200">{latestEvaluation.topErrorUnits?.map((row) => <tr key={row.unitId}>
+                        <td className="p-3 font-bold">Unit {row.unitNumber}</td><td className="p-3">{valueOrDash(row.predictedConsumption)}</td><td className="p-3">{valueOrDash(row.actualConsumption)}</td><td className="p-3">{valueOrDash(row.absoluteError)}</td><td className="p-3">{valueOrDash(row.errorShare, '%')}</td>
+                      </tr>)}</tbody>
+                    </table>
+                  </div>
+                </Panel>
+              )}
             </div>}
           </section>
 
@@ -372,6 +379,90 @@ export default function AnalyticsPage() {
 
 function Metric({ accent, icon: Icon, label, value, compact = false }) {
   return <div className={`${accent ? `collector-metric collector-metric-${accent}` : ''} rounded-2xl border border-slate-200 bg-white ${compact ? 'p-4 shadow-none' : 'p-5 shadow-sm'}`}><div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="text-xs font-bold capitalize tracking-wide text-slate-400">{label}</p><p className={`${compact ? 'mt-2 text-xl' : 'mt-3 text-2xl'} font-black text-[var(--ink)]`}>{value}</p></div>{Icon && <span className="grid size-10 shrink-0 place-items-center rounded-xl"><Icon size={19} /></span>}</div></div>
+}
+
+function MonthlyComparisonTable({ rows }) {
+  const latestMonth = rows.filter((row) => row.metrics.evaluatedCount > 0).at(-1)?.forecastForMonth
+  const headerClass = 'px-2 py-2.5 text-center text-[11px] font-semibold leading-4'
+  const numericClass = 'whitespace-nowrap px-2 py-3.5 text-right tabular-nums'
+  return <div>
+    <div className="overflow-x-auto rounded-xl border border-slate-200" role="region" aria-label="Monthly forecast comparison" tabIndex={0}>
+      <table className="w-full min-w-[820px] table-fixed text-left text-xs">
+        <caption className="sr-only">Monthly overall forecast errors, typical-usage quality, and baseline errors. All error amounts are in cubic meters; WAPE and accuracy are percentages.</caption>
+        <colgroup><col className="w-[12%]" /><col className="w-[12%]" /><col className="w-[9%]" /><col className="w-[9%]" /><col className="w-[10%]" /><col className="w-[10%]" /><col className="w-[12%]" /><col className="w-[12%]" /><col className="w-[14%]" /></colgroup>
+        <thead className="text-slate-600">
+          <tr className="border-b border-slate-200 bg-slate-50">
+            <th rowSpan={2} scope="col" className="whitespace-nowrap px-3 py-3 text-left text-xs font-bold">Month</th>
+            <th rowSpan={2} scope="col" className={headerClass}>Evaluated<span className="block font-normal text-slate-500">/ excluded</span></th>
+            <th colSpan={3} scope="colgroup" className={`${headerClass} border-l border-slate-200`}>Overall forecast errors</th>
+            <th colSpan={2} scope="colgroup" className={`${headerClass} border-l border-emerald-200 bg-emerald-50 text-emerald-800`}>Typical usage</th>
+            <th colSpan={2} scope="colgroup" className={`${headerClass} border-l border-slate-200`}>Baseline WAPE</th>
+          </tr>
+          <tr className="border-b border-slate-200 bg-slate-50/60">
+            <th scope="col" className={`${headerClass} border-l border-slate-200`}>MAE<span className="block font-normal text-slate-500">m³</span></th>
+            <th scope="col" className={headerClass}>RMSE<span className="block font-normal text-slate-500">m³</span></th>
+            <th scope="col" className={headerClass}>WAPE<span className="block font-normal text-slate-500">error %</span></th>
+            <th scope="col" className={`${headerClass} border-l border-emerald-200 bg-emerald-50/60`}>Accuracy<span className="block font-normal text-slate-500">%</span></th>
+            <th scope="col" className={`${headerClass} bg-emerald-50/60`}>Units<span className="block font-normal text-slate-500">/ alerts</span></th>
+            <th scope="col" className={`${headerClass} border-l border-slate-200`}>Last month</th>
+            <th scope="col" className={headerClass}>3-mo. average</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-200">{rows.map((row) => {
+          const isLatest = row.forecastForMonth === latestMonth
+          const hasPairs = row.metrics.evaluatedCount > 0
+          return <tr key={row.forecastForMonth} className={isLatest ? 'bg-emerald-50/70 font-semibold' : hasPairs ? 'transition hover:bg-slate-50' : 'bg-slate-50/40 text-slate-400'}>
+            <th scope="row" className="whitespace-nowrap px-3 py-3.5 text-left font-bold" title={isLatest ? 'Latest evaluated month' : undefined}>{monthLabel(row.forecastForMonth)}</th>
+            <td className="whitespace-nowrap px-2 py-3.5 text-center tabular-nums">{row.metrics.evaluatedCount} / {row.metrics.excludedCount}</td>
+            <td className={`${numericClass} border-l border-slate-200`}>{valueOrDash(row.metrics.mae)}</td>
+            <td className={numericClass}>{valueOrDash(row.metrics.rmse)}</td>
+            <td className={numericClass}>{valueOrDash(row.metrics.wape, '%')}</td>
+            <td className={`${numericClass} border-l border-emerald-200`}>{valueOrDash(row.usageReview?.typicalMetrics.accuracy, '%')}</td>
+            <td className="whitespace-nowrap px-2 py-3.5 text-center tabular-nums">{row.usageReview ? `${row.usageReview.typicalMetrics.evaluatedCount} / ${row.usageReview.alertCount}` : '-'}</td>
+            <td className={`${numericClass} border-l border-slate-200`}>{valueOrDash(row.baselines.lastMonth.wape, '%')}</td>
+            <td className={numericClass}>{valueOrDash(row.baselines.recentAverage.wape, '%')}</td>
+          </tr>
+        })}</tbody>
+      </table>
+    </div>
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+      <span className="inline-flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" aria-hidden="true" />Latest evaluated month is highlighted.</span>
+      <span>— means no available score. Scroll horizontally on smaller screens.</span>
+    </div>
+  </div>
+}
+
+function UsageQualityPanel({ review, overallCount, evaluatedMonth }) {
+  const typical = review.typicalMetrics
+  const alertLabels = { USAGE_SPIKE: 'Usage spike', USAGE_DROP: 'Usage drop', ZERO_AFTER_REGULAR_USE: 'Zero after regular use' }
+  return <Panel title={`Typical-usage quality · ${monthLabel(evaluatedMonth)}`} description="A secondary score for units whose actual consumption stayed within the usage-review rules. The overall score above still includes every valid evaluated unit.">
+    <div className="grid gap-3 sm:grid-cols-3">
+      <Metric label="Typical derived accuracy" value={valueOrDash(typical.accuracy, '%')} compact />
+      <Metric label="Typical WAPE" value={valueOrDash(typical.wape, '%')} compact />
+      <Metric label="Typical / all evaluated units" value={`${typical.evaluatedCount} / ${overallCount}`} compact />
+    </div>
+    <p className="mt-3 text-sm leading-6 text-slate-600">{review.alertCount} usage-change {review.alertCount === 1 ? 'alert is' : 'alerts are'} outside this secondary score and {review.alertCount === 1 ? 'accounts' : 'account'} for {valueOrDash(review.alertErrorShare, '%')} of the overall absolute error. This filtered score describes typical usage only; it is not the overall forecast accuracy or a guarantee of future results.</p>
+    <details className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+      <summary className="cursor-pointer font-bold text-slate-700">How usage changes are identified</summary>
+      <p className="mt-2 leading-6">Compare actual usage with the median of the previous {review.rule.historyMonths} consecutive valid months. A large change must exceed the greatest of {review.rule.minimumChange} m³, {review.rule.relativeChange * 100}% of that median, or {review.rule.deviationMultiplier} times the median absolute deviation of those readings. Zero usage also prompts review after {review.rule.positiveMonthsBeforeZero} positive months when the prior median is at least {review.rule.zeroBaselineMinimum} m³.</p>
+      <p className="mt-2 leading-6">Alerts use earlier readings and current actual usage, independently of forecast error. They do not mark a reading invalid or remove it from model training. The secondary score uses the same accuracy formula, on the remaining units; it is unavailable when their total actual consumption is zero.</p>
+    </details>
+    <div className={`mt-4 rounded-xl border p-4 ${review.alertCount ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}>
+      <p className="font-bold text-slate-900">{review.alertCount ? `${review.alertCount} units need a usage review` : 'No unusual usage changes detected'}</p>
+      <p className="mt-1 text-sm text-slate-600">{review.alertCount ? 'Check original meter readings, occupancy changes, and possible leaks. Confirm the cause before correcting a reading.' : 'All valid evaluated units are included in the typical-usage score.'}</p>
+      {review.alertCount > 0 && <details className="mt-3">
+        <summary className="cursor-pointer text-sm font-bold text-amber-900">View all usage-change alerts</summary>
+        <div className="mt-3 max-h-96 overflow-auto rounded-lg border border-amber-200 bg-white">
+          <table className="w-full min-w-[800px] text-left text-sm">
+            <thead className="sticky top-0 bg-amber-50 text-xs text-slate-600"><tr><th className="p-3">Unit</th><th className="p-3">Review reason</th><th className="p-3">Prior median (m³)</th><th className="p-3">Actual (m³)</th><th className="p-3">Predicted (m³)</th><th className="p-3">Error (m³)</th><th className="p-3">Share of total error</th></tr></thead>
+            <tbody className="divide-y divide-amber-100">{review.alerts.map((row) => <tr key={row.unitId}>
+              <td className="p-3 font-bold">Unit {row.unitNumber}</td><td className="p-3">{alertLabels[row.type] || 'Usage change'}</td><td className="p-3">{valueOrDash(row.usualConsumption)}</td><td className="p-3">{valueOrDash(row.actualConsumption)}</td><td className="p-3">{valueOrDash(row.predictedConsumption)}</td><td className="p-3">{valueOrDash(row.absoluteError)}</td><td className="p-3">{valueOrDash(row.errorShare, '%')}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>
+      </details>}
+    </div>
+  </Panel>
 }
 
 function ChartCard({ title, description, filter, children }) {
