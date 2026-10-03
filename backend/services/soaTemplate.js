@@ -5,6 +5,7 @@ export const defaultSoaTemplate = {
   paymentChannel: "GCASH",
   paymentAccountName: "MADELYN JAMBALOS",
   paymentAccountNumber: "0908 674 2196",
+  paymentInstruction: "PAYMENT DETAILS: GCASH • 0908 674 2196 • MADELYN JAMBALOS",
   preparedByName: "JERRY BOY CRISPE",
   preparedByTitle: "BILLING ASSOCIATE",
   checkedByName: "MARIQUT B. RIVERA",

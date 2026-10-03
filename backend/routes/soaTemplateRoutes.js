@@ -18,6 +18,7 @@ const templateSchema = z.object({
   paymentChannel: z.string().trim().min(1).max(80),
   paymentAccountName: z.string().trim().min(1).max(150),
   paymentAccountNumber: z.string().trim().min(1).max(80),
+  paymentInstruction: z.string().trim().min(1).max(300),
   preparedByName: z.string().trim().min(1).max(150),
   preparedByTitle: z.string().trim().min(1).max(100),
   checkedByName: z.string().trim().min(1).max(150),

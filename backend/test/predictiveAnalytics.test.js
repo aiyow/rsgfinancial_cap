@@ -7,6 +7,8 @@ import {
   linearRegression,
   selectForecastModel,
   selectConsecutiveReadings,
+  weightedLinearRegression,
+  regenerateForecasts,
 } from "../services/predictiveAnalytics.js";
 
 function reading(month, consumption, validationStatus = "VALID") {
@@ -33,8 +35,89 @@ test("adaptive selection retains linear regression for a small, clear trend", ()
 test("adaptive selection can choose a stable model after back-testing irregular use", () => {
   const values = [10, 10, 10, 10, 10, 30, 10, 10];
   const models = forecastCandidates(values);
-  assert.equal(models.length, 3);
-  assert.equal(selectForecastModel(values).name, "RECENT_3_MONTH_AVERAGE");
+  assert.equal(models.length, 6);
+  assert.equal(selectForecastModel(values).name, "RECENT_5_MONTH_MEDIAN");
+});
+
+test('weighted regression preserves an exact trend and clamps negative predictions', () => {
+  assert.ok(Math.abs(weightedLinearRegression([2, 4, 6, 8, 10]).predicted - 12) < 1e-9);
+  assert.equal(weightedLinearRegression([10, 7, 4, 1, 0]).predicted, 0);
+});
+
+test('requires two internal comparison months and breaks ties in favor of last-month', () => {
+  assert.equal(selectForecastModel([10, 10, 10, 10, 10, 10]).name, 'LINEAR_REGRESSION');
+  assert.equal(selectForecastModel([10, 10, 10, 10, 10, 10, 10]).name, 'LAST_MONTH_CONSUMPTION');
+});
+
+test('PostgreSQL numeric strings produce the same candidates and selected method as numbers', () => {
+  const values = [1.2, 3.4, 5.6, 7.8, 9.1, 11.2, 13.4, 15.6];
+  assert.deepEqual(forecastCandidates(values.map(String)), forecastCandidates(values));
+  assert.deepEqual(selectForecastModel(values.map(String)), selectForecastModel(values));
+});
+
+test('missing values are rejected while real zero consumption is retained', () => {
+  for (const missing of [null, undefined, '', '  ', NaN, Infinity, false]) {
+    assert.equal(linearRegression([1, 2, missing, 4, 5]), null);
+    assert.equal(forecastCandidates([1, 2, missing, 4, 5]).length, 0);
+    assert.equal(calculateAccuracy([{ predictedConsumption: missing, actualConsumption: 10 }]).evaluatedCount, 0);
+    assert.equal(calculateAccuracy([{ predictedConsumption: 10, actualConsumption: missing }]).evaluatedCount, 0);
+  }
+  const result = buildForecast(Array.from({ length: 8 }, (_, i) => reading(i + 1, 0)));
+  assert.equal(result.status, 'READY');
+  assert.equal(result.predictedConsumption, 0);
+  const metrics = calculateAccuracy([{ predictedConsumption: 2, actualConsumption: 0 }]);
+  assert.equal(metrics.mae, 2);
+  assert.equal(metrics.wape, null);
+  assert.equal(metrics.accuracy, null);
+});
+
+test('source month requires its own valid reading and ignores all future readings', () => {
+  const history = Array.from({ length: 9 }, (_, i) => reading(i + 1, (i + 1) * 2));
+  const august = buildForecast(history, { sourceMonth: '2026-07-01' });
+  const changed = history.map((row, i) => i >= 7 ? { ...row, consumption: 5000 } : row);
+  assert.deepEqual(buildForecast(changed, { sourceMonth: '2026-07-01' }), august);
+  assert.equal(buildForecast(history.slice(0, 6), { sourceMonth: '2026-07-01' }).status, 'INSUFFICIENT_DATA');
+  assert.equal(buildForecast([...history.slice(0, 6), reading(7, 3, 'FLAGGED')], { sourceMonth: '2026-07-01' }).status, 'FLAGGED_READING');
+});
+
+test('training never bridges missing or invalid months and uses at most twelve months', () => {
+  const history = Array.from({ length: 14 }, (_, i) => ({
+    periodStart: new Date(Date.UTC(2025, i, 1)).toISOString().slice(0, 10), consumption: i, validationStatus: 'VALID',
+  }));
+  assert.equal(buildForecast(history).sampleCount, 12);
+  assert.equal(selectConsecutiveReadings(history.filter((_, i) => i !== 11)).length, 2);
+  assert.equal(selectConsecutiveReadings([...history.slice(0, 13), { ...history[13], consumption: null }]).length, 0);
+});
+
+test('adapts to a sustained usage change without losing real zero readings', () => {
+  const model = selectForecastModel([0, 0, 0, 0, 0, 10, 10, 10]);
+  assert.equal(model.name, 'LAST_MONTH_CONSUMPTION');
+  assert.equal(model.predicted, 10);
+});
+
+test('accuracy excludes negative forecasts and reports an error above one hundred percent honestly', () => {
+  const metrics = calculateAccuracy([{ predictedConsumption: -1, actualConsumption: 2 }, { predictedConsumption: 5, actualConsumption: 1 }]);
+  assert.equal(metrics.evaluatedCount, 1);
+  assert.equal(metrics.wape, 400);
+  assert.equal(metrics.accuracy, 0);
+});
+
+test('persisted generation filters training visibility and marks units missing the source month insufficient', async () => {
+  const queries = [];
+  const client = { async query(sql, params) {
+    queries.push({ sql, params });
+    if (sql.startsWith('SELECT id, period_start')) return { rows: [{ id: 8, periodStart: '2026-08-01', waterRate: 23 }] };
+    if (sql.includes('FROM meter_readings')) return { rows: Array.from({ length: 7 }, (_, i) => ({ ...reading(i + 1, 10), unitId: 1 })) };
+    if (sql === 'SELECT id FROM units ORDER BY id') return { rows: [{ id: 1 }] };
+    return { rows: [] };
+  } };
+  await regenerateForecasts(client, 8);
+  assert.match(queries.find((row) => row.sql.includes('FROM meter_readings')).sql, /FORWARDED.*CLOSED/);
+  assert.match(queries.find((row) => row.sql.includes('FROM meter_readings')).sql, /readings_visible_at IS NOT NULL/);
+  const insert = queries.find((row) => row.sql.includes('INSERT INTO billing_forecasts'));
+  assert.equal(insert.params[2], '2026-09-01');
+  assert.equal(insert.params[3], null);
+  assert.equal(insert.params[9], 'INSUFFICIENT_DATA');
 });
 
 test("only the latest consecutive valid segment is selected", () => {

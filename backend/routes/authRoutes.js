@@ -21,7 +21,6 @@ import {
 } from "../services/passwordReset.js";
 
 const router = express.Router();
-const roleSchema = z.enum(["ADMIN", "COLLECTOR", "RESIDENT"]);
 const passwordSchema = z.string().min(8).max(72);
 const VERIFICATION_RESEND_COOLDOWN_MS = 60 * 1000;
 const PASSWORD_RESET_RESEND_COOLDOWN_MS = 60 * 1000;
@@ -30,7 +29,6 @@ const registerSchema = z.object({
   fullName: z.string().trim().min(1).max(150),
   email: z.string().trim().toLowerCase().email().max(255),
   password: passwordSchema,
-  role: roleSchema,
 }).strict();
 
 const loginSchema = z.object({
@@ -65,7 +63,8 @@ const userColumns = `
 router.post("/register", validateBody(registerSchema), async (req, res, next) => {
   let client;
   try {
-    const { fullName, email, password, role } = req.validatedBody;
+    const { fullName, email, password } = req.validatedBody;
+    const role = "RESIDENT";
     const passwordHash = await bcrypt.hash(password, 12);
     const verificationToken = createVerificationToken();
     const verificationExpiry = verificationExpiryDate();

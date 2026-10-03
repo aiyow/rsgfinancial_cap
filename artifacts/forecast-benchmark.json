@@ -1,0 +1,7398 @@
+{
+  "capturedAt": "2026-10-03T13:45:42.820Z",
+  "evaluationType": "RETROSPECTIVE",
+  "months": [
+    "2026-01-01",
+    "2026-02-01",
+    "2026-03-01",
+    "2026-04-01",
+    "2026-05-01",
+    "2026-06-01",
+    "2026-07-01",
+    "2026-08-01"
+  ],
+  "aggregate": {
+    "current": {
+      "evaluatedCount": 412,
+      "mae": 2.448,
+      "rmse": 4.288,
+      "wape": 42.91,
+      "accuracy": 57.09
+    },
+    "revised": {
+      "evaluatedCount": 412,
+      "mae": 2.35,
+      "rmse": 4.055,
+      "wape": 41.18,
+      "accuracy": 58.82
+    },
+    "lastMonth": {
+      "evaluatedCount": 412,
+      "mae": 2.137,
+      "rmse": 3.808,
+      "wape": 37.44,
+      "accuracy": 62.56
+    },
+    "recentAverage": {
+      "evaluatedCount": 412,
+      "mae": 2.048,
+      "rmse": 3.717,
+      "wape": 35.9,
+      "accuracy": 64.1
+    }
+  },
+  "monthly": [
+    {
+      "forecastForMonth": "2026-02-01",
+      "evaluatedCount": 0,
+      "excludedCount": 142,
+      "metrics": {
+        "current": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "revised": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "lastMonth": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "recentAverage": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        }
+      }
+    },
+    {
+      "forecastForMonth": "2026-03-01",
+      "evaluatedCount": 0,
+      "excludedCount": 142,
+      "metrics": {
+        "current": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "revised": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "lastMonth": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "recentAverage": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        }
+      }
+    },
+    {
+      "forecastForMonth": "2026-04-01",
+      "evaluatedCount": 0,
+      "excludedCount": 142,
+      "metrics": {
+        "current": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "revised": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "lastMonth": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "recentAverage": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        }
+      }
+    },
+    {
+      "forecastForMonth": "2026-05-01",
+      "evaluatedCount": 0,
+      "excludedCount": 142,
+      "metrics": {
+        "current": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "revised": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "lastMonth": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        },
+        "recentAverage": {
+          "evaluatedCount": 0,
+          "mae": null,
+          "rmse": null,
+          "wape": null,
+          "accuracy": null
+        }
+      }
+    },
+    {
+      "forecastForMonth": "2026-06-01",
+      "evaluatedCount": 137,
+      "excludedCount": 5,
+      "metrics": {
+        "current": {
+          "evaluatedCount": 137,
+          "mae": 2.372,
+          "rmse": 3.839,
+          "wape": 41.03,
+          "accuracy": 58.97
+        },
+        "revised": {
+          "evaluatedCount": 137,
+          "mae": 2.372,
+          "rmse": 3.839,
+          "wape": 41.03,
+          "accuracy": 58.97
+        },
+        "lastMonth": {
+          "evaluatedCount": 137,
+          "mae": 2.099,
+          "rmse": 3.573,
+          "wape": 36.31,
+          "accuracy": 63.69
+        },
+        "recentAverage": {
+          "evaluatedCount": 137,
+          "mae": 2.047,
+          "rmse": 3.827,
+          "wape": 35.41,
+          "accuracy": 64.59
+        }
+      }
+    },
+    {
+      "forecastForMonth": "2026-07-01",
+      "evaluatedCount": 137,
+      "excludedCount": 5,
+      "metrics": {
+        "current": {
+          "evaluatedCount": 137,
+          "mae": 2.145,
+          "rmse": 3.173,
+          "wape": 37.84,
+          "accuracy": 62.16
+        },
+        "revised": {
+          "evaluatedCount": 137,
+          "mae": 2.145,
+          "rmse": 3.173,
+          "wape": 37.84,
+          "accuracy": 62.16
+        },
+        "lastMonth": {
+          "evaluatedCount": 137,
+          "mae": 1.911,
+          "rmse": 3.01,
+          "wape": 33.72,
+          "accuracy": 66.28
+        },
+        "recentAverage": {
+          "evaluatedCount": 137,
+          "mae": 1.921,
+          "rmse": 3.434,
+          "wape": 33.89,
+          "accuracy": 66.11
+        }
+      }
+    },
+    {
+      "forecastForMonth": "2026-08-01",
+      "evaluatedCount": 138,
+      "excludedCount": 4,
+      "metrics": {
+        "current": {
+          "evaluatedCount": 138,
+          "mae": 2.825,
+          "rmse": 5.501,
+          "wape": 49.83,
+          "accuracy": 50.17
+        },
+        "revised": {
+          "evaluatedCount": 138,
+          "mae": 2.531,
+          "rmse": 4.946,
+          "wape": 44.64,
+          "accuracy": 55.36
+        },
+        "lastMonth": {
+          "evaluatedCount": 138,
+          "mae": 2.398,
+          "rmse": 4.65,
+          "wape": 42.29,
+          "accuracy": 57.71
+        },
+        "recentAverage": {
+          "evaluatedCount": 138,
+          "mae": 2.177,
+          "rmse": 3.872,
+          "wape": 38.39,
+          "accuracy": 61.61
+        }
+      }
+    }
+  ],
+  "latest": {
+    "forecastForMonth": "2026-08-01",
+    "evaluatedCount": 138,
+    "excludedCount": 4,
+    "metrics": {
+      "current": {
+        "evaluatedCount": 138,
+        "mae": 2.825,
+        "rmse": 5.501,
+        "wape": 49.83,
+        "accuracy": 50.17
+      },
+      "revised": {
+        "evaluatedCount": 138,
+        "mae": 2.531,
+        "rmse": 4.946,
+        "wape": 44.64,
+        "accuracy": 55.36
+      },
+      "lastMonth": {
+        "evaluatedCount": 138,
+        "mae": 2.398,
+        "rmse": 4.65,
+        "wape": 42.29,
+        "accuracy": 57.71
+      },
+      "recentAverage": {
+        "evaluatedCount": 138,
+        "mae": 2.177,
+        "rmse": 3.872,
+        "wape": 38.39,
+        "accuracy": 61.61
+      }
+    }
+  },
+  "acceptance": {
+    "passed": true,
+    "rule": "Lower aggregate MAE and WAPE, with no increase in RMSE on identical pairs."
+  },
+  "topErrorUnits": [
+    {
+      "unitId": "36",
+      "unitNumber": "235",
+      "currentError": 65.732,
+      "revisedError": 62.426
+    },
+    {
+      "unitId": "80",
+      "unitNumber": "336",
+      "currentError": 44.838,
+      "revisedError": 36.797
+    },
+    {
+      "unitId": "125",
+      "unitNumber": "438",
+      "currentError": 31.227000000000004,
+      "revisedError": 26.079
+    },
+    {
+      "unitId": "32",
+      "unitNumber": "231",
+      "currentError": 28.421999999999997,
+      "revisedError": 28.421999999999997
+    },
+    {
+      "unitId": "113",
+      "unitNumber": "426",
+      "currentError": 23.32,
+      "revisedError": 23.740000000000002
+    },
+    {
+      "unitId": "140",
+      "unitNumber": "510",
+      "currentError": 22.15,
+      "revisedError": 20.56
+    },
+    {
+      "unitId": "154",
+      "unitNumber": "524",
+      "currentError": 18.366,
+      "revisedError": 18.366
+    },
+    {
+      "unitId": "117",
+      "unitNumber": "430",
+      "currentError": 17.668999999999997,
+      "revisedError": 16.086
+    },
+    {
+      "unitId": "120",
+      "unitNumber": "433",
+      "currentError": 17.242,
+      "revisedError": 14.702
+    },
+    {
+      "unitId": "163",
+      "unitNumber": "533",
+      "currentError": 16.737000000000002,
+      "revisedError": 16.737000000000002
+    }
+  ],
+  "pairs": [
+    {
+      "unitId": "32",
+      "unitNumber": "231",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 20.851,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 17.651,
+        "revised": 17.651,
+        "lastMonth": 17.261,
+        "recentAverage": 10.191
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "33",
+      "unitNumber": "232",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.991,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.955,
+        "revised": 2.955,
+        "lastMonth": 3.565,
+        "recentAverage": 3.5079999999999996
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "34",
+      "unitNumber": "233",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.53,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.021,
+        "revised": 4.021,
+        "lastMonth": 3.532,
+        "recentAverage": 3.5773333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "35",
+      "unitNumber": "234",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.572,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 1.556,
+        "revised": 1.556,
+        "lastMonth": 0.792,
+        "recentAverage": 1.2133333333333332
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "36",
+      "unitNumber": "235",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 38.049,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 21.406,
+        "revised": 21.406,
+        "lastMonth": 17.598,
+        "recentAverage": 13.656999999999998
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "37",
+      "unitNumber": "236",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 4.814,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.612,
+        "revised": 5.612,
+        "lastMonth": 5.934,
+        "recentAverage": 3.965
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "38",
+      "unitNumber": "237",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.196,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.995,
+        "revised": 0.995,
+        "lastMonth": 1.663,
+        "recentAverage": 1.1609999999999998
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "39",
+      "unitNumber": "238",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 17.923,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 11.028,
+        "revised": 11.028,
+        "lastMonth": 11.355,
+        "recentAverage": 11.884666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "40",
+      "unitNumber": "239",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.17,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.831,
+        "revised": 0.831,
+        "lastMonth": 1.092,
+        "recentAverage": 0.36566666666666664
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "41",
+      "unitNumber": "240",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 10.545,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 9.999,
+        "revised": 9.999,
+        "lastMonth": 11.231,
+        "recentAverage": 9.295
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "42",
+      "unitNumber": "241",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.369,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 10.365,
+        "revised": 10.365,
+        "lastMonth": 9.542,
+        "recentAverage": 9.804333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "43",
+      "unitNumber": "242",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.639,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 1.973,
+        "revised": 1.973,
+        "lastMonth": 1.728,
+        "recentAverage": 2.4243333333333332
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "44",
+      "unitNumber": "243",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.54,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.953,
+        "revised": 2.953,
+        "lastMonth": 3.448,
+        "recentAverage": 4.107333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "45",
+      "unitNumber": "301",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.275,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 3.749,
+        "revised": 3.749,
+        "lastMonth": 2.043,
+        "recentAverage": 3.6843333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "46",
+      "unitNumber": "302",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "47",
+      "unitNumber": "303",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.222,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.813,
+        "revised": 6.813,
+        "lastMonth": 8.029,
+        "recentAverage": 6.960666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "48",
+      "unitNumber": "304",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 8.02,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 7.189,
+        "revised": 7.189,
+        "lastMonth": 5.048,
+        "recentAverage": 5.858333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "49",
+      "unitNumber": "305",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.008,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 1.889,
+        "revised": 1.889,
+        "lastMonth": 1.834,
+        "recentAverage": 1.5670000000000002
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "50",
+      "unitNumber": "306",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 12.18,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 14.632,
+        "revised": 14.632,
+        "lastMonth": 13.59,
+        "recentAverage": 13.955666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "51",
+      "unitNumber": "307",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 14.182,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 11.042,
+        "revised": 11.042,
+        "lastMonth": 12.26,
+        "recentAverage": 11.997
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "52",
+      "unitNumber": "308",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.392,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.477,
+        "revised": 6.477,
+        "lastMonth": 4.891,
+        "recentAverage": 5.367333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "53",
+      "unitNumber": "309",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.92,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.626,
+        "revised": 2.626,
+        "lastMonth": 3.267,
+        "recentAverage": 1.3533333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "54",
+      "unitNumber": "310",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.641,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.704,
+        "revised": 0.704,
+        "lastMonth": 0.833,
+        "recentAverage": 1.2033333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "55",
+      "unitNumber": "311",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 4.417,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.755,
+        "revised": 5.755,
+        "lastMonth": 4.311,
+        "recentAverage": 4.165666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "56",
+      "unitNumber": "312",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.48,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 12.63,
+        "revised": 12.63,
+        "lastMonth": 11.028,
+        "recentAverage": 8.621666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "57",
+      "unitNumber": "313",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.572,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0.085
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "58",
+      "unitNumber": "314",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.682,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 3.862,
+        "revised": 3.862,
+        "lastMonth": 3.218,
+        "recentAverage": 4.099333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "59",
+      "unitNumber": "315",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.946,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.017,
+        "revised": 4.017,
+        "lastMonth": 4.195,
+        "recentAverage": 3.9486666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "60",
+      "unitNumber": "316",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 4.562,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 3.332,
+        "revised": 3.332,
+        "lastMonth": 4.392,
+        "recentAverage": 3.912333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "61",
+      "unitNumber": "317",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 10.891,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 12.734,
+        "revised": 12.734,
+        "lastMonth": 13.255,
+        "recentAverage": 10.687
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "62",
+      "unitNumber": "318",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.501,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 9.391,
+        "revised": 9.391,
+        "lastMonth": 10.293,
+        "recentAverage": 7.130333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "63",
+      "unitNumber": "319",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.051,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 1.587,
+        "revised": 1.587,
+        "lastMonth": 1.582,
+        "recentAverage": 1.5443333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "64",
+      "unitNumber": "320",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 6.055,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 7.391,
+        "revised": 7.391,
+        "lastMonth": 5.387,
+        "recentAverage": 5.014666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "65",
+      "unitNumber": "321",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.071,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.608,
+        "revised": 6.608,
+        "lastMonth": 7.935,
+        "recentAverage": 2.8183333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "66",
+      "unitNumber": "322",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 10.439,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 3.942,
+        "revised": 3.942,
+        "lastMonth": 6.221,
+        "recentAverage": 5.561666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "67",
+      "unitNumber": "323",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.251,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.737,
+        "revised": 4.737,
+        "lastMonth": 2.383,
+        "recentAverage": 4.073666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "68",
+      "unitNumber": "324",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.044,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 10.928,
+        "revised": 10.928,
+        "lastMonth": 7.654,
+        "recentAverage": 9.652666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "69",
+      "unitNumber": "325",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.823,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.617,
+        "revised": 6.617,
+        "lastMonth": 5.175,
+        "recentAverage": 6.479
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "70",
+      "unitNumber": "326",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.708,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.723,
+        "revised": 5.723,
+        "lastMonth": 5.03,
+        "recentAverage": 5.580333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "71",
+      "unitNumber": "327",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 6.228,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.284,
+        "revised": 6.284,
+        "lastMonth": 5.368,
+        "recentAverage": 6.970666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "72",
+      "unitNumber": "328",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.648,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.017,
+        "revised": 0.017,
+        "lastMonth": 0,
+        "recentAverage": 0.36566666666666664
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "73",
+      "unitNumber": "329",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.576,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 2.007,
+        "recentAverage": 1.7766666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "74",
+      "unitNumber": "330",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.736,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.014,
+        "revised": 5.014,
+        "lastMonth": 3.984,
+        "recentAverage": 4.318666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "75",
+      "unitNumber": "331",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 8.759,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 14.108,
+        "revised": 14.108,
+        "lastMonth": 15.207,
+        "recentAverage": 9.356333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "76",
+      "unitNumber": "332",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 10.628,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 8.803,
+        "revised": 8.803,
+        "lastMonth": 8.787,
+        "recentAverage": 9.167666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "77",
+      "unitNumber": "333",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 1.994,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 1.563,
+        "revised": 1.563,
+        "lastMonth": 0.007,
+        "recentAverage": 2.2520000000000002
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "78",
+      "unitNumber": "334",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "79",
+      "unitNumber": "335",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 1.682,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.471,
+        "revised": 5.471,
+        "lastMonth": 4.557,
+        "recentAverage": 3.8540000000000005
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "80",
+      "unitNumber": "336",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 10.224,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 24.751,
+        "revised": 24.751,
+        "lastMonth": 21.348,
+        "recentAverage": 21.05933333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "81",
+      "unitNumber": "337",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.727,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 8.926,
+        "revised": 8.926,
+        "lastMonth": 8.76,
+        "recentAverage": 7.758
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "82",
+      "unitNumber": "338",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.453,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.57,
+        "revised": 0.57,
+        "lastMonth": 0.731,
+        "recentAverage": 0.25633333333333336
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "83",
+      "unitNumber": "339",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.554,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.325,
+        "revised": 2.325,
+        "lastMonth": 1.965,
+        "recentAverage": 2.022
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "84",
+      "unitNumber": "340",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.9,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 3.157,
+        "revised": 3.157,
+        "lastMonth": 4.18,
+        "recentAverage": 4.117333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "85",
+      "unitNumber": "341",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.75,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 8.304,
+        "revised": 8.304,
+        "lastMonth": 7.462,
+        "recentAverage": 6.178
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "86",
+      "unitNumber": "342",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.463,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.952,
+        "revised": 2.952,
+        "lastMonth": 4.193,
+        "recentAverage": 3.3526666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "87",
+      "unitNumber": "343",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.334,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.097,
+        "revised": 6.097,
+        "lastMonth": 6.004,
+        "recentAverage": 5.815
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "88",
+      "unitNumber": "401",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 12.708,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 12.244,
+        "revised": 12.244,
+        "lastMonth": 12.842,
+        "recentAverage": 12.502666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "89",
+      "unitNumber": "402",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 11.637,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 10.811,
+        "revised": 10.811,
+        "lastMonth": 12.476,
+        "recentAverage": 8.995
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "90",
+      "unitNumber": "403",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 4.046,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.621,
+        "revised": 5.621,
+        "lastMonth": 4.68,
+        "recentAverage": 4.6610000000000005
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "91",
+      "unitNumber": "404",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.29,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.329,
+        "revised": 0.329,
+        "lastMonth": 0.243,
+        "recentAverage": 0.18833333333333332
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "93",
+      "unitNumber": "406",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 10.798,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 8.011,
+        "revised": 8.011,
+        "lastMonth": 5.886,
+        "recentAverage": 7.175999999999999
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "95",
+      "unitNumber": "408",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.667,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 10.426,
+        "revised": 10.426,
+        "lastMonth": 6.931,
+        "recentAverage": 6.758
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "96",
+      "unitNumber": "409",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 1.96,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 1.93,
+        "revised": 1.93,
+        "lastMonth": 2.176,
+        "recentAverage": 1.9273333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "97",
+      "unitNumber": "410",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.459,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.417,
+        "revised": 2.417,
+        "lastMonth": 2.289,
+        "recentAverage": 2.096666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "98",
+      "unitNumber": "411",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 6.263,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.996,
+        "revised": 4.996,
+        "lastMonth": 4.99,
+        "recentAverage": 5.598
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "99",
+      "unitNumber": "412",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 8.779,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.162,
+        "revised": 2.162,
+        "lastMonth": 2.645,
+        "recentAverage": 0.9206666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "102",
+      "unitNumber": "415",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 10.934,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 12.182,
+        "revised": 12.182,
+        "lastMonth": 9.895,
+        "recentAverage": 10.404
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "103",
+      "unitNumber": "416",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.929,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.8,
+        "revised": 0.8,
+        "lastMonth": 0.909,
+        "recentAverage": 0.5026666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "104",
+      "unitNumber": "417",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 14.268,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 11.752,
+        "revised": 11.752,
+        "lastMonth": 11.144,
+        "recentAverage": 12.354
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "105",
+      "unitNumber": "418",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 1.085,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.117,
+        "revised": 4.117,
+        "lastMonth": 1.935,
+        "recentAverage": 6.567333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "106",
+      "unitNumber": "419",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "107",
+      "unitNumber": "420",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 10.595,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.637,
+        "revised": 0.637,
+        "lastMonth": 0.707,
+        "recentAverage": 0.351
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "108",
+      "unitNumber": "421",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.874,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.146,
+        "revised": 6.146,
+        "lastMonth": 5.745,
+        "recentAverage": 6.048000000000001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "109",
+      "unitNumber": "422",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.252,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.473,
+        "revised": 0.473,
+        "lastMonth": 0.323,
+        "recentAverage": 0.36033333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "110",
+      "unitNumber": "423",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 6.507,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 7.652,
+        "revised": 7.652,
+        "lastMonth": 7.916,
+        "recentAverage": 6.7330000000000005
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "111",
+      "unitNumber": "424",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.834,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.735,
+        "revised": 4.735,
+        "lastMonth": 3.428,
+        "recentAverage": 4.623333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "112",
+      "unitNumber": "425",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 16.577,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 13.887,
+        "revised": 13.887,
+        "lastMonth": 14,
+        "recentAverage": 13.244666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "113",
+      "unitNumber": "426",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 14.019,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 26.043,
+        "revised": 26.043,
+        "lastMonth": 18.242,
+        "recentAverage": 18.310000000000002
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "114",
+      "unitNumber": "427",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.444,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 3.269,
+        "revised": 3.269,
+        "lastMonth": 5.249,
+        "recentAverage": 6.199999999999999
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "115",
+      "unitNumber": "428",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.034,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.407,
+        "revised": 0.407,
+        "lastMonth": 0.018,
+        "recentAverage": 0.6063333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "116",
+      "unitNumber": "429",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 1.834,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.479,
+        "revised": 6.479,
+        "lastMonth": 5.319,
+        "recentAverage": 6.091333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "117",
+      "unitNumber": "430",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 4.027,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 10.834,
+        "revised": 10.834,
+        "lastMonth": 9.984,
+        "recentAverage": 9.822666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "118",
+      "unitNumber": "431",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 1.58,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 1.733,
+        "revised": 1.733,
+        "lastMonth": 1.628,
+        "recentAverage": 2.125666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "119",
+      "unitNumber": "432",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 18.323,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 8.311,
+        "revised": 8.311,
+        "lastMonth": 8.393,
+        "recentAverage": 6.337666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "120",
+      "unitNumber": "433",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 9.869,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.099,
+        "revised": 5.099,
+        "lastMonth": 5.997,
+        "recentAverage": 3.7119999999999997
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "121",
+      "unitNumber": "434",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 8.489,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 10.185,
+        "revised": 10.185,
+        "lastMonth": 9.021,
+        "recentAverage": 8.616
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "122",
+      "unitNumber": "435",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 4.148,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.301,
+        "revised": 4.301,
+        "lastMonth": 4.933,
+        "recentAverage": 4.435
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "123",
+      "unitNumber": "436",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.814,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.659,
+        "revised": 4.659,
+        "lastMonth": 4.724,
+        "recentAverage": 6.189333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "124",
+      "unitNumber": "437",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.105,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 3.676,
+        "revised": 3.676,
+        "lastMonth": 6.839,
+        "recentAverage": 6.429666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "125",
+      "unitNumber": "438",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 15.652,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "126",
+      "unitNumber": "439",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 11.556,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.238,
+        "revised": 5.238,
+        "lastMonth": 6.289,
+        "recentAverage": 6.084666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "127",
+      "unitNumber": "440",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 4.161,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.194,
+        "revised": 6.194,
+        "lastMonth": 6.636,
+        "recentAverage": 4.552
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "128",
+      "unitNumber": "441",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.187,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "129",
+      "unitNumber": "442",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 4.994,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 9.372,
+        "revised": 9.372,
+        "lastMonth": 8.686,
+        "recentAverage": 10.142666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "130",
+      "unitNumber": "443",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.3,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 3.872,
+        "revised": 3.872,
+        "lastMonth": 3.168,
+        "recentAverage": 3.2896666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "131",
+      "unitNumber": "501",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.612,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.696,
+        "revised": 6.696,
+        "lastMonth": 6.049,
+        "recentAverage": 5.844
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "132",
+      "unitNumber": "502",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 10.949,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 7.395,
+        "revised": 7.395,
+        "lastMonth": 6.918,
+        "recentAverage": 7.224333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "133",
+      "unitNumber": "503",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.629,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.508,
+        "revised": 0.508,
+        "lastMonth": 0.742,
+        "recentAverage": 0.7959999999999999
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "134",
+      "unitNumber": "504",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.578,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 3.561,
+        "revised": 3.561,
+        "lastMonth": 1.94,
+        "recentAverage": 2.3336666666666663
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "135",
+      "unitNumber": "505",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.24,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.328,
+        "revised": 0.328,
+        "lastMonth": 0.556,
+        "recentAverage": 0.18533333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "136",
+      "unitNumber": "506",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 1.29,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.492,
+        "revised": 2.492,
+        "lastMonth": 1.975,
+        "recentAverage": 1.6056666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "137",
+      "unitNumber": "507",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 9.235,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.698,
+        "revised": 4.698,
+        "lastMonth": 4.027,
+        "recentAverage": 4.602
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "138",
+      "unitNumber": "508",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.134,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 8.372,
+        "revised": 8.372,
+        "lastMonth": 5.466,
+        "recentAverage": 7.047666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "139",
+      "unitNumber": "509",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "140",
+      "unitNumber": "510",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 11.3,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.72,
+        "revised": 2.72,
+        "lastMonth": 9.9,
+        "recentAverage": 12.433333333333332
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "141",
+      "unitNumber": "511",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.685,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 1.599,
+        "revised": 1.599,
+        "lastMonth": 1.502,
+        "recentAverage": 1.8966666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "142",
+      "unitNumber": "512",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.26,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.919,
+        "revised": 5.919,
+        "lastMonth": 7.971,
+        "recentAverage": 6.684
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "143",
+      "unitNumber": "513",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 7.812,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 11.04,
+        "revised": 11.04,
+        "lastMonth": 7.965,
+        "recentAverage": 8.222333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "144",
+      "unitNumber": "514",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 20.108,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 12.876,
+        "revised": 12.876,
+        "lastMonth": 12.954,
+        "recentAverage": 12.706000000000001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "145",
+      "unitNumber": "515",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.009,
+        "revised": 0.009,
+        "lastMonth": 0.048,
+        "recentAverage": 0.03366666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "146",
+      "unitNumber": "516",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 1.325,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.281,
+        "revised": 2.281,
+        "lastMonth": 1.567,
+        "recentAverage": 2.9793333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "147",
+      "unitNumber": "517",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 10.125,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 10.835,
+        "revised": 10.835,
+        "lastMonth": 8.183,
+        "recentAverage": 12.284
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "148",
+      "unitNumber": "518",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.01,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "149",
+      "unitNumber": "519",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.693,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 9.967,
+        "revised": 9.967,
+        "lastMonth": 6.868,
+        "recentAverage": 7.9736666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "150",
+      "unitNumber": "520",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.28,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.251,
+        "revised": 4.251,
+        "lastMonth": 3.9,
+        "recentAverage": 4.388333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "152",
+      "unitNumber": "522",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 1.85,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 4.228,
+        "revised": 4.228,
+        "lastMonth": 2.894,
+        "recentAverage": 3.6986666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "153",
+      "unitNumber": "523",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 18.794,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 18.197,
+        "revised": 18.197,
+        "lastMonth": 14.567,
+        "recentAverage": 18.838
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "154",
+      "unitNumber": "524",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 15.247,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 12.727,
+        "revised": 12.727,
+        "lastMonth": 12.103,
+        "recentAverage": 10.476333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "155",
+      "unitNumber": "525",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.991,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.968,
+        "revised": 2.968,
+        "lastMonth": 3.54,
+        "recentAverage": 4.771
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "156",
+      "unitNumber": "526",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 17.189,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 12.392,
+        "revised": 12.392,
+        "lastMonth": 15.165,
+        "recentAverage": 16.415333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "157",
+      "unitNumber": "527",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 5.446,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.409,
+        "revised": 5.409,
+        "lastMonth": 5.782,
+        "recentAverage": 5.490333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "158",
+      "unitNumber": "528",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 4.443,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.234,
+        "revised": 5.234,
+        "lastMonth": 0.94,
+        "recentAverage": 5.582333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "159",
+      "unitNumber": "529",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "160",
+      "unitNumber": "530",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 1.422,
+        "revised": 1.422,
+        "lastMonth": 0.875,
+        "recentAverage": 1.2866666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "161",
+      "unitNumber": "531",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 4.384,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.544,
+        "revised": 6.544,
+        "lastMonth": 5.52,
+        "recentAverage": 4.3069999999999995
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "162",
+      "unitNumber": "532",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "163",
+      "unitNumber": "533",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.84,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.951,
+        "revised": 0.951,
+        "lastMonth": 1.242,
+        "recentAverage": 1.349
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "164",
+      "unitNumber": "534",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.665,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.206,
+        "revised": 5.206,
+        "lastMonth": 4.845,
+        "recentAverage": 4.4559999999999995
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "165",
+      "unitNumber": "535",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 1.81,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 3.009,
+        "revised": 3.009,
+        "lastMonth": 2.711,
+        "recentAverage": 3.065
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "166",
+      "unitNumber": "536",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 3.321,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 6.256,
+        "revised": 6.256,
+        "lastMonth": 5.669,
+        "recentAverage": 7.251333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "167",
+      "unitNumber": "537",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 2.611,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 2.466,
+        "revised": 2.466,
+        "lastMonth": 2.164,
+        "recentAverage": 2.3273333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "168",
+      "unitNumber": "538",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "169",
+      "unitNumber": "539",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.481,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.686,
+        "revised": 0.686,
+        "lastMonth": 0.351,
+        "recentAverage": 1.343
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "170",
+      "unitNumber": "540",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.001,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0.001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "171",
+      "unitNumber": "541",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 6.411,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 8.206,
+        "revised": 8.206,
+        "lastMonth": 10.746,
+        "recentAverage": 7.283333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "172",
+      "unitNumber": "542",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.001,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 5.229,
+        "revised": 5.229,
+        "lastMonth": 4.444,
+        "recentAverage": 4.120333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "173",
+      "unitNumber": "543",
+      "forecastForMonth": "2026-06-01",
+      "actualConsumption": 0.019,
+      "sourceMonth": "2026-05-01",
+      "predictions": {
+        "current": 0.058,
+        "revised": 0.058,
+        "lastMonth": 0.05,
+        "recentAverage": 0.10166666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "32",
+      "unitNumber": "231",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 27.09,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 23.137,
+        "revised": 23.137,
+        "lastMonth": 20.851,
+        "recentAverage": 16.30933333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "33",
+      "unitNumber": "232",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 4.579,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.917,
+        "revised": 2.917,
+        "lastMonth": 3.991,
+        "recentAverage": 4.0696666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "34",
+      "unitNumber": "233",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.532,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.246,
+        "revised": 3.246,
+        "lastMonth": 2.53,
+        "recentAverage": 3.1653333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "35",
+      "unitNumber": "234",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.619,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 1.176,
+        "revised": 1.176,
+        "lastMonth": 0.572,
+        "recentAverage": 0.848
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "36",
+      "unitNumber": "235",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 50.86,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 36.259,
+        "revised": 36.259,
+        "lastMonth": 38.049,
+        "recentAverage": 23.039666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "37",
+      "unitNumber": "236",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 2.306,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.875,
+        "revised": 5.875,
+        "lastMonth": 4.814,
+        "recentAverage": 4.675333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "38",
+      "unitNumber": "237",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1.668,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.264,
+        "revised": 0.264,
+        "lastMonth": 0.196,
+        "recentAverage": 0.8553333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "39",
+      "unitNumber": "238",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 15.478,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 15.194,
+        "revised": 15.194,
+        "lastMonth": 17.923,
+        "recentAverage": 14.105333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "40",
+      "unitNumber": "239",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.035,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.584,
+        "revised": 0.584,
+        "lastMonth": 0.17,
+        "recentAverage": 0.4206666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "41",
+      "unitNumber": "240",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 8.877,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 10.6,
+        "revised": 10.6,
+        "lastMonth": 10.545,
+        "recentAverage": 10.280666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "42",
+      "unitNumber": "241",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 7.536,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 8.781,
+        "revised": 8.781,
+        "lastMonth": 7.369,
+        "recentAverage": 8.490666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "43",
+      "unitNumber": "242",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 2.328,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.934,
+        "revised": 2.934,
+        "lastMonth": 3.639,
+        "recentAverage": 2.6743333333333332
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "44",
+      "unitNumber": "243",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.539,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.724,
+        "revised": 2.724,
+        "lastMonth": 3.54,
+        "recentAverage": 3.4180000000000006
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "45",
+      "unitNumber": "301",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.292,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.071,
+        "revised": 3.071,
+        "lastMonth": 2.275,
+        "recentAverage": 2.1340000000000003
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "46",
+      "unitNumber": "302",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "47",
+      "unitNumber": "303",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 8.708,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 6.729,
+        "revised": 6.729,
+        "lastMonth": 7.222,
+        "recentAverage": 7.537333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "48",
+      "unitNumber": "304",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 7.636,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 8.621,
+        "revised": 8.621,
+        "lastMonth": 8.02,
+        "recentAverage": 6.3066666666666675
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "49",
+      "unitNumber": "305",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.098,
+        "revised": 2.098,
+        "lastMonth": 2.008,
+        "recentAverage": 1.8523333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "50",
+      "unitNumber": "306",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 11.955,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 13.4,
+        "revised": 13.4,
+        "lastMonth": 12.18,
+        "recentAverage": 13.844666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "51",
+      "unitNumber": "307",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 16.465,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 12.469,
+        "revised": 12.469,
+        "lastMonth": 14.182,
+        "recentAverage": 12.858333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "52",
+      "unitNumber": "308",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.901,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.107,
+        "revised": 5.107,
+        "lastMonth": 3.392,
+        "recentAverage": 4.306333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "53",
+      "unitNumber": "309",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 4.866,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 4.065,
+        "revised": 4.065,
+        "lastMonth": 3.92,
+        "recentAverage": 2.3956666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "54",
+      "unitNumber": "310",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.511,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.45,
+        "revised": 0.45,
+        "lastMonth": 0.641,
+        "recentAverage": 0.7703333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "55",
+      "unitNumber": "311",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 2.925,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.709,
+        "revised": 5.709,
+        "lastMonth": 4.417,
+        "recentAverage": 4.052
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "56",
+      "unitNumber": "312",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.689,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 11.071,
+        "revised": 11.071,
+        "lastMonth": 7.48,
+        "recentAverage": 9.280666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "57",
+      "unitNumber": "313",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1.874,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.197,
+        "revised": 0.197,
+        "lastMonth": 0.572,
+        "recentAverage": 0.19066666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "58",
+      "unitNumber": "314",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 4.95,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 4.978,
+        "revised": 4.978,
+        "lastMonth": 5.682,
+        "recentAverage": 4.477666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "59",
+      "unitNumber": "315",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 5.38,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.316,
+        "revised": 3.316,
+        "lastMonth": 2.946,
+        "recentAverage": 3.609
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "60",
+      "unitNumber": "316",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 5.439,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.808,
+        "revised": 3.808,
+        "lastMonth": 4.562,
+        "recentAverage": 4.673000000000001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "61",
+      "unitNumber": "317",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 10.3,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 12.35,
+        "revised": 12.35,
+        "lastMonth": 10.891,
+        "recentAverage": 10.932
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "62",
+      "unitNumber": "318",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 7.807,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 9.327,
+        "revised": 9.327,
+        "lastMonth": 7.501,
+        "recentAverage": 7.2763333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "63",
+      "unitNumber": "319",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.07,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 1.939,
+        "revised": 1.939,
+        "lastMonth": 2.051,
+        "recentAverage": 1.7936666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "64",
+      "unitNumber": "320",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 7.005,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 7.849,
+        "revised": 7.849,
+        "lastMonth": 6.055,
+        "recentAverage": 5.349333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "65",
+      "unitNumber": "321",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 2.263,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.222,
+        "revised": 5.222,
+        "lastMonth": 2.071,
+        "recentAverage": 3.5086666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "66",
+      "unitNumber": "322",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 4.885,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 6.715,
+        "revised": 6.715,
+        "lastMonth": 10.439,
+        "recentAverage": 7.729666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "67",
+      "unitNumber": "323",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.456,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.617,
+        "revised": 3.617,
+        "lastMonth": 2.251,
+        "recentAverage": 3.8016666666666663
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "68",
+      "unitNumber": "324",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 10.374,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 8.916,
+        "revised": 8.916,
+        "lastMonth": 7.044,
+        "recentAverage": 8.868
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "69",
+      "unitNumber": "325",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 9.447,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 7.588,
+        "revised": 7.588,
+        "lastMonth": 7.823,
+        "recentAverage": 6.88
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "70",
+      "unitNumber": "326",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.371,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.768,
+        "revised": 5.768,
+        "lastMonth": 5.708,
+        "recentAverage": 5.628666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "71",
+      "unitNumber": "327",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 9.442,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.784,
+        "revised": 5.784,
+        "lastMonth": 6.228,
+        "recentAverage": 6.022000000000001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "72",
+      "unitNumber": "328",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.061,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.235,
+        "revised": 0.235,
+        "lastMonth": 0.648,
+        "recentAverage": 0.216
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "73",
+      "unitNumber": "329",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.015,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.748,
+        "revised": 2.748,
+        "lastMonth": 5.576,
+        "recentAverage": 3.1940000000000004
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "74",
+      "unitNumber": "330",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 2.85,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.911,
+        "revised": 3.911,
+        "lastMonth": 2.736,
+        "recentAverage": 3.6310000000000002
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "75",
+      "unitNumber": "331",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 7.226,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 12.567,
+        "revised": 12.567,
+        "lastMonth": 8.759,
+        "recentAverage": 10.166
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "76",
+      "unitNumber": "332",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 11.184,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 9.765,
+        "revised": 9.765,
+        "lastMonth": 10.628,
+        "recentAverage": 9.638333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "77",
+      "unitNumber": "333",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.125,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 1.766,
+        "revised": 1.766,
+        "lastMonth": 1.994,
+        "recentAverage": 1.643
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "78",
+      "unitNumber": "334",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "79",
+      "unitNumber": "335",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 4.801,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.705,
+        "revised": 3.705,
+        "lastMonth": 1.682,
+        "recentAverage": 3.8183333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "80",
+      "unitNumber": "336",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 15.135,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 16.936,
+        "revised": 16.936,
+        "lastMonth": 10.224,
+        "recentAverage": 17.968
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "81",
+      "unitNumber": "337",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 13.409,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 7.218,
+        "revised": 7.218,
+        "lastMonth": 5.727,
+        "recentAverage": 7.328333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "82",
+      "unitNumber": "338",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.046,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.608,
+        "revised": 0.608,
+        "lastMonth": 0.453,
+        "recentAverage": 0.4073333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "83",
+      "unitNumber": "339",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1.928,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.644,
+        "revised": 2.644,
+        "lastMonth": 2.554,
+        "recentAverage": 2.2663333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "84",
+      "unitNumber": "340",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 5.312,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 4.465,
+        "revised": 4.465,
+        "lastMonth": 5.9,
+        "recentAverage": 4.866333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "85",
+      "unitNumber": "341",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 5.569,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 8.873,
+        "revised": 8.873,
+        "lastMonth": 7.75,
+        "recentAverage": 7.127333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "86",
+      "unitNumber": "342",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.129,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.068,
+        "revised": 3.068,
+        "lastMonth": 3.463,
+        "recentAverage": 3.6123333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "87",
+      "unitNumber": "343",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 8.329,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 6.948,
+        "revised": 6.948,
+        "lastMonth": 7.334,
+        "recentAverage": 6.524666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "88",
+      "unitNumber": "401",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 11.205,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 12.244,
+        "revised": 12.244,
+        "lastMonth": 12.708,
+        "recentAverage": 12.610666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "89",
+      "unitNumber": "402",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 10.106,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 12.001,
+        "revised": 12.001,
+        "lastMonth": 11.637,
+        "recentAverage": 10.639000000000001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "90",
+      "unitNumber": "403",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 5.091,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.032,
+        "revised": 5.032,
+        "lastMonth": 4.046,
+        "recentAverage": 4.397333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "91",
+      "unitNumber": "404",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.763,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.357,
+        "revised": 0.357,
+        "lastMonth": 0.29,
+        "recentAverage": 0.2846666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "93",
+      "unitNumber": "406",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 15.632,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 10.283,
+        "revised": 10.283,
+        "lastMonth": 10.798,
+        "recentAverage": 8.118333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "95",
+      "unitNumber": "408",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 5.329,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 10.71,
+        "revised": 10.71,
+        "lastMonth": 7.667,
+        "recentAverage": 7.328
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "96",
+      "unitNumber": "409",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 2.032,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 1.921,
+        "revised": 1.921,
+        "lastMonth": 1.96,
+        "recentAverage": 2.0450000000000004
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "97",
+      "unitNumber": "410",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 2.121,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.564,
+        "revised": 2.564,
+        "lastMonth": 2.459,
+        "recentAverage": 2.2716666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "98",
+      "unitNumber": "411",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 8.336,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.587,
+        "revised": 5.587,
+        "lastMonth": 6.263,
+        "recentAverage": 5.685666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "99",
+      "unitNumber": "412",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 6.392,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 7.108,
+        "revised": 7.108,
+        "lastMonth": 8.779,
+        "recentAverage": 3.844
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "102",
+      "unitNumber": "415",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 7.526,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 12.101,
+        "revised": 12.101,
+        "lastMonth": 10.934,
+        "recentAverage": 10.794333333333332
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "103",
+      "unitNumber": "416",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.621,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.99,
+        "revised": 0.99,
+        "lastMonth": 0.929,
+        "recentAverage": 0.7373333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "104",
+      "unitNumber": "417",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 12.69,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 13.021,
+        "revised": 13.021,
+        "lastMonth": 14.268,
+        "recentAverage": 12.813333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "105",
+      "unitNumber": "418",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 5.281,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.873,
+        "revised": 0.873,
+        "lastMonth": 1.085,
+        "recentAverage": 3.8793333333333337
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "106",
+      "unitNumber": "419",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "107",
+      "unitNumber": "420",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 6.607,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 7.417,
+        "revised": 7.417,
+        "lastMonth": 10.595,
+        "recentAverage": 3.7726666666666673
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "108",
+      "unitNumber": "421",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 6.531,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 6.014,
+        "revised": 6.014,
+        "lastMonth": 5.874,
+        "recentAverage": 6.053999999999999
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "109",
+      "unitNumber": "422",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.086,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.397,
+        "revised": 0.397,
+        "lastMonth": 0.252,
+        "recentAverage": 0.322
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "110",
+      "unitNumber": "423",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 6.949,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 7.246,
+        "revised": 7.246,
+        "lastMonth": 6.507,
+        "recentAverage": 7.0136666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "111",
+      "unitNumber": "424",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 4.861,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 7.07,
+        "revised": 7.07,
+        "lastMonth": 7.834,
+        "recentAverage": 5.274333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "112",
+      "unitNumber": "425",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 13.382,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 15.886,
+        "revised": 15.886,
+        "lastMonth": 16.577,
+        "recentAverage": 14.425333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "113",
+      "unitNumber": "426",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 12.35,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 21.93,
+        "revised": 21.93,
+        "lastMonth": 14.019,
+        "recentAverage": 19.34933333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "114",
+      "unitNumber": "427",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 6.962,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.169,
+        "revised": 2.169,
+        "lastMonth": 5.444,
+        "recentAverage": 5.952999999999999
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "115",
+      "unitNumber": "428",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.048,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.165,
+        "revised": 0.165,
+        "lastMonth": 0.034,
+        "recentAverage": 0.07533333333333332
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "116",
+      "unitNumber": "429",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.071,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.512,
+        "revised": 3.512,
+        "lastMonth": 1.834,
+        "recentAverage": 4.1433333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "117",
+      "unitNumber": "430",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.535,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 6.755,
+        "revised": 6.755,
+        "lastMonth": 4.027,
+        "recentAverage": 7.900666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "118",
+      "unitNumber": "431",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 4.198,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 1.435,
+        "revised": 1.435,
+        "lastMonth": 1.58,
+        "recentAverage": 1.6663333333333332
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "119",
+      "unitNumber": "432",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 16.618,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 15.755,
+        "revised": 15.755,
+        "lastMonth": 18.323,
+        "recentAverage": 11.345999999999998
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "120",
+      "unitNumber": "433",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.466,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 8.926,
+        "revised": 8.926,
+        "lastMonth": 9.869,
+        "recentAverage": 6.041999999999999
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "121",
+      "unitNumber": "434",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 7.618,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 9.799,
+        "revised": 9.799,
+        "lastMonth": 8.489,
+        "recentAverage": 8.694666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "122",
+      "unitNumber": "435",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.432,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 4.037,
+        "revised": 4.037,
+        "lastMonth": 4.148,
+        "recentAverage": 4.345666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "123",
+      "unitNumber": "436",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 5.054,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 4.496,
+        "revised": 4.496,
+        "lastMonth": 5.814,
+        "recentAverage": 5.303999999999999
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "124",
+      "unitNumber": "437",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 6.75,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.922,
+        "revised": 0.922,
+        "lastMonth": 2.105,
+        "recentAverage": 4.711333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "125",
+      "unitNumber": "438",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1.103,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 10.435,
+        "revised": 10.435,
+        "lastMonth": 15.652,
+        "recentAverage": 5.217333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "126",
+      "unitNumber": "439",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 5.613,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 8.444,
+        "revised": 8.444,
+        "lastMonth": 11.556,
+        "recentAverage": 7.7989999999999995
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "127",
+      "unitNumber": "440",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1.862,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.57,
+        "revised": 5.57,
+        "lastMonth": 4.161,
+        "recentAverage": 4.662333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "128",
+      "unitNumber": "441",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.268,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.125,
+        "revised": 0.125,
+        "lastMonth": 0.187,
+        "recentAverage": 0.06233333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "129",
+      "unitNumber": "442",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 9.288,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.895,
+        "revised": 5.895,
+        "lastMonth": 4.994,
+        "recentAverage": 8.210333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "130",
+      "unitNumber": "443",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 2.079,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.825,
+        "revised": 3.825,
+        "lastMonth": 3.3,
+        "recentAverage": 3.106666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "131",
+      "unitNumber": "501",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1.386,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 4.345,
+        "revised": 4.345,
+        "lastMonth": 2.612,
+        "recentAverage": 4.745666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "132",
+      "unitNumber": "502",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 12.405,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 9.825,
+        "revised": 9.825,
+        "lastMonth": 10.949,
+        "recentAverage": 8.828666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "133",
+      "unitNumber": "503",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.008,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.483,
+        "revised": 0.483,
+        "lastMonth": 0.629,
+        "recentAverage": 0.5573333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "134",
+      "unitNumber": "504",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1.907,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.57,
+        "revised": 3.57,
+        "lastMonth": 2.578,
+        "recentAverage": 2.7146666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "135",
+      "unitNumber": "505",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.315,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.322,
+        "revised": 0.322,
+        "lastMonth": 0.24,
+        "recentAverage": 0.26533333333333337
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "136",
+      "unitNumber": "506",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.115,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.175,
+        "revised": 2.175,
+        "lastMonth": 1.29,
+        "recentAverage": 1.575
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "137",
+      "unitNumber": "507",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1.166,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 7.939,
+        "revised": 7.939,
+        "lastMonth": 9.235,
+        "recentAverage": 5.898333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "138",
+      "unitNumber": "508",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 12.081,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 8.251,
+        "revised": 8.251,
+        "lastMonth": 7.134,
+        "recentAverage": 7.581
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "139",
+      "unitNumber": "509",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.436,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "140",
+      "unitNumber": "510",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 13.9,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.62,
+        "revised": 3.62,
+        "lastMonth": 11.3,
+        "recentAverage": 11.533333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "141",
+      "unitNumber": "511",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1.87,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.848,
+        "revised": 0.848,
+        "lastMonth": 0.685,
+        "recentAverage": 1.4443333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "142",
+      "unitNumber": "512",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 6.906,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 6.303,
+        "revised": 6.303,
+        "lastMonth": 7.26,
+        "recentAverage": 6.995666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "143",
+      "unitNumber": "513",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 10.482,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 10.255,
+        "revised": 10.255,
+        "lastMonth": 7.812,
+        "recentAverage": 8.468666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "144",
+      "unitNumber": "514",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 17.61,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 17.693,
+        "revised": 17.693,
+        "lastMonth": 20.108,
+        "recentAverage": 15.620333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "145",
+      "unitNumber": "515",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.225,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0.017666666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "146",
+      "unitNumber": "516",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 4.231,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 1.428,
+        "revised": 1.428,
+        "lastMonth": 1.325,
+        "recentAverage": 1.7203333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "147",
+      "unitNumber": "517",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 4.071,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 9.496,
+        "revised": 9.496,
+        "lastMonth": 10.125,
+        "recentAverage": 10.950000000000001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "148",
+      "unitNumber": "518",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.725,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 1.307,
+        "revised": 1.307,
+        "lastMonth": 3.01,
+        "recentAverage": 1.0033333333333332
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "149",
+      "unitNumber": "519",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.402,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 6.882,
+        "revised": 6.882,
+        "lastMonth": 3.693,
+        "recentAverage": 6.757333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "150",
+      "unitNumber": "520",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 6.126,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 4.898,
+        "revised": 4.898,
+        "lastMonth": 5.28,
+        "recentAverage": 4.660666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "152",
+      "unitNumber": "522",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 9.212,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.893,
+        "revised": 2.893,
+        "lastMonth": 1.85,
+        "recentAverage": 3.557333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "153",
+      "unitNumber": "523",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 15.018,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 19.015,
+        "revised": 19.015,
+        "lastMonth": 18.794,
+        "recentAverage": 17.52133333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "154",
+      "unitNumber": "524",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 13.272,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 15.57,
+        "revised": 15.57,
+        "lastMonth": 15.247,
+        "recentAverage": 12.290333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "155",
+      "unitNumber": "525",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.828,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 4.138,
+        "revised": 4.138,
+        "lastMonth": 5.991,
+        "recentAverage": 4.476333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "156",
+      "unitNumber": "526",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 16.928,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 13.479,
+        "revised": 13.479,
+        "lastMonth": 17.189,
+        "recentAverage": 16.118333333333336
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "157",
+      "unitNumber": "527",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 6.907,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.32,
+        "revised": 5.32,
+        "lastMonth": 5.446,
+        "recentAverage": 5.800333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "158",
+      "unitNumber": "528",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 5.618,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 5.035,
+        "revised": 5.035,
+        "lastMonth": 4.443,
+        "recentAverage": 5.261333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "159",
+      "unitNumber": "529",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "160",
+      "unitNumber": "530",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.51,
+        "revised": 0.51,
+        "lastMonth": 0,
+        "recentAverage": 0.993
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "161",
+      "unitNumber": "531",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.883,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 6.129,
+        "revised": 6.129,
+        "lastMonth": 4.384,
+        "recentAverage": 4.8726666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "162",
+      "unitNumber": "532",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "163",
+      "unitNumber": "533",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.729,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.479,
+        "revised": 0.479,
+        "lastMonth": 0.84,
+        "recentAverage": 1.1206666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "164",
+      "unitNumber": "534",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 3.871,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 4.504,
+        "revised": 4.504,
+        "lastMonth": 3.665,
+        "recentAverage": 4.303333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "165",
+      "unitNumber": "535",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.743,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.199,
+        "revised": 2.199,
+        "lastMonth": 1.81,
+        "recentAverage": 2.4326666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "166",
+      "unitNumber": "536",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 8.332,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 3.852,
+        "revised": 3.852,
+        "lastMonth": 3.321,
+        "recentAverage": 5.792666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "167",
+      "unitNumber": "537",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1.921,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.597,
+        "revised": 2.597,
+        "lastMonth": 2.611,
+        "recentAverage": 2.471666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "168",
+      "unitNumber": "538",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 1,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "169",
+      "unitNumber": "539",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.221,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.241,
+        "revised": 0.241,
+        "lastMonth": 0.481,
+        "recentAverage": 0.7829999999999999
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "170",
+      "unitNumber": "540",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.164,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0.001,
+        "recentAverage": 0.001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "171",
+      "unitNumber": "541",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 8.954,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 7.368,
+        "revised": 7.368,
+        "lastMonth": 6.411,
+        "recentAverage": 6.724
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "172",
+      "unitNumber": "542",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 2.225,
+        "revised": 2.225,
+        "lastMonth": 0.001,
+        "recentAverage": 3.216333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "173",
+      "unitNumber": "543",
+      "forecastForMonth": "2026-07-01",
+      "actualConsumption": 0.114,
+      "sourceMonth": "2026-06-01",
+      "predictions": {
+        "current": 0.012,
+        "revised": 0.012,
+        "lastMonth": 0.019,
+        "recentAverage": 0.06333333333333332
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "32",
+      "unitNumber": "231",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 12.201,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 33.47,
+        "revised": 33.47,
+        "lastMonth": 27.09,
+        "recentAverage": 21.733999999999998
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "33",
+      "unitNumber": "232",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.629,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 3.286,
+        "revised": 3.991,
+        "lastMonth": 4.579,
+        "recentAverage": 4.045
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "34",
+      "unitNumber": "233",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.94,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.547,
+        "revised": 0.532,
+        "lastMonth": 0.532,
+        "recentAverage": 2.198
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "35",
+      "unitNumber": "234",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.77,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.154,
+        "revised": 0.619,
+        "lastMonth": 0.619,
+        "recentAverage": 0.6609999999999999
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "36",
+      "unitNumber": "235",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 23.437,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 57.925,
+        "revised": 54.619,
+        "lastMonth": 50.86,
+        "recentAverage": 35.50233333333333
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_WEIGHTED_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "37",
+      "unitNumber": "236",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.499,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 4.517,
+        "revised": 3.278,
+        "lastMonth": 2.306,
+        "recentAverage": 4.351333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "38",
+      "unitNumber": "237",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.653,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.754,
+        "revised": 1.176,
+        "lastMonth": 1.668,
+        "recentAverage": 1.1756666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "39",
+      "unitNumber": "238",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 13.387,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 15.911,
+        "revised": 15.911,
+        "lastMonth": 15.478,
+        "recentAverage": 14.918666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "40",
+      "unitNumber": "239",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.37,
+        "revised": 0.035,
+        "lastMonth": 0.035,
+        "recentAverage": 0.4323333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "41",
+      "unitNumber": "240",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 9.68,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 9.931,
+        "revised": 9.066,
+        "lastMonth": 8.877,
+        "recentAverage": 10.217666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "42",
+      "unitNumber": "241",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 10.423,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.242,
+        "revised": 7.536,
+        "lastMonth": 7.536,
+        "recentAverage": 8.149000000000001
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "43",
+      "unitNumber": "242",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 6.67,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.676,
+        "revised": 2.656,
+        "lastMonth": 2.328,
+        "recentAverage": 2.565
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "44",
+      "unitNumber": "243",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.549,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.654,
+        "revised": 3.539,
+        "lastMonth": 3.539,
+        "recentAverage": 3.509
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "45",
+      "unitNumber": "301",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 8.974,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 2.084,
+        "lastMonth": 0.292,
+        "recentAverage": 1.5366666666666664
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "46",
+      "unitNumber": "302",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "47",
+      "unitNumber": "303",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 7.881,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.561,
+        "revised": 7.986,
+        "lastMonth": 8.708,
+        "recentAverage": 7.986333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "48",
+      "unitNumber": "304",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.427,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.873,
+        "revised": 7.873,
+        "lastMonth": 7.636,
+        "recentAverage": 6.9013333333333335
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "49",
+      "unitNumber": "305",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.086,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 1.046,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 1.2806666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "50",
+      "unitNumber": "306",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 15.675,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 12.627,
+        "revised": 11.955,
+        "lastMonth": 11.955,
+        "recentAverage": 12.575000000000001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "51",
+      "unitNumber": "307",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 15.087,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 16.863,
+        "revised": 16.465,
+        "lastMonth": 16.465,
+        "recentAverage": 14.302333333333332
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "52",
+      "unitNumber": "308",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.896,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.701,
+        "revised": 4.636,
+        "lastMonth": 3.901,
+        "recentAverage": 4.061333333333333
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "53",
+      "unitNumber": "309",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 6.48,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.189,
+        "revised": 5.653,
+        "lastMonth": 4.866,
+        "recentAverage": 4.017666666666666
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_WEIGHTED_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "54",
+      "unitNumber": "310",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.264,
+        "revised": 0.264,
+        "lastMonth": 0.511,
+        "recentAverage": 0.6616666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "55",
+      "unitNumber": "311",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 3.208,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 3.165,
+        "revised": 3.884,
+        "lastMonth": 2.925,
+        "recentAverage": 3.8843333333333327
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "56",
+      "unitNumber": "312",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.714,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 5.762,
+        "revised": 7.48,
+        "lastMonth": 3.689,
+        "recentAverage": 7.399000000000001
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "57",
+      "unitNumber": "313",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 3.549,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 1.683,
+        "revised": 1.874,
+        "lastMonth": 1.874,
+        "recentAverage": 0.8153333333333334
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "58",
+      "unitNumber": "314",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 3.956,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 5.125,
+        "revised": 4.547,
+        "lastMonth": 4.95,
+        "recentAverage": 4.616666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "59",
+      "unitNumber": "315",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.287,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 4.355,
+        "revised": 3.965,
+        "lastMonth": 5.38,
+        "recentAverage": 4.173666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "60",
+      "unitNumber": "316",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.599,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.092,
+        "revised": 5.439,
+        "lastMonth": 5.439,
+        "recentAverage": 4.797666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "61",
+      "unitNumber": "317",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 10.884,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 11.409,
+        "revised": 11.482,
+        "lastMonth": 10.3,
+        "recentAverage": 11.482
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "62",
+      "unitNumber": "318",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 6.236,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 9.384,
+        "revised": 8.534,
+        "lastMonth": 7.807,
+        "recentAverage": 8.533666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "63",
+      "unitNumber": "319",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.593,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 3.102,
+        "revised": 3.102,
+        "lastMonth": 3.07,
+        "recentAverage": 2.2343333333333333
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "64",
+      "unitNumber": "320",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.402,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.228,
+        "revised": 8.162,
+        "lastMonth": 7.005,
+        "recentAverage": 6.149
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_WEIGHTED_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "65",
+      "unitNumber": "321",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.9,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 4.522,
+        "revised": 4.09,
+        "lastMonth": 2.263,
+        "recentAverage": 4.089666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "66",
+      "unitNumber": "322",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 9.87,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 8.145,
+        "revised": 6.221,
+        "lastMonth": 4.885,
+        "recentAverage": 7.1816666666666675
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "67",
+      "unitNumber": "323",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.496,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 1.993,
+        "revised": 0.456,
+        "lastMonth": 0.456,
+        "recentAverage": 1.696666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "68",
+      "unitNumber": "324",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 8.353,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 9.772,
+        "revised": 9.398,
+        "lastMonth": 10.374,
+        "recentAverage": 8.357333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "69",
+      "unitNumber": "325",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 8.485,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 8.99,
+        "revised": 8.99,
+        "lastMonth": 9.447,
+        "recentAverage": 7.4816666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "70",
+      "unitNumber": "326",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.625,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 3.717,
+        "revised": 3.717,
+        "lastMonth": 3.371,
+        "recentAverage": 4.703
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "71",
+      "unitNumber": "327",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.596,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.404,
+        "revised": 6.47,
+        "lastMonth": 9.442,
+        "recentAverage": 7.012666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "72",
+      "unitNumber": "328",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.412,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0.236,
+        "lastMonth": 0.061,
+        "recentAverage": 0.23633333333333337
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "73",
+      "unitNumber": "329",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.538,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.731,
+        "revised": 3.533,
+        "lastMonth": 3.015,
+        "recentAverage": 3.532666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "74",
+      "unitNumber": "330",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.816,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.108,
+        "revised": 2.85,
+        "lastMonth": 2.85,
+        "recentAverage": 3.19
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "75",
+      "unitNumber": "331",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 6.305,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 10.017,
+        "revised": 7.226,
+        "lastMonth": 7.226,
+        "recentAverage": 10.397333333333334
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "76",
+      "unitNumber": "332",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 10.38,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 10.582,
+        "revised": 11.184,
+        "lastMonth": 11.184,
+        "recentAverage": 10.199666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "77",
+      "unitNumber": "333",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.181,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0.125,
+        "recentAverage": 0.7086666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "78",
+      "unitNumber": "334",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "79",
+      "unitNumber": "335",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.726,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 4.55,
+        "revised": 3.68,
+        "lastMonth": 4.801,
+        "recentAverage": 3.68
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "80",
+      "unitNumber": "336",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 39.967,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 11.457,
+        "revised": 19.498,
+        "lastMonth": 15.135,
+        "recentAverage": 15.569
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "81",
+      "unitNumber": "337",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 7.534,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 10.723,
+        "revised": 7.498,
+        "lastMonth": 13.409,
+        "recentAverage": 9.298666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "82",
+      "unitNumber": "338",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.58,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.406,
+        "revised": 0.41,
+        "lastMonth": 0.046,
+        "recentAverage": 0.41
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "83",
+      "unitNumber": "339",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.509,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.434,
+        "revised": 1.965,
+        "lastMonth": 1.928,
+        "recentAverage": 2.149
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "84",
+      "unitNumber": "340",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.199,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.123,
+        "revised": 5.131,
+        "lastMonth": 5.312,
+        "recentAverage": 5.1306666666666665
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "85",
+      "unitNumber": "341",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.116,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.245,
+        "revised": 6.17,
+        "lastMonth": 5.569,
+        "recentAverage": 6.927
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "86",
+      "unitNumber": "342",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.069,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.95,
+        "revised": 3.181,
+        "lastMonth": 3.129,
+        "recentAverage": 3.595
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "87",
+      "unitNumber": "343",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 7.199,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.941,
+        "revised": 8.329,
+        "lastMonth": 8.329,
+        "recentAverage": 7.222333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "88",
+      "unitNumber": "401",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 15.282,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 11.705,
+        "revised": 11.705,
+        "lastMonth": 11.205,
+        "recentAverage": 12.251666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "89",
+      "unitNumber": "402",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 8.571,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 11.675,
+        "revised": 10.106,
+        "lastMonth": 10.106,
+        "recentAverage": 11.406333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "90",
+      "unitNumber": "403",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.358,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 5.302,
+        "revised": 4.68,
+        "lastMonth": 5.091,
+        "recentAverage": 4.605666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "91",
+      "unitNumber": "404",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.92,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.638,
+        "revised": 0.638,
+        "lastMonth": 0.763,
+        "recentAverage": 0.43199999999999994
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "93",
+      "unitNumber": "406",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 8.976,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 14.151,
+        "revised": 14.151,
+        "lastMonth": 15.632,
+        "recentAverage": 10.772
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "94",
+      "unitNumber": "407",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.061,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.066,
+        "revised": 0.066,
+        "lastMonth": 0.003,
+        "recentAverage": 0.10566666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "95",
+      "unitNumber": "408",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.088,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.362,
+        "revised": 6.642,
+        "lastMonth": 5.329,
+        "recentAverage": 6.642333333333333
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "96",
+      "unitNumber": "409",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.967,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.198,
+        "revised": 2.056,
+        "lastMonth": 2.032,
+        "recentAverage": 2.056
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "97",
+      "unitNumber": "410",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.694,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.404,
+        "revised": 2.404,
+        "lastMonth": 2.121,
+        "recentAverage": 2.2896666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "98",
+      "unitNumber": "411",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.773,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.818,
+        "revised": 6,
+        "lastMonth": 8.336,
+        "recentAverage": 6.5296666666666665
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "99",
+      "unitNumber": "412",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 6.182,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 8.179,
+        "revised": 8.179,
+        "lastMonth": 6.392,
+        "recentAverage": 5.938666666666666
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "101",
+      "unitNumber": "414",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 11.867,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 24.763,
+        "revised": 24.763,
+        "lastMonth": 17.591,
+        "recentAverage": 13.372333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "102",
+      "unitNumber": "415",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 10.407,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 8.406,
+        "revised": 8.406,
+        "lastMonth": 7.526,
+        "recentAverage": 9.451666666666666
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "103",
+      "unitNumber": "416",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.902,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 1.016,
+        "revised": 0.621,
+        "lastMonth": 0.621,
+        "recentAverage": 0.8196666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "104",
+      "unitNumber": "417",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.678,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 12.783,
+        "revised": 12.89,
+        "lastMonth": 12.69,
+        "recentAverage": 12.700666666666665
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "105",
+      "unitNumber": "418",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 3.555,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 1.736,
+        "revised": 5.281,
+        "lastMonth": 5.281,
+        "recentAverage": 2.767
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "106",
+      "unitNumber": "419",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "107",
+      "unitNumber": "420",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.915,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 8.518,
+        "revised": 8.518,
+        "lastMonth": 6.607,
+        "recentAverage": 5.969666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "108",
+      "unitNumber": "421",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.243,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.32,
+        "revised": 6.05,
+        "lastMonth": 6.531,
+        "recentAverage": 6.05
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "109",
+      "unitNumber": "422",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.257,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.074,
+        "revised": 0.086,
+        "lastMonth": 0.086,
+        "recentAverage": 0.2203333333333333
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "110",
+      "unitNumber": "423",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 6.954,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.271,
+        "revised": 7.124,
+        "lastMonth": 6.949,
+        "recentAverage": 7.124
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "111",
+      "unitNumber": "424",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 8.539,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.52,
+        "revised": 5.374,
+        "lastMonth": 4.861,
+        "recentAverage": 5.374333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "112",
+      "unitNumber": "425",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 10.371,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 15.31,
+        "revised": 13.382,
+        "lastMonth": 13.382,
+        "recentAverage": 14.653
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "113",
+      "unitNumber": "426",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 11.883,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 13.599,
+        "revised": 14.019,
+        "lastMonth": 12.35,
+        "recentAverage": 14.870333333333335
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "114",
+      "unitNumber": "427",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.86,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.669,
+        "revised": 6.962,
+        "lastMonth": 6.962,
+        "recentAverage": 5.885000000000001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "115",
+      "unitNumber": "428",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.002,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0.048,
+        "lastMonth": 0.048,
+        "recentAverage": 0.03333333333333333
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "116",
+      "unitNumber": "429",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.994,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0.071,
+        "recentAverage": 2.408
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "117",
+      "unitNumber": "430",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 9.594,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 1.952,
+        "revised": 3.535,
+        "lastMonth": 3.535,
+        "recentAverage": 5.8486666666666665
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "118",
+      "unitNumber": "431",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.843,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.796,
+        "revised": 1.791,
+        "lastMonth": 4.198,
+        "recentAverage": 2.468666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "119",
+      "unitNumber": "432",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 15.184,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 18.448,
+        "revised": 19.645,
+        "lastMonth": 16.618,
+        "recentAverage": 14.444666666666668
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_WEIGHTED_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "120",
+      "unitNumber": "433",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.407,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 5.419,
+        "revised": 2.879,
+        "lastMonth": 0.466,
+        "recentAverage": 5.444
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "121",
+      "unitNumber": "434",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 8.487,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.985,
+        "revised": 8.489,
+        "lastMonth": 7.618,
+        "recentAverage": 8.376
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "122",
+      "unitNumber": "435",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 3.687,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 3.644,
+        "revised": 3.644,
+        "lastMonth": 3.432,
+        "recentAverage": 4.171
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "123",
+      "unitNumber": "436",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.652,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 4.047,
+        "revised": 5.197,
+        "lastMonth": 5.054,
+        "recentAverage": 5.197333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "124",
+      "unitNumber": "437",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 8.609,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.321,
+        "revised": 6.75,
+        "lastMonth": 6.75,
+        "recentAverage": 5.231333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "125",
+      "unitNumber": "438",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.095,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.338,
+        "revised": 0,
+        "lastMonth": 1.103,
+        "recentAverage": 5.585
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "126",
+      "unitNumber": "439",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 11.122,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 8.406,
+        "revised": 6.289,
+        "lastMonth": 5.613,
+        "recentAverage": 7.819333333333333
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "127",
+      "unitNumber": "440",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 8.773,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 3.046,
+        "revised": 3.83,
+        "lastMonth": 1.862,
+        "recentAverage": 4.219666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "128",
+      "unitNumber": "441",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.253,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.308,
+        "revised": 0.268,
+        "lastMonth": 0.268,
+        "recentAverage": 0.15166666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "129",
+      "unitNumber": "442",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 9.085,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.651,
+        "revised": 7.656,
+        "lastMonth": 9.288,
+        "recentAverage": 7.656
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "130",
+      "unitNumber": "443",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.688,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.122,
+        "revised": 2.849,
+        "lastMonth": 2.079,
+        "recentAverage": 2.849
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "131",
+      "unitNumber": "501",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.615,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.704,
+        "revised": 1.386,
+        "lastMonth": 1.386,
+        "recentAverage": 3.349
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "132",
+      "unitNumber": "502",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.3,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 13.466,
+        "revised": 13.466,
+        "lastMonth": 12.405,
+        "recentAverage": 10.090666666666666
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "133",
+      "unitNumber": "503",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.013,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.122,
+        "revised": 0.122,
+        "lastMonth": 0.008,
+        "recentAverage": 0.45966666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "134",
+      "unitNumber": "504",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.268,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.266,
+        "revised": 2.142,
+        "lastMonth": 1.907,
+        "recentAverage": 2.1416666666666666
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "135",
+      "unitNumber": "505",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.096,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.358,
+        "revised": 0.358,
+        "lastMonth": 0.315,
+        "recentAverage": 0.37033333333333335
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "136",
+      "unitNumber": "506",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.433,
+        "revised": 1.382,
+        "lastMonth": 0.115,
+        "recentAverage": 1.1266666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "137",
+      "unitNumber": "507",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 7.304,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 4.934,
+        "revised": 4.433,
+        "lastMonth": 1.166,
+        "recentAverage": 4.809333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "138",
+      "unitNumber": "508",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 13.466,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 10.968,
+        "revised": 8.227,
+        "lastMonth": 12.081,
+        "recentAverage": 8.227
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "139",
+      "unitNumber": "509",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 6.305,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.249,
+        "revised": 0.436,
+        "lastMonth": 0.436,
+        "recentAverage": 0.14533333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "140",
+      "unitNumber": "510",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 15.1,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 11.81,
+        "revised": 13.4,
+        "lastMonth": 13.9,
+        "recentAverage": 11.700000000000001
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "141",
+      "unitNumber": "511",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 1.46,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 1.159,
+        "revised": 1.87,
+        "lastMonth": 1.87,
+        "recentAverage": 1.3523333333333334
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "142",
+      "unitNumber": "512",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.834,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 7.643,
+        "revised": 7.379,
+        "lastMonth": 6.906,
+        "recentAverage": 7.3790000000000004
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "143",
+      "unitNumber": "513",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 10.026,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 11.29,
+        "revised": 8.753,
+        "lastMonth": 10.482,
+        "recentAverage": 8.753
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "144",
+      "unitNumber": "514",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 13.355,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 18.675,
+        "revised": 18.675,
+        "lastMonth": 17.61,
+        "recentAverage": 16.890666666666664
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "145",
+      "unitNumber": "515",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.412,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.092,
+        "revised": 0.048,
+        "lastMonth": 0.225,
+        "recentAverage": 0.09100000000000001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "146",
+      "unitNumber": "516",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.432,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.678,
+        "revised": 2.269,
+        "lastMonth": 4.231,
+        "recentAverage": 2.374333333333333
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "147",
+      "unitNumber": "517",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.473,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.851,
+        "revised": 2.851,
+        "lastMonth": 4.071,
+        "recentAverage": 7.459666666666666
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "148",
+      "unitNumber": "518",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.893,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 4.485,
+        "revised": 3.725,
+        "lastMonth": 3.725,
+        "recentAverage": 2.2449999999999997
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "149",
+      "unitNumber": "519",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 3.112,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.034,
+        "revised": 3.402,
+        "lastMonth": 3.402,
+        "recentAverage": 4.654333333333334
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "150",
+      "unitNumber": "520",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.53,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.055,
+        "revised": 6.055,
+        "lastMonth": 6.126,
+        "recentAverage": 5.102
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "152",
+      "unitNumber": "522",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 4.744,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.415,
+        "revised": 2.894,
+        "lastMonth": 9.212,
+        "recentAverage": 4.652
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "153",
+      "unitNumber": "523",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 16.32,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 13.307,
+        "revised": 16.126,
+        "lastMonth": 15.018,
+        "recentAverage": 16.126333333333335
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "154",
+      "unitNumber": "524",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.231,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 15.779,
+        "revised": 15.779,
+        "lastMonth": 13.272,
+        "recentAverage": 13.540666666666667
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "155",
+      "unitNumber": "525",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.993,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 3.626,
+        "revised": 4.453,
+        "lastMonth": 3.828,
+        "recentAverage": 4.452999999999999
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "156",
+      "unitNumber": "526",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 15.592,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 16.338,
+        "revised": 16.928,
+        "lastMonth": 16.928,
+        "recentAverage": 16.427333333333333
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "157",
+      "unitNumber": "527",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 6.683,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 6.981,
+        "revised": 6.045,
+        "lastMonth": 6.907,
+        "recentAverage": 6.044999999999999
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "158",
+      "unitNumber": "528",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 5.657,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 3.701,
+        "revised": 3.701,
+        "lastMonth": 5.618,
+        "recentAverage": 3.667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "159",
+      "unitNumber": "529",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "160",
+      "unitNumber": "530",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0.2916666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "161",
+      "unitNumber": "531",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.541,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 4.856,
+        "revised": 4.596,
+        "lastMonth": 3.883,
+        "recentAverage": 4.595666666666666
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "162",
+      "unitNumber": "532",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 0
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "163",
+      "unitNumber": "533",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 16.584,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.208,
+        "revised": 0.208,
+        "lastMonth": 0.729,
+        "recentAverage": 0.9369999999999999
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "164",
+      "unitNumber": "534",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 3.826,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 3.809,
+        "revised": 4.127,
+        "lastMonth": 3.871,
+        "recentAverage": 4.127
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "165",
+      "unitNumber": "535",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.957,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.281,
+        "revised": 0.281,
+        "lastMonth": 0.743,
+        "recentAverage": 1.7546666666666668
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "166",
+      "unitNumber": "536",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 9.02,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 5.546,
+        "revised": 7.697,
+        "lastMonth": 8.332,
+        "recentAverage": 5.774000000000001
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "167",
+      "unitNumber": "537",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 2.977,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 2.14,
+        "revised": 2.14,
+        "lastMonth": 1.921,
+        "recentAverage": 2.232
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "169",
+      "unitNumber": "539",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.227,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0.221,
+        "recentAverage": 0.351
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "LINEAR_REGRESSION"
+      }
+    },
+    {
+      "unitId": "170",
+      "unitNumber": "540",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 7.836,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.131,
+        "revised": 0.055,
+        "lastMonth": 0.164,
+        "recentAverage": 0.055
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_3_MONTH_AVERAGE"
+      }
+    },
+    {
+      "unitId": "171",
+      "unitNumber": "541",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 9.723,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 8.981,
+        "revised": 8.089,
+        "lastMonth": 8.954,
+        "recentAverage": 8.703666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    },
+    {
+      "unitId": "172",
+      "unitNumber": "542",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0.147,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0,
+        "revised": 0,
+        "lastMonth": 0,
+        "recentAverage": 1.4816666666666667
+      },
+      "models": {
+        "current": "RECENT_5_MONTH_LINEAR_REGRESSION",
+        "revised": "LAST_MONTH_CONSUMPTION"
+      }
+    },
+    {
+      "unitId": "173",
+      "unitNumber": "543",
+      "forecastForMonth": "2026-08-01",
+      "actualConsumption": 0,
+      "sourceMonth": "2026-07-01",
+      "predictions": {
+        "current": 0.045,
+        "revised": 0.114,
+        "lastMonth": 0.114,
+        "recentAverage": 0.061
+      },
+      "models": {
+        "current": "LINEAR_REGRESSION",
+        "revised": "RECENT_5_MONTH_MEDIAN"
+      }
+    }
+  ]
+}

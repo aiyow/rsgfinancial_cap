@@ -39,19 +39,19 @@ function billTooltip(value, name) {
 }
 
 function connectForecastLine(rows, actualKey, projectedKey, forecastKey) {
-  const result = rows.map((row) => ({ ...row, [forecastKey]: row[projectedKey] }))
-  const firstProjectedIndex = result.findIndex((row) => row[projectedKey] !== null)
-  if (firstProjectedIndex === -1) return result
+  const latestActualIndex = rows.reduce(
+    (latestIndex, row, index) => (row[actualKey] !== null ? index : latestIndex),
+    -1,
+  )
+  const hasFutureForecast = rows.some((row, index) => index > latestActualIndex && row[projectedKey] !== null)
 
-  let anchorIndex = -1
-  for (let index = firstProjectedIndex; index >= 0; index -= 1) {
-    if (result[index][actualKey] !== null) {
-      anchorIndex = index
-      break
-    }
-  }
-  if (anchorIndex !== -1) result[anchorIndex][forecastKey] = result[anchorIndex][actualKey]
-  return result
+  return rows.map((row, index) => {
+    let forecast = null
+    if (latestActualIndex === -1) forecast = row[projectedKey]
+    else if (index === latestActualIndex && hasFutureForecast) forecast = row[actualKey]
+    else if (index > latestActualIndex) forecast = row[projectedKey]
+    return { ...row, [forecastKey]: forecast }
+  })
 }
 
 const forecastRanges = [
@@ -121,8 +121,12 @@ export default function AnalyticsPage() {
     setError('')
     try {
       await apiRequest('/api/analytics/refresh-forecasts', { method: 'POST', token })
-      const analyticsData = await apiRequest('/api/analytics/overview', { token })
+      const [analyticsData, recommendationData] = await Promise.all([
+        apiRequest('/api/analytics/overview', { token }),
+        apiRequest('/api/prescriptive-recommendations', { token }),
+      ])
       setData(analyticsData)
+      setRecommendations(recommendationData.recommendations || [])
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -175,7 +179,6 @@ export default function AnalyticsPage() {
     })
   }, [recommendationPriority, recommendationSearch, recommendationSort, recommendations])
   const visibleRecommendations = showAllRecommendations ? sortedRecommendations : sortedRecommendations.slice(0, 5)
-  const analyticsAccents = ['blue', 'green', 'red', 'blue', 'green']
 
   return (
     <DashboardLayout title="Predictive & Prescriptive Water Analytics" description="Review forecasts and the recommended actions generated from water use, occupancy, readings, and billing status.">
@@ -200,13 +203,45 @@ export default function AnalyticsPage() {
             )}
           </Panel>
 
+          <section>
+            <button type="button" onClick={() => setShowForecastQuality((current) => !current)} aria-expanded={showForecastQuality} className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-800 shadow-sm transition hover:border-emerald-700 hover:bg-emerald-700 hover:text-white"><ChartNoAxesCombined size={17} />{showForecastQuality ? 'Hide forecast quality metrics' : 'Show forecast quality metrics'}</button>
+            {showForecastQuality && <div className="mt-4 space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                <Metric label="Holdout month" value={month(data?.evaluationMonth)} accent="blue" icon={CalendarDays} />
+                <Metric label="Derived accuracy" value={valueOrDash(metrics.accuracy, '%')} accent="green" icon={Gauge} />
+                <Metric label="WAPE error" value={valueOrDash(metrics.wape, '%')} accent="red" icon={Activity} />
+                <Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} accent="green" icon={Activity} />
+                <Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} accent="blue" icon={ChartNoAxesCombined} />
+                <Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} accent="green" icon={ListChecks} />
+              </div>
+              <Panel title="Monthly forecast comparison" description="Retrospective evaluation: each forecast uses only readings before the evaluated month. Historical forecasts may be recalculated when you refresh.">
+                <p className="mb-4 text-sm leading-6 text-slate-600">Lower MAE, RMSE, and WAPE indicate smaller prediction errors. Derived accuracy = max(0, 100 − WAPE); it is not a probability. WAPE and accuracy are unavailable when total actual consumption is zero.</p>
+                {data?.evaluationHistory?.length ? <div className="overflow-auto rounded-xl border border-slate-200">
+                  <table className="w-full min-w-[800px] text-left text-sm">
+                    <thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="p-3">Month</th><th className="p-3">Evaluated / excluded</th><th className="p-3">Model MAE (m³)</th><th className="p-3">Model RMSE (m³)</th><th className="p-3">Model WAPE</th><th className="p-3">Last-month WAPE</th><th className="p-3">3-month-average WAPE</th></tr></thead>
+                    <tbody className="divide-y divide-slate-200">{data.evaluationHistory.slice(-12).map((row) => <tr key={row.forecastForMonth} className="hover:bg-slate-50">
+                      <td className="p-3 font-bold">{monthLabel(row.forecastForMonth)}</td>
+                      <td className="p-3">{row.metrics.evaluatedCount} / {row.metrics.excludedCount}</td>
+                      <td className="p-3">{valueOrDash(row.metrics.mae)}</td>
+                      <td className="p-3">{valueOrDash(row.metrics.rmse)}</td>
+                      <td className="p-3">{valueOrDash(row.metrics.wape, '%')}</td>
+                      <td className="p-3">{valueOrDash(row.baselines.lastMonth.wape, '%')}</td>
+                      <td className="p-3">{valueOrDash(row.baselines.recentAverage.wape, '%')}</td>
+                    </tr>)}</tbody>
+                  </table>
+                </div> : <EmptyRow message="Import a later actual month to compare forecasts with readings." />}
+                <p className="mt-3 text-xs text-slate-500">Model and baseline scores use the same eligible units in each month. Coverage can change between months.</p>
+              </Panel>
+            </div>}
+          </section>
+
           <div className="grid gap-6 xl:grid-cols-2">
             <ChartCard title="Historical vs Projected Water Consumption" description="Monthly total consumption in cubic meters." filter={<ForecastRangeFilter value={consumptionRange} onChange={setConsumptionRange} />}>
               {consumptionChartData.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={consumptionChartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
+                    <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} interval={0} tickMargin={8} tick={{ fontSize: 11 }} />
                     <YAxis unit=" m3" tick={{ fontSize: 12 }} />
                     <Tooltip formatter={consumptionTooltip} />
                     <Legend />
@@ -222,7 +257,7 @@ export default function AnalyticsPage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={waterBillChartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                    <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
+                    <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} interval={0} tickMargin={8} tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip formatter={billTooltip} />
                     <Legend />
@@ -307,8 +342,6 @@ export default function AnalyticsPage() {
             ) : <EmptyRow message="No forecast has a matching actual month yet. Import five months, then import the holdout month." />}
           </Panel>
 
-          <section><button type="button" onClick={() => setShowForecastQuality((current) => !current)} aria-expanded={showForecastQuality} className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-800 shadow-sm transition hover:border-emerald-700 hover:bg-emerald-700 hover:text-white"><ChartNoAxesCombined size={17} />{showForecastQuality ? 'Hide forecast quality metrics' : 'Show forecast quality metrics'}</button>{showForecastQuality && <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-5"><Metric label="Holdout month" value={month(data?.evaluationMonth)} accent={analyticsAccents[0]} icon={CalendarDays} /><Metric label="WAPE accuracy" value={valueOrDash(metrics.accuracy, '%')} accent={analyticsAccents[1]} icon={Gauge} /><Metric label="MAE" value={valueOrDash(metrics.mae, ' m3')} accent={analyticsAccents[2]} icon={Activity} /><Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} accent={analyticsAccents[3]} icon={ChartNoAxesCombined} /><Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} accent={analyticsAccents[4]} icon={ListChecks} /></div>}</section>
-
           <Panel title="Flagged meter readings" description="These readings remain visible for correction but do not train the model.">
             {data?.flaggedReadings.length ? (
               <div className="space-y-3">
@@ -328,7 +361,7 @@ export default function AnalyticsPage() {
         busy={confirmation.type === 'REFRESH_FORECASTS' ? refreshingForecasts : recommendationBusyId === confirmation.recommendation.id}
         confirmLabel={confirmation.type === 'REFRESH_FORECASTS' ? 'Refresh Forecasts' : 'Delete Recommendation'}
         danger={confirmation.type === 'DELETE_RECOMMENDATION'}
-        message={confirmation.type === 'REFRESH_FORECASTS' ? 'Recalculate all saved forecasts using the current model? This may take a moment.' : `Permanently delete the recommendation for Unit ${confirmation.recommendation.unitNumber}?`}
+        message={confirmation.type === 'REFRESH_FORECASTS' ? 'Recalculate forecasts for all visible historical imports and forwarded or closed billing periods, then update recommendations? Historical scores will be retrospective evaluations.' : `Permanently delete the recommendation for Unit ${confirmation.recommendation.unitNumber}?`}
         onCancel={() => setConfirmation(null)}
         onConfirm={confirmAction}
         title={confirmation.type === 'REFRESH_FORECASTS' ? 'Refresh Forecasts?' : 'Delete Recommendation?'}

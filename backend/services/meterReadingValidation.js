@@ -1,6 +1,7 @@
 const CONTINUITY_TOLERANCE = 0.001
 
 function numeric(value) {
+  if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) return null
   const result = Number(value)
   return Number.isFinite(result) ? result : null
 }

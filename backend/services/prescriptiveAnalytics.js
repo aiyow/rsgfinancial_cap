@@ -1,4 +1,5 @@
-import { selectConsecutiveReadings, WINDOW_SIZE } from './predictiveAnalytics.js';
+import { selectConsecutiveReadings, MIN_WINDOW_SIZE } from './predictiveAnalytics.js';
+import { analyticsPeriodCondition } from './analyticsPeriods.js';
 import { billAppliedSql, billTotalSql } from './paymentLedger.js';
 
 const ACTIVE_STATUSES = ['OPEN', 'VIEWED'];
@@ -28,6 +29,7 @@ export function isResidentVisibleRecommendation(type) {
 }
 
 function number(value) {
+  if (value === null || value === undefined || (typeof value === 'string' && value.trim() === '')) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -77,15 +79,15 @@ export function buildPrescriptiveRecommendations({ forecast, history = [], conte
     : null;
 
   if (forecast.status === 'INSUFFICIENT_DATA') {
-    const validWindow = selectConsecutiveReadings(history, WINDOW_SIZE);
-    const sampleCount = Math.min(Number(forecast.sampleCount ?? validWindow.length) || 0, WINDOW_SIZE);
-    const missingMonths = Math.max(WINDOW_SIZE - sampleCount, 1);
+    const validWindow = selectConsecutiveReadings(history, MIN_WINDOW_SIZE);
+    const sampleCount = Math.min(Number(forecast.sampleCount ?? validWindow.length) || 0, MIN_WINDOW_SIZE);
+    const missingMonths = Math.max(MIN_WINDOW_SIZE - sampleCount, 1);
     recommendations.push(action(
       RECOMMENDATION_TYPES.COLLECT_MORE_HISTORY,
       'LOW',
-      `Only ${sampleCount} of the required ${WINDOW_SIZE} consecutive valid monthly readings are available.`,
+      `Only ${sampleCount} of the required ${MIN_WINDOW_SIZE} consecutive valid monthly readings are available.`,
       `Record ${missingMonths} more consecutive valid monthly meter reading${missingMonths === 1 ? '' : 's'} before relying on a forecast.`,
-      { sampleCount, missingMonths, requiredMonths: WINDOW_SIZE },
+      { sampleCount, missingMonths, requiredMonths: MIN_WINDOW_SIZE },
     ));
   }
 
@@ -245,7 +247,7 @@ export async function regeneratePrescriptiveRecommendations(client, options = {}
   const generatedPeriodId = options.generatedPeriodId ? Number(options.generatedPeriodId) : null;
   const periodResult = await client.query(
     `SELECT p.id, p.period_start AS "periodStart", p.status
-     FROM billing_periods p WHERE p.period_type = 'LIVE_BILLING'
+     FROM billing_periods p WHERE p.period_type = 'LIVE_BILLING' AND ${analyticsPeriodCondition('p')}
        AND EXISTS (SELECT 1 FROM billing_forecasts f WHERE f.based_on_period_id = p.id)
        AND ($1::bigint IS NULL OR p.id = $1)
      ORDER BY p.period_start DESC LIMIT 1`,
@@ -265,7 +267,7 @@ export async function regeneratePrescriptiveRecommendations(client, options = {}
       `SELECT m.unit_id AS "unitId", p.period_start AS "periodStart", m.current_reading - m.previous_reading AS consumption,
         m.validation_status AS "validationStatus", m.validation_notes AS "validationNotes"
        FROM meter_readings m JOIN billing_periods p ON p.id = m.billing_period_id
-       WHERE p.period_start <= $1 ORDER BY m.unit_id, p.period_start`, [period.periodStart],
+       WHERE p.period_start <= $1 AND ${analyticsPeriodCondition('p')} ORDER BY m.unit_id, p.period_start`, [period.periodStart],
     ),
     client.query(
       `SELECT b.unit_id AS "unitId", b.due_date_snapshot AS "dueDate",

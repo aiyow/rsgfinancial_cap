@@ -20,6 +20,7 @@ const defaultTemplate = {
   paymentChannel: '',
   paymentAccountName: '',
   paymentAccountNumber: '',
+  paymentInstruction: '',
   preparedByName: '',
   preparedByTitle: '',
   checkedByName: '',
@@ -187,6 +188,7 @@ export default function CollectorSoaTemplatePage() {
             <Field label="Payment channel"><input required value={form.paymentChannel} onChange={(event) => update('paymentChannel', event.target.value)} className={inputClass} /></Field>
             <Field label="Payment account name"><input required value={form.paymentAccountName} onChange={(event) => update('paymentAccountName', event.target.value)} className={inputClass} /></Field>
             <Field label="Payment account number"><input required value={form.paymentAccountNumber} onChange={(event) => update('paymentAccountNumber', event.target.value)} className={inputClass} /></Field>
+            <div className="md:col-span-2"><Field label="Payment details text (large merged row under due date)"><textarea required rows="2" value={form.paymentInstruction} onChange={(event) => update('paymentInstruction', event.target.value)} className={`${inputClass} resize-y`} /></Field></div>
             <Field label="Logo placement"><select value={form.logoPlacement} onChange={(event) => update('logoPlacement', event.target.value)} className={inputClass}><option value="LEFT">Left</option><option value="CENTER">Center</option><option value="RIGHT">Right</option></select></Field>
             <Field label="Table header color"><input required type="color" value={form.accentColor} onChange={(event) => update('accentColor', event.target.value)} className={`${inputClass} h-10 p-1`} /></Field>
             <Field label="Information band color"><input required type="color" value={form.secondaryColor} onChange={(event) => update('secondaryColor', event.target.value)} className={`${inputClass} h-10 p-1`} /></Field>

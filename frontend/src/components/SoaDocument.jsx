@@ -4,6 +4,33 @@ import { apiFile } from '../services/api'
 
 const dateOnly = (value) => value ? String(value).slice(0, 10) : ''
 
+function longDate(value) {
+  const date = dateOnly(value)
+  if (!date) return '—'
+  const parsed = new Date(`${date}T00:00:00.000Z`)
+  if (Number.isNaN(parsed.getTime())) return date
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'UTC', month: 'long', day: 'numeric', year: 'numeric',
+  }).format(parsed)
+}
+
+function statementUnitNumber({ floor, unitNumber }) {
+  const normalizedUnit = String(unitNumber || '').trim()
+  const normalizedFloor = String(floor || '').trim()
+    .replace(/^smrd[-\s]*/i, '')
+    .replace(/^floor[-\s]*/i, '')
+  return normalizedFloor && normalizedUnit
+    ? `SMRD-${normalizedFloor}-${normalizedUnit}`
+    : normalizedUnit || '—'
+}
+
+function pesoAmount(value) {
+  const amount = Number(value)
+  return (Number.isFinite(amount) ? amount : 0).toLocaleString('en-PH', {
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  })
+}
+
 const defaultTemplate = {
   companyName: 'THE RESIDENS CONDOMINIUM CORPORATION',
   companyAddress: '360 Ramon Magsaysay Blvd., Zone 064 Brgy 632, Sta Mesa, Manila 1016',
@@ -11,6 +38,7 @@ const defaultTemplate = {
   paymentChannel: 'GCASH',
   paymentAccountName: 'MADELYN JAMBALOS',
   paymentAccountNumber: '0908 674 2196',
+  paymentInstruction: 'PAYMENT DETAILS: GCASH • 0908 674 2196 • MADELYN JAMBALOS',
   preparedByName: 'JERRY BOY CRISPE',
   preparedByTitle: 'BILLING ASSOCIATE',
   checkedByName: 'MARIQUT B. RIVERA',
@@ -24,8 +52,34 @@ const defaultTemplate = {
   highlightColor: '#cceabd',
 }
 
-function billingDate(bill) {
-  return `${dateOnly(bill.periodStart)} - ${dateOnly(bill.periodEnd)}`
+function shortDate(value) {
+  const date = dateOnly(value)
+  if (!date) return '—'
+  const parsed = new Date(`${date}T00:00:00.000Z`)
+  if (Number.isNaN(parsed.getTime())) return date
+  return new Intl.DateTimeFormat('en-PH', {
+    timeZone: 'UTC', month: 'numeric', day: 'numeric', year: 'numeric',
+  }).format(parsed)
+}
+
+function previousMonth(value) {
+  const date = dateOnly(value)
+  const match = date.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (!match) return date
+  const [, yearText, monthText, dayText] = match
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  const targetYear = month === 1 ? year - 1 : year
+  const targetMonth = month === 1 ? 12 : month - 1
+  const lastDay = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate()
+  return new Date(Date.UTC(targetYear, targetMonth - 1, Math.min(day, lastDay))).toISOString().slice(0, 10)
+}
+
+function billingDate(bill, previousCycle = false) {
+  const start = previousCycle ? previousMonth(bill.periodStart) : bill.periodStart
+  const end = previousCycle ? previousMonth(bill.periodEnd) : bill.periodEnd
+  return `${shortDate(start)} - ${shortDate(end)}`
 }
 
 function chargeByType(bill, type) {
@@ -36,11 +90,17 @@ function amountOf(charge) {
   return Number(charge?.amount || 0)
 }
 
+function rateLabel(charge) {
+  const rate = Number(charge?.rateApplied)
+  if (!Number.isFinite(rate)) return 'Water Rate'
+  return `Water Rate @ ${rate.toLocaleString('en-PH', { maximumFractionDigits: 2 })}`
+}
+
 function CurrencyCell({ value, strong = false }) {
   return (
     <td className={`soa-currency ${strong ? 'font-black' : ''}`}>
-      <span>PHP</span>
-      <span>{Number(value || 0).toFixed(2)}</span>
+      <span aria-label="Philippine peso">₱</span>
+      <span>{pesoAmount(value)}</span>
     </td>
   )
 }
@@ -80,7 +140,6 @@ export default function SoaDocument({ bill }) {
   const advanceBalance = Number(bill.advanceBalance || 0)
   const approvedAmount = Number(bill.approvedAmount || 0)
   const latePenaltyAmount = Number(bill.latePenaltyAmount || 0)
-  const paymentReference = [template.paymentChannel, template.paymentAccountNumber, template.paymentAccountName].filter(Boolean).join(' • ')
 
   return (
     <article
@@ -101,9 +160,9 @@ export default function SoaDocument({ bill }) {
         <div className="soa-account-panel">
           <p className="soa-statement-title">{template.statementTitle}</p>
           <p className="soa-payer-name">{bill.payerName || 'NO ASSIGNED PAYER'}</p>
-          <p className="soa-unit-number">UNIT {bill.unitNumber}</p>
-          <p><strong>Statement Date:</strong> {dateOnly(bill.statementDate)}</p>
-          <p className="soa-due-date"><strong>Due Date:</strong> {dateOnly(bill.dueDate)}</p>
+          <p className="soa-unit-number">{statementUnitNumber(bill)}</p>
+          <p><strong>Statement Date:</strong> {longDate(bill.statementDate)}</p>
+          <p className="soa-due-date"><strong>Due Date:</strong> {longDate(bill.dueDate)}</p>
         </div>
       </header>
 
@@ -113,7 +172,7 @@ export default function SoaDocument({ bill }) {
           <dt>Account name</dt><dd>{template.paymentAccountName || '—'}</dd>
           <dt>Account number</dt><dd>{template.paymentAccountNumber || '—'}</dd>
         </dl>
-        <p className="soa-payment-instruction">PAYMENT DETAILS: {paymentReference || template.companyName}</p>
+        <p className="soa-payment-instruction">{template.paymentInstruction}</p>
       </section>
 
       <table className="soa-table soa-primary-table">
@@ -131,13 +190,13 @@ export default function SoaDocument({ bill }) {
             <td className="font-black">{association?.description || 'Association Dues'}</td>
             <td className="text-center">—</td><td className="text-center">—</td><td className="text-center">—</td>
             <CurrencyCell value={amountOf(association)} />
-            <td className="text-center">—</td><CurrencyCell value={amountOf(association)} /><td className="text-center">—</td>
+            <td className="text-center">—</td><CurrencyCell value={amountOf(association)} /><CurrencyCell value={amountOf(association)} />
           </tr>
           <tr>
-            <td>{billingDate(bill)}</td>
-            <td className="font-black">{water?.description || 'Water Rate'}</td>
+            <td>{billingDate(bill, true)}</td>
+            <td className="font-black">{rateLabel(water)}</td>
             <td className="text-center">{bill.previousReading ?? '—'}</td><td className="text-center">—</td><td className="break-words text-center font-bold">{bill.invoiceNumber || '—'}</td>
-            <td className="text-center">{bill.currentReading ?? '—'}</td><CurrencyCell value={latePenaltyAmount} /><CurrencyCell value={amountOf(water)} /><CurrencyCell value={remainingBalance} />
+            <CurrencyCell value={amountOf(water)} /><CurrencyCell value={latePenaltyAmount} /><CurrencyCell value={amountOf(water)} /><CurrencyCell value={amountOf(water)} />
           </tr>
           <tr className="soa-total-row">
             <td colSpan="5"></td><td colSpan="2" className="text-center font-black">TOTAL AMOUNT</td><CurrencyCell value={bill.totalAmount} strong /><CurrencyCell value={remainingBalance} strong />

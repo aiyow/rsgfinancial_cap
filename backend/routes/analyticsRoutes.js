@@ -2,7 +2,10 @@ import express from "express";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId } from "../middleware/validate.js";
-import { calculateAccuracy, regenerateForecasts } from "../services/predictiveAnalytics.js";
+import { calculateAccuracy } from "../services/predictiveAnalytics.js";
+import { analyticsPeriodCondition } from "../services/analyticsPeriods.js";
+import { summarizeEvaluationHistory, validEvaluationPair } from "../services/forecastEvaluation.js";
+import { refreshAnalyticsForecasts } from "../services/refreshAnalyticsForecasts.js";
 
 const router = express.Router();
 
@@ -27,38 +30,16 @@ const forecastSelect = `SELECT f.id, f.unit_id AS "unitId", u.unit_number AS "un
   JOIN units u ON u.id = f.unit_id
   JOIN billing_periods p ON p.id = f.based_on_period_id`;
 
-const analyticsPeriodCondition = (alias) => `(
-  (${alias}.period_type = 'LIVE_BILLING' AND ${alias}.status IN ('FORWARDED', 'CLOSED'))
-  OR (${alias}.period_type = 'HISTORICAL_ANALYTICS' AND ${alias}.readings_visible_at IS NOT NULL)
-)`;
-
 router.use(requireAuth);
 
 // Forecasts are persisted so a dashboard load is fast. Staff can explicitly
 // rebuild them after a forecasting-model or historical-reading update.
 router.post("/refresh-forecasts", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
-  const client = await pool.connect();
   try {
-    await client.query("BEGIN");
-    const currentPeriodResult = await client.query(
-      `SELECT id FROM billing_periods
-       WHERE period_type = 'LIVE_BILLING' AND status IN ('FORWARDED', 'CLOSED')
-       ORDER BY period_start DESC LIMIT 1`,
-    );
-    const currentPeriod = currentPeriodResult.rows[0];
-    if (!currentPeriod) {
-      await client.query("ROLLBACK");
-      return res.status(400).json({ message: "There are no forwarded or closed live billing periods to refresh." });
-    }
-    await regenerateForecasts(client, currentPeriod.id);
-    await client.query("COMMIT");
-    return res.json({ message: "Forecasts were refreshed using the current model." });
-  } catch (error) {
-    await client.query("ROLLBACK");
-    return next(error);
-  } finally {
-    client.release();
-  }
+    const result = await refreshAnalyticsForecasts(pool);
+    if (!result.periodCount) return res.status(400).json({ message: "There are no visible historical imports or forwarded/closed billing periods to refresh." });
+    return res.json({ message: "Forecasts and recommendations were refreshed. Historical results are retrospective evaluations.", ...result });
+  } catch (error) { return next(error); }
 });
 
 router.get("/resident", allowRoles("RESIDENT"), async (req, res, next) => {
@@ -126,13 +107,14 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
              AND DATE_TRUNC('month', ap.period_start) = DATE_TRUNC('month', f.forecast_for_month))`,
     );
     const evaluationMonth = evaluationMonthResult.rows[0]?.evaluationMonth || null;
-    let diagnostics = [];
+    let allDiagnostics = [];
     if (evaluationMonth) {
       const result = await pool.query(
         `SELECT f.unit_id AS "unitId", u.unit_number AS "unitNumber", f.forecast_for_month AS "forecastForMonth",
           f.predicted_consumption AS "predictedConsumption",
           actual.current_reading - actual.previous_reading AS "actualConsumption",
           f.model_name AS "modelName", f.forecast_status AS status, f.status_reason AS reason,
+          source.period_start AS "basedOnPeriodStart", f.sample_count AS "sampleCount",
           actual.validation_status AS "actualValidationStatus", actual.validation_notes AS "actualValidationNotes"
          FROM billing_forecasts f
          JOIN billing_periods source ON source.id = f.based_on_period_id
@@ -140,19 +122,23 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
          LEFT JOIN billing_periods ap ON DATE_TRUNC('month', ap.period_start) = DATE_TRUNC('month', f.forecast_for_month)
           AND ${analyticsPeriodCondition('ap')}
          LEFT JOIN meter_readings actual ON actual.billing_period_id = ap.id AND actual.unit_id = f.unit_id
-         WHERE DATE_TRUNC('month', f.forecast_for_month) = DATE_TRUNC('month', $1::date)
+         WHERE f.forecast_for_month <= $1::date
            AND ${analyticsPeriodCondition('source')}
-         ORDER BY u.unit_number`,
+         ORDER BY f.forecast_for_month, u.unit_number`,
         [evaluationMonth],
       );
-      diagnostics = result.rows.map((row) => ({
+      allDiagnostics = result.rows.map((row) => ({
         ...row,
-        absoluteError: row.predictedConsumption !== null && row.actualConsumption !== null
+        absoluteError: validEvaluationPair(row)
           ? Number(Math.abs(Number(row.predictedConsumption) - Number(row.actualConsumption)).toFixed(3))
           : null,
       }));
     }
-    const eligible = diagnostics.filter((row) => row.status === "READY" && row.actualValidationStatus === "VALID");
+    const diagnostics = allDiagnostics.filter((row) => String(row.forecastForMonth).slice(0, 10) === evaluationMonth);
+    const eligible = diagnostics.filter(validEvaluationPair);
+    const evaluationReadings = await pool.query(`${historySelect} WHERE ${analyticsPeriodCondition('p')} ORDER BY m.unit_id, p.period_start`);
+    const evaluationHistory = summarizeEvaluationHistory(allDiagnostics, evaluationReadings.rows);
+    const latestEvaluation = evaluationHistory.find((row) => row.forecastForMonth === evaluationMonth);
     const latestForecastResult = await pool.query(
       `SELECT f.forecast_for_month AS "forecastForMonth",
         COUNT(*)::int AS total,
@@ -230,7 +216,9 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
     }
     return res.json({
       evaluationMonth,
-      metrics: { ...calculateAccuracy(eligible), excludedCount: diagnostics.length - eligible.length },
+      metrics: latestEvaluation?.metrics || { ...calculateAccuracy(eligible), excludedCount: diagnostics.length - eligible.length },
+      evaluationHistory,
+      evaluationType: "RETROSPECTIVE",
       latestForecast: latestForecastResult.rows[0] || { total: 0, ready: 0, excluded: 0, forecastForMonth: null },
       chartSeries: [...chartRows.values()].sort((a, b) => a.month.localeCompare(b.month)),
       diagnostics,

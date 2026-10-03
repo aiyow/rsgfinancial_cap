@@ -515,6 +515,8 @@ router.post("/:id/forward", allowRoles("COLLECTOR"), requireId, async (req, res,
       [req.resourceId, req.user.id],
     );
     if (!result.rows[0]) { await client.query("ROLLBACK"); return res.status(409).json({ message: "Only a generated batch can be forwarded." }); }
+    await regenerateForecastsFromPeriod(client, req.resourceId);
+    await regeneratePrescriptiveRecommendations(client, { residentVisibleBy: req.user.id });
     const admins = await client.query("SELECT id FROM users WHERE is_active = TRUE AND role = 'ADMIN'");
     await createUserNotifications(client, admins.rows.map((admin) => ({
       recipientUserId: admin.id,

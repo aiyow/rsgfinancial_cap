@@ -44,7 +44,7 @@ const unitAdvanceSql = `COALESCE((SELECT ROUND(SUM(pay.verified_amount - COALESC
   SELECT SUM(app.amount_applied) FROM payment_applications app WHERE app.payment_submission_id = pay.id
 ), 0)), 2) FROM payment_submissions pay WHERE pay.unit_id = b.unit_id AND pay.review_status = 'APPROVED'), 0)`;
 const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "billingPeriodId",
-  b.unit_number_snapshot AS "unitNumber", b.period_start_snapshot AS "periodStart",
+  b.unit_number_snapshot AS "unitNumber", u.floor AS floor, b.period_start_snapshot AS "periodStart",
   b.period_end_snapshot AS "periodEnd", b.statement_date AS "statementDate",
   b.due_date_snapshot AS "dueDate", p.status,
   b.soa_generated_at AS "soaGeneratedAt",
@@ -77,8 +77,9 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
     WHEN b.due_date_snapshot < CURRENT_DATE THEN 'OVERDUE' ELSE 'UNPAID' END AS "paymentStatus"
   FROM unit_bills b
   JOIN billing_periods p ON p.id = b.billing_period_id
+  JOIN units u ON u.id = b.unit_id
   LEFT JOIN bill_charges c ON c.unit_bill_id = b.id`;
-const groupBy = "GROUP BY b.id, p.status, b.soa_template_snapshot";
+const groupBy = "GROUP BY b.id, p.status, b.soa_template_snapshot, u.floor";
 
 async function readBill(client, id) {
   await applyDueLatePenalties(client, id);

@@ -1,9 +1,11 @@
 import express from "express";
+import bcrypt from "bcrypt";
 import ExcelJS from "exceljs";
 import multer from "multer";
 import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
+import { validateBody } from "../middleware/validate.js";
 import { regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.js";
 import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
 import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
@@ -31,6 +33,9 @@ const importSchema = z.object({
   periodMonth: monthSchema,
   waterRatePerCubicM: z.coerce.number().min(0),
   readings: z.array(readingSchema).min(1).max(2000),
+}).strict();
+const clearImportsSchema = z.object({
+  currentPassword: z.string().min(8).max(72),
 }).strict();
 
 function cellValue(cell) {
@@ -383,11 +388,17 @@ router.delete("/:periodMonth", async (req, res, next) => {
   } finally { client?.release(); }
 });
 
-router.delete("/", async (req, res, next) => {
+router.delete("/", validateBody(clearImportsSchema), async (req, res, next) => {
   let client;
   try {
     client = await pool.connect();
     await client.query("BEGIN");
+    const actor = await client.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1 FOR UPDATE", [req.user.id]);
+    const passwordMatches = actor.rows[0] && await bcrypt.compare(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
+    if (!passwordMatches) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ message: "Your current password is incorrect. Imported analytics history was not changed." });
+    }
     const periods = await client.query("SELECT id FROM billing_periods WHERE period_type = 'HISTORICAL_ANALYTICS' FOR UPDATE");
     const ids = periods.rows.map((period) => period.id);
     if (ids.length) {

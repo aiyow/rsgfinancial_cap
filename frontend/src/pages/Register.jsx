@@ -10,7 +10,7 @@ function fullName({ firstName, middleInitial, lastName }) {
 
 export default function Register() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ firstName: '', middleInitial: '', lastName: '', email: '', password: '', confirmPassword: '', role: 'RESIDENT' })
+  const [form, setForm] = useState({ firstName: '', middleInitial: '', lastName: '', email: '', password: '', confirmPassword: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -29,7 +29,7 @@ export default function Register() {
     }
     setLoading(true)
     try {
-      const result = await apiRequest('/api/auth/register', { method: 'POST', body: { email: form.email, password: form.password, role: form.role, fullName: fullName(form) } })
+      const result = await apiRequest('/api/auth/register', { method: 'POST', body: { email: form.email, password: form.password, fullName: fullName(form) } })
       const delivery = result.verificationEmailSent ? '' : '&delivery=unavailable'
       navigate(`/pending-approval?email=${encodeURIComponent(form.email.trim())}${delivery}`, { replace: true })
     } catch (requestError) {
@@ -44,7 +44,6 @@ export default function Register() {
       <section className="auth-form-card mx-auto w-full max-w-lg rounded-2xl border border-white/70 bg-white p-6 shadow-xl sm:p-9">
         <div className="flex items-center gap-4"><BrandMark size="lg" /><div><h1 className="font-black text-slate-900">The ResiDens</h1><p className="text-xs font-medium capitalize tracking-[0.15em] text-slate-500">Financial platform</p></div></div>
         <div className="mt-8"><p className="text-sm font-bold capitalize tracking-[0.16em] text-[var(--primary)]">Get started</p><h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">Create your account</h2><p className="mt-2 text-sm leading-6 text-slate-500">Set up your access to The ResiDens management platform.</p></div>
-        <p className="mt-5 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">Development only: all roles are available.</p>
         <form onSubmit={submit} className="mt-6 space-y-4">
           {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
           <div className="grid gap-4 sm:grid-cols-2">
@@ -55,7 +54,6 @@ export default function Register() {
           <label className="block text-sm font-bold">Email<input required type="email" value={form.email} onChange={(event) => update('email', event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 px-3 py-2.5 font-normal" /></label>
           <PasswordInput label="Password" visible={showPassword} onToggle={() => setShowPassword((current) => !current)} value={form.password} onChange={(event) => update('password', event.target.value)} />
           <PasswordInput label="Confirm password" visible={showConfirmation} onToggle={() => setShowConfirmation((current) => !current)} value={form.confirmPassword} onChange={(event) => update('confirmPassword', event.target.value)} />
-          <label className="block text-sm font-bold">Role<select value={form.role} onChange={(event) => update('role', event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 font-normal"><option value="ADMIN">Admin</option><option value="COLLECTOR">Billing Associate</option><option value="RESIDENT">Resident</option></select></label>
           <button disabled={loading} aria-busy={loading} className="login-submit">{loading && <span className="login-spinner" aria-hidden="true" />}{loading ? 'Creating...' : 'Create account'}</button>
         </form>
         <p className="mt-6 text-center text-sm text-slate-500">Already have an account? <Link to="/login" className="font-bold text-[var(--primary)] hover:underline">Back to sign in</Link></p>
