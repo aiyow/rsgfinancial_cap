@@ -8,6 +8,7 @@ import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayo
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 import { chartNumber as number, connectForecastLine } from '../../utils/forecastChart'
+import { forecastModelLabel } from '../../utils/forecastModelLabel'
 
 function valueOrDash(value, suffix = '') {
   return value === null || value === undefined ? '-' : `${Number(value).toFixed(2)}${suffix}`
@@ -317,7 +318,7 @@ export default function AnalyticsPage() {
                       <tr key={`${row.unitId}-${row.forecastForMonth}`} className={row.status !== 'READY' || row.actualValidationStatus !== 'VALID' ? 'bg-amber-50' : ''}>
                         <td className="p-3 font-bold">Unit {row.unitNumber}</td>
                         <td>{String(row.forecastForMonth).slice(0, 10)}</td>
-                        <td className="text-xs font-semibold text-slate-600">{String(row.modelName || 'LINEAR_REGRESSION').replaceAll('_', ' ')}</td>
+                        <td className="text-xs font-semibold text-slate-600">{forecastModelLabel(row.modelName)}</td>
                         <td>{row.predictedConsumption === null ? '-' : `${Number(row.predictedConsumption).toFixed(3)} m3`}</td>
                         <td>{row.actualConsumption === null ? '-' : `${Number(row.actualConsumption).toFixed(3)} m3`}</td>
                         <td>{row.absoluteError === null ? '-' : `${Number(row.absoluteError).toFixed(3)} m3`}</td>

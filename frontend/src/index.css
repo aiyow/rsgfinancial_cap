@@ -48,6 +48,15 @@
 body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--app-bg); }
 a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
+.admin-payment-queue .queue-search { font-size: 13px; }
+.admin-payment-queue :is(.queue-control, .queue-status, .queue-date) { font-size: 12px; }
+.admin-payment-queue .queue-search::-webkit-search-cancel-button { display: none; }
+@media (max-width: 639px) {
+  body:has(.admin-payments-shell) { min-width: 0; }
+  .admin-payments-shell main > .mx-auto { padding: 12px; }
+  .admin-payments-panel { padding: 12px; }
+  .admin-payment-queue .queue-status { min-width: 0; font-size: 11px; }
+}
 button { cursor: pointer; }
 
 /* Interface controls and short labels use title case. Descriptions, notices,
@@ -157,32 +166,9 @@ body:has(.login-shell) { min-width: 0; }
 }
 .login-brand-panel::before { width: 520px; height: 520px; right: -210px; top: -180px; }
 .login-brand-panel::after { width: 760px; height: 760px; left: -430px; bottom: -520px; }
-.login-scroll-link {
-  display: inline-flex;
-  min-height: 48px;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 12px;
-  background: #f1fff6;
-  padding: 12px 20px;
-  color: #194d3b;
-  font-size: 0.875rem;
-  font-weight: 800;
-  box-shadow: 0 4px 14px rgba(8, 37, 25, 0.12);
-  transition: background 160ms ease;
-}
-.login-scroll-link:hover { background: #dff7e8; }
-.login-scroll-link:focus-visible { outline: 3px solid #9df3c0; outline-offset: 4px; }
 @keyframes login-content-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-}
-@keyframes login-scroll-cue {
-  0%, 70%, 100% { transform: translateY(0); }
-  82% { transform: translateY(4px); }
-  92% { transform: translateY(-1px); }
 }
 @media (max-width: 1023px) {
   .login-shell .login-brand-panel { min-height: 0; gap: 28px; padding: 24px 24px 32px; }
@@ -190,8 +176,6 @@ body:has(.login-shell) { min-width: 0; }
   .login-eyebrow { margin-bottom: 12px; font-size: 10px; letter-spacing: 0.16em; }
   .login-hero-title { font-size: clamp(28px, 7.5vw, 34px); line-height: 1.12; }
   .login-hero-description { margin-top: 14px; font-size: 14px; line-height: 1.55; }
-  .login-scroll-arrow { animation: login-scroll-cue 1800ms ease-in-out 3; }
-  .login-mobile-entry > p { max-width: 300px; line-height: 1.5; }
   .login-form-panel { position: relative; z-index: 1; min-height: 0; align-items: flex-start; margin-top: -12px; border-radius: 24px 24px 0 0; padding: 26px 20px 32px; scroll-margin-top: 12px; }
   .login-form-heading { margin-bottom: 20px; }
   .login-form-heading h2 { font-size: 26px; }
@@ -199,8 +183,7 @@ body:has(.login-shell) { min-width: 0; }
   .login-form-panel .login-card { padding: 24px 18px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .login-brand-content, .login-scroll-arrow { animation: none; }
-  .login-scroll-link { transition: none; }
+  .login-brand-content { animation: none; }
 }
 .role-card {
   min-height: 104px;
