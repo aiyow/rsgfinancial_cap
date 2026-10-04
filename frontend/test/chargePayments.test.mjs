@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { chargeDetails, isWaterOnly, payableBalance, payablePaid, currency } from '../src/utils/chargePayments.js'
+import { chargeDetails, isWaterOnly, payableBalance, payablePaid, currency, purposeLabels } from '../src/utils/chargePayments.js'
+
+test('shared payment purpose labels capitalize each word',()=>{
+  assert.deepEqual(purposeLabels, { WATER: 'Water', ASSOCIATION_DUES: 'Association Dues', COMBINED: 'Water + Association Dues' })
+})
 
 test('tenant cards show water payable figures without changing overall balance',()=>{
   const bill={allowedPaymentPurposes:['WATER'],remainingBalance:1608.84,approvedAmount:58.9,payableBalance:0,payableApprovedAmount:58.9}

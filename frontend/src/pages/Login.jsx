@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { ArrowRight, Eye, EyeOff, LayoutDashboard, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
+import { ArrowDown, ArrowRight, Eye, EyeOff, LayoutDashboard, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
 import { dashboardPathFor } from '../constants/routes'
 import useAuth from '../hooks/useAuth'
+import { scrollToLogin } from '../utils/loginNavigation'
 
 const rememberedEmailKey = 'condo_remembered_email'
 function readRememberedEmail() {
@@ -34,11 +35,18 @@ export default function Login() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const signInSection = useRef(null)
 
   if (user) return <Navigate to={dashboardPathFor(user.role)} replace />
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  function goToSignIn(event) {
+    if (!signInSection.current) return
+    event.preventDefault()
+    scrollToLogin(signInSection.current, window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   }
 
   async function submit(event) {
@@ -64,11 +72,20 @@ export default function Login() {
     <main className="login-shell min-h-screen lg:grid lg:grid-cols-[minmax(420px,0.95fr)_minmax(560px,1.05fr)]">
       <section className="login-brand-panel relative flex min-h-[430px] flex-col justify-between overflow-hidden px-7 py-8 text-white sm:px-12 sm:py-10 lg:min-h-screen lg:px-[8%] lg:py-12">
         <div className="relative z-10 flex items-center gap-4"><BrandMark size="lg" /><div><h1 className="text-xl font-black tracking-tight">The ResiDens</h1><p className="text-xs font-medium capitalize tracking-[0.18em] text-emerald-100/75">Financial platform</p></div></div>
-        <div className="relative z-10 max-w-xl py-12 lg:py-0"><p className="mb-7 text-sm font-bold capitalize tracking-[0.2em] text-emerald-300">Condominium management</p><h2 className="max-w-lg text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl">Financial management system for the ResiDens Condominium.</h2><p className="mt-8 max-w-lg text-base leading-7 text-emerald-50/75">Manage billing, collections, payment processing, reporting, and financial operations through one centralized platform.</p><div className="mt-10 grid max-w-xl grid-cols-3 gap-5 border-t border-white/15 pt-7"><BrandFeature icon={ShieldCheck} title="Secure" text="Protected financial records" /><BrandFeature icon={LayoutDashboard} title="Centralized" text="One platform for operations" /><BrandFeature icon={ArrowRight} title="Efficient" text="Faster financial workflows" /></div></div>
-        <p className="relative z-10 text-xs text-emerald-100/60">© 2026 The ResiDens. All rights reserved.</p>
+        <div className="login-brand-content relative z-10 max-w-xl py-12 lg:py-0">
+          <p className="login-eyebrow mb-7 text-sm font-bold capitalize tracking-[0.2em] text-emerald-300">Condominium management</p>
+          <h2 className="login-hero-title max-w-lg text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl"><span className="lg:hidden">Your condo bills.<br />One simple portal.</span><span className="hidden lg:inline">Financial management system for the ResiDens Condominium.</span></h2>
+          <p className="login-hero-description mt-8 max-w-lg text-base leading-7 text-emerald-50/75"><span className="lg:hidden">View bills, manage payments, and stay up to date.</span><span className="hidden lg:inline">Manage billing, collections, payment processing, reporting, and financial operations through one centralized platform.</span></p>
+          <div className="login-mobile-entry mt-6 lg:hidden">
+            <a href="#sign-in" onClick={goToSignIn} className="login-scroll-link" aria-controls="sign-in">Go to sign in <ArrowDown size={18} className="login-scroll-arrow" aria-hidden="true" /></a>
+            <p className="mt-2 text-xs text-emerald-100/80">Already have an account? Your sign-in form is below.</p>
+          </div>
+          <div className="mt-10 hidden max-w-xl grid-cols-3 gap-5 border-t border-white/15 pt-7 lg:grid"><BrandFeature icon={ShieldCheck} title="Secure" text="Protected financial records" /><BrandFeature icon={LayoutDashboard} title="Centralized" text="One platform for operations" /><BrandFeature icon={ArrowRight} title="Efficient" text="Faster financial workflows" /></div>
+        </div>
+        <p className="relative z-10 hidden text-xs text-emerald-100/60 lg:block">© 2026 The ResiDens. All rights reserved.</p>
       </section>
 
-      <section className="flex min-h-screen items-center justify-center bg-[#f7faf8] px-6 py-12 sm:px-12 lg:px-[9%]"><div className="w-full max-w-xl"><div className="mb-8"><h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Sign in to your portal</h2><p className="mt-2 text-base text-slate-500">Enter your credentials to continue.</p></div>
+      <section id="sign-in" ref={signInSection} tabIndex={-1} aria-labelledby="sign-in-heading" className="login-form-panel flex min-h-screen items-center justify-center bg-[#f7faf8] px-6 py-12 focus:outline-none sm:px-12 lg:px-[9%]"><div className="w-full max-w-xl"><div className="login-form-heading mb-8"><h2 id="sign-in-heading" className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Sign in to your portal</h2><p className="mt-2 text-base text-slate-500">Enter your credentials to continue.</p></div>
         <div className="login-card"><form onSubmit={submit} className="space-y-5">{error && <p className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
           <label className="block text-sm font-bold text-slate-800">Email address<div className="input-with-icon"><Mail size={19} /><input required type="email" autoComplete="username" placeholder="you@example.com" value={form.email} onChange={(e) => update('email', e.target.value)} /></div></label>
           <label className="block text-sm font-bold text-slate-800">Password<div className="input-with-icon"><LockKeyhole size={19} /><input required type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password" value={form.password} onChange={(e) => update('password', e.target.value)} /><button type="button" onClick={() => setShowPassword(!showPassword)} className="password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button></div></label>

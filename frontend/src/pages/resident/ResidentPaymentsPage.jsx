@@ -1,34 +1,20 @@
 import { useEffect, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Clock3 } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Clock3, X } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import ResidentPaymentCard from '../../components/ResidentPaymentCard'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
-import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
 
 const filters = ['ALL', 'PENDING', 'APPROVED', 'REJECTED']
-
-function money(value) {
-  return `PHP ${new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value || 0))}`
-}
-
-function methodLabel(value) {
-  return value ? value.replace('_', ' ') : 'Not set'
-}
-
-function dateTimeLabel(value) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  const label = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(date)
-  return label.replace(/^([A-Za-z]{3})/, '$1.')
-}
 
 export default function ResidentPaymentsPage() {
   const { token } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [status, setStatus] = useState(() => location.state?.filter || 'ALL')
+  const [status, setStatus] = useState(() => filters.includes(location.state?.filter) ? location.state.filter : 'ALL')
   const [payments, setPayments] = useState([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [submissionNotice, setSubmissionNotice] = useState(() => location.state?.submissionNotice || '')
 
@@ -38,82 +24,53 @@ export default function ResidentPaymentsPage() {
     queueMicrotask(() => {
       if (!active) return
       setSubmissionNotice(location.state.submissionNotice)
-      if (location.state.filter) setStatus(location.state.filter)
+      if (filters.includes(location.state.filter)) setStatus(location.state.filter)
       navigate(location.pathname, { replace: true, state: null })
     })
     return () => { active = false }
   }, [location.pathname, location.state, navigate])
 
   useEffect(() => {
+    let active = true
+    queueMicrotask(() => { if (active) { setLoading(true); setError('') } })
     const query = status === 'ALL' ? '' : `?status=${status}`
     apiRequest(`/api/payments${query}`, { token })
-      .then((data) => setPayments(data.payments))
-      .catch((requestError) => setError(requestError.message))
+      .then((data) => { if (active) setPayments(data.payments || []) })
+      .catch((requestError) => { if (active) { setPayments([]); setError(requestError.message) } })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
   }, [status, token])
 
   return (
-    <DashboardLayout title="My payment history" description="Track pending, approved, and rejected receipt submissions.">
-      {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-      {submissionNotice && <section role="status" className="flex items-start justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 shadow-sm"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-emerald-700 shadow-sm"><Clock3 size={20} /></span><div><p className="font-black">Payment proof submitted</p><p className="mt-1 text-sm leading-5 text-emerald-800">{submissionNotice}</p></div></div><button type="button" onClick={() => setSubmissionNotice('')} className="rounded-lg px-2 py-1 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100">Dismiss</button></section>}
+    <DashboardLayout title="My payment history" className="resident-shell resident-payments-shell">
+      {error && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {submissionNotice && <section role="status" className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 pl-3 py-2 text-emerald-950">
+        <Clock3 size={17} className="mt-1 shrink-0" aria-hidden="true" />
+        <div className="min-w-0 flex-1"><p className="text-xs font-black">Payment proof submitted</p><p className="mt-1 text-xs leading-5 text-emerald-800">{submissionNotice}</p></div>
+        <button type="button" onClick={() => setSubmissionNotice('')} aria-label="Dismiss submission notice" className="grid size-11 shrink-0 place-items-center rounded-lg text-emerald-800 hover:bg-emerald-100"><X size={16} aria-hidden="true" /></button>
+      </section>}
 
-      <Panel title="Submitted payment proofs" description="Check the review status and payment details for each receipt you have submitted.">
-        <div className="payment-filter-bar mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-sm font-semibold text-slate-600">Filter by status</p><div className="flex flex-wrap gap-2">
+      <Panel className="resident-payments-panel" title="Payment history" description="Track proofs, payments, and issued invoices.">
+        <div className="resident-payment-filters mb-3 grid grid-cols-4 gap-1 rounded-xl bg-slate-50 p-1 sm:max-w-md" role="group" aria-label="Filter payments by status">
           {filters.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => { setStatus(item); setError('') }}
-              className={`payment-filter ${status === item ? 'payment-filter-active' : ''}`}
-            >
-              {item === 'ALL' ? 'All submissions' : item}
+            <button key={item} type="button" aria-pressed={status === item} onClick={() => setStatus(item)}
+              className={`min-h-11 rounded-lg px-1 text-[11px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-emerald-600 sm:text-xs ${status === item ? 'bg-emerald-700 text-white shadow-sm' : 'text-slate-600 hover:bg-emerald-50'}`}>
+              {item === 'ALL' ? 'All' : item.toLowerCase()}
             </button>
           ))}
-        </div></div>
-
-        <div className="space-y-4">
-          {payments.map((payment) => (
-            <article key={payment.id} className="payment-record-card overflow-hidden">
-              <div className="flex flex-col gap-4 border-b border-[#d9e7dd] bg-emerald-50/50 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                <div>
-                  <p className="text-xs font-bold capitalize tracking-[0.16em] text-[var(--primary)]">Payment submission</p>
-                  <h2 className="mt-1 text-xl font-black text-slate-950">Unit {payment.unitNumber}</h2>
-                  <p className="mt-1 text-sm text-slate-500">Submitted {dateTimeLabel(payment.submittedAt)}</p>
-                </div>
-                <div className="flex items-center justify-between gap-4 sm:block sm:text-right">
-                  <span className={`payment-status-badge ${payment.reviewStatus === 'APPROVED' ? 'payment-status-approved' : payment.reviewStatus === 'REJECTED' ? 'payment-status-rejected' : 'payment-status-pending'}`}>{payment.reviewStatus}</span>
-                  <div><p className="mt-0 text-xs font-bold capitalize tracking-[0.12em] text-slate-400 sm:mt-3">Verified amount</p>
-                  <p className="mt-1 text-2xl font-black text-slate-950">{payment.verifiedAmount ? money(payment.verifiedAmount) : 'Pending'}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="grid gap-3 p-4 text-sm sm:grid-cols-2 lg:grid-cols-3 sm:p-5">
-                <MiniInfo label="OCR amount" value={payment.ocrAmount ? money(payment.ocrAmount) : 'Not detected'} />
-                <MiniInfo label="Method" value={methodLabel(payment.paymentMethod)} />
-                <MiniInfo label="Reference" value={payment.verifiedReferenceNo || payment.ocrReferenceNo || 'Not detected'} />
-                <MiniInfo label="Applied amount" value={money(payment.appliedAmount)} />
-                <MiniInfo label="Advance balance" value={money(payment.unitAdvanceBalance)} />
-                <MiniInfo label="Remaining balance" value={money(payment.remainingBalance)} />
-              </div>
-              <div className="px-4 pb-3"><PaymentAllocationDetails payment={payment} /></div>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d9e7dd] px-4 py-3 sm:px-5">
-                {payment.remarks ? <p className="text-sm text-slate-600">{payment.remarks}</p> : <span />}
-                {payment.targetBillId && <Link to={`/resident/bills/${payment.targetBillId}`} className="resident-soa-button resident-soa-button-green">Open SOA</Link>}
-              </div>
-            </article>
-          ))}
         </div>
-
-        {payments.length === 0 && <EmptyRow message="No payment submissions match this filter yet." />}
+        <div className={loading ? '' : 'grid items-start gap-2.5 lg:grid-cols-2 lg:gap-3'} aria-busy={loading}>
+          {loading ? <PaymentHistorySkeleton /> : payments.map((payment) => <ResidentPaymentCard key={payment.id} payment={payment} />)}
+        </div>
+        {!loading && !error && payments.length === 0 && <EmptyRow message="No payment submissions match this filter yet." />}
       </Panel>
     </DashboardLayout>
   )
 }
 
-function MiniInfo({ label, value }) {
-  return (
-    <div className="payment-info-box rounded-xl p-3">
-      <p className="text-xs font-bold capitalize text-slate-400">{label}</p>
-      <p className="mt-1 font-semibold text-slate-900">{value}</p>
-    </div>
-  )
+function PaymentHistorySkeleton() {
+  return <div role="status" aria-label="Loading payment history" className="space-y-3 animate-pulse motion-reduce:animate-none">
+    <span className="sr-only">Loading payment history…</span>
+    {Array.from({ length: 3 }, (_, index) => <div key={index} className="rounded-xl border border-emerald-100 p-3.5"><div className="flex justify-between"><div className="h-4 w-20 rounded bg-emerald-100" /><div className="h-4 w-16 rounded bg-emerald-100" /></div><div className="mt-3 h-6 w-28 rounded bg-emerald-100" /><div className="mt-3 h-3 w-48 max-w-full rounded bg-slate-100" /><div className="mt-4 h-4 w-16 rounded bg-slate-100" /></div>)}
+  </div>
 }

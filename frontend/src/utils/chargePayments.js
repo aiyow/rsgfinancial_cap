@@ -1,4 +1,4 @@
-export const purposeLabels = { WATER: 'Water', ASSOCIATION_DUES: 'Association dues', COMBINED: 'Water + association dues' }
+export const purposeLabels = { WATER: 'Water', ASSOCIATION_DUES: 'Association Dues', COMBINED: 'Water + Association Dues' }
 export const currency = (value) => `₱${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 export function isWaterOnly(bill) { return bill?.allowedPaymentPurposes?.length === 1 && bill.allowedPaymentPurposes[0] === 'WATER' }
 export function payableBalance(bill) { return Number(bill?.payableBalance ?? bill?.remainingBalance ?? 0) }
