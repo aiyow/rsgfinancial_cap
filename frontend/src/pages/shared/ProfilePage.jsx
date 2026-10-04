@@ -8,6 +8,7 @@ const roleLabel = (role) => ({ ADMIN: 'Admin', COLLECTOR: 'Billing Associate', R
 
 export default function ProfilePage() {
   const { user, token, replaceToken } = useAuth()
+  const isResident = user.role === 'RESIDENT'
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmation: '' })
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
@@ -46,8 +47,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <DashboardLayout title="Profile" description="View your account information and role access.">
-      <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+    <DashboardLayout title="Profile" description={isResident ? 'View your account information and manage your password.' : 'View your account information and role access.'}>
+      <div className={`grid gap-6 ${isResident ? 'max-w-3xl' : 'lg:grid-cols-[1.2fr_0.8fr]'}`}>
         <Panel title="Account information" description="Your current The ResiDens account details.">
           <dl className="divide-y divide-[var(--border)]">
             <div className="flex items-center justify-between gap-4 py-3">
@@ -65,14 +66,14 @@ export default function ProfilePage() {
           </dl>
         </Panel>
 
-        <Panel title="Access summary" description="Your available workspace is based on your assigned role.">
+        {!isResident && <Panel title="Access summary" description="Your available workspace is based on your assigned role.">
           <div className="rounded-lg bg-[var(--app-bg)] p-4 text-sm leading-6 text-[var(--sidebar-ink)]">
             You are signed in to the <span className="font-bold">{roleLabel(user.role).toLowerCase()}</span> workspace. Use the sidebar to view the pages available to your account.
           </div>
-        </Panel>
+        </Panel>}
       </div>
 
-      {user.role === 'RESIDENT' && (
+      {isResident && (
         <div className="mt-6 max-w-3xl">
           <Panel title="Password" description="Change your password without changing your account details.">
             <form onSubmit={changePassword} className="space-y-4">

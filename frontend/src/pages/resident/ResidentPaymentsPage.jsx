@@ -4,6 +4,7 @@ import { Clock3 } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
 
 const filters = ['ALL', 'PENDING', 'APPROVED', 'REJECTED']
 
@@ -33,9 +34,14 @@ export default function ResidentPaymentsPage() {
 
   useEffect(() => {
     if (!location.state?.submissionNotice) return
-    setSubmissionNotice(location.state.submissionNotice)
-    if (location.state.filter) setStatus(location.state.filter)
-    navigate(location.pathname, { replace: true, state: null })
+    let active = true
+    queueMicrotask(() => {
+      if (!active) return
+      setSubmissionNotice(location.state.submissionNotice)
+      if (location.state.filter) setStatus(location.state.filter)
+      navigate(location.pathname, { replace: true, state: null })
+    })
+    return () => { active = false }
   }, [location.pathname, location.state, navigate])
 
   useEffect(() => {
@@ -88,6 +94,7 @@ export default function ResidentPaymentsPage() {
                 <MiniInfo label="Advance balance" value={money(payment.unitAdvanceBalance)} />
                 <MiniInfo label="Remaining balance" value={money(payment.remainingBalance)} />
               </div>
+              <div className="px-4 pb-3"><PaymentAllocationDetails payment={payment} /></div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#d9e7dd] px-4 py-3 sm:px-5">
                 {payment.remarks ? <p className="text-sm text-slate-600">{payment.remarks}</p> : <span />}
                 {payment.targetBillId && <Link to={`/resident/bills/${payment.targetBillId}`} className="resident-soa-button resident-soa-button-green">Open SOA</Link>}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import useAuth from '../hooks/useAuth'
 import { apiFile } from '../services/api'
+import { chargeDetails } from '../utils/chargePayments'
 
 const dateOnly = (value) => value ? String(value).slice(0, 10) : ''
 
@@ -137,9 +138,9 @@ export default function SoaDocument({ bill }) {
   const association = chargeByType(bill, 'ASSOCIATION_DUES')
   const water = chargeByType(bill, 'WATER')
   const remainingBalance = Number(bill.remainingBalance ?? bill.totalAmount ?? 0)
-  const advanceBalance = Number(bill.advanceBalance || 0)
   const approvedAmount = Number(bill.approvedAmount || 0)
-  const latePenaltyAmount = Number(bill.latePenaltyAmount || 0)
+  const associationPayments = chargeDetails(bill, 'ASSOCIATION_DUES')
+  const waterPayments = chargeDetails(bill, 'WATER')
 
   return (
     <article
@@ -188,15 +189,15 @@ export default function SoaDocument({ bill }) {
           <tr>
             <td>{billingDate(bill)}</td>
             <td className="font-black">{association?.description || 'Association Dues'}</td>
-            <td className="text-center">—</td><td className="text-center">—</td><td className="text-center">—</td>
+            <td className="text-center">—</td><CurrencyCell value={associationPayments.approvedAmount} /><td className="break-words text-center">{associationPayments.invoiceReferences.join(', ') || '—'}</td>
             <CurrencyCell value={amountOf(association)} />
-            <td className="text-center">—</td><CurrencyCell value={amountOf(association)} /><CurrencyCell value={amountOf(association)} />
+            <CurrencyCell value={associationPayments.penaltyAmount} /><CurrencyCell value={associationPayments.billedAmount} /><CurrencyCell value={associationPayments.remainingBalance} />
           </tr>
           <tr>
             <td>{billingDate(bill, true)}</td>
             <td className="font-black">{rateLabel(water)}</td>
-            <td className="text-center">{bill.previousReading ?? '—'}</td><td className="text-center">—</td><td className="break-words text-center font-bold">{bill.invoiceNumber || '—'}</td>
-            <CurrencyCell value={amountOf(water)} /><CurrencyCell value={latePenaltyAmount} /><CurrencyCell value={amountOf(water)} /><CurrencyCell value={amountOf(water)} />
+            <td className="text-center">—</td><CurrencyCell value={waterPayments.approvedAmount} /><td className="break-words text-center font-bold">{waterPayments.invoiceReferences.join(', ') || '—'}</td>
+            <CurrencyCell value={amountOf(water)} /><CurrencyCell value={0} /><CurrencyCell value={waterPayments.billedAmount} /><CurrencyCell value={waterPayments.remainingBalance} />
           </tr>
           <tr className="soa-total-row">
             <td colSpan="5"></td><td colSpan="2" className="text-center font-black">TOTAL AMOUNT</td><CurrencyCell value={bill.totalAmount} strong /><CurrencyCell value={remainingBalance} strong />
@@ -206,15 +207,17 @@ export default function SoaDocument({ bill }) {
 
       <table className="soa-table soa-summary-table">
         <tbody>
-          <tr className="soa-summary-heading"><td colSpan="5">ADVANCE PAYMENT</td><td colSpan="4">ADVANCE BALANCE</td></tr>
+          <tr className="soa-summary-heading"><td colSpan="9">CATEGORY ADVANCE CREDITS (UNIT-BASED)</td></tr>
           <tr>
-            <td colSpan="2" className="font-black">APPROVED PAYMENTS</td><CurrencyCell value={approvedAmount} /><td colSpan="3"></td><CurrencyCell value={advanceBalance} /><td colSpan="2" className="text-center">—</td>
+            <td colSpan="2" className="font-black">WATER ADVANCE</td><CurrencyCell value={waterPayments.advanceBalance} /><td colSpan="3" className="font-black">ASSOCIATION ADVANCE</td><CurrencyCell value={associationPayments.advanceBalance} /><td colSpan="2"></td>
           </tr>
+          <tr><td colSpan="2" className="font-black">APPROVED PAYMENTS</td><CurrencyCell value={approvedAmount} /><td colSpan="6"></td></tr>
           <tr><td colSpan="2" className="font-black">REMAINING BALANCE</td><CurrencyCell value={remainingBalance} strong /><td colSpan="6"></td></tr>
         </tbody>
       </table>
 
       <section className="soa-signature-band">
+        <p className="col-span-2 border-t border-[#285b78] px-2 py-1 text-[10px]">Water consumption: previous reading {bill.previousReading ?? '—'} · current reading {bill.currentReading ?? '—'} · usage {bill.consumption ?? water?.quantity ?? '—'} m³. Readings are not monetary balances.</p>
         <div><p>PREPARED BY: {template.preparedByName}</p><p>{template.preparedByTitle}</p></div>
         <div><p>CHECKED BY: {template.checkedByName}</p><p>{template.checkedByTitle}</p></div>
       </section>

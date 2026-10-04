@@ -16,7 +16,10 @@ import { destroyReceipt, receiptDeliveryUrl, uploadReceipt } from "../services/c
 import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
 import { createUserNotifications } from "../services/notifications.js";
 import {
-  applyUnitCreditToOpenBills,
+  createPaymentAllocations,
+  previewPaymentAllocations,
+  lockUnit,
+  chargePaymentsSql,
   applyDueLatePenalties,
   billAppliedSql,
   billTotalSql,
@@ -24,6 +27,8 @@ import {
   getUnitCreditBalance,
   manualReference,
 } from "../services/paymentLedger.js";
+import { cents } from '../services/paymentAllocation.js';
+import { validateResidentPurpose } from '../services/paymentPermissions.js';
 
 const router = express.Router();
 const uploadDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../uploads/payment-proofs");
@@ -36,13 +41,20 @@ const receiptUpload = multer({
   },
 });
 const paymentMethodSchema = z.enum(["GCASH", "BANK_TRANSFER", "CASH", "OTHER"]);
+const purposeSchema = z.enum(['WATER', 'ASSOCIATION_DUES', 'COMBINED']);
+const amountSchema = z.coerce.number().positive().refine((value) => { try { cents(value); return true; } catch { return false; } }, 'Use at most two decimal places.');
+const paymentDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD format.').refine(value => {
+  const parsed=new Date(`${value}T00:00:00Z`);
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Manila',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0,10)===value && value<=today;
+},'Use a valid payment date that is not in the future.');
 const reviewSchema = z.discriminatedUnion("status", [
   z.object({
     status: z.literal("APPROVED"),
-    verifiedAmount: z.coerce.number().positive(),
+    verifiedAmount: amountSchema,
     paymentMethod: paymentMethodSchema,
     verifiedReferenceNo: z.string().trim().max(100).optional(),
-    verifiedPaymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format."),
+    verifiedPaymentDate: paymentDateSchema,
     remarks: z.string().trim().max(1000).optional(),
   }).strict(),
   z.object({
@@ -54,8 +66,9 @@ const manualPaymentSchema = z.object({
   targetBillId: z.coerce.number().int().positive().optional(),
   unitId: z.coerce.number().int().positive().optional(),
   paymentMethod: paymentMethodSchema,
-  amount: z.coerce.number().positive(),
-  paymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format."),
+  paymentPurpose: purposeSchema,
+  amount: amountSchema,
+  paymentDate: paymentDateSchema,
   referenceNo: z.string().trim().max(100).optional(),
   remarks: z.string().trim().max(1000).optional(),
 }).strict().refine((body) => body.targetBillId || body.unitId, {
@@ -66,6 +79,10 @@ const paymentApplicationSql = `COALESCE((SELECT ROUND(SUM(pa.amount_applied), 2)
 const unitAdvanceSql = `COALESCE((SELECT ROUND(SUM(up.verified_amount - COALESCE((SELECT SUM(upa.amount_applied) FROM payment_applications upa WHERE upa.payment_submission_id = up.id), 0)), 2)
   FROM payment_submissions up WHERE up.unit_id = ps.unit_id AND up.review_status = 'APPROVED'), 0)`;
 const paymentSelect = `SELECT ps.id, ps.target_unit_bill_id AS "targetBillId", ps.submitted_by AS "submittedBy",
+  ps.payment_purpose AS "paymentPurpose", ${chargePaymentsSql} AS "chargePayments",
+  COALESCE((SELECT jsonb_agg(jsonb_build_object('chargeType',a.charge_type,'allocatedAmount',a.allocated_amount,'invoiceNumber',a.invoice_number,
+    'appliedAmount',COALESCE((SELECT SUM(x.amount_applied) FROM payment_applications x WHERE x.charge_allocation_id=a.id),0)))
+    FROM payment_charge_allocations a WHERE a.payment_submission_id=ps.id),'[]'::jsonb) AS allocations,
   ps.unit_id AS "unitId", ps.entry_type AS "entryType", ps.payment_method AS "paymentMethod",
   ps.receipt_original_name AS "receiptOriginalName", ps.receipt_mime_type AS "receiptMimeType",
   ps.ocr_raw_text AS "ocrRawText", ps.ocr_confidence AS "ocrConfidence",
@@ -100,11 +117,12 @@ function paymentAccess(req, params, conditions) {
   } else if (req.user.role === "COLLECTOR") conditions.push("ps.review_status = 'APPROVED'");
 }
 
-async function residentBill(id, userId) {
-  const result = await pool.query(
+async function residentBill(id, userId, client = pool) {
+  const result = await client.query(
     `SELECT b.id, b.unit_id AS "unitId",
       ${billTotalSql} AS total,
       ${billAppliedSql} AS approved
+      , ${chargePaymentsSql} AS "chargePayments"
      FROM unit_bills b
      WHERE b.id = $1 AND b.published_at IS NOT NULL
        AND EXISTS (SELECT 1 FROM unit_assignments a
@@ -137,7 +155,9 @@ router.use(async (req, res, next) => {
 
 router.post("/bills/:id/preview", allowRoles("RESIDENT"), requireId, receiptUpload.single("receipt"), async (req, res, next) => {
   try {
-    if (!await residentBill(req.resourceId, req.user.id)) return res.status(404).json({ message: "Published SOA not found." });
+    const bill = await residentBill(req.resourceId, req.user.id);
+    if (!bill) return res.status(404).json({ message: "Published SOA not found." });
+    await validateResidentPurpose(pool, bill, req.user.id, req.body.paymentPurpose);
     const analysis = await processReceipt(req, res);
     if (!analysis) return undefined;
     if (analysis.quality.status !== "GOOD") {
@@ -159,6 +179,7 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.singl
   try {
     const bill = await residentBill(req.resourceId, req.user.id);
     if (!bill) return res.status(404).json({ message: "Published SOA not found." });
+    await validateResidentPurpose(pool, bill, req.user.id, req.body.paymentPurpose);
     if (Number(bill.approved) >= Number(bill.total) && Number(bill.total) > 0) {
       return res.status(409).json({ message: "This SOA is already fully paid." });
     }
@@ -174,16 +195,19 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.singl
     uploadedReceipt = await uploadReceipt(req.file.buffer);
     client = await pool.connect();
     await client.query("BEGIN");
+    await lockUnit(client, bill.unitId);
+    const currentBill = await residentBill(req.resourceId, req.user.id, client);
+    await validateResidentPurpose(client, currentBill, req.user.id, req.body.paymentPurpose);
     const result = await client.query(
       `INSERT INTO payment_submissions
         (unit_id, submitted_by, target_unit_bill_id, receipt_path, receipt_storage, receipt_cloudinary_public_id,
          receipt_original_name, receipt_mime_type, receipt_sha256,
-         ocr_raw_text, ocr_confidence, ocr_quality_status, ocr_amount, ocr_reference_no, ocr_payment_date)
-       VALUES ($1, $2, $3, $4, 'CLOUDINARY', $5, $6, $7, $8, $9, $10, 'GOOD', $11, $12, $13)
+         ocr_raw_text, ocr_confidence, ocr_quality_status, ocr_amount, ocr_reference_no, ocr_payment_date, payment_purpose)
+       VALUES ($1, $2, $3, $4, 'CLOUDINARY', $5, $6, $7, $8, $9, $10, 'GOOD', $11, $12, $13, $14)
        RETURNING id`,
       [bill.unitId, req.user.id, req.resourceId, uploadedReceipt.publicId, uploadedReceipt.publicId,
         req.file.originalname.slice(0, 255), req.file.mimetype, digest,
-        analysis.rawText, analysis.confidence, analysis.amount, analysis.referenceNo, analysis.paymentDate],
+        analysis.rawText, analysis.confidence, analysis.amount, analysis.referenceNo, analysis.paymentDate, req.body.paymentPurpose],
     );
     await writeAuditLog({
       client,
@@ -193,6 +217,7 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.singl
       action: "SUBMIT",
       newValues: {
         targetBillId: req.resourceId,
+        paymentPurpose: req.body.paymentPurpose,
         receiptOriginalName: req.file.originalname.slice(0, 255),
         receiptStorage: "CLOUDINARY",
         ocrAmount: analysis.amount,
@@ -236,11 +261,12 @@ router.get("/credits", allowRoles("ADMIN", "RESIDENT"), async (req, res, next) =
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     const result = await pool.query(
       `SELECT u.id AS "unitId", u.unit_number AS "unitNumber",
-        COALESCE(ROUND(SUM(ps.verified_amount - COALESCE((
-          SELECT SUM(pa.amount_applied) FROM payment_applications pa WHERE pa.payment_submission_id = ps.id
-        ), 0)), 2), 0) AS "advanceBalance"
+        COALESCE(SUM(a.allocated_amount - COALESCE((SELECT SUM(x.amount_applied) FROM payment_applications x WHERE x.charge_allocation_id=a.id),0)),0) AS "advanceBalance",
+        COALESCE(SUM(a.allocated_amount - COALESCE((SELECT SUM(x.amount_applied) FROM payment_applications x WHERE x.charge_allocation_id=a.id),0)) FILTER(WHERE a.charge_type='WATER'),0) AS "waterAdvance",
+        COALESCE(SUM(a.allocated_amount - COALESCE((SELECT SUM(x.amount_applied) FROM payment_applications x WHERE x.charge_allocation_id=a.id),0)) FILTER(WHERE a.charge_type='ASSOCIATION_DUES'),0) AS "associationAdvance"
        FROM units u
        LEFT JOIN payment_submissions ps ON ps.unit_id = u.id AND ps.review_status = 'APPROVED'
+       LEFT JOIN payment_charge_allocations a ON a.payment_submission_id=ps.id
        ${where}
        GROUP BY u.id, u.unit_number
        ORDER BY u.unit_number`,
@@ -248,6 +274,28 @@ router.get("/credits", allowRoles("ADMIN", "RESIDENT"), async (req, res, next) =
     );
     return res.json({ credits: result.rows });
   } catch (error) { return next(error); }
+});
+
+router.post('/allocation-preview', allowRoles('ADMIN'), async (req,res,next)=>{
+  let client;
+  try {
+    const body=z.object({paymentId:z.coerce.number().int().positive().optional(),targetBillId:z.coerce.number().int().positive().optional(),
+      unitId:z.coerce.number().int().positive().optional(),paymentPurpose:purposeSchema,amount:amountSchema,paymentDate:paymentDateSchema}).strict().parse(req.body);
+    client=await pool.connect(); await client.query('BEGIN');
+    let unitId=body.unitId, billId=body.targetBillId, purpose=body.paymentPurpose;
+    if(body.paymentId) {
+      const payment=(await client.query('SELECT unit_id,target_unit_bill_id,payment_purpose,review_status FROM payment_submissions WHERE id=$1',[body.paymentId])).rows[0];
+      if(!payment || payment.review_status!=='PENDING') throw Object.assign(new Error('Pending payment not found.'),{status:404});
+      unitId=payment.unit_id; billId=payment.target_unit_bill_id; purpose=payment.payment_purpose;
+    } else if(billId) unitId=(await client.query('SELECT unit_id FROM unit_bills WHERE id=$1',[billId])).rows[0]?.unit_id;
+    if(!unitId) throw Object.assign(new Error('Choose a valid SOA or unit.'),{status:400});
+    await lockUnit(client,unitId);
+    const allocations=await previewPaymentAllocations(client,{unit_id:unitId,target_unit_bill_id:billId,payment_purpose:purpose,
+      verified_amount:body.amount,verified_payment_date:body.paymentDate});
+    await client.query('ROLLBACK');
+    return res.json({allocations,paymentPurpose:purpose,message:'Designated amounts; excess remains advance in that category. Only the selected SOA is settled. Balances are rechecked when approving.'});
+  } catch(error) { if(client) await client.query('ROLLBACK').catch(()=>{}); return next(error); }
+  finally { client?.release(); }
 });
 
 router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), async (req, res, next) => {
@@ -259,7 +307,7 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
     let unitId = body.unitId || null;
     let billId = body.targetBillId || null;
     if (billId) {
-      const bill = await client.query("SELECT id, unit_id FROM unit_bills WHERE id = $1 FOR UPDATE", [billId]);
+      const bill = await client.query("SELECT id, unit_id FROM unit_bills WHERE id = $1", [billId]);
       if (!bill.rows[0]) {
         await client.query("ROLLBACK");
         return res.status(404).json({ message: "SOA not found." });
@@ -273,21 +321,23 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
       }
     }
 
+    await lockUnit(client, unitId);
+
     const placeholderReference = body.referenceNo || `TEMP-${crypto.randomUUID()}`;
     const result = await client.query(
       `INSERT INTO payment_submissions
         (unit_id, submitted_by, target_unit_bill_id, entry_type, payment_method, review_status,
-         reviewed_by, reviewed_at, verified_amount, verified_reference_no, verified_payment_date, remarks)
-       VALUES ($1, $2, $3, 'MANUAL', $4, 'APPROVED', $2, NOW(), $5, $6, $7, $8)
+         reviewed_by, reviewed_at, verified_amount, verified_reference_no, verified_payment_date, remarks, payment_purpose)
+       VALUES ($1, $2, $3, 'MANUAL', $4, 'APPROVED', $2, NOW(), $5, $6, $7, $8, $9)
        RETURNING id`,
-      [unitId, req.user.id, billId, body.paymentMethod, body.amount, placeholderReference, body.paymentDate, body.remarks || null],
+      [unitId, req.user.id, billId, body.paymentMethod, body.amount, placeholderReference, body.paymentDate, body.remarks || null, body.paymentPurpose],
     );
     const paymentId = result.rows[0].id;
     const verifiedReferenceNo = body.referenceNo || manualReference(body.paymentMethod, paymentId);
     if (!body.referenceNo) {
       await client.query("UPDATE payment_submissions SET verified_reference_no = $2 WHERE id = $1", [paymentId, verifiedReferenceNo]);
     }
-    await applyUnitCreditToOpenBills(client, unitId, billId, paymentId);
+    const allocations = await createPaymentAllocations(client, paymentId);
     const advanceBalance = await getUnitCreditBalance(client, unitId);
     await writeAuditLog({
       client,
@@ -300,6 +350,7 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
         targetBillId: billId,
         paymentMethod: body.paymentMethod,
         amount: body.amount,
+        paymentPurpose: body.paymentPurpose, allocations,
         verifiedReferenceNo,
         paymentDate: body.paymentDate,
         advanceBalance,
@@ -335,6 +386,35 @@ router.get("/", async (req, res, next) => {
     const result = await pool.query(`${paymentSelect} ${where} ORDER BY ps.submitted_at DESC`, params);
     return res.json({ payments: result.rows });
   } catch (error) { return next(error); }
+});
+
+router.patch('/:id/invoice-references', allowRoles('ADMIN', 'COLLECTOR'), requireId, async (req, res, next) => {
+  let client;
+  try {
+    const body = z.object({ invoices: z.array(z.object({
+      chargeType: z.enum(['WATER','ASSOCIATION_DUES']), invoiceNumber: z.string().trim().max(100).nullable(),
+    }).strict()).min(1).max(2) }).strict().parse(req.body);
+    if (new Set(body.invoices.map(row => row.chargeType)).size !== body.invoices.length) {
+      return res.status(400).json({ message: 'Enter each category only once.' });
+    }
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const payment = (await client.query('SELECT unit_id,review_status FROM payment_submissions WHERE id=$1', [req.resourceId])).rows[0];
+    if (!payment) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Payment not found.' }); }
+    await lockUnit(client, payment.unit_id);
+    if (payment.review_status !== 'APPROVED') { await client.query('ROLLBACK'); return res.status(409).json({ message: 'Invoice entry is for approved payments only.' }); }
+    const before = (await client.query('SELECT charge_type AS "chargeType",invoice_number AS "invoiceNumber" FROM payment_charge_allocations WHERE payment_submission_id=$1', [req.resourceId])).rows;
+    for (const row of body.invoices) {
+      if (!before.some(existing => existing.chargeType === row.chargeType)) throw Object.assign(new Error('This payment has no allocation for that category.'), { status: 400 });
+      await client.query('UPDATE payment_charge_allocations SET invoice_number=$3 WHERE payment_submission_id=$1 AND charge_type=$2', [req.resourceId,row.chargeType,row.invoiceNumber || null]);
+    }
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: 'PAYMENT_SUBMISSION', entityId: req.resourceId,
+      action: 'EDIT_INVOICES', oldValues: { invoices: before }, newValues: body });
+    await client.query('COMMIT');
+    const result = await pool.query(`${paymentSelect} WHERE ps.id=$1`, [req.resourceId]);
+    return res.json({ message: 'Issued invoice references saved.', payment: result.rows[0] });
+  } catch (error) { if (client) await client.query('ROLLBACK').catch(() => {}); return next(error); }
+  finally { client?.release(); }
 });
 
 router.get("/:id/receipt", requireId, async (req, res, next) => {
@@ -383,6 +463,8 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
   try {
     client = await pool.connect();
     await client.query("BEGIN");
+    const source = await client.query('SELECT unit_id FROM payment_submissions WHERE id=$1', [req.resourceId]);
+    if (source.rows[0]?.unit_id) await lockUnit(client, source.rows[0].unit_id);
     const locked = await client.query(
       `SELECT ps.*, ps.target_unit_bill_id AS target_bill_id
        FROM payment_submissions ps
@@ -410,7 +492,7 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
         [req.resourceId, req.user.id, unitId, body.paymentMethod, body.verifiedAmount,
           verifiedReferenceNo, body.verifiedPaymentDate, body.remarks || null],
       );
-      await applyUnitCreditToOpenBills(client, unitId, locked.rows[0].target_bill_id, req.resourceId);
+      const allocations = await createPaymentAllocations(client, req.resourceId);
       const advanceBalance = await getUnitCreditBalance(client, unitId);
       await writeAuditLog({
         client,
@@ -421,6 +503,7 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
         oldValues: { reviewStatus: "PENDING" },
         newValues: {
           reviewStatus: "APPROVED",
+          paymentPurpose: locked.rows[0].payment_purpose, allocations,
           paymentMethod: body.paymentMethod,
           verifiedAmount: body.verifiedAmount,
           verifiedReferenceNo,

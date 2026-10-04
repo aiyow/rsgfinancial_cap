@@ -3,13 +3,15 @@ import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
-import { applyDueLatePenalties, applyUnitCreditToOpenBills, billAppliedSql, billLatePenaltySql, billTotalSql, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
+import { applyDueLatePenalties, reconcileBillPayments, lockUnit, chargePaymentsSql, billAppliedSql, billLatePenaltySql, billTotalSql, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
+import { decorateResidentBills } from '../services/billPaymentDetails.js';
 import { defaultSoaTemplate, ensureSoaTemplate, normalizeSoaTemplate } from "../services/soaTemplate.js";
 import { writeAuditLog } from "../services/auditLog.js";
 import { createUserNotifications } from "../services/notifications.js";
 import { deliverSoaEmailNotifications } from "../services/soaEmailDeliveries.js";
 import { validateMeterReading } from "../services/meterReadingValidation.js";
 import { ensureBillingErrorSchema } from "../services/billingErrors.js";
+import { regeneratePrescriptiveRecommendations } from '../services/prescriptiveAnalytics.js';
 
 const router = express.Router();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");
@@ -35,7 +37,6 @@ const editBillSchema = z.object({
   message: "Change at least one SOA field.",
 });
 const paymentReferenceSchema = z.object({
-  invoiceNumber: z.union([z.string().trim().min(1).max(100), z.null()]).optional(),
   paymentNote: z.union([z.string().trim().min(1).max(1000), z.null()]).optional(),
 }).strict().refine((body) => Object.keys(body).length > 0, { message: "Update at least one payment reference field." });
 
@@ -66,6 +67,7 @@ const billSelect = `SELECT b.id, b.unit_id AS "unitId", b.billing_period_id AS "
   COALESCE(b.soa_template_snapshot, (SELECT template_data FROM soa_templates WHERE id = 1)) AS "soaTemplate",
   ${billLatePenaltySql} AS "latePenaltyAmount", ${billTotalSql} AS "totalAmount", ${approvedPaymentSql} AS "approvedAmount",
   ${unitAdvanceSql} AS "advanceBalance",
+  ${chargePaymentsSql} AS "chargePayments",
   GREATEST(${billTotalSql} - ${approvedPaymentSql}, 0) AS "remainingBalance",
   EXISTS (
     SELECT 1
@@ -120,11 +122,13 @@ router.get("/", async (req, res, next) => {
       conditions.push("b.published_at IS NOT NULL");
       params.push(req.user.id);
       conditions.push(`EXISTS (SELECT 1 FROM unit_assignments access
-        WHERE access.unit_id = b.unit_id AND access.user_id = $${params.length} AND access.end_date IS NULL)`);
+        WHERE access.unit_id = b.unit_id AND access.user_id = $${params.length} AND access.end_date IS NULL
+        AND access.start_date <= (NOW() AT TIME ZONE 'Asia/Manila')::date)`);
     }
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     const result = await pool.query(`${billSelect} ${where} ${groupBy} ORDER BY b.period_start_snapshot DESC, b.unit_number_snapshot`, params);
-    return res.json({ bills: result.rows.map((bill) => ({ ...bill, soaTemplate: normalizeSoaTemplate(bill.soaTemplate || defaultSoaTemplate) })) });
+    const bills = await decorateResidentBills(pool, result.rows, req.user);
+    return res.json({ bills: bills.map((bill) => ({ ...bill, soaTemplate: normalizeSoaTemplate(bill.soaTemplate || defaultSoaTemplate) })) });
   } catch (error) { return next(error); }
 });
 
@@ -140,7 +144,8 @@ router.get("/:id", requireId, async (req, res, next) => {
       conditions.push("b.published_at IS NOT NULL");
       params.push(req.user.id);
       conditions.push(`EXISTS (SELECT 1 FROM unit_assignments access
-        WHERE access.unit_id = b.unit_id AND access.user_id = $2 AND access.end_date IS NULL)`);
+        WHERE access.unit_id = b.unit_id AND access.user_id = $2 AND access.end_date IS NULL
+        AND access.start_date <= (NOW() AT TIME ZONE 'Asia/Manila')::date)`);
     }
     const billResult = await pool.query(`${billSelect} WHERE ${conditions.join(" AND ")} ${groupBy}`, params);
     if (!billResult.rows[0]) return res.status(404).json({ message: "Bill not found." });
@@ -149,7 +154,8 @@ router.get("/:id", requireId, async (req, res, next) => {
         ROUND(quantity * rate_applied, 2) AS amount, description
        FROM bill_charges WHERE unit_bill_id = $1 ORDER BY id`, [req.resourceId],
     );
-    return res.json({ bill: { ...billResult.rows[0], soaTemplate: normalizeSoaTemplate(billResult.rows[0].soaTemplate || defaultSoaTemplate), charges: chargeResult.rows } });
+    const [bill] = await decorateResidentBills(pool, billResult.rows, req.user);
+    return res.json({ bill: { ...bill, soaTemplate: normalizeSoaTemplate(bill.soaTemplate || defaultSoaTemplate), charges: chargeResult.rows } });
   } catch (error) { return next(error); }
 });
 
@@ -165,7 +171,7 @@ router.patch("/:id/payment-references", allowRoles("ADMIN", "COLLECTOR"), requir
       await client.query("ROLLBACK");
       return res.status(409).json({ message: "Add payment references after a payment has been approved." });
     }
-    const fields = { invoiceNumber: "invoice_number", paymentNote: "payment_note" };
+    const fields = { paymentNote: "payment_note" };
     const values = [];
     const updates = [];
     for (const [field, column] of Object.entries(fields)) {
@@ -194,10 +200,12 @@ router.patch("/:id", allowRoles("ADMIN", "COLLECTOR"), requireId, validateBody(e
     await ensureBillingErrorSchema(pool);
     client = await pool.connect();
     await client.query("BEGIN");
+    const unit = await client.query('SELECT unit_id FROM unit_bills WHERE id=$1', [req.resourceId]);
+    if (unit.rows[0]) await lockUnit(client, unit.rows[0].unit_id);
     const locked = await client.query(
       `SELECT b.*, p.status FROM unit_bills b
        JOIN billing_periods p ON p.id = b.billing_period_id
-       WHERE b.id = $1 FOR UPDATE OF b, p`, [req.resourceId],
+       WHERE b.id = $1 FOR UPDATE OF b`, [req.resourceId],
     );
     if (!locked.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "Bill not found." }); }
     if (!["GENERATED", "FORWARDED", "CLOSED"].includes(locked.rows[0].status)) {
@@ -327,8 +335,7 @@ router.patch("/:id", allowRoles("ADMIN", "COLLECTOR"), requireId, validateBody(e
     // A Billing Error correction may change a paid bill. Keep payment submissions intact,
     // then recalculate their applications so the revised balance and advance credit reconcile.
     if (paymentActivity.rows[0].active) {
-      await client.query("DELETE FROM payment_applications WHERE unit_bill_id = $1", [req.resourceId]);
-      await applyUnitCreditToOpenBills(client, current.unit_id, req.resourceId);
+      await reconcileBillPayments(client, req.resourceId);
     }
 
     await client.query(
@@ -339,6 +346,7 @@ router.patch("/:id", allowRoles("ADMIN", "COLLECTOR"), requireId, validateBody(e
     if (billingErrorReport) {
       await client.query("UPDATE billing_error_reports SET updated_at = NOW() WHERE id = $1", [billingErrorReport.id]);
     }
+    await regeneratePrescriptiveRecommendations(client);
 
     const after = await readBill(client, req.resourceId);
     await writeAuditLog({

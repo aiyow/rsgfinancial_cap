@@ -39,17 +39,24 @@ function billUrl(clientUrl, billId) {
   return `${String(clientUrl || "http://localhost:5173").replace(/\/$/, "")}/resident/bills/${billId}`;
 }
 
+function categoryText(delivery) {
+  if (delivery.waterBalance === undefined) return '';
+  return delivery.relationshipType === 'TENANT'
+    ? `\nWater balance: ${money(delivery.waterBalance)} (association dues are the owner's balance).`
+    : `\nWater balance: ${money(delivery.waterBalance)}\nAssociation balance: ${money(delivery.associationBalance)}`;
+}
+
 export function buildSoaEmailMessage({ delivery, clientUrl }) {
   const url = billUrl(clientUrl, delivery.billId);
   const recipient = delivery.recipientName ? `Hello ${delivery.recipientName},` : "Hello,";
   const subject = `Statement of Account available — Unit ${delivery.unitNumber}`;
   const text = `${recipient}\n\nYour Statement of Account for Unit ${delivery.unitNumber} is now available.\n`
     + `Billing period: ${delivery.periodStart} to ${delivery.periodEnd}\n`
-    + `Due date: ${delivery.dueDate}\nRemaining balance: ${money(delivery.remainingBalance)}\n\n`
+    + `Due date: ${delivery.dueDate}\n${delivery.balanceLabel || 'Remaining balance'}: ${money(delivery.remainingBalance)}${categoryText(delivery)}\n\n`
     + `Sign in to view your SOA: ${url}`;
   const html = `<p>${escapeHtml(recipient)}</p><p>Your <strong>Statement of Account</strong> for Unit ${escapeHtml(delivery.unitNumber)} is now available.</p>`
     + `<ul><li>Billing period: ${escapeHtml(delivery.periodStart)} to ${escapeHtml(delivery.periodEnd)}</li>`
-    + `<li>Due date: ${escapeHtml(delivery.dueDate)}</li><li>Remaining balance: ${escapeHtml(money(delivery.remainingBalance))}</li></ul>`
+    + `<li>Due date: ${escapeHtml(delivery.dueDate)}</li><li>${escapeHtml(delivery.balanceLabel || 'Remaining balance')}: ${escapeHtml(money(delivery.remainingBalance))}</li></ul><p>${escapeHtml(categoryText(delivery))}</p>`
     + `<p><a href="${escapeHtml(url)}">Sign in to view your SOA</a></p>`;
   return { subject, text, html, url };
 }
@@ -83,12 +90,12 @@ export function buildSoaReminderEmailMessage({ delivery, reminderType, clientUrl
   const subject = `${copy.subject} — Unit ${delivery.unitNumber}`;
   const text = `${recipient}\n\n${copy.intro}\n`
     + `Billing period: ${delivery.periodStart} to ${delivery.periodEnd}\n`
-    + `Due date: ${delivery.dueDate}\nRemaining balance: ${money(delivery.remainingBalance)}${penaltyText}\n\n`
+    + `Due date: ${delivery.dueDate}\n${delivery.balanceLabel || 'Remaining balance'}: ${money(delivery.remainingBalance)}${categoryText(delivery)}${penaltyText}\n\n`
     + `Sign in to view and pay your SOA: ${url}`;
   const html = `<p>${escapeHtml(recipient)}</p><p>${escapeHtml(copy.intro)}</p>`
     + `<p>Your <strong>Statement of Account</strong> for Unit ${escapeHtml(delivery.unitNumber)}:</p>`
     + `<ul><li>Billing period: ${escapeHtml(delivery.periodStart)} to ${escapeHtml(delivery.periodEnd)}</li>`
-    + `<li>Due date: ${escapeHtml(delivery.dueDate)}</li><li>Remaining balance: ${escapeHtml(money(delivery.remainingBalance))}</li>${penaltyHtml}</ul>`
+    + `<li>Due date: ${escapeHtml(delivery.dueDate)}</li><li>${escapeHtml(delivery.balanceLabel || 'Remaining balance')}: ${escapeHtml(money(delivery.remainingBalance))}</li>${penaltyHtml}</ul><p>${escapeHtml(categoryText(delivery))}</p>`
     + `<p><a href="${escapeHtml(url)}">Sign in to view and pay your SOA</a></p>`;
   return { subject, text, html, url };
 }

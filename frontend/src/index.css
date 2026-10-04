@@ -302,6 +302,10 @@ legend,
 .resident-shell .resident-insights { box-shadow: inset 4px 0 0 #65b87d; }
 .resident-shell main { background: var(--app-bg); }
 .resident-shell main > .mx-auto > .space-y-8 { gap: 24px; }
+.resident-dashboard-chart { height: 320px; }
+.resident-dashboard-shell .resident-metric-projected { background: #edf8f3; border-color: #b8dfc9; }
+/* The desktop scrollbar must not force a 320px phone layout sideways. */
+body:has(.resident-bills-shell) { min-width: 0; }
 
 @media (max-width: 639px) {
   .role-card { min-height: 92px; padding: 12px; }
@@ -311,6 +315,31 @@ legend,
   .resident-welcome-mark { display: none; }
   .resident-chart-controls { align-items: stretch; flex-direction: column; }
   .resident-chart-select-label { min-width: 0; }
+  /* Keep the resident overview dense without reducing touch target sizes. */
+  :is(.resident-dashboard-shell, .resident-bills-shell) main > .mx-auto { padding: 12px; }
+  .resident-dashboard-shell main > .mx-auto > .space-y-8 > :not(:last-child) { margin-bottom: 16px; }
+  :is(.resident-dashboard-shell, .resident-bills-shell) header .ui-title,
+  :is(.resident-dashboard-shell, .resident-bills-shell) header .dashboard-breadcrumb-separator { display: none; }
+  .resident-bills-shell .resident-bills-panel { padding: 12px; }
+  .resident-bills-shell .resident-bills-panel > h2 { font-size: 1rem; }
+  .resident-bills-shell .resident-bills-panel > p { font-size: 0.75rem; line-height: 1.5; }
+  .resident-bills-shell .resident-bills-panel > div { margin-top: 12px; }
+  .resident-bill-detail-shell main > .mx-auto > .space-y-8 > :not(:last-child) { margin-bottom: 12px; }
+  .resident-dashboard-shell .resident-welcome { padding: 12px 14px; border-radius: 12px; }
+  .resident-dashboard-shell .resident-water-panel { padding: 12px; }
+  .resident-dashboard-shell .resident-water-panel > h2 { font-size: 1rem; }
+  .resident-dashboard-shell .resident-water-panel > p { font-size: 0.75rem; line-height: 1.5; }
+  .resident-dashboard-shell .resident-water-panel > div { margin-top: 12px; }
+  .resident-dashboard-shell .resident-metric-card { padding: 10px; border-radius: 10px; }
+  .resident-dashboard-shell .resident-chart-controls { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; border-radius: 10px; padding: 8px; box-shadow: none; }
+  .resident-dashboard-shell .resident-chart-controls > div { flex: 1 1 82px; gap: 6px; }
+  .resident-dashboard-shell .resident-chart-control-icon { display: none; }
+  .resident-dashboard-shell .resident-chart-select-label { flex: 1 1 150px; max-width: 100%; }
+  .resident-dashboard-shell .resident-range-selector { width: 100%; min-height: 44px; border-radius: 8px; font-size: 11px; }
+  .resident-dashboard-shell .resident-range-selector > svg:first-child { display: none; }
+  .resident-dashboard-chart { height: 260px; }
+  .resident-dashboard-shell .resident-insights { padding: 12px; }
+  .resident-dashboard-shell .resident-insights article { padding: 12px; }
 }
 
 /* Keep the interface weight closer to the compact reference navigation. */
@@ -415,6 +444,14 @@ legend,
 .soa-footer .soa-thank-you { background: var(--soa-highlight, #cceabd); font-size: 12px; letter-spacing: 0.35em; }
 .resident-soa-scroll { overflow-x: auto; overscroll-behavior-x: contain; border-radius: 4px; }
 .resident-soa-scroll > div { min-width: 780px; }
+.soa-viewer-viewport { overflow: auto; max-height: 65dvh; padding: 8px; background: #edf3ef; overscroll-behavior: contain; }
+.soa-viewer-viewport:focus-visible { outline: 2px solid #2f8f5b; outline-offset: -2px; }
+.soa-viewer-canvas { position: relative; margin-inline: auto; overflow: hidden; }
+.soa-viewer-document { position: absolute; top: 0; left: 0; transform-origin: top left; }
+.soa-viewer-fullscreen { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; width: 100%; height: 100dvh; margin: 0 !important; border: 0; border-radius: 0; }
+.soa-viewer-fullscreen > .print-hidden { flex-shrink: 0; }
+.soa-viewer-fullscreen .soa-viewer-viewport { min-height: 0; max-height: none; flex: 1; }
+.soa-viewer-fullscreen > p { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 
 @media (max-width: 640px) {
   .soa-header-grid, .soa-payment-band { grid-template-columns: 1fr; }
@@ -423,12 +460,12 @@ legend,
   .soa-payment-instruction { min-height: 54px; }
   .soa-primary-table { font-size: 9px; }
   .soa-table th, .soa-table td { padding: 4px 2px; }
-  .resident-soa-scroll .soa-header-grid { grid-template-columns: minmax(0, 1fr) minmax(250px, 1.06fr); }
-  .resident-soa-scroll .soa-payment-band { grid-template-columns: minmax(245px, 2fr) minmax(0, 3fr); }
-  .resident-soa-scroll .soa-brand-panel, .resident-soa-scroll .soa-payment-details { border-right: 1px solid #285b78; border-bottom: 0; }
-  .resident-soa-scroll .soa-payment-instruction { min-height: 0; }
-  .resident-soa-scroll .soa-primary-table { font-size: 12px; }
-  .resident-soa-scroll .soa-table th, .resident-soa-scroll .soa-table td { padding: 6px 5px; }
+  :is(.resident-soa-scroll, .soa-viewer-document) .soa-header-grid { grid-template-columns: minmax(0, 1fr) minmax(250px, 1.06fr); }
+  :is(.resident-soa-scroll, .soa-viewer-document) .soa-payment-band { grid-template-columns: minmax(245px, 2fr) minmax(0, 3fr); }
+  :is(.resident-soa-scroll, .soa-viewer-document) .soa-brand-panel, :is(.resident-soa-scroll, .soa-viewer-document) .soa-payment-details { border-right: 1px solid #285b78; border-bottom: 0; }
+  :is(.resident-soa-scroll, .soa-viewer-document) .soa-payment-instruction { min-height: 0; }
+  :is(.resident-soa-scroll, .soa-viewer-document) .soa-primary-table { font-size: 12px; }
+  :is(.resident-soa-scroll, .soa-viewer-document) .soa-table th, :is(.resident-soa-scroll, .soa-viewer-document) .soa-table td { padding: 6px 5px; }
 }
 
 @page {
@@ -439,8 +476,11 @@ legend,
 @media print {
   .print-hidden { display: none !important; }
   .dashboard-shell { display: block !important; }
-  html, body { width: 100%; background: white; }
+  html, body { width: 100%; height: auto !important; overflow: visible !important; background: white; }
   main { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+  .soa-viewer { position: static !important; display: block !important; height: auto !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; overflow: visible !important; }
+  .soa-viewer-viewport { max-height: none !important; overflow: visible !important; padding: 0 !important; background: white; }
+  .soa-viewer-canvas, .soa-viewer-document { position: static !important; width: 100% !important; height: auto !important; transform: none !important; overflow: visible !important; visibility: visible !important; }
   .resident-soa-scroll,
   .resident-soa-scroll > div {
     width: 100% !important;

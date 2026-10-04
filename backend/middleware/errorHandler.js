@@ -9,10 +9,12 @@ const CONFLICT_MESSAGES = {
   unit_bills_unit_period_unique: "That unit already has a bill for this billing period.",
   payment_submissions_receipt_hash_unique: "That receipt image was already submitted.",
   payment_submissions_approved_reference_unique: "That payment reference number was already approved.",
+  category_payment_reference_unique: "That payment reference number was already approved.",
 };
 
 function errorHandler(error, req, res, next) {
   if (res.headersSent) return next(error);
+  if(error.name === 'ZodError') return res.status(400).json({ message: error.issues?.[0]?.message || 'The submitted data is invalid.' });
 
   if (error.code === "CLOUDINARY_NOT_CONFIGURED") {
     return res.status(503).json({ message: error.message });
@@ -38,7 +40,7 @@ function errorHandler(error, req, res, next) {
     return res.status(400).json({ message: "The submitted data is invalid." });
   }
 
-  if (Number.isInteger(error.status) && error.status >= 400 && error.status < 500) {
+  if (Number.isInteger(error.status) && error.status >= 400 && error.status < 600) {
     return res.status(error.status).json({ message: error.message || "The submitted data is invalid." });
   }
 

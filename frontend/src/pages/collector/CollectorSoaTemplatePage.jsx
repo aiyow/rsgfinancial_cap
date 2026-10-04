@@ -34,7 +34,8 @@ const defaultTemplate = {
 
 const previewBill = {
   id: 'template-preview',
-  unitNumber: 'A-101',
+  unitNumber: '101',
+  floor: '1',
   payerName: 'Sample Resident',
   statementDate: '2026-09-20',
   dueDate: '2026-09-30',
@@ -43,14 +44,17 @@ const previewBill = {
   previousReading: 1240,
   currentReading: 1258,
   totalAmount: 2076,
-  remainingBalance: 2076,
+  remainingBalance: 1500,
   advanceBalance: 0,
-  approvedAmount: 0,
+  approvedAmount: 576,
   latePenaltyAmount: 0,
-  invoiceNumber: 'INV-2026-09-A101',
+  chargePayments: {
+    WATER: { currentAmount: 576, billedAmount: 576, penaltyAmount: 0, approvedAmount: 576, remainingBalance: 0, advanceBalance: 0, invoiceReferences: ['W-SAMPLE-001'] },
+    ASSOCIATION_DUES: { currentAmount: 1500, billedAmount: 1500, penaltyAmount: 0, approvedAmount: 0, remainingBalance: 1500, advanceBalance: 0, invoiceReferences: [] },
+  },
   charges: [
     { chargeType: 'ASSOCIATION_DUES', description: 'Monthly Association Dues', amount: 1500 },
-    { chargeType: 'WATER', description: 'Water Consumption (18 cu. m.)', amount: 576 },
+    { chargeType: 'WATER', description: 'Water Consumption (18 cu. m.)', amount: 576, quantity: 18, rateApplied: 32 },
   ],
 }
 

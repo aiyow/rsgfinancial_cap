@@ -4,10 +4,12 @@ import {
   Bar, CartesianGrid, ComposedChart, Legend, Line, LineChart,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { Activity, ChevronDown, Lightbulb, ListFilter, ReceiptText } from 'lucide-react'
+import { Activity, ChevronDown, CircleCheck, Clock3, Lightbulb, ListFilter, ReceiptText } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import { isWaterOnly, payableBalance, payablePaid } from '../../utils/chargePayments'
+import ChargePaymentSummary from '../../components/ChargePaymentSummary'
 
 function number(value) {
   return value === null || value === undefined ? null : Number(value)
@@ -18,7 +20,13 @@ function monthLabel(value) {
 }
 
 function money(value) {
-  return value === null || value === undefined ? 'Unavailable' : `PHP ${Number(value).toFixed(2)}`
+  return value === null || value === undefined ? 'Unavailable' : `₱${Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+}
+
+function shortDate(value) {
+  if (!value) return 'Unavailable'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? 'Unavailable' : date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
 function waterBillMoney(value) {
@@ -67,7 +75,7 @@ export default function ResidentDashboard() {
 
   useEffect(() => {
     let active = true
-    setLoading(true)
+    queueMicrotask(() => { if (active) setLoading(true) })
     Promise.all([
       apiRequest('/api/bills', { token }),
       apiRequest('/api/analytics/resident', { token }),
@@ -152,26 +160,26 @@ export default function ResidentDashboard() {
   const meterDomain = useMemo(() => paddedDomain(meterData.flatMap((row) => [row.actual, row.predicted])), [meterData])
 
   return (
-    <DashboardLayout title="Resident dashboard" description="View published SOAs, payment status, water analytics, and personalized recommendations.">
+    <DashboardLayout title="Resident dashboard" className="resident-shell resident-dashboard-shell">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
       {loading ? <ResidentDashboardSkeleton /> : <>
-      <section className="resident-welcome"><div><p className="text-sm font-bold capitalize tracking-[0.16em] text-[var(--primary)]">Resident portal</p><h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Welcome back, {displayName(user.fullName)}</h1><p className="mt-2 text-sm text-slate-500">Unit {selectedUnit?.unitNumber || '—'}{selectedUnit?.relationshipType && <><span className="mx-1 text-slate-300">·</span><span>{relationshipLabel(selectedUnit.relationshipType)}</span></>}<span className="mx-1 text-slate-300">·</span>The ResiDens</p></div><div className="resident-welcome-mark"><Activity size={22} /></div></section>
+      <section className="resident-welcome"><div><p className="hidden text-xs font-bold capitalize tracking-[0.16em] text-[var(--primary)] sm:block">Resident portal</p><h1 className="text-lg font-black tracking-tight text-slate-900 sm:mt-2 sm:text-3xl">Welcome back, {displayName(user.fullName)}</h1><p className="mt-1 text-xs text-slate-500 sm:mt-2 sm:text-sm">Unit {selectedUnit?.unitNumber || '—'}{selectedUnit?.relationshipType && <><span className="mx-1 text-slate-300">·</span><span>{relationshipLabel(selectedUnit.relationshipType)}</span></>}<span className="mx-1 text-slate-300">·</span>The ResiDens</p></div><div className="resident-welcome-mark"><Activity size={22} /></div></section>
 
       <CurrentBillCard bill={currentBill} relationshipType={selectedUnit?.relationshipType} />
 
-      <Panel title="Water consumption analytics" description="Forecasts are estimates based on five consecutive valid monthly readings and do not replace your actual bill.">
+      <Panel className="resident-water-panel" title="Water consumption" description="Estimates use five consecutive valid monthly readings, not your actual bill.">
         {analyticsUnits.length === 0 ? <EmptyRow message="No analytics data yet. Import historical readings first." /> : (
-          <div className="space-y-6">
-            <div className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-3 sm:space-y-6">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 sm:p-4">
               <div>
                 <p className="text-xs font-bold capitalize tracking-wide text-slate-400">Current unit</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2"><p className="text-2xl font-black text-slate-950">Unit {selectedUnit?.unitNumber}</p>{selectedUnit?.relationshipType && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">{relationshipLabel(selectedUnit.relationshipType)}</span>}</div>
+                <div className="mt-1 flex flex-wrap items-center gap-2"><p className="text-base font-black text-slate-950 sm:text-2xl">Unit {selectedUnit?.unitNumber}</p>{selectedUnit?.relationshipType && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-800">{relationshipLabel(selectedUnit.relationshipType)}</span>}</div>
               </div>
               {analyticsUnits.length > 1 && (
-                <div className="relative w-full max-w-[240px] text-sm font-bold text-slate-700">
-                  <p className="mb-1.5">Change unit</p>
-                  <button type="button" aria-expanded={unitMenuOpen} onClick={() => setUnitMenuOpen((current) => !current)} className="flex w-full items-center gap-3 rounded-xl border border-emerald-300 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-emerald-500 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                <div className="relative w-full max-w-[240px] text-sm font-bold text-slate-700 sm:w-auto sm:min-w-52">
+                  <p className="sr-only sm:not-sr-only sm:mb-1.5">Change unit</p>
+                  <button type="button" aria-label="Change current unit" aria-expanded={unitMenuOpen} onClick={() => setUnitMenuOpen((current) => !current)} className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-emerald-300 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-emerald-500 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
                     <span className="min-w-0 flex-1 truncate text-sm font-black text-slate-900">Unit {selectedUnit?.unitNumber}<span className="ml-1.5 text-xs font-medium text-slate-500">· {relationshipLabel(selectedUnit?.relationshipType)}</span></span>
                     <ChevronDown size={18} className={`shrink-0 text-emerald-700 transition ${unitMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                   </button>
@@ -180,11 +188,11 @@ export default function ResidentDashboard() {
               )}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <MetricCard label="Latest consumption" value={latestReading ? `${number(latestReading.consumption).toFixed(3)} m³` : 'Unavailable'} />
-              <MetricCard label="Recent 5-month average" value={recentAverage === null ? 'Unavailable' : `${recentAverage.toFixed(3)} m³`} />
-              <MetricCard label="Next-month estimate" value={forecast?.status === 'READY' ? `${number(forecast.predictedConsumption).toFixed(3)} m³` : 'Not enough valid data'} />
-              <MetricCard label="Estimated water charge" value={forecast?.status === 'READY' ? money(forecast.estimatedWaterCharge) : 'Unavailable'} />
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 xl:grid-cols-4">
+              <MetricCard label="Latest use" value={latestReading ? `${number(latestReading.consumption).toFixed(3)} m³` : 'Unavailable'} detail={latestReading ? monthLabel(latestReading.periodStart) : null} />
+              <MetricCard label="5-month average" value={recentAverage === null ? 'Unavailable' : `${recentAverage.toFixed(3)} m³`} />
+              <MetricCard label="Next-month estimate" value={forecast?.status === 'READY' ? `${number(forecast.predictedConsumption).toFixed(3)} m³` : 'Unavailable'} detail={forecast?.forecastForMonth ? monthLabel(forecast.forecastForMonth) : null} projected />
+              <MetricCard label="Estimated charge" value={forecast?.status === 'READY' ? money(forecast.estimatedWaterCharge) : 'Unavailable'} projected />
             </div>
 
             <div className="resident-chart-controls">
@@ -192,13 +200,13 @@ export default function ResidentDashboard() {
                 <span className="resident-chart-control-icon"><Activity size={17} aria-hidden="true" /></span>
                 <div className="min-w-0">
                   <p className="text-sm font-black text-slate-800">Chart history</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">{resetIndex >= 0 ? `A meter reset was recorded in ${monthLabel(history[resetIndex].periodStart)}. Old-meter readings are hidden by default.` : 'Choose how many recent months to show.'}</p>
+                  <p className={`mt-1 text-xs leading-5 text-slate-500 ${resetIndex < 0 ? 'hidden sm:block' : ''}`}>{resetIndex >= 0 ? `Meter reset: ${monthLabel(history[resetIndex].periodStart)}. Old readings are hidden by default.` : 'Choose how many recent months to show.'}</p>
                 </div>
               </div>
               <label className="resident-chart-select-label">
-                <span>Viewing</span>
+                <span className="sr-only sm:not-sr-only">Viewing</span>
                 <span className="relative block">
-                  <button type="button" aria-expanded={chartRangeMenuOpen} onClick={() => setChartRangeMenuOpen((current) => !current)} className="resident-range-selector">
+                  <button type="button" aria-label="Choose chart history range" aria-expanded={chartRangeMenuOpen} onClick={() => setChartRangeMenuOpen((current) => !current)} className="resident-range-selector">
                     <ListFilter size={15} aria-hidden="true" />
                     <span className="min-w-0 flex-1 truncate text-left">{chartRange === 'RESET' ? (resetIndex >= 0 ? 'Since latest meter reset' : 'All available readings') : chartRange === 'ALL' ? 'All readings' : `Last ${chartRange} month${chartRange === '1' ? '' : 's'}`}</span>
                     <ChevronDown size={15} className={`shrink-0 text-[#587064] transition ${chartRangeMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
@@ -227,16 +235,16 @@ export default function ResidentDashboard() {
 
             {forecast && forecast.status !== 'READY' && <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{forecast.reason}</p>}
 
-            <div className="grid gap-6 xl:grid-cols-2">
+            <div className="grid gap-3 sm:gap-6 xl:grid-cols-2">
               <ChartCard title="Monthly Water Bill" description="Actual water charges and the estimated charge for the next month.">
                 {waterBillData.length ? (
-                  <ResponsiveContainer width="100%" height={320}>
-                    <ComposedChart data={waterBillData} margin={{ top: 10, right: 12, left: 28, bottom: 20 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={waterBillData} margin={{ top: 10, right: 8, left: 0, bottom: 10 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#dceee2" />
                       <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
-                      <YAxis width={88} tick={{ fontSize: 12 }} tickFormatter={waterBillMoney} />
+                      <YAxis width={62} tick={{ fontSize: 11 }} tickFormatter={(value) => `₱${Number(value).toLocaleString('en-PH')}`} />
                       <Tooltip formatter={(value) => [waterBillMoney(value)]} />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
                       <Bar dataKey="actualWaterBill" name="Actual Water Bill" fill="#2563eb" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={0} animationDuration={1000} animationEasing="ease-out" />
                       {forecast?.status === 'READY' && <Bar dataKey="estimatedWaterBill" name="Estimated Water Bill" fill="#f59e0b" radius={[5, 5, 0, 0]} maxBarSize={64} animationBegin={120} animationDuration={1000} animationEasing="ease-out" />}
                     </ComposedChart>
@@ -246,13 +254,13 @@ export default function ResidentDashboard() {
 
               <ChartCard title="Meter-reading forecast" description="Recorded monthly meter readings and the predicted next reading.">
                 {meterData.length ? (
-                  <ResponsiveContainer width="100%" height={320}>
+                  <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={meterData} margin={{ top: 10, right: 12, left: 0, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#dceee2" />
                       <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
                       <YAxis domain={meterDomain} tick={{ fontSize: 12 }} />
                       <Tooltip formatter={(value) => [Number(value).toFixed(3)]} />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
                       <Line type="monotone" dataKey="actual" name="Monthly meter reading" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#ffffff', strokeWidth: 3 }} />
                       {forecast?.status === 'READY' && <Line type="monotone" dataKey="predicted" name="Predicted reading" stroke="#f59e0b" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 4, fill: '#ffffff', strokeWidth: 3 }} connectNulls />}
                     </LineChart>
@@ -298,9 +306,9 @@ function ResidentDashboardSkeleton() {
   return (
     <div className="animate-pulse" aria-label="Loading resident overview" role="status">
       <span className="sr-only">Loading your overview…</span>
-      <section className="flex items-center justify-between rounded-2xl bg-emerald-50 p-6 sm:p-7"><div className="space-y-3"><div className="h-3 w-28 rounded bg-emerald-200" /><div className="h-9 w-72 max-w-[65vw] rounded bg-emerald-200" /><div className="h-4 w-44 rounded bg-emerald-100" /></div><div className="size-14 rounded-2xl bg-emerald-200" /></section>
-      <section className="mt-6 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm"><div className="flex flex-col gap-5 bg-emerald-50/70 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"><div className="space-y-3"><div className="h-3 w-40 rounded bg-emerald-200" /><div className="h-8 w-56 rounded bg-emerald-200" /><div className="h-4 w-72 max-w-[65vw] rounded bg-emerald-100" /></div><div className="h-14 w-44 rounded-xl bg-emerald-200" /></div><div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-20 rounded-xl bg-emerald-50" />)}</div></section>
-      <section className="mt-6 rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm sm:p-6"><div className="h-6 w-64 rounded bg-slate-200" /><div className="mt-3 h-4 w-4/5 rounded bg-slate-100" /><div className="mt-6 rounded-xl bg-slate-50 p-4"><div className="flex items-center justify-between"><div className="space-y-2"><div className="h-3 w-24 rounded bg-emerald-100" /><div className="h-7 w-36 rounded bg-emerald-200" /></div><div className="h-10 w-40 rounded-xl bg-emerald-100" /></div></div><div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-24 rounded-2xl border border-emerald-100 bg-emerald-50" />)}</div><div className="mt-6 grid gap-6 xl:grid-cols-2">{Array.from({ length: 2 }, (_, index) => <div key={index} className="h-72 rounded-2xl border border-emerald-100 bg-slate-50" />)}</div></section>
+      <section className="rounded-2xl bg-emerald-50 p-3 sm:p-6"><div className="h-6 w-60 max-w-full rounded bg-emerald-200" /><div className="mt-2 h-3 w-44 rounded bg-emerald-100" /></section>
+      <section className="mt-4 overflow-hidden rounded-2xl border border-emerald-100 bg-white shadow-sm"><div className="space-y-3 bg-emerald-50/70 p-4 sm:p-6"><div className="h-3 w-40 rounded bg-emerald-200" /><div className="h-6 w-56 max-w-full rounded bg-emerald-200" /><div className="h-3 w-64 max-w-full rounded bg-emerald-100" /><div className="h-9 w-40 rounded bg-emerald-200" /></div><div className="grid grid-cols-2 gap-3 p-4 sm:p-6">{Array.from({ length: 2 }, (_, index) => <div key={index} className="h-12 rounded-xl bg-emerald-50" />)}</div><div className="mx-4 mb-4 h-11 rounded-lg bg-emerald-100" /></section>
+      <section className="mt-4 rounded-2xl border border-emerald-100 bg-white p-3 shadow-sm sm:p-6"><div className="h-6 w-56 max-w-full rounded bg-slate-200" /><div className="mt-3 h-4 w-4/5 rounded bg-slate-100" /><div className="mt-3 h-14 rounded-xl bg-slate-50" /><div className="mt-3 grid grid-cols-2 gap-2 xl:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-20 rounded-xl border border-emerald-100 bg-emerald-50" />)}</div><div className="mt-4 grid gap-3 xl:grid-cols-2">{Array.from({ length: 2 }, (_, index) => <div key={index} className="h-64 rounded-2xl border border-emerald-100 bg-slate-50" />)}</div></section>
     </div>
   )
 }
@@ -310,26 +318,34 @@ function CurrentBillCard({ bill, relationshipType }) {
     return <section className="rounded-2xl border border-dashed border-emerald-200 bg-white p-6 text-center shadow-sm"><ReceiptText className="mx-auto text-emerald-700" size={26} /><h2 className="mt-3 text-lg font-black text-slate-950">No published SOA yet</h2><p className="mt-1 text-sm text-slate-500">Your current bill will appear here after it has been published.</p></section>
   }
 
-  const paid = bill.paymentStatus === 'PAID'
+  const paid = payableBalance(bill) === 0
   const statusStyle = paid ? 'bg-emerald-100 text-emerald-800' : bill.paymentStatus === 'PARTIAL' ? 'bg-sky-100 text-sky-800' : bill.paymentStatus === 'OVERDUE' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'
+  const ReviewIcon = (bill.hasPayablePendingPayment ?? bill.hasPendingPayment) ? Clock3 : CircleCheck
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
-      <div className="grid gap-6 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+    <section className="resident-current-bill overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm" aria-label="Current statement of account">
+      <div className="grid gap-3 bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-4 sm:gap-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
         <div>
-          <p className="text-xs font-bold capitalize tracking-[0.16em] text-emerald-700">Current statement of account</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2"><h2 className="text-2xl font-black text-slate-950">Unit {bill.unitNumber}</h2>{relationshipType && <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">{relationshipLabel(relationshipType)}</span>}<span className={`rounded-full px-2.5 py-1 text-xs font-black ${statusStyle}`}>{bill.paymentStatus}</span></div>
-          <p className="mt-2 text-sm text-slate-600">Billing period: {String(bill.periodStart).slice(0, 10)} – {String(bill.periodEnd).slice(0, 10)} <span className="mx-1 text-slate-300">·</span> Due {String(bill.dueDate).slice(0, 10)}</p>
+          <p className="text-[11px] font-bold capitalize tracking-wide text-emerald-700 sm:text-xs">Current statement of account</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2"><h2 className="text-lg font-black text-slate-950 sm:text-2xl">Unit {bill.unitNumber}</h2>{relationshipType && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800 sm:text-xs">{relationshipLabel(relationshipType)}</span>}<span className={`rounded-full px-2 py-0.5 text-[11px] font-black sm:text-xs ${statusStyle}`}>{bill.paymentStatus}</span></div>
+          <p className="mt-1.5 text-xs leading-5 text-slate-600"><span className="font-medium">Period:</span> {shortDate(bill.periodStart)} – {shortDate(bill.periodEnd)}</p>
         </div>
-        <div className="flex items-center gap-3"><span className="grid size-12 place-items-center rounded-2xl bg-emerald-100 text-emerald-700"><ReceiptText size={23} /></span><div><p className="text-xs font-bold capitalize tracking-[0.12em] text-slate-500">{paid ? 'Paid amount' : 'Amount due'}</p><p className="mt-1 text-2xl font-black text-slate-950">{money(paid ? bill.approvedAmount : bill.remainingBalance)}</p></div></div>
+        <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 lg:gap-x-6">
+          <div><p className="text-xs font-medium text-slate-500">{isWaterOnly(bill) ? paid ? 'Water paid' : 'Water balance' : paid ? 'Paid amount' : 'Balance due'}</p><p className="mt-0.5 text-2xl font-black tracking-tight tabular-nums text-slate-950 sm:text-3xl">{money(paid ? payablePaid(bill) : payableBalance(bill))}</p></div>
+          <div className="pb-0.5"><p className="text-[11px] text-slate-500">Due date</p><p className={`mt-0.5 text-xs font-semibold ${bill.paymentStatus === 'OVERDUE' ? 'text-rose-700' : 'text-slate-700'}`}><time dateTime={String(bill.dueDate || '').slice(0, 10)}>{shortDate(bill.dueDate)}</time></p></div>
+        </div>
       </div>
-      <div className="grid gap-3 border-t border-emerald-100 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">
+      <dl className="grid grid-cols-2 gap-3 border-t border-emerald-100 px-4 py-3 sm:grid-cols-3 sm:px-6 sm:py-4">
         <Info label="Total amount" value={money(bill.totalAmount)} />
-        <Info label="Approved payments" value={money(bill.approvedAmount)} />
-        <Info label="Remaining balance" value={money(bill.remainingBalance)} />
-        <Info label="Payment review" value={bill.hasPendingPayment ? 'Receipt awaiting review' : paid ? 'Payment complete' : 'No receipt pending'} />
+        <Info label={isWaterOnly(bill) ? "Water paid" : "Approved payments"} value={money(payablePaid(bill))} />
+        <Info label="Remaining balance" value={money(bill.remainingBalance)} className="hidden sm:block" />
+      </dl>
+      <div className="px-4 pb-3 sm:px-6"><ChargePaymentSummary bill={bill} /></div>
+      <div className={`mx-4 flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs sm:mx-6 ${(bill.hasPayablePendingPayment ?? bill.hasPendingPayment) ? 'bg-amber-50 text-amber-800' : 'bg-slate-50 text-slate-600'}`} role="status">
+        <ReviewIcon size={14} className="shrink-0" aria-hidden="true" />
+        <span><span className="sr-only">Payment review: </span>{(bill.hasPayablePendingPayment ?? bill.hasPendingPayment) ? 'Receipt awaiting review' : paid ? 'Payment complete' : 'No receipt pending'}</span>
       </div>
-      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-emerald-100 bg-emerald-50/40 px-5 py-4 sm:px-6"><Link to="/resident/bills" className="rounded-lg border border-emerald-200 bg-white px-4 py-2 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100">View all SOAs</Link><Link to={`/resident/bills/${bill.id}`} className="resident-soa-button resident-soa-button-green">Open SOA</Link></div>
+      <div className="grid grid-cols-2 gap-2 px-4 py-3 sm:flex sm:justify-end sm:gap-3 sm:px-6 sm:py-4"><Link to="/resident/bills" className="flex min-h-11 items-center justify-center rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 sm:text-sm">View all SOAs</Link><Link to={`/resident/bills/${bill.id}`} className="resident-soa-button resident-soa-button-green min-h-11 justify-center focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600">Open SOA</Link></div>
     </section>
   )
 }
@@ -338,21 +354,21 @@ function relationshipLabel(value) {
   return value === 'OWNER' ? 'Owner' : value === 'TENANT' ? 'Tenant' : 'Resident'
 }
 
-function Info({ label, value }) {
+function Info({ label, value, className = '' }) {
   return (
-    <div className="resident-soa-info rounded-xl p-3">
-      <p className="text-xs font-bold capitalize text-slate-400">{label}</p>
-      <p className="mt-1 font-semibold text-slate-900">{value}</p>
+    <div className={className}>
+      <dt className="text-[11px] font-medium text-slate-500 sm:text-xs">{label}</dt>
+      <dd className="mt-1 text-sm font-semibold tabular-nums text-slate-900 sm:text-base">{value}</dd>
     </div>
   )
 }
 
-function MetricCard({ label, value }) {
-  return <div className="resident-metric-card"><p className="text-xs font-bold capitalize tracking-wide text-slate-500">{label}</p><p className="mt-2 text-xl font-black text-slate-900">{value}</p></div>
+function MetricCard({ label, value, detail, projected = false }) {
+  return <div className={`resident-metric-card min-w-0 ${projected ? 'resident-metric-projected' : ''}`}><p className="text-[11px] font-medium text-slate-500 sm:text-xs">{label}</p><p className="mt-1 break-words text-base font-black tabular-nums text-slate-900 sm:mt-2 sm:text-xl">{value}</p>{detail && <p className="mt-0.5 text-[10px] text-slate-500 sm:text-xs">{detail}</p>}</div>
 }
 
 function ChartCard({ title, description, children }) {
-  return <div className="resident-chart-card min-w-0 rounded-2xl border p-4"><h3 className="font-black text-slate-900">{title}</h3><p className="mt-1 text-sm text-slate-500">{description}</p><div className="mt-4">{children}</div></div>
+  return <div className="resident-chart-card min-w-0 rounded-2xl border p-3 sm:p-4"><h3 className="text-sm font-black text-slate-900 sm:text-base">{title}</h3><p className="mt-1 text-xs text-slate-500 sm:text-sm">{description}</p><div className="resident-dashboard-chart mt-3 sm:mt-4">{children}</div></div>
 }
 
 function isPositiveInsight(recommendation) {

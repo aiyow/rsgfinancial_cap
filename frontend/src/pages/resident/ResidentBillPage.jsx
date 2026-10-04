@@ -1,16 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Download, FileClock, LoaderCircle, Maximize2, Printer, QrCode, RotateCcw, Upload, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowLeft, Download, FileClock, LoaderCircle, Printer, QrCode, RotateCcw, Upload, X, ZoomIn, ZoomOut } from 'lucide-react'
 import DashboardLayout from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
-import SoaDocument from '../../components/SoaDocument'
+import SoaViewer from '../../components/SoaViewer'
+import ChargePaymentSummary from '../../components/ChargePaymentSummary'
+import { isWaterOnly, payableBalance, purposeLabels } from '../../utils/chargePayments'
 import useAuth from '../../hooks/useAuth'
 import { apiFile, apiRequest } from '../../services/api'
 
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-sm file:font-bold file:text-white'
 
 function money(value) {
-  return `PHP ${Number(value || 0).toFixed(2)}`
+  return `₱${Number(value || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export default function ResidentBillPage() {
@@ -18,6 +20,7 @@ export default function ResidentBillPage() {
   const { token } = useAuth()
   const navigate = useNavigate()
   const [bill, setBill] = useState(null)
+  const [paymentPurpose, setPaymentPurpose] = useState('')
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState('')
@@ -67,7 +70,10 @@ export default function ResidentBillPage() {
     }
   }, [imagePreviewUrl])
 
-  const canSubmit = useMemo(() => bill && bill.paymentStatus !== 'PAID', [bill])
+  const purposes = bill?.allowedPaymentPurposes || []
+  const selectedPurpose = purposes.includes(paymentPurpose) ? paymentPurpose : purposes.includes('COMBINED') ? 'COMBINED' : purposes[0] || ''
+  const selectedBalance = selectedPurpose === 'COMBINED' ? Number(bill?.remainingBalance || 0) : Number(bill?.chargePayments?.[selectedPurpose]?.remainingBalance || 0)
+  const canSubmit = Boolean(selectedPurpose && selectedBalance > 0)
 
   function selectReceipt(event) {
     const selectedFile = event.target.files?.[0] || null
@@ -90,6 +96,7 @@ export default function ResidentBillPage() {
     try {
       const body = new FormData()
       body.append('receipt', file)
+      body.append('paymentPurpose', selectedPurpose)
       const data = await apiRequest(`/api/payments/bills/${id}/preview`, { method: 'POST', token, body })
       setPreview(data.analysis)
       setNotice({ error: '', message: data.message })
@@ -113,6 +120,7 @@ export default function ResidentBillPage() {
     try {
       const body = new FormData()
       body.append('receipt', file)
+      body.append('paymentPurpose', selectedPurpose)
       const data = await apiRequest(`/api/payments/bills/${id}`, { method: 'POST', token, body })
       setFile(null)
       setImagePreviewUrl('')
@@ -157,12 +165,14 @@ export default function ResidentBillPage() {
   }
 
   return (
-    <DashboardLayout title="My Statement of Account" description="Review the published SOA and submit your receipt image for Admin verification.">
-      <div className="print-hidden flex flex-wrap gap-2 rounded-2xl border border-emerald-100 bg-white p-2 shadow-sm">
-        <Link to="/resident/bills" className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-bold text-slate-700 transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"><ArrowLeft size={17} />Back to my SOAs</Link>
-        <Link to="/resident/payments" className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-2.5 text-sm font-bold text-sky-800 transition hover:border-sky-400 hover:bg-sky-100 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"><FileClock size={17} />Payment history</Link>
-        <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-3.5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"><Printer size={17} />Print / Save PDF</button>
-        <button type="button" onClick={() => setReportingError(true)} className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-sm font-bold text-amber-800 transition hover:border-amber-600 hover:bg-amber-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">Report SOA error</button>
+    <DashboardLayout title="My Statement of Account" className="resident-shell resident-bills-shell resident-bill-detail-shell">
+      <div className="print-hidden space-y-2">
+        <div className="flex items-center justify-between gap-3"><Link to="/resident/bills" className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-emerald-800 hover:underline"><ArrowLeft size={16} aria-hidden="true" />My SOAs</Link><h1 className="text-sm font-black text-slate-950">{bill ? `Unit ${bill.unitNumber} · SOA` : 'Statement of account'}</h1></div>
+        <div className="grid grid-cols-3 gap-2 sm:flex">
+          <Link to="/resident/payments" className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-bold text-slate-700 hover:bg-emerald-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"><FileClock size={15} aria-hidden="true" />History</Link>
+          <button type="button" onClick={() => window.print()} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-2 py-2 text-xs font-bold text-white hover:bg-emerald-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"><Printer size={15} aria-hidden="true" />Print / PDF</button>
+          <button type="button" onClick={() => setReportingError(true)} className="inline-flex min-h-11 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 px-2 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600">Report error</button>
+        </div>
       </div>
 
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
@@ -170,41 +180,45 @@ export default function ResidentBillPage() {
 
       {bill && (
         <>
-          <div className="grid gap-4 print-hidden sm:grid-cols-2 lg:grid-cols-5">
-            <SummaryCard label="Total amount" value={money(bill.totalAmount)} accent="blue" />
-            {Number(bill.latePenaltyAmount || 0) > 0 && <SummaryCard label={`Late penalty (${Number(bill.latePenaltyPercent || 0).toFixed(2)}%)`} value={money(bill.latePenaltyAmount)} accent="green" />}
-            <SummaryCard label="Approved payments" value={money(bill.approvedAmount)} accent="red" />
-            <SummaryCard label="Remaining balance" value={money(bill.remainingBalance)} accent="green" />
-            <SummaryCard label="Advance balance" value={money(bill.advanceBalance)} accent="blue" />
-          </div>
-
-          <section className="print-hidden rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm sm:p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div><p className="text-xs font-bold capitalize tracking-[0.14em] text-emerald-700">Payment actions</p><h2 className="mt-1 text-lg font-black text-slate-950">Pay and submit your receipt when you are ready</h2><p className="mt-1 text-sm text-slate-600">The QR code and upload form open only when you select an action.</p></div>
-              <div className="flex flex-wrap gap-2.5"><button type="button" disabled={!paymentQrUrl} onClick={() => setQrFullscreen(true)} className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 bg-white px-3.5 py-2.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"><QrCode size={17} />Scan to pay</button><button type="button" disabled={!canSubmit} onClick={() => setPaymentProofOpen(true)} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-3.5 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"><Upload size={17} />{canSubmit ? 'Submit payment proof' : 'SOA fully paid'}</button></div>
+          <section className="print-hidden overflow-hidden rounded-xl border border-emerald-200 bg-white shadow-sm" aria-label="Statement balance summary">
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-emerald-50/60 px-3.5 py-3 sm:px-5">
+              <div><p className="text-xs text-slate-500">{isWaterOnly(bill) ? 'Water balance' : 'Balance due'}</p><p className="mt-0.5 text-2xl font-black tracking-tight tabular-nums text-slate-950">{money(payableBalance(bill))}</p></div>
+              <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${bill.paymentStatus === 'PAID' ? 'bg-emerald-100 text-emerald-800' : bill.paymentStatus === 'OVERDUE' ? 'bg-rose-100 text-rose-800' : bill.paymentStatus === 'PARTIAL' ? 'bg-sky-100 text-sky-800' : 'bg-amber-100 text-amber-800'}`}>{bill.paymentStatus}</span>
             </div>
-            <ol className="mt-4 grid gap-2 border-t border-emerald-100 pt-4 text-sm text-slate-700 sm:grid-cols-2 xl:grid-cols-4"><li className="flex items-center gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">1</span>Open <strong>Scan to pay</strong>.</li><li className="flex items-center gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">2</span>Pay the amount shown on your SOA.</li><li className="flex items-center gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">3</span>Choose your receipt image.</li><li className="flex items-center gap-2"><span className="grid size-6 shrink-0 place-items-center rounded-full bg-emerald-100 text-xs font-black text-emerald-800">4</span>Preview OCR, then submit proof.</li></ol>
+            <dl className="grid grid-cols-2 gap-3 border-t border-emerald-100 px-3.5 py-3 sm:grid-cols-4 sm:px-5">
+              <SummaryCard label="Total amount" value={money(bill.totalAmount)} />
+              <SummaryCard label="Approved payments" value={money(bill.approvedAmount)} />
+              <SummaryCard label="Advance balance" value={money(bill.advanceBalance)} />
+              {Number(bill.latePenaltyAmount || 0) > 0 && <SummaryCard label={`Late penalty (${Number(bill.latePenaltyPercent || 0).toFixed(2)}%)`} value={money(bill.latePenaltyAmount)} />}
+            </dl>
+            <div className="border-t border-emerald-100 p-3"><ChargePaymentSummary bill={bill} /></div>
           </section>
 
-          <div className="resident-soa-scroll">
-            <div>
-              <SoaDocument bill={bill} />
+          <SoaViewer key={bill.id || id} bill={bill} />
+
+          <section className="print-hidden rounded-xl border border-emerald-200 bg-white p-3.5 shadow-sm sm:p-5">
+            <label className="mb-3 block text-xs font-bold">Payment purpose<select value={selectedPurpose} disabled={purposes.length < 2 || busy} onChange={event => { setPaymentPurpose(event.target.value); setPreview(null) }} className={inputClass}>{purposes.map(purpose => <option key={purpose} value={purpose}>{purposeLabels[purpose]}</option>)}</select></label>
+            <p className="mb-3 text-xs text-slate-600">Selected balance: {money(selectedBalance)}. {isWaterOnly(bill) ? 'Tenants pay water only.' : 'Combined payments pay association dues first; excess stays as association advance.'}</p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><h2 className="text-sm font-black text-slate-950">Payment actions</h2><p className="mt-1 text-xs text-slate-600">Pay, then upload your receipt for Admin review.</p></div>
+              <div className="grid grid-cols-2 gap-2 sm:flex"><button type="button" disabled={!paymentQrUrl} onClick={() => setQrFullscreen(true)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><QrCode size={16} aria-hidden="true" />Scan to pay</button><button type="button" disabled={!canSubmit} onClick={() => setPaymentProofOpen(true)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"><Upload size={16} aria-hidden="true" />{canSubmit ? 'Upload receipt' : 'Fully paid'}</button></div>
             </div>
-          </div>
+            <details className="mt-3 border-t border-emerald-100 pt-2 text-xs text-slate-600"><summary className="min-h-11 cursor-pointer py-3 font-semibold text-emerald-800">How to submit payment proof</summary><ol className="list-decimal space-y-1.5 pl-5 pb-2"><li>Open Scan to pay.</li><li>Pay the selected category balance shown above.</li><li>Choose your JPG or PNG receipt image.</li><li>Preview OCR, check the details, then submit proof.</li></ol></details>
+          </section>
         </>
       )}
       {reportingError && <ReportSoaErrorModal busy={busy} errorReport={errorReport} onChange={(field, value) => setErrorReport((current) => ({ ...current, [field]: value }))} onClose={() => setReportingError(false)} onSubmit={submitBillingError} />}
       {qrFullscreen && paymentQrUrl && <PaymentQrModal qrUrl={paymentQrUrl} onClose={() => setQrFullscreen(false)} onDownload={downloadPaymentQr} />}
-      {paymentProofOpen && <SubmitPaymentProofModal busy={busy} file={file} preview={preview} imagePreviewUrl={imagePreviewUrl} ocrPreviewing={ocrPreviewing} submittingReceipt={submittingReceipt} onClose={() => setPaymentProofOpen(false)} onSelectReceipt={selectReceipt} onPreview={previewReceipt} onSubmit={submitReceipt} />}
+      {paymentProofOpen && <SubmitPaymentProofModal paymentPurpose={selectedPurpose} busy={busy} file={file} preview={preview} imagePreviewUrl={imagePreviewUrl} ocrPreviewing={ocrPreviewing} submittingReceipt={submittingReceipt} onClose={() => setPaymentProofOpen(false)} onSelectReceipt={selectReceipt} onPreview={previewReceipt} onSubmit={submitReceipt} />}
     </DashboardLayout>
   )
 }
 
-function SubmitPaymentProofModal({ busy, file, preview, imagePreviewUrl, ocrPreviewing, submittingReceipt, onClose, onSelectReceipt, onPreview, onSubmit }) {
+function SubmitPaymentProofModal({ paymentPurpose, busy, file, preview, imagePreviewUrl, ocrPreviewing, submittingReceipt, onClose, onSelectReceipt, onPreview, onSubmit }) {
   return (
     <div className="fixed inset-0 z-50 grid bg-slate-950/50" role="presentation" onMouseDown={busy ? undefined : onClose}>
       <section role="dialog" aria-modal="true" aria-labelledby="payment-proof-title" className="flex h-[100dvh] w-screen max-w-none flex-col overflow-hidden bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
-        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6"><div><p className="text-sm font-semibold text-emerald-700">Payment Proof</p><h2 id="payment-proof-title" className="mt-1 text-xl font-black text-slate-950">Submit your receipt</h2><p className="mt-1 text-sm text-slate-600">Upload a clear JPG or PNG receipt, preview the extracted details, then submit it for Admin review.</p></div><button type="button" disabled={busy} onClick={onClose} aria-label="Close payment proof form" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"><X size={20} /></button></header>
+        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6"><div><p className="text-sm font-semibold text-emerald-700">Payment Proof</p><h2 id="payment-proof-title" className="mt-1 text-xl font-black text-slate-950">Submit your receipt</h2><p className="mt-1 text-sm font-bold text-emerald-800">For: {purposeLabels[paymentPurpose]}</p><p className="mt-1 text-sm text-slate-600">Upload a clear JPG or PNG receipt, preview the extracted details, then submit it for Admin review.</p></div><button type="button" disabled={busy} onClick={onClose} aria-label="Close payment proof form" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"><X size={20} /></button></header>
         <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 lg:grid-cols-[0.9fr_1.1fr] sm:p-6">
           <form onSubmit={onPreview} className="space-y-4">
             <ol className="grid gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-950 sm:grid-cols-3"><li><strong>1. Choose</strong> a receipt image</li><li><strong>2. Preview OCR</strong> and check the details</li><li><strong>3. Submit</strong> for Admin review</li></ol>
@@ -225,11 +239,8 @@ function BillPageSkeleton() {
   return (
     <div className="animate-pulse" aria-label="Loading statement of account" role="status">
       <span className="sr-only">Loading your statement of account…</span>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {Array.from({ length: 5 }, (_, index) => <div key={index} className="h-24 rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"><div className="h-3 w-2/3 rounded bg-emerald-100" /><div className="mt-4 h-6 w-4/5 rounded bg-emerald-200" /></div>)}
-      </div>
-      <section className="mt-6 rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div className="space-y-2"><div className="h-3 w-28 rounded bg-emerald-100" /><div className="h-5 w-72 max-w-full rounded bg-emerald-200" /><div className="h-3 w-56 max-w-full rounded bg-slate-100" /></div><div className="flex gap-2"><div className="h-10 w-32 rounded-lg bg-emerald-100" /><div className="h-10 w-44 rounded-lg bg-emerald-200" /></div></div><div className="mt-4 grid gap-2 border-t border-emerald-100 pt-4 sm:grid-cols-2 xl:grid-cols-4">{Array.from({ length: 4 }, (_, index) => <div key={index} className="h-7 rounded-lg bg-emerald-50" />)}</div></section>
-      <section className="mt-6 overflow-hidden rounded-sm border-2 border-slate-200 bg-white shadow-sm"><div className="grid gap-px bg-slate-200 sm:grid-cols-2"><div className="h-40 bg-slate-50" /><div className="h-40 bg-emerald-50" /></div><div className="space-y-px bg-slate-200 p-px">{Array.from({ length: 5 }, (_, index) => <div key={index} className="h-12 bg-white" />)}</div></section>
+      <section className="rounded-xl border border-emerald-100 bg-white p-3.5"><div className="h-3 w-24 rounded bg-emerald-100" /><div className="mt-2 h-7 w-36 rounded bg-emerald-200" /><div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">{Array.from({ length: 3 }, (_, index) => <div key={index} className="h-10 rounded-lg bg-emerald-50" />)}</div></section>
+      <section className="mt-3 overflow-hidden rounded-xl border border-emerald-100 bg-white p-3.5"><div className="h-11 rounded-lg bg-emerald-50" /><div className="mt-3 h-48 rounded bg-slate-100" /></section>
     </div>
   )
 }
@@ -259,7 +270,6 @@ function PaymentQrModal({ onClose, onDownload, qrUrl }) {
       setMobileViewport(media.matches)
       setZoom((value) => Math.min(value, 3))
     }
-    updateViewport()
     media.addEventListener('change', updateViewport)
     return () => media.removeEventListener('change', updateViewport)
   }, [])
@@ -279,11 +289,11 @@ function PaymentQrModal({ onClose, onDownload, qrUrl }) {
   )
 }
 
-function SummaryCard({ label, value, accent }) {
+function SummaryCard({ label, value }) {
   return (
-    <div className={`bill-summary-card bill-summary-${accent}`}>
-      <p className="text-xs font-bold capitalize tracking-[0.12em] text-slate-500">{label}</p>
-      <p className="mt-3 break-words text-xl font-black text-slate-950">{value}</p>
+    <div className="min-w-0">
+      <dt className="text-[11px] text-slate-500 sm:text-xs">{label}</dt>
+      <dd className="mt-0.5 break-words text-sm font-semibold tabular-nums text-slate-950">{value}</dd>
     </div>
   )
 }

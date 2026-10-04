@@ -4,6 +4,8 @@ import { BadgeCheck, CircleDollarSign, FileText, WalletCards } from 'lucide-reac
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
+import PaymentInvoiceEditor from '../../components/PaymentInvoiceEditor'
 
 function money(value) {
   return `PHP ${Number(value || 0).toFixed(2)}`
@@ -27,11 +29,11 @@ export default function CollectorPaymentsPage() {
   const summary = useMemo(() => ({
     approvals: payments.length,
     collected: payments.reduce((sum, payment) => sum + Number(payment.verifiedAmount || 0), 0),
-    paidBills: payments.filter((payment) => payment.paymentStatus === 'PAID').length,
+    paidBills: new Set(payments.filter((payment) => payment.paymentStatus === 'PAID' && payment.targetBillId).map((payment) => payment.targetBillId)).size,
   }), [payments])
 
   return (
-    <DashboardLayout title="Verified payment records" description="Read-only payment results approved by Admin.">
+    <DashboardLayout title="Verified payment records" description="View Admin-approved payments and edit staff-issued invoice references.">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -66,7 +68,7 @@ export default function CollectorPaymentsPage() {
                       <p className="font-semibold text-slate-800">{methodLabel(payment.paymentMethod)}</p>
                       <p className="text-xs text-slate-500">{payment.entryType === 'MANUAL' ? 'Manual entry' : 'Receipt upload'}</p>
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap">{payment.verifiedReferenceNo}</td>
+                    <td className="max-w-64 px-3 py-3"><PaymentAllocationDetails payment={payment} /><details className="mt-2"><summary className="min-h-11 cursor-pointer py-2 text-xs font-bold text-emerald-800">Edit invoices</summary><PaymentInvoiceEditor payment={payment} onSaved={async () => { const data = await apiRequest('/api/payments?status=APPROVED', { token }); setPayments(data.payments) }} /></details></td>
                     <td className="px-3 py-3 whitespace-nowrap">{payment.verifiedPaymentDate ? String(payment.verifiedPaymentDate).slice(0, 10) : '-'}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{money(payment.appliedAmount)}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{money(payment.verifiedAmount)}</td>

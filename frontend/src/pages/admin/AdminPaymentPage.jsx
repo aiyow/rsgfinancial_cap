@@ -5,6 +5,10 @@ import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiFile, apiRequest } from '../../services/api'
+import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
+import PaymentInvoiceEditor from '../../components/PaymentInvoiceEditor'
+import PaymentAllocationPreview from '../../components/PaymentAllocationPreview'
+import { purposeLabels } from '../../utils/chargePayments'
 
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm'
 const methods = ['GCASH', 'BANK_TRANSFER', 'CASH', 'OTHER']
@@ -38,6 +42,7 @@ export default function AdminPaymentPage() {
   const { token } = useAuth()
   const [payment, setPayment] = useState(null)
   const [form, setForm] = useState(null)
+  const [previewKey, setPreviewKey] = useState('')
   const [receiptUrl, setReceiptUrl] = useState('')
   const [receiptZoom, setReceiptZoom] = useState(1)
   const [busy, setBusy] = useState(false)
@@ -73,6 +78,8 @@ export default function AdminPaymentPage() {
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
   }
+
+  const allocationRequest = { paymentId: payment?.id, paymentPurpose: payment?.paymentPurpose, amount: Number(form?.verifiedAmount || 0), paymentDate: form?.verifiedPaymentDate || '' }
 
   async function submit(event) {
     event.preventDefault()
@@ -180,6 +187,7 @@ export default function AdminPaymentPage() {
             </div>}
             {payment.entryType === 'MANUAL' && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">This payment was recorded by Admin and does not have an uploaded receipt image.</p>}
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
+              <Fact label="Declared purpose" value={purposeLabels[payment.paymentPurpose]} />
               <Fact label="Review status" value={payment.reviewStatus} />
               <Fact label="Source" value={payment.entryType === 'MANUAL' ? 'Manual entry' : 'Receipt upload'} />
               <Fact label="Payment method" value={methodLabel(payment.paymentMethod)} />
@@ -190,6 +198,8 @@ export default function AdminPaymentPage() {
               <Fact label="OCR quality" value={payment.ocrQualityStatus || '-'} />
               <Fact label="OCR confidence" value={payment.ocrConfidence ? `${payment.ocrConfidence}%` : '-'} />
             </dl>
+            <div className="mt-4"><PaymentAllocationDetails payment={payment} /></div>
+            {payment.reviewStatus === 'APPROVED' && <div className="mt-4"><PaymentInvoiceEditor key={payment.id} payment={payment} onSaved={async () => { const data = await apiRequest(`/api/payments/${id}`, { token }); setPayment(data.payment) }} /></div>}
             {payment.entryType === 'RECEIPT_UPLOAD' && (
               <div className="mt-5 rounded-xl bg-slate-50 p-4">
                 <p className="text-xs font-bold capitalize text-slate-500">Raw OCR text</p>
@@ -243,8 +253,9 @@ export default function AdminPaymentPage() {
                     {form.status === 'APPROVED' ? 'Remarks (optional)' : 'Rejection remarks'}
                     <textarea required={form.status === 'REJECTED'} value={form.remarks} onChange={(event) => update('remarks', event.target.value)} className={`${inputClass} min-h-28`} />
                   </label>
+                  {form.status === 'APPROVED' && <PaymentAllocationPreview request={allocationRequest} onReady={setPreviewKey} />}
 
-                  <button disabled={busy} className={`rounded-lg px-5 py-2.5 text-sm font-bold text-white disabled:bg-slate-300 ${form.status === 'APPROVED' ? 'bg-emerald-600' : 'bg-rose-600'}`}>
+                  <button disabled={busy || (form.status === 'APPROVED' && previewKey !== JSON.stringify(allocationRequest))} className={`rounded-lg px-5 py-2.5 text-sm font-bold text-white disabled:bg-slate-300 ${form.status === 'APPROVED' ? 'bg-emerald-600' : 'bg-rose-600'}`}>
                     {busy ? 'Saving review...' : form.status === 'APPROVED' ? 'Approve payment' : 'Reject payment'}
                   </button>
                 </form>

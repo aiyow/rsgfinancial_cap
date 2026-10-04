@@ -1,6 +1,7 @@
 import cron from "node-cron";
 import pool from "../config/db.js";
-import { applyDueLatePenalties, billAppliedSql, billTotalSql } from "./paymentLedger.js";
+import { applyDueLatePenalties, billAppliedSql, billTotalSql, chargePaymentsSql } from "./paymentLedger.js";
+import { recipientPaymentDetails } from './paymentRecipients.js';
 import { sendSoaReminder } from "./soaEmail.js";
 
 export const REMINDER_TYPES = Object.freeze({
@@ -58,6 +59,9 @@ async function eligibleRecipients(database, today) {
       b.period_start_snapshot AS "periodStart", b.period_end_snapshot AS "periodEnd",
       b.due_date_snapshot AS "dueDate", COALESCE(b.late_penalty_amount, 0) AS "latePenaltyAmount",
       assignment.user_id AS "recipientUserId", usr.full_name AS "recipientName", LOWER(usr.email) AS "recipientEmail",
+      ${chargePaymentsSql} AS "chargePayments", CASE WHEN EXISTS(SELECT 1 FROM unit_assignments owner
+        WHERE owner.unit_id=b.unit_id AND owner.user_id=assignment.user_id AND owner.end_date IS NULL
+        AND owner.start_date <= $1::date AND owner.relationship_type='OWNER') THEN 'OWNER' ELSE 'TENANT' END AS "relationshipType",
       GREATEST(${billTotalSql} - ${billAppliedSql}, 0) AS "remainingBalance"
      FROM unit_bills b
      JOIN billing_periods p ON p.id = b.billing_period_id
@@ -66,13 +70,15 @@ async function eligibleRecipients(database, today) {
      WHERE b.published_at IS NOT NULL
        AND p.status IN ('FORWARDED', 'CLOSED')
        AND assignment.relationship_type IN ('OWNER', 'TENANT')
+       AND assignment.start_date <= $1::date
        AND NULLIF(TRIM(usr.email), '') IS NOT NULL
        AND GREATEST(${billTotalSql} - ${billAppliedSql}, 0) > 0.005
        AND b.due_date_snapshot <= ($1::date + 3)
      ORDER BY b.id, LOWER(usr.email), assignment.id`,
     [today],
   );
-  return result.rows.map((row) => ({ ...row, reminderType: reminderTypeForDueDate(row.dueDate, today) })).filter((row) => row.reminderType);
+  return result.rows.map(recipientPaymentDetails).map((row) => ({ ...row, reminderType: reminderTypeForDueDate(row.dueDate, today) }))
+    .filter((row) => row.reminderType && Number(row.remainingBalance) > 0);
 }
 
 async function claimReminderDelivery(database, delivery) {

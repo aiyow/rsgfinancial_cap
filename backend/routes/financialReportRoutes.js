@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs';
 import pool from '../config/db.js';
 import { allowRoles, requireAuth } from '../middleware/authMiddleware.js';
 import { getFinancialReport, parseFinancialReportFilters } from '../services/financialReports.js';
+import { applyDueLatePenalties } from '../services/paymentLedger.js';
 
 const router = express.Router();
 const tabs = new Set(['overview', 'dues', 'water', 'paidDues', 'receivables', 'occupancy']);
@@ -93,6 +94,9 @@ function createWorkbook(report, tab) {
 }
 
 router.use(requireAuth, allowRoles('ADMIN', 'COLLECTOR'));
+router.use(async (req, res, next) => {
+  try { await applyDueLatePenalties(pool); next(); } catch (error) { next(error); }
+});
 
 router.get('/financial', async (req, res, next) => {
   try {

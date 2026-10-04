@@ -1,7 +1,7 @@
 import express from "express";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
-import { billAppliedSql, billTotalSql } from "../services/paymentLedger.js";
+import { applyDueLatePenalties, billAppliedSql, billTotalSql } from "../services/paymentLedger.js";
 
 const router = express.Router();
 
@@ -9,6 +9,7 @@ router.use(requireAuth, allowRoles("ADMIN", "COLLECTOR"));
 
 router.get("/overview", async (req, res, next) => {
   try {
+    await applyDueLatePenalties(pool);
     const [summaryResult, trendResult, statusResult] = await Promise.all([
       pool.query(
         `WITH latest_period AS (

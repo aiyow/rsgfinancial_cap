@@ -1,6 +1,6 @@
 import { selectConsecutiveReadings, MIN_WINDOW_SIZE } from './predictiveAnalytics.js';
 import { analyticsPeriodCondition } from './analyticsPeriods.js';
-import { billAppliedSql, billTotalSql } from './paymentLedger.js';
+import { billAppliedSql, billTotalSql, chargePaymentsSql } from './paymentLedger.js';
 
 const ACTIVE_STATUSES = ['OPEN', 'VIEWED'];
 export const HIGH_USAGE_THRESHOLD = 0.15;
@@ -163,7 +163,7 @@ export function buildPrescriptiveRecommendations({ forecast, history = [], conte
       'LOW',
       `An unpaid balance of PHP ${rounded(remainingBalance, 2).toFixed(2)} is due in ${days} day${days === 1 ? '' : 's'}.`,
       'Send an in-app payment reminder to the assigned payer with the due date and remaining balance.',
-      { remainingBalance: rounded(remainingBalance, 2), dueDate: context.dueDate, daysUntilDue: days },
+      { remainingBalance: rounded(remainingBalance, 2), dueDate: context.dueDate, daysUntilDue: days, chargePayments: context.chargePayments },
     ));
   }
 
@@ -271,6 +271,7 @@ export async function regeneratePrescriptiveRecommendations(client, options = {}
     ),
     client.query(
       `SELECT b.unit_id AS "unitId", b.due_date_snapshot AS "dueDate",
+        ${chargePaymentsSql} AS "chargePayments",
         GREATEST(${billTotalSql} - ${billAppliedSql}, 0) AS "remainingBalance"
        FROM unit_bills b
        WHERE b.billing_period_id = $1`, [period.id],
@@ -287,7 +288,7 @@ export async function regeneratePrescriptiveRecommendations(client, options = {}
     const bill = billByUnit.get(Number(forecast.unitId));
     return buildPrescriptiveRecommendations({
       forecast, history: historyByUnit.get(Number(forecast.unitId)) || [],
-      context: { occupancyStatus: forecast.occupancyStatus, dueDate: bill?.dueDate, remainingBalance: bill?.remainingBalance },
+      context: { occupancyStatus: forecast.occupancyStatus, dueDate: bill?.dueDate, remainingBalance: bill?.remainingBalance, chargePayments: bill?.chargePayments },
     }).map((item) => ({ ...item, unitId: Number(forecast.unitId), forecastId: forecast.forecastId }));
   });
   const desiredKeys = new Set(desired.map((item) => `${item.unitId}:${period.id}:${item.recommendationType}`));

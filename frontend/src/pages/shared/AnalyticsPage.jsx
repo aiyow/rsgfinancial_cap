@@ -7,6 +7,7 @@ import {
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import { chartNumber as number, connectForecastLine } from '../../utils/forecastChart'
 
 function valueOrDash(value, suffix = '') {
   return value === null || value === undefined ? '-' : `${Number(value).toFixed(2)}${suffix}`
@@ -18,10 +19,6 @@ function month(value) {
 
 function monthLabel(value) {
   return new Date(value).toLocaleDateString('en-PH', { month: 'short', year: 'numeric', timeZone: 'UTC' })
-}
-
-function number(value) {
-  return value === null || value === undefined ? null : Number(value)
 }
 
 function money(value) {
@@ -36,22 +33,6 @@ function consumptionTooltip(value, name) {
 function billTooltip(value, name) {
   const label = name === 'forecastWaterBill' ? 'Projected forecast' : 'Historical actual'
   return [money(value), label]
-}
-
-function connectForecastLine(rows, actualKey, projectedKey, forecastKey) {
-  const latestActualIndex = rows.reduce(
-    (latestIndex, row, index) => (row[actualKey] !== null ? index : latestIndex),
-    -1,
-  )
-  const hasFutureForecast = rows.some((row, index) => index > latestActualIndex && row[projectedKey] !== null)
-
-  return rows.map((row, index) => {
-    let forecast = null
-    if (latestActualIndex === -1) forecast = row[projectedKey]
-    else if (index === latestActualIndex && hasFutureForecast) forecast = row[actualKey]
-    else if (index > latestActualIndex) forecast = row[projectedKey]
-    return { ...row, [forecastKey]: forecast }
-  })
 }
 
 const forecastRanges = [

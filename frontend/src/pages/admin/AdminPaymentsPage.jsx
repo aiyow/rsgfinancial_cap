@@ -5,6 +5,9 @@ import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayo
 import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
+import PaymentAllocationPreview from '../../components/PaymentAllocationPreview'
+import { purposeLabels } from '../../utils/chargePayments'
 
 const statuses = ['ALL', 'PENDING', 'APPROVED', 'REJECTED']
 const methods = ['GCASH', 'BANK_TRANSFER', 'CASH', 'OTHER']
@@ -45,6 +48,7 @@ export default function AdminPaymentsPage() {
     targetBillId: '',
     unitId: '',
     paymentMethod: 'CASH',
+    paymentPurpose: 'COMBINED',
     amount: '',
     paymentDate: new Date().toISOString().slice(0, 10),
     referenceNo: '',
@@ -120,6 +124,7 @@ export default function AdminPaymentsPage() {
     try {
       const body = {
         paymentMethod: manualForm.paymentMethod,
+        paymentPurpose: manualForm.paymentPurpose,
         amount: Number(manualForm.amount),
         paymentDate: manualForm.paymentDate,
         referenceNo: manualForm.referenceNo || undefined,
@@ -199,7 +204,7 @@ export default function AdminPaymentsPage() {
                   <tr key={payment.id}>
                     <td className="px-3 py-3 align-top">
                       <p className="font-semibold text-slate-800">{payment.submittedByName}</p>
-                      <p className="text-xs text-slate-500">Unit {payment.unitNumber}</p>
+                      <p className="text-xs text-slate-500">Unit {payment.unitNumber}</p><PaymentAllocationDetails payment={payment} />
                     </td>
                     <td className="px-3 py-3 align-top text-slate-700">{receivedDate(payment.submittedAt)}</td>
                     <td className="px-3 py-3 align-top">
@@ -242,6 +247,8 @@ export default function AdminPaymentsPage() {
 function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, selectedCredit, units, onClose, onSubmit, onUpdate }) {
   const canSubmit = form.amount && (form.targetType === 'SOA' ? form.targetBillId : form.unitId)
   const [methodMenuOpen, setMethodMenuOpen] = useState(false)
+  const [previewKey, setPreviewKey] = useState('')
+  const allocationRequest = { ...(form.targetType === 'SOA' ? { targetBillId: Number(form.targetBillId) } : { unitId: Number(form.unitId) }), paymentPurpose: form.paymentPurpose, amount: Number(form.amount || 0), paymentDate: form.paymentDate }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4" role="presentation" onMouseDown={onClose}>
@@ -276,6 +283,7 @@ function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, select
             </label>
           )}
 
+          <label className="text-sm font-bold sm:col-span-2">Payment purpose<select required value={form.paymentPurpose} onChange={event => onUpdate('paymentPurpose', event.target.value)} className={inputClass}>{Object.entries(purposeLabels).map(([value,label]) => <option key={value} value={value}>{label}</option>)}</select></label>
           <div className="relative block text-sm font-bold text-slate-700">
             <p>Payment method</p>
             <button type="button" aria-expanded={methodMenuOpen} onClick={() => setMethodMenuOpen((current) => !current)} className="mt-1.5 flex h-[42px] w-full min-w-0 items-center justify-between gap-3 overflow-hidden rounded-lg border border-slate-300 bg-white px-3 py-2 text-left text-sm font-normal text-slate-700 outline-none transition hover:border-[#2f8f5b]">
@@ -293,7 +301,7 @@ function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, select
             <input required type="date" value={form.paymentDate} onChange={(event) => onUpdate('paymentDate', event.target.value)} className={inputClass} />
           </label>
           <label className="block text-sm font-bold text-slate-700">
-            Reference / OR no.
+            Bank / GCash transaction reference
             <input value={form.referenceNo} onChange={(event) => onUpdate('referenceNo', event.target.value)} placeholder="Auto-generated if blank" className={inputClass} />
           </label>
           <label className="block text-sm font-bold text-slate-700 sm:col-span-2">
@@ -303,11 +311,12 @@ function ManualPaymentModal({ bills, busy, form, methods: paymentMethods, select
 
           <div className="rounded-xl bg-slate-50 p-4 sm:col-span-2">
             <p className="text-xs font-bold capitalize text-slate-400">Selected unit advance balance</p>
-            <p className="mt-1 text-2xl font-black text-slate-950">{money(selectedCredit?.advanceBalance || 0)}</p>
+            <p className="mt-1 text-sm font-bold">Water {money(selectedCredit?.waterAdvance || 0)} · Association {money(selectedCredit?.associationAdvance || 0)}</p>
           </div>
+          <PaymentAllocationPreview request={allocationRequest} onReady={setPreviewKey} />
           <div className="flex justify-end gap-3 sm:col-span-2">
             <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium">Cancel</button>
-            <button disabled={busy || !canSubmit} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white disabled:bg-slate-300">{busy ? 'Recording...' : 'Record payment'}</button>
+            <button disabled={busy || !canSubmit || previewKey !== JSON.stringify(allocationRequest)} className="rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white disabled:bg-slate-300">{busy ? 'Recording...' : 'Record payment'}</button>
           </div>
         </form>
       </section>

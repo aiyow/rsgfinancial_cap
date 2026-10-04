@@ -1,5 +1,6 @@
 import pool from "../config/db.js";
-import { billAppliedSql, billTotalSql } from "./paymentLedger.js";
+import { billAppliedSql, billTotalSql, chargePaymentsSql } from "./paymentLedger.js";
+import { recipientPaymentDetails } from './paymentRecipients.js';
 import { sendSoaNotification } from "./soaEmail.js";
 
 function deliveryError(error) {
@@ -18,6 +19,9 @@ export async function deliverSoaEmailNotifications(deliveryIds) {
       b.id AS "billId", b.unit_number_snapshot AS "unitNumber",
       b.period_start_snapshot AS "periodStart", b.period_end_snapshot AS "periodEnd",
       b.due_date_snapshot AS "dueDate",
+      ${chargePaymentsSql} AS "chargePayments", CASE WHEN EXISTS(SELECT 1 FROM unit_assignments owner
+        WHERE owner.unit_id=b.unit_id AND owner.user_id=d.recipient_user_id AND owner.end_date IS NULL
+        AND owner.start_date <= (NOW() AT TIME ZONE 'Asia/Manila')::date AND owner.relationship_type='OWNER') THEN 'OWNER' ELSE 'TENANT' END AS "relationshipType",
       GREATEST(${billTotalSql} - ${billAppliedSql}, 0) AS "remainingBalance"
      FROM soa_email_deliveries d
      JOIN unit_bills b ON b.id = d.unit_bill_id
@@ -26,7 +30,7 @@ export async function deliverSoaEmailNotifications(deliveryIds) {
   );
 
   const summary = { sent: 0, failed: 0 };
-  for (const delivery of result.rows) {
+  for (const delivery of result.rows.map(recipientPaymentDetails)) {
     try {
       await sendSoaNotification(delivery);
       await pool.query(

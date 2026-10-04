@@ -5,6 +5,7 @@ import { AlertTriangle, Building2, CircleDollarSign, Droplets, FileText, Gauge, 
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import { chartNumber, connectForecastLine } from '../../utils/forecastChart'
 
 const paymentStatusColors = {
   Paid: '#2f8f5b',
@@ -32,20 +33,6 @@ function ratio(value, total) {
 
 function percent(value) {
   return value === null || value === undefined ? '—' : `${Number(value).toFixed(1)}%`
-}
-
-function connectForecastLine(rows, actualKey, projectedKey, forecastKey) {
-  const result = rows.map((row) => ({ ...row, [forecastKey]: row[projectedKey] }))
-  const firstForecastIndex = result.findIndex((row) => row[projectedKey] !== null)
-  if (firstForecastIndex === -1) return result
-
-  for (let index = firstForecastIndex; index >= 0; index -= 1) {
-    if (result[index][actualKey] !== null) {
-      result[index][forecastKey] = result[index][actualKey]
-      break
-    }
-  }
-  return result
 }
 
 function Metric({ label, value, detail, subdetail, icon: Icon, tone = 'green', accent }) {
@@ -129,7 +116,21 @@ function WaterTrendChart({ waterTrend }) {
   const [range, setRange] = useState('sixMonths')
   const filteredWaterTrend = filterChartRows(waterTrend, range, waterBillStatisticalRanges)
   return <ChartPanel title="Historical vs Projected Water Bill" description="Actual water charges compared with the projected water bill for the selected periods." descriptionBelow filter={<StatisticalFilter ranges={waterBillStatisticalRanges} value={range} onChange={setRange} />}>
-    {filteredWaterTrend.length ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={filteredWaterTrend} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}><defs><linearGradient id="dashboardActualWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#60a5fa" stopOpacity={0.34} /><stop offset="100%" stopColor="#60a5fa" stopOpacity={0.02} /></linearGradient><linearGradient id="dashboardForecastWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#a78bfa" stopOpacity={0.28} /><stop offset="100%" stopColor="#a78bfa" stopOpacity={0.02} /></linearGradient></defs><CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" /><XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} tickLine={false} axisLine={false} /><YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={(value) => `₱${Math.round(value / 1000)}k`} /><Tooltip contentStyle={chartTooltipStyle} formatter={(value, name) => [money(value), name]} /><Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} /><Area type="monotone" dataKey="actualWaterBill" name="Historical water bill" stroke="#2563eb" fill="url(#dashboardActualWater)" strokeWidth={3} dot={{ r: 3, fill: '#2563eb', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#2563eb' }} isAnimationActive animationBegin={0} animationDuration={1000} animationEasing="ease-out" /><Area type="monotone" dataKey="forecastWaterBill" name="Projected water bill" stroke="#7c3aed" fill="url(#dashboardForecastWater)" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 3, fill: '#7c3aed', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#7c3aed' }} connectNulls isAnimationActive animationBegin={140} animationDuration={1000} animationEasing="ease-out" /></AreaChart></ResponsiveContainer> : <EmptyRow message="No water analytics data is available yet." />}
+    {filteredWaterTrend.length ? <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={filteredWaterTrend} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id="dashboardActualWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#60a5fa" stopOpacity={0.34} /><stop offset="100%" stopColor="#60a5fa" stopOpacity={0.02} /></linearGradient>
+          <linearGradient id="dashboardForecastWater" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#a78bfa" stopOpacity={0.28} /><stop offset="100%" stopColor="#a78bfa" stopOpacity={0.02} /></linearGradient>
+        </defs>
+        <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="4 4" />
+        <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} interval={0} tickMargin={8} tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} />
+        <YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={(value) => `₱${Math.round(value / 1000)}k`} />
+        <Tooltip contentStyle={chartTooltipStyle} formatter={(value, name) => [money(value), name]} />
+        <Legend wrapperStyle={{ fontSize: 12, paddingTop: 12 }} />
+        <Area type="monotone" dataKey="actualWaterBill" name="Historical water bill" stroke="#2563eb" fill="url(#dashboardActualWater)" strokeWidth={3} dot={{ r: 3, fill: '#2563eb', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#2563eb' }} isAnimationActive animationBegin={0} animationDuration={1000} animationEasing="ease-out" />
+        <Area type="monotone" dataKey="forecastWaterBill" name="Projected water bill" stroke="#7c3aed" fill="url(#dashboardForecastWater)" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 3, fill: '#7c3aed', strokeWidth: 0 }} activeDot={{ r: 6, fill: '#7c3aed' }} connectNulls isAnimationActive animationBegin={140} animationDuration={1000} animationEasing="ease-out" />
+      </AreaChart>
+    </ResponsiveContainer> : <EmptyRow message="No water analytics data is available yet." />}
   </ChartPanel>
 }
 
@@ -147,9 +148,12 @@ export default function OperationalDashboard({ role }) {
     const isManualRefresh = refreshKey > 0
 
     if (cached && !isManualRefresh && Date.now() - cached.savedAt < dashboardCacheLifetimeMs) {
-      setData(cached.data)
-      setError('')
-      setRefreshing(false)
+      queueMicrotask(() => {
+        if (!active) return
+        setData(cached.data)
+        setError('')
+        setRefreshing(false)
+      })
       return () => { active = false }
     }
 
@@ -174,10 +178,10 @@ export default function OperationalDashboard({ role }) {
   const billStatus = (data?.billStatus || []).map((row) => ({ ...row, value: Number(row.value) }))
   const waterTrend = connectForecastLine((data?.analytics?.chartSeries || []).map((row) => ({
     label: month(row.month),
-    actualConsumption: row.actualConsumption === null ? null : Number(row.actualConsumption),
-    projectedConsumption: row.projectedConsumption === null ? null : Number(row.projectedConsumption),
-    actualWaterBill: row.actualWaterBill === null ? null : Number(row.actualWaterBill),
-    projectedWaterBill: row.projectedWaterBill === null ? null : Number(row.projectedWaterBill),
+    actualConsumption: chartNumber(row.actualConsumption),
+    projectedConsumption: chartNumber(row.projectedConsumption),
+    actualWaterBill: chartNumber(row.actualWaterBill),
+    projectedWaterBill: chartNumber(row.projectedWaterBill),
   })), 'actualWaterBill', 'projectedWaterBill', 'forecastWaterBill')
   const currentBilled = Number(metrics.currentBilled || 0)
   const currentCollected = Number(metrics.currentCollected || 0)

@@ -153,7 +153,7 @@ function ResidentMobileNavigation() {
   </nav>
 }
 
-export default function DashboardLayout({ title, description, children }) {
+export default function DashboardLayout({ title, description, className = '', children }) {
   const { user, logout, token } = useAuth()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('rsg_sidebar_collapsed') === 'true')
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -207,7 +207,7 @@ export default function DashboardLayout({ title, description, children }) {
   const initials = user.fullName.split(' ').map((name) => name[0]).join('').slice(0, 2).toUpperCase()
 
   return (
-    <div className={`dashboard-shell min-h-screen bg-[var(--app-bg)] text-[var(--ink)] lg:grid lg:transition-[grid-template-columns] lg:duration-200 lg:ease-out motion-reduce:transition-none ${usesGreenSidebar ? 'green-shell' : ''} ${collapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
+    <div className={`dashboard-shell ${className} min-h-screen bg-[var(--app-bg)] text-[var(--ink)] lg:grid lg:transition-[grid-template-columns] lg:duration-200 lg:ease-out motion-reduce:transition-none ${usesGreenSidebar ? 'green-shell' : ''} ${collapsed ? 'lg:grid-cols-[64px_1fr]' : 'lg:grid-cols-[240px_1fr]'}`}>
       {mobileOpen && !usesResidentMobileNavigation && (
         <button
           type="button"
@@ -272,7 +272,7 @@ export default function DashboardLayout({ title, description, children }) {
               </button>}
               <div className="flex min-w-0 items-center gap-2 text-sm">
                 <span className="truncate font-bold text-[var(--ink)]">{portalLabel}</span>
-                <span className="text-[var(--muted)]">/</span>
+                <span className="dashboard-breadcrumb-separator text-[var(--muted)]">/</span>
                 <span className="ui-title truncate text-[var(--muted)]">{title}</span>
               </div>
             </div>
@@ -324,9 +324,9 @@ export default function DashboardLayout({ title, description, children }) {
         </header>
 
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-          <div className="mb-6 sm:hidden">
+          {description && <div className="dashboard-description mb-6 sm:hidden">
             <p className="text-xs text-[var(--muted)]">{description}</p>
-          </div>
+          </div>}
           <div className="space-y-8">{children}</div>
         </div>
       </main>
@@ -335,9 +335,9 @@ export default function DashboardLayout({ title, description, children }) {
   )
 }
 
-export function Panel({ accent, id, title, description, children }) {
+export function Panel({ accent, id, title, description, className = '', children }) {
   return (
-    <section id={id} className={`${accent ? `collector-step-card collector-step-${accent}` : ''} rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm sm:p-6`}>
+    <section id={id} className={`${className} ${accent ? `collector-step-card collector-step-${accent}` : ''} rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm sm:p-6`}>
       <h2 className="capitalize text-lg font-black text-[var(--ink)]">{title}</h2>
       {description && <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>}
       <div className="mt-5">{children}</div>

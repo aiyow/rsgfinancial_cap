@@ -19,14 +19,6 @@ function number(value) {
   return Number(Number(value || 0).toFixed(2));
 }
 
-function cents(value) {
-  return Math.round(Number(value || 0) * 100);
-}
-
-function money(centsValue) {
-  return Number((centsValue / 100).toFixed(2));
-}
-
 export function parseFinancialReportFilters(query = {}, now = new Date()) {
   const month = query.month === undefined ? undefined : String(query.month);
   const startDate = query.startDate === undefined ? undefined : String(query.startDate);
@@ -54,30 +46,13 @@ export function parseFinancialReportFilters(query = {}, now = new Date()) {
   return parseFinancialReportFilters({ month: today.slice(0, 7) }, now);
 }
 
-export function allocateFinancialCollection({ waterBilled = 0, duesBilled = 0, latePenalty = 0, amountApplied = 0 }) {
-  const components = [
-    { key: 'waterCollected', amount: cents(waterBilled) },
-    { key: 'duesCollected', amount: cents(duesBilled) },
-    { key: 'latePenaltyCollected', amount: cents(latePenalty) },
-  ];
-  const totalComponentCents = components.reduce((sum, item) => sum + item.amount, 0);
-  const appliedCents = Math.min(Math.max(cents(amountApplied), 0), totalComponentCents);
-  const allocation = Object.fromEntries(components.map((item) => [item.key, 0]));
-  if (!totalComponentCents || !appliedCents) return allocation;
-
-  const shares = components.map((item, index) => {
-    const raw = appliedCents * item.amount / totalComponentCents;
-    const floor = Math.floor(raw);
-    allocation[item.key] = floor;
-    return { ...item, index, remainder: raw - floor };
-  });
-  let remainder = appliedCents - Object.values(allocation).reduce((sum, value) => sum + value, 0);
-  for (const item of shares.sort((left, right) => right.remainder - left.remainder || left.index - right.index)) {
-    if (!remainder) break;
-    allocation[item.key] += 1;
-    remainder -= 1;
-  }
-  return Object.fromEntries(Object.entries(allocation).map(([key, value]) => [key, money(value)]));
+export function allocateFinancialCollection({ chargeType, component = 'PRINCIPAL', amountApplied = 0 }) {
+  if (!['WATER','ASSOCIATION_DUES'].includes(chargeType) || !['PRINCIPAL','LATE_PENALTY'].includes(component)
+    || (chargeType === 'WATER' && component === 'LATE_PENALTY')) throw new Error('Invalid ledger collection category.');
+  const amount=number(amountApplied);
+  return { waterCollected: chargeType === 'WATER' ? amount : 0,
+    duesCollected: chargeType === 'ASSOCIATION_DUES' && component === 'PRINCIPAL' ? amount : 0,
+    latePenaltyCollected: component === 'LATE_PENALTY' ? amount : 0 };
 }
 
 export function calculateCollectionEfficiency(totalCollections = 0, totalBilling = 0) {
@@ -91,8 +66,8 @@ const billDetailSql = `
     COALESCE(NULLIF(b.payer_name_snapshot, ''), 'Unassigned resident') AS "payerName",
     b.period_start_snapshot AS "periodStart", b.period_end_snapshot AS "periodEnd",
     b.due_date_snapshot AS "dueDate", p.status AS "batchStatus",
-    COALESCE(SUM(c.quantity * c.rate_applied) FILTER (WHERE c.charge_type = 'WATER'), 0) AS "waterBilled",
-    COALESCE(SUM(c.quantity * c.rate_applied) FILTER (WHERE c.charge_type = 'ASSOCIATION_DUES'), 0) AS "duesBilled",
+    COALESCE(SUM(ROUND(c.quantity * c.rate_applied,2)) FILTER (WHERE c.charge_type = 'WATER'), 0) AS "waterBilled",
+    COALESCE(SUM(ROUND(c.quantity * c.rate_applied,2)) FILTER (WHERE c.charge_type = 'ASSOCIATION_DUES'), 0) AS "duesBilled",
     CASE WHEN b.late_penalty_applied_at IS NOT NULL AND b.late_penalty_applied_at::date <= $1::date
       THEN COALESCE(b.late_penalty_amount, 0) ELSE 0 END AS "latePenalty"
   FROM unit_bills b
@@ -155,17 +130,19 @@ export async function getFinancialReport(pool, filters) {
     pool.query(
       `SELECT ps.id AS "paymentId", ps.verified_payment_date AS "paymentDate",
          ps.payment_method AS "paymentMethod", ps.verified_reference_no AS "paymentReference",
-         pa.amount_applied AS "appliedAmount", b.id AS "billId", b.unit_id AS "unitId",
+         pa.amount_applied AS "appliedAmount", a.charge_type AS "chargeType", pa.component,
+         a.invoice_number AS "invoiceNumber", ps.payment_purpose AS "paymentPurpose", b.id AS "billId", b.unit_id AS "unitId",
          b.unit_number_snapshot AS "unitNumber",
          COALESCE(NULLIF(b.payer_name_snapshot, ''), 'Unassigned resident') AS "payerName",
          b.period_start_snapshot AS "periodStart", b.period_end_snapshot AS "periodEnd",
          b.due_date_snapshot AS "dueDate", p.status AS "batchStatus",
-         COALESCE(SUM(c.quantity * c.rate_applied) FILTER (WHERE c.charge_type = 'WATER'), 0) AS "waterBilled",
-         COALESCE(SUM(c.quantity * c.rate_applied) FILTER (WHERE c.charge_type = 'ASSOCIATION_DUES'), 0) AS "duesBilled",
+         COALESCE(SUM(ROUND(c.quantity * c.rate_applied,2)) FILTER (WHERE c.charge_type = 'WATER'), 0) AS "waterBilled",
+         COALESCE(SUM(ROUND(c.quantity * c.rate_applied,2)) FILTER (WHERE c.charge_type = 'ASSOCIATION_DUES'), 0) AS "duesBilled",
          CASE WHEN b.late_penalty_applied_at IS NOT NULL AND b.late_penalty_applied_at::date <= $1::date
            THEN COALESCE(b.late_penalty_amount, 0) ELSE 0 END AS "latePenalty"
        FROM payment_applications pa
        JOIN payment_submissions ps ON ps.id = pa.payment_submission_id
+       JOIN payment_charge_allocations a ON a.id = pa.charge_allocation_id
        JOIN unit_bills b ON b.id = pa.unit_bill_id
        JOIN billing_periods p ON p.id = b.billing_period_id
        LEFT JOIN bill_charges c ON c.unit_bill_id = b.id
@@ -174,7 +151,7 @@ export async function getFinancialReport(pool, filters) {
          AND ps.review_status = 'APPROVED'
          AND ps.verified_payment_date >= $2::date
          AND ps.verified_payment_date <= $3::date
-       GROUP BY ps.id, pa.id, b.id, p.status
+       GROUP BY ps.id, pa.id, a.id, b.id, p.status
        ORDER BY ps.verified_payment_date, ps.id, pa.id`,
       [filters.endDate, filters.startDate, filters.endDate],
     ),
@@ -201,12 +178,7 @@ export async function getFinancialReport(pool, filters) {
 
   const applicationRows = collectionResult.rows.map((row) => {
     const bill = normalizeBill(row);
-    const allocation = allocateFinancialCollection({
-      waterBilled: bill.waterBilled,
-      duesBilled: bill.duesBilled,
-      latePenalty: bill.latePenalty,
-      amountApplied: row.appliedAmount,
-    });
+    const allocation = allocateFinancialCollection({chargeType:row.chargeType,component:row.component,amountApplied:row.appliedAmount});
     return {
       paymentId: Number(row.paymentId),
       paymentDate: row.paymentDate,
@@ -243,6 +215,13 @@ export async function getFinancialReport(pool, filters) {
     unitId: Number(row.unitId),
   }));
   const occupiedUnits = occupancyRows.filter((row) => row.occupancyStatus === 'OCCUPIED').length;
+  const paidByTransaction = new Map();
+  for(const row of applicationRows) {
+    const key=`${row.paymentId}:${row.billId}`;
+    const existing=paidByTransaction.get(key) || {...row,appliedAmount:0,duesCollected:0,waterCollected:0,latePenaltyCollected:0};
+    for(const field of ['appliedAmount','duesCollected','waterCollected','latePenaltyCollected']) existing[field]=number(existing[field]+row[field]);
+    paidByTransaction.set(key,existing);
+  }
 
   return {
     filters,
@@ -268,7 +247,7 @@ export async function getFinancialReport(pool, filters) {
       collectionRows: applicationRows.filter((row) => row.waterCollected > 0).map((row) => ({ ...row, collected: row.waterCollected })),
     },
     paidDues: {
-      rows: applicationRows
+      rows: [...paidByTransaction.values()]
         .filter((row) => row.duesCollected > 0 || row.waterCollected > 0)
         .map((row) => ({
           ...row,

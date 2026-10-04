@@ -53,10 +53,13 @@ test("uses an explicitly supplied local calendar date when applying late penalti
   await applyDueLatePenalties({
     async query(sql, values) {
       calls.push({ sql, values });
+      if (sql.includes('to_regclass')) return { rows: [{ policy: 'payment_ledger_policy' }] };
+      if (sql.includes('SELECT version')) return { rows: [{ version: 2 }] };
       return { rows: [] };
     },
   }, null, "2026-10-01");
 
-  assert.match(calls[0].sql, /b\.due_date_snapshot < \$1::date/);
-  assert.deepEqual(calls[0].values, ["2026-10-01"]);
+  assert.ok(calls.some(call=>call.sql.includes('FOR UPDATE')));
+  assert.ok(calls.some(call=>call.sql.includes("p.verified_payment_date <= b.due_date_snapshot")));
+  assert.deepEqual(calls.at(-1).values, [null]);
 });

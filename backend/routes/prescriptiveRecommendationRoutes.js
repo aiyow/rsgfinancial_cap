@@ -4,6 +4,7 @@ import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId } from "../middleware/validate.js";
 import { writeAuditLog } from "../services/auditLog.js";
 import { ensurePrescriptiveAnalyticsSchema } from "../services/prescriptiveAnalytics.js";
+import { applyDueLatePenalties, chargePaymentsSql } from '../services/paymentLedger.js';
 
 const router = express.Router();
 const statuses = new Set(["ACTIVE", "ALL", "OPEN", "VIEWED", "SUPERSEDED"]);
@@ -23,13 +24,38 @@ const recommendationSelect = `SELECT r.id, r.unit_id AS "unitId", u.unit_number 
   LEFT JOIN billing_forecasts f ON f.id = r.forecast_id`;
 
 router.use(requireAuth);
+router.use(async (req, res, next) => {
+  try { await applyDueLatePenalties(pool); next(); } catch (error) { next(error); }
+});
+
+function residentSelect(userParameter) {
+  return recommendationSelect.replace('r.priority, r.status, r.message, r.evidence,', `r.priority, r.status, r.message, r.evidence,
+    (SELECT ${chargePaymentsSql} FROM unit_bills b WHERE b.unit_id=r.unit_id AND b.billing_period_id=r.based_on_period_id) AS "chargePayments",
+    CASE WHEN EXISTS(SELECT 1 FROM unit_assignments owner WHERE owner.unit_id=r.unit_id AND owner.user_id=${userParameter}
+    AND owner.end_date IS NULL AND owner.start_date <= (NOW() AT TIME ZONE 'Asia/Manila')::date AND owner.relationship_type='OWNER') THEN 'OWNER' ELSE 'TENANT' END AS "relationshipType",`);
+}
+
+function residentInsight(row) {
+  if (!row || row.recommendationType !== 'PAYMENT_REMINDER') return row;
+  const charges = row.chargePayments;
+  if (!charges) return null;
+  const tenant = row.relationshipType === 'TENANT';
+  const water = Number(charges.WATER.remainingBalance), association = Number(charges.ASSOCIATION_DUES.remainingBalance);
+  const remaining = tenant ? water : water + association;
+  if (remaining <= 0) return null;
+  return { ...row,
+    message: tenant ? `Your water balance is PHP ${water.toFixed(2)}, due ${row.evidence.dueDate}.` : `Water PHP ${water.toFixed(2)} and association PHP ${association.toFixed(2)} are due ${row.evidence.dueDate}.`,
+    evidence: { ...row.evidence, remainingBalance: remaining, chargePayments: charges },
+  };
+}
 
 router.get("/resident", allowRoles("RESIDENT"), async (req, res, next) => {
   try {
     const result = await pool.query(
-      `${recommendationSelect}
+      `${residentSelect('$1')}
        JOIN unit_assignments a ON a.unit_id = r.unit_id
        WHERE a.user_id = $1 AND a.end_date IS NULL
+         AND a.start_date <= (NOW() AT TIME ZONE 'Asia/Manila')::date
          AND r.recommendation_type = ANY($2::varchar[])
          AND r.resident_visible_at IS NOT NULL
          AND r.status = ANY($3::varchar[])
@@ -38,7 +64,8 @@ router.get("/resident", allowRoles("RESIDENT"), async (req, res, next) => {
        ORDER BY r.updated_at DESC, u.unit_number`,
       [req.user.id, residentRecommendationTypes, ["OPEN", "VIEWED"]],
     );
-    return res.json({ recommendations: result.rows });
+    const recommendations = result.rows.map(residentInsight).filter(Boolean);
+    return res.json({ recommendations: [...new Map(recommendations.map(row=>[row.id,row])).values()] });
   } catch (error) { return next(error); }
 });
 
@@ -48,9 +75,10 @@ router.patch("/:id/view", allowRoles("RESIDENT"), requireId, async (req, res, ne
     client = await pool.connect();
     await client.query("BEGIN");
     const existing = await client.query(
-      `${recommendationSelect}
+      `${residentSelect('$2')}
        JOIN unit_assignments a ON a.unit_id = r.unit_id
        WHERE r.id = $1 AND a.user_id = $2 AND a.end_date IS NULL
+         AND a.start_date <= (NOW() AT TIME ZONE 'Asia/Manila')::date
          AND r.recommendation_type = ANY($3::varchar[])
          AND r.resident_visible_at IS NOT NULL
          AND r.status = ANY($4::varchar[])
@@ -59,7 +87,7 @@ router.patch("/:id/view", allowRoles("RESIDENT"), requireId, async (req, res, ne
        FOR UPDATE OF r`,
       [req.resourceId, req.user.id, residentRecommendationTypes, ["OPEN", "VIEWED"]],
     );
-    const recommendation = existing.rows[0];
+    const recommendation = residentInsight(existing.rows[0]);
     if (!recommendation) {
       await client.query("ROLLBACK");
       return res.status(404).json({ message: "Prescriptive insight not found." });
@@ -79,9 +107,9 @@ router.patch("/:id/view", allowRoles("RESIDENT"), requireId, async (req, res, ne
         newValues: { status: "VIEWED" },
       });
     }
-    const updated = await client.query(`${recommendationSelect} WHERE r.id = $1`, [req.resourceId]);
+    const updated = await client.query(`${residentSelect('$2')} WHERE r.id = $1`, [req.resourceId, req.user.id]);
     await client.query("COMMIT");
-    return res.json({ message: "Insight marked as viewed.", recommendation: updated.rows[0] });
+    return res.json({ message: "Insight marked as viewed.", recommendation: residentInsight(updated.rows[0]) });
   } catch (error) {
     if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
@@ -119,11 +147,15 @@ router.get("/", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
     }
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     const result = await pool.query(
-      `${recommendationSelect} ${where}
+      `${recommendationSelect.replace('r.priority, r.status, r.message, r.evidence,', `r.priority, r.status, r.message, r.evidence,
+        (SELECT ${chargePaymentsSql} FROM unit_bills b WHERE b.unit_id=r.unit_id AND b.billing_period_id=r.based_on_period_id) AS "chargePayments",`)} ${where}
        ORDER BY CASE r.priority WHEN 'HIGH' THEN 0 ELSE 1 END, r.updated_at DESC, u.unit_number`,
       params,
     );
-    return res.json({ recommendations: result.rows });
+    return res.json({ recommendations: result.rows.map(row => {
+      if (row.recommendationType !== 'PAYMENT_REMINDER' || !['OPEN','VIEWED'].includes(row.status)) return row;
+      return residentInsight({ ...row, relationshipType: 'OWNER' });
+    }).filter(Boolean) });
   } catch (error) { return next(error); }
 });
 

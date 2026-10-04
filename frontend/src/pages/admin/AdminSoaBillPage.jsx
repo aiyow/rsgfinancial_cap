@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import SoaDocument from '../../components/SoaDocument'
+import PaymentInvoiceEditor from '../../components/PaymentInvoiceEditor'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -33,7 +34,7 @@ export default function AdminSoaBillPage() {
   const soaRef = useRef(null)
   const [editing, setEditing] = useState(false)
   const [correction, setCorrection] = useState(null)
-  const [references, setReferences] = useState({ invoiceNumber: '', paymentNote: '' })
+  const [references, setReferences] = useState({ paymentNote: '' })
   const [publishConfirmationOpen, setPublishConfirmationOpen] = useState(false)
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function AdminSoaBillPage() {
     async function load() {
       try {
         const data = await apiRequest(`/api/bills/${id}`, { token })
-        if (active) { setBill(data.bill); setCorrection(correctionFromBill(data.bill)); setReferences({ invoiceNumber: data.bill.invoiceNumber || '', paymentNote: data.bill.paymentNote || '' }) }
+        if (active) { setBill(data.bill); setCorrection(correctionFromBill(data.bill)); setReferences({ paymentNote: data.bill.paymentNote || '' }) }
       } catch (requestError) {
         if (active) setNotice({ error: requestError.message, message: '' })
       }
@@ -118,8 +119,8 @@ export default function AdminSoaBillPage() {
     event.preventDefault()
     setBusy(true); setNotice({ error: '', message: '' })
     try {
-      const data = await apiRequest(`/api/bills/${id}/payment-references`, { method: 'PATCH', token, body: { invoiceNumber: references.invoiceNumber || null, paymentNote: references.paymentNote || null } })
-      setBill(data.bill); setReferences({ invoiceNumber: data.bill.invoiceNumber || '', paymentNote: data.bill.paymentNote || '' }); setNotice({ error: '', message: 'Invoice details and payment note are now up to date.' })
+      const data = await apiRequest(`/api/bills/${id}/payment-references`, { method: 'PATCH', token, body: { paymentNote: references.paymentNote || null } })
+      setBill(data.bill); setReferences({ paymentNote: data.bill.paymentNote || '' }); setNotice({ error: '', message: 'Payment note is now up to date.' })
       soaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     } catch (error) { setNotice({ error: error.message, message: '' }) } finally { setBusy(false) }
   }
@@ -158,10 +159,11 @@ export default function AdminSoaBillPage() {
     <DashboardLayout title="Forwarded Statement of Account" description={openedFromBillingErrors ? 'Review the reported SOA, make any permitted correction, then return to Billing Errors.' : 'Review, correct, or publish this forwarded SOA.'}>
       <div className="print-hidden flex flex-wrap gap-3"><button type="button" onClick={() => navigate(-1)} className={actionButtonClass}>Go back</button><button type="button" onClick={() => window.print()} className={actionButtonClass}>Print / Save PDF</button>{bill && !bill.publishedAt && <button type="button" disabled={busy} onClick={() => setPublishConfirmationOpen(true)} className={actionButtonClass}>Publish this SOA</button>}{canCorrect && <button type="button" disabled={busy} onClick={openCorrection} className={actionButtonClass}>{openedFromBillingErrors ? 'Correct reported SOA' : 'Correct SOA'}</button>}{bill && Number(bill.emailDelivery?.failed || 0) > 0 && <button type="button" disabled={busy} onClick={retryEmails} className={actionButtonClass}>Retry failed email{Number(bill.emailDelivery.failed) === 1 ? '' : 's'}</button>}{bill && (Number(bill.emailDelivery?.sent || 0) + Number(bill.emailDelivery?.failed || 0)) > 0 && <button type="button" disabled={busy} onClick={resendEmails} className={actionButtonClass}>Resend SOA email</button>}</div>
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
+      {bill && <div className="print-hidden rounded-xl border border-emerald-100 bg-white p-4"><PaymentInvoiceEditor bill={bill} onSaved={async () => { const data = await apiRequest(`/api/bills/${id}`, { token }); setBill(data.bill) }} /></div>}
       {!bill && !notice.error && <p className="text-sm text-slate-500">Loading statement...</p>}
       {openedFromBillingErrors && correctionBlockedReason && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{hasBillingErrorContext ? 'This SOA has payment activity. Because it was opened from an active Billing Error report, you may correct all SOA details. The system will preserve the payment record and recalculate its applications and remaining balance.' : correctionBlockedReason}</p>}
       {bill && <div ref={soaRef}><div className="print-hidden rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">Email delivery: {Number(bill.emailDelivery?.sent || 0)} sent, {Number(bill.emailDelivery?.failed || 0)} failed, {Number(bill.emailDelivery?.pending || 0)} pending.</div><SoaDocument bill={bill} /></div>}
-      {!openedFromBillingErrors && bill && Number(bill.approvedAmount || 0) > 0 && <Panel title="Invoice details" description="These payment fields remain editable after approval."><form onSubmit={saveReferences} className="grid gap-3 md:grid-cols-2"><label className="text-xs font-bold">Invoice number<input value={references.invoiceNumber} onChange={(event) => setReferences((current) => ({ ...current, invoiceNumber: event.target.value }))} className={inputClass} /></label><label className="text-xs font-bold md:col-span-2">Payment note<textarea value={references.paymentNote} onChange={(event) => setReferences((current) => ({ ...current, paymentNote: event.target.value }))} className={`${inputClass} min-h-20`} /></label><button disabled={busy} className="w-fit rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white">Save invoice details</button></form></Panel>}
+      {!openedFromBillingErrors && bill && Number(bill.approvedAmount || 0) > 0 && <Panel title="Payment notes" description="These payment fields remain editable after approval."><form onSubmit={saveReferences} className="grid gap-3 md:grid-cols-2"><label className="text-xs font-bold md:col-span-2">Payment note<textarea value={references.paymentNote} onChange={(event) => setReferences((current) => ({ ...current, paymentNote: event.target.value }))} className={`${inputClass} min-h-20`} /></label><button disabled={busy} className="w-fit rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white">Save payment note</button></form></Panel>}
       {editing && correction && <CorrectionModal busy={busy} correction={correction} inputClass={inputClass} onCancel={closeCorrection} onSave={saveCorrection} onUpdateCorrection={updateCorrection} onUpdateCharge={updateCharge} />}
       {publishConfirmationOpen && bill && <PublishConfirmationModal busy={busy} bill={bill} onCancel={() => setPublishConfirmationOpen(false)} onPublishOnly={() => confirmPublish(false)} onPublishAndSend={() => confirmPublish(true)} />}
     </DashboardLayout>
