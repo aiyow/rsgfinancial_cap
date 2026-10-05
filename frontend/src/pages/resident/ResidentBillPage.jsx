@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Download, FileClock, LoaderCircle, Printer, QrCode, RotateCcw, Upload, X, ZoomIn, ZoomOut } from 'lucide-react'
 import DashboardLayout from '../../components/DashboardLayout'
@@ -215,9 +215,41 @@ export default function ResidentBillPage() {
 }
 
 function SubmitPaymentProofModal({ paymentPurpose, busy, file, preview, imagePreviewUrl, ocrPreviewing, submittingReceipt, onClose, onSelectReceipt, onPreview, onSubmit }) {
+  const modalRef = useRef(null)
+
+  useEffect(() => {
+    const previousFocus = document.activeElement
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    modalRef.current?.querySelector('[aria-label="Close payment proof form"]')?.focus()
+    return () => {
+      document.body.style.overflow = previousOverflow
+      previousFocus?.focus({ preventScroll: true })
+    }
+  }, [])
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.key === 'Escape' && !busy) { event.preventDefault(); onClose(); return }
+      if (event.key !== 'Tab') return
+      const modal = modalRef.current
+      const controls = [...modal.querySelectorAll('button:not(:disabled), input:not(:disabled), [tabindex="0"]')]
+      if (!controls.length) { event.preventDefault(); return }
+      const first = controls[0]
+      const last = controls.at(-1)
+      if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+        event.preventDefault(); last.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+        event.preventDefault(); first.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [busy, onClose])
+
   return (
-    <div className="fixed inset-0 z-50 grid bg-slate-950/50" role="presentation" onMouseDown={busy ? undefined : onClose}>
-      <section role="dialog" aria-modal="true" aria-labelledby="payment-proof-title" className="flex h-[100dvh] w-screen max-w-none flex-col overflow-hidden bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+    <div className="payment-proof-backdrop fixed inset-0 z-50 grid place-items-center bg-slate-950/50" role="presentation" onMouseDown={busy ? undefined : onClose}>
+      <section ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="payment-proof-title" className="payment-proof-dialog flex h-[100dvh] w-screen max-w-none flex-col overflow-hidden bg-white shadow-2xl lg:h-[80dvh] lg:w-[80vw] lg:rounded-2xl lg:border lg:border-slate-200" onMouseDown={(event) => event.stopPropagation()}>
         <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6"><div><p className="text-sm font-semibold text-emerald-700">Payment Proof</p><h2 id="payment-proof-title" className="mt-1 text-xl font-black text-slate-950">Submit your receipt</h2><p className="mt-1 text-sm font-bold text-emerald-800">For: {purposeLabels[paymentPurpose]}</p><p className="mt-1 text-sm text-slate-600">Upload a clear JPG or PNG receipt, preview the extracted details, then submit it for Admin review.</p></div><button type="button" disabled={busy} onClick={onClose} aria-label="Close payment proof form" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"><X size={20} /></button></header>
         <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 lg:grid-cols-[0.9fr_1.1fr] sm:p-6">
           <form onSubmit={onPreview} className="space-y-4">

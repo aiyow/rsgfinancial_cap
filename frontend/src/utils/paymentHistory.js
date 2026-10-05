@@ -23,6 +23,13 @@ export function paymentDateTime(value) {
   }).format(date)
 }
 
+export function paymentDateLabel(value) {
+  if (!value) return '—'
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00+08:00`)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' })
+}
+
 export function paymentMethodLabel(value) {
   return ({ GCASH: 'GCash', BANK_TRANSFER: 'Bank transfer', CASH: 'Cash' })[value] || (value ? String(value).replaceAll('_', ' ') : 'Method not set')
 }

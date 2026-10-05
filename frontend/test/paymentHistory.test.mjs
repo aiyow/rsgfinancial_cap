@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { paymentAmountSummary, paymentDateTime, paymentInvoiceReferences, paymentMethodLabel } from '../src/utils/paymentHistory.js'
+import { paymentAmountSummary, paymentDateLabel, paymentDateTime, paymentInvoiceReferences, paymentMethodLabel } from '../src/utils/paymentHistory.js'
 
 test('approved history uses the verified amount with peso grouping, including genuine zero', () => {
   assert.deepEqual(paymentAmountSummary({reviewStatus:'APPROVED',verifiedAmount:'2030',ocrAmount:100}),{label:'Verified amount',value:'₱2,030.00'})
@@ -22,4 +22,11 @@ test('history timestamps use Manila time and missing dates remain unavailable', 
   assert.equal(paymentDateTime(null),'—')
   assert.equal(paymentDateTime('invalid'),'—')
   assert.equal(paymentMethodLabel('BANK_TRANSFER'),'Bank transfer')
+})
+
+test('payment calendar dates use readable month names without shifting the day', () => {
+  assert.equal(paymentDateLabel('2026-10-04'), 'October 4, 2026')
+  assert.equal(paymentDateLabel('2026-10-04T23:00:00Z'), 'October 4, 2026')
+  assert.equal(paymentDateLabel(null), '—')
+  assert.equal(paymentDateLabel('invalid'), '—')
 })

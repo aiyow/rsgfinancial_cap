@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import DashboardLayout, { Panel } from '../../components/DashboardLayout'
+import DashboardLayout from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import SoaDocument from '../../components/SoaDocument'
 import PaymentInvoiceEditor from '../../components/PaymentInvoiceEditor'
+import InvoiceSectionButton from '../../components/InvoiceSectionButton'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -32,6 +33,7 @@ export default function AdminSoaBillPage() {
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
   const soaRef = useRef(null)
+  const invoiceRef = useRef(null)
   const [editing, setEditing] = useState(false)
   const [correction, setCorrection] = useState(null)
   const [references, setReferences] = useState({ paymentNote: '' })
@@ -157,13 +159,13 @@ export default function AdminSoaBillPage() {
 
   return (
     <DashboardLayout title="Forwarded Statement of Account" description={openedFromBillingErrors ? 'Review the reported SOA, make any permitted correction, then return to Billing Errors.' : 'Review, correct, or publish this forwarded SOA.'}>
-      <div className="print-hidden flex flex-wrap gap-3"><button type="button" onClick={() => navigate(-1)} className={actionButtonClass}>Go back</button><button type="button" onClick={() => window.print()} className={actionButtonClass}>Print / Save PDF</button>{bill && !bill.publishedAt && <button type="button" disabled={busy} onClick={() => setPublishConfirmationOpen(true)} className={actionButtonClass}>Publish this SOA</button>}{canCorrect && <button type="button" disabled={busy} onClick={openCorrection} className={actionButtonClass}>{openedFromBillingErrors ? 'Correct reported SOA' : 'Correct SOA'}</button>}{bill && Number(bill.emailDelivery?.failed || 0) > 0 && <button type="button" disabled={busy} onClick={retryEmails} className={actionButtonClass}>Retry failed email{Number(bill.emailDelivery.failed) === 1 ? '' : 's'}</button>}{bill && (Number(bill.emailDelivery?.sent || 0) + Number(bill.emailDelivery?.failed || 0)) > 0 && <button type="button" disabled={busy} onClick={resendEmails} className={actionButtonClass}>Resend SOA email</button>}</div>
+      <div className="print-hidden flex flex-wrap gap-3"><button type="button" onClick={() => navigate(-1)} className={actionButtonClass}>Go back</button><button type="button" onClick={() => window.print()} className={actionButtonClass}>Print / Save PDF</button>{bill && Number(bill.approvedAmount || 0) > 0 && <InvoiceSectionButton targetRef={invoiceRef} />}{bill && !bill.publishedAt && <button type="button" disabled={busy} onClick={() => setPublishConfirmationOpen(true)} className={actionButtonClass}>Publish this SOA</button>}{canCorrect && <button type="button" disabled={busy} onClick={openCorrection} className={actionButtonClass}>{openedFromBillingErrors ? 'Correct reported SOA' : 'Correct SOA'}</button>}{bill && Number(bill.emailDelivery?.failed || 0) > 0 && <button type="button" disabled={busy} onClick={retryEmails} className={actionButtonClass}>Retry failed email{Number(bill.emailDelivery.failed) === 1 ? '' : 's'}</button>}{bill && (Number(bill.emailDelivery?.sent || 0) + Number(bill.emailDelivery?.failed || 0)) > 0 && <button type="button" disabled={busy} onClick={resendEmails} className={actionButtonClass}>Resend SOA email</button>}</div>
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
-      {bill && <div className="print-hidden rounded-xl border border-emerald-100 bg-white p-4"><PaymentInvoiceEditor bill={bill} onSaved={async () => { const data = await apiRequest(`/api/bills/${id}`, { token }); setBill(data.bill) }} /></div>}
       {!bill && !notice.error && <p className="text-sm text-slate-500">Loading statement...</p>}
       {openedFromBillingErrors && correctionBlockedReason && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{hasBillingErrorContext ? 'This SOA has payment activity. Because it was opened from an active Billing Error report, you may correct all SOA details. The system will preserve the payment record and recalculate its applications and remaining balance.' : correctionBlockedReason}</p>}
-      {bill && <div ref={soaRef}><div className="print-hidden rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">Email delivery: {Number(bill.emailDelivery?.sent || 0)} sent, {Number(bill.emailDelivery?.failed || 0)} failed, {Number(bill.emailDelivery?.pending || 0)} pending.</div><SoaDocument bill={bill} /></div>}
-      {!openedFromBillingErrors && bill && Number(bill.approvedAmount || 0) > 0 && <Panel title="Payment notes" description="These payment fields remain editable after approval."><form onSubmit={saveReferences} className="grid gap-3 md:grid-cols-2"><label className="text-xs font-bold md:col-span-2">Payment note<textarea value={references.paymentNote} onChange={(event) => setReferences((current) => ({ ...current, paymentNote: event.target.value }))} className={`${inputClass} min-h-20`} /></label><button disabled={busy} className="w-fit rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white">Save payment note</button></form></Panel>}
+      {bill && <div ref={soaRef}><SoaDocument bill={bill} /><p className="print-hidden mt-2 text-xs text-slate-500">Email delivery: {Number(bill.emailDelivery?.sent || 0)} sent, {Number(bill.emailDelivery?.failed || 0)} failed, {Number(bill.emailDelivery?.pending || 0)} pending.</p></div>}
+      {bill && Number(bill.approvedAmount || 0) > 0 && <div ref={invoiceRef} id="soa-invoice-numbers" tabIndex={-1} role="region" aria-label="SOA invoice entry" className="print-hidden scroll-mt-24 rounded-xl border border-emerald-100 bg-white p-4 focus:outline-none focus:ring-2 focus:ring-emerald-300"><PaymentInvoiceEditor bill={bill} onSaved={async () => { const data = await apiRequest(`/api/bills/${id}`, { token }); setBill(data.bill) }} /></div>}
+      {!openedFromBillingErrors && bill && Number(bill.approvedAmount || 0) > 0 && <details className="print-hidden rounded-xl border border-emerald-100 bg-white p-4"><summary className="min-h-11 cursor-pointer py-2 text-sm font-bold text-emerald-800">Payment note (optional)</summary><form onSubmit={saveReferences} className="mt-3 grid gap-3"><label className="text-xs font-bold">Payment note<textarea maxLength={1000} value={references.paymentNote} onChange={(event) => setReferences((current) => ({ ...current, paymentNote: event.target.value }))} className={`${inputClass} min-h-20`} /></label><button disabled={busy} className="w-fit rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Save payment note</button></form></details>}
       {editing && correction && <CorrectionModal busy={busy} correction={correction} inputClass={inputClass} onCancel={closeCorrection} onSave={saveCorrection} onUpdateCorrection={updateCorrection} onUpdateCharge={updateCharge} />}
       {publishConfirmationOpen && bill && <PublishConfirmationModal busy={busy} bill={bill} onCancel={() => setPublishConfirmationOpen(false)} onPublishOnly={() => confirmPublish(false)} onPublishAndSend={() => confirmPublish(true)} />}
     </DashboardLayout>

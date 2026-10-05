@@ -52,9 +52,9 @@ button, input { font: inherit; }
 .admin-payment-queue :is(.queue-control, .queue-status, .queue-date) { font-size: 12px; }
 .admin-payment-queue .queue-search::-webkit-search-cancel-button { display: none; }
 @media (max-width: 639px) {
-  body:has(.admin-payments-shell) { min-width: 0; }
-  .admin-payments-shell main > .mx-auto { padding: 12px; }
-  .admin-payments-panel { padding: 12px; }
+  body:has(.admin-payments-shell, .collector-payments-shell) { min-width: 0; }
+  :is(.admin-payments-shell, .collector-payments-shell) main > .mx-auto { padding: 12px; }
+  :is(.admin-payments-panel, .collector-payments-panel) { padding: 12px; }
   .admin-payment-queue .queue-status { min-width: 0; font-size: 11px; }
 }
 button { cursor: pointer; }
@@ -385,6 +385,20 @@ body:has(.resident-bills-shell), body:has(.resident-payments-shell) { min-width:
 @keyframes toast-enter {
   from { opacity: 0; transform: translateY(-10px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.payment-proof-backdrop { animation: payment-proof-backdrop-in 160ms ease-out both; }
+.payment-proof-dialog { animation: payment-proof-dialog-in 220ms ease-out both; }
+@keyframes payment-proof-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes payment-proof-dialog-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .payment-proof-backdrop, .payment-proof-dialog { animation: none; }
 }
 
 .soa-sheet {
