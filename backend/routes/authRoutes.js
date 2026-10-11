@@ -19,6 +19,7 @@ import {
   passwordResetExpiryDate,
   sendPasswordResetEmail,
 } from "../services/passwordReset.js";
+import { normalizeEmailIdentity } from "../services/emailIdentity.js";
 
 const router = express.Router();
 const passwordSchema = z.string().min(8).max(72);
@@ -63,8 +64,18 @@ const userColumns = `
 router.post("/register", validateBody(registerSchema), async (req, res, next) => {
   let client;
   try {
-    const { fullName, email, password } = req.validatedBody;
+    const { fullName, password } = req.validatedBody;
+    const email = normalizeEmailIdentity(req.validatedBody.email);
     const role = "RESIDENT";
+
+    const existing = await pool.query(
+      "SELECT 1 FROM users WHERE LOWER(BTRIM(email)) = $1 LIMIT 1",
+      [email]
+    );
+    if (existing.rows[0]) {
+      return res.status(409).json({ message: "That email address is already registered. Sign in or resend its verification email instead." });
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
     const verificationToken = createVerificationToken();
     const verificationExpiry = verificationExpiryDate();

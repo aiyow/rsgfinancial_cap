@@ -20,9 +20,6 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique
-  ON users (LOWER(email));
-
 CREATE INDEX IF NOT EXISTS users_email_verification_token_hash_idx
   ON users (email_verification_token_hash)
   WHERE email_verification_token_hash IS NOT NULL;
