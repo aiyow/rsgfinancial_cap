@@ -581,3 +581,15 @@ body:has(.resident-bills-shell), body:has(.resident-payments-shell) { min-width:
     break-inside: avoid;
   }
 }
+
+/* Settings cards keep their forms readable within the available content width. */
+.settings-panel > h2 { font-size: 1rem; }
+.settings-panel > p { font-size: 0.8125rem; line-height: 1.6; }
+.settings-panel > div { margin-top: 20px; }
+@media (max-width: 639px) {
+  body:has(.settings-shell) { min-width: 0; }
+  .settings-shell main > .mx-auto { padding: 20px 12px; }
+  .settings-panel { padding: 20px 16px; }
+  .settings-shell header .dashboard-breadcrumb-separator,
+  .settings-shell header .ui-title { display: none; }
+}

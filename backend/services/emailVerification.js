@@ -57,11 +57,27 @@ export function buildVerificationEmailMessage({ fullName, token, clientUrl }) {
   };
 }
 
+export function buildEmailChangeMessage({ fullName, otp }) {
+  const recipient = fullName ? `Hello ${fullName},` : 'Hello,';
+  return {
+    subject: 'Verify your new The ResiDens email address',
+    text: `${recipient}\n\nYour email change code is: ${otp}\n\nEnter this code in Settings to confirm your new email address. It expires in 10 minutes. Your current email stays unchanged until verification. Never share this code. If you did not request this change, ignore this email.`,
+    html: `<p>${escapeHtml(recipient)}</p><p>Enter this code in <strong>Settings</strong> to confirm your new email address:</p><p style="font-size:32px;font-weight:bold;letter-spacing:8px">${escapeHtml(otp)}</p><p>This code expires in 10 minutes. Your current email stays unchanged until verification. Never share this code. If you did not request this change, ignore this email.</p>`,
+  };
+}
+
 export function createEmailVerificationService({
   environment = process.env,
   createTransport = nodemailer.createTransport,
 } = {}) {
   return {
+    async sendEmailChangeCode({ fullName, email, otp }) {
+      const message = buildEmailChangeMessage({ fullName, otp });
+      const config = emailConfiguration(environment);
+      const transporter = createTransport({ host: config.host, port: config.port, secure: config.secure, auth: config.auth });
+      await transporter.sendMail({ from: config.from, to: email, subject: message.subject, text: message.text, html: message.html });
+      return message;
+    },
     async sendVerificationEmail({ fullName, email, token }) {
       const message = buildVerificationEmailMessage({ fullName, token, clientUrl: environment.CLIENT_URL });
       const config = emailConfiguration(environment);
@@ -74,4 +90,8 @@ export function createEmailVerificationService({
 
 export async function sendVerificationEmail(delivery) {
   return createEmailVerificationService().sendVerificationEmail(delivery);
+}
+
+export async function sendEmailChangeCode(delivery) {
+  return createEmailVerificationService().sendEmailChangeCode(delivery);
 }

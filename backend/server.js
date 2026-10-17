@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import pool from "./config/db.js";
 
 import authRoutes from "./routes/authRoutes.js";
+import accountRoutes from "./routes/accountRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import unitRoutes from "./routes/unitRoutes.js";
 import unitAssignmentRoutes from "./routes/unitAssignmentRoutes.js";
@@ -38,6 +39,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/account", accountRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/units", unitRoutes);
 app.use("/api/unit-assignments", unitAssignmentRoutes);

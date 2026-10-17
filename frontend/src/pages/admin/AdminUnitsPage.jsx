@@ -197,9 +197,12 @@ export default function AdminUnitsPage() {
     setAssignmentBusy(true)
     const created = await runAction(
       () => apiRequest('/api/unit-assignments', { method: 'POST', token, body: { ...assignmentForm, unitId: editingId } }),
-      'Resident assigned to this unit.',
+      'Resident assigned. Unit marked as occupied.',
     )
-    if (created) setAssignmentForm(blankAssignment)
+    if (created) {
+      setForm((current) => ({ ...current, occupancyStatus: 'OCCUPIED' }))
+      setAssignmentForm(blankAssignment)
+    }
     setAssignmentBusy(false)
   }
 
@@ -405,7 +408,7 @@ function UnitModal({ assignments, assignmentBusy, assignmentForm, form, mode, re
               <Field label="Unit number"><input required value={form.unitNumber} onChange={(event) => onFormChange('unitNumber', event.target.value)} className={inputClass} /></Field>
               <Field label="Floor"><input required value={form.floor} onChange={(event) => onFormChange('floor', event.target.value)} className={inputClass} /></Field>
               <Field label="Billable area (sqm)"><input required min="0.01" step="0.01" type="number" value={form.billableAreaSqm} onChange={(event) => onFormChange('billableAreaSqm', event.target.value)} className={inputClass} /></Field>
-              <Field label="Occupancy"><div className="mt-1.5"><FilterPopover label="Occupancy" value={form.occupancyStatus} open={occupancyMenuOpen} onToggle={() => setOccupancyMenuOpen((current) => !current)} onSelect={(value) => { onFormChange('occupancyStatus', value); setOccupancyMenuOpen(false) }} options={[{ value: 'VACANT', label: 'Vacant' }, { value: 'OCCUPIED', label: 'Occupied' }]} /></div></Field>
+              <Field label="Occupancy"><div className="mt-1.5">{assignments.length ? <><div className="flex min-h-11 items-center rounded-lg border border-[var(--border)] bg-[var(--app-bg)] px-3"><OccupancyBadge status="OCCUPIED" /></div><p className="mt-1.5 text-xs font-normal text-[var(--muted)]">Set automatically when a resident is assigned.</p></> : <FilterPopover label="Occupancy" value={form.occupancyStatus} open={occupancyMenuOpen} onToggle={() => setOccupancyMenuOpen((current) => !current)} onSelect={(value) => { onFormChange('occupancyStatus', value); setOccupancyMenuOpen(false) }} options={[{ value: 'VACANT', label: 'Vacant' }, { value: 'OCCUPIED', label: 'Occupied' }]} />}</div></Field>
               <div className="flex justify-end gap-3 sm:col-span-2"><button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-bold text-[var(--ink)]">Cancel</button><button className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white">{editing ? 'Save unit changes' : 'Add unit'}</button></div>
             </form>
 

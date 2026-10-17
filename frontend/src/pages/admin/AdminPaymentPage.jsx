@@ -9,6 +9,7 @@ import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
 import PaymentInvoiceEditor from '../../components/PaymentInvoiceEditor'
 import PaymentAllocationPreview from '../../components/PaymentAllocationPreview'
 import { purposeLabels } from '../../utils/chargePayments'
+import { paymentDateLabel, paymentDateTime, paymentResidentName } from '../../utils/paymentHistory'
 
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm'
 const methods = ['GCASH', 'BANK_TRANSFER', 'CASH', 'OTHER']
@@ -18,7 +19,7 @@ function money(value) {
 }
 
 function dateTime(value) {
-  return value ? new Date(value).toLocaleString() : '-'
+  return paymentDateTime(value, { month: 'long' })
 }
 
 function methodLabel(value) {
@@ -164,7 +165,7 @@ export default function AdminPaymentPage() {
 
       {payment && (
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <Panel title={`${payment.entryType === 'MANUAL' ? 'Manual payment' : 'Receipt'} for Unit ${payment.unitNumber}`} description={`Submitted by ${payment.submittedByName} on ${dateTime(payment.submittedAt)}.`}>
+          <Panel title={`${payment.entryType === 'MANUAL' ? 'Manual payment' : 'Receipt'} for Unit ${payment.unitNumber}`} description={payment.entryType === 'MANUAL' ? `${paymentResidentName(payment)} · Recorded by ${payment.submittedByName} on ${dateTime(payment.submittedAt)}.` : `Submitted by ${payment.submittedByName} on ${dateTime(payment.submittedAt)}.`}>
             {receiptUrl && <div className="relative flex min-h-56 max-h-[440px] items-center justify-center overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
               <img src={receiptUrl} alt="Uploaded payment receipt" className="max-h-[410px] w-full object-contain" style={{ transform: `scale(${receiptZoom})`, transformOrigin: 'center center' }} />
               <div className="absolute right-3 top-3 flex gap-2 rounded-lg border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur">
@@ -213,8 +214,8 @@ export default function AdminPaymentPage() {
               <dl className="grid gap-4 sm:grid-cols-2">
                 <Fact label="OCR amount" value={payment.ocrAmount ? money(payment.ocrAmount) : 'Not detected'} />
                 <Fact label="OCR reference" value={payment.ocrReferenceNo || 'Not detected'} />
-                <Fact label="OCR payment date" value={payment.ocrPaymentDate ? String(payment.ocrPaymentDate).slice(0, 10) : 'Not detected'} />
-                <Fact label="Resident due date" value={payment.dueDate ? String(payment.dueDate).slice(0, 10) : '-'} />
+                <Fact label="OCR payment date" value={payment.ocrPaymentDate ? paymentDateLabel(payment.ocrPaymentDate) : 'Not detected'} />
+                <Fact label="Resident due date" value={paymentDateLabel(payment.dueDate)} />
               </dl>
             </Panel>
 
@@ -269,7 +270,7 @@ export default function AdminPaymentPage() {
                   <Fact label="Applied amount" value={money(payment.appliedAmount)} />
                   <Fact label="Unapplied advance" value={money(payment.unappliedAmount)} />
                   <Fact label="Verified reference" value={payment.verifiedReferenceNo || '-'} />
-                  <Fact label="Verified payment date" value={payment.verifiedPaymentDate ? String(payment.verifiedPaymentDate).slice(0, 10) : '-'} />
+                  <Fact label="Verified payment date" value={paymentDateLabel(payment.verifiedPaymentDate)} />
                   <Fact label="Remarks" value={payment.remarks || '-'} />
                 </dl>
               )}

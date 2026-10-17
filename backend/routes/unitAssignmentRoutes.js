@@ -39,9 +39,18 @@ const updateAssignmentSchema = z.object({
   message: "At least one field must be provided.",
 });
 
-async function findAssignment(id) {
-  const result = await pool.query(`${assignmentSelect} WHERE a.id = $1`, [id]);
+async function findAssignment(id, client = pool) {
+  const result = await client.query(`${assignmentSelect} WHERE a.id = $1`, [id]);
   return result.rows[0];
+}
+
+// Historical assignments do not indicate current occupancy.
+async function markAssignedUnitOccupied(client, assignment) {
+  if (assignment.endDate) return;
+  await client.query(
+    "UPDATE units SET occupancy_status = 'OCCUPIED' WHERE id = $1 AND occupancy_status <> 'OCCUPIED'",
+    [assignment.unitId]
+  );
 }
 
 async function ensureAssignableResident(userId, res) {
@@ -99,32 +108,42 @@ router.get("/:id", allowRoles("ADMIN", "COLLECTOR", "RESIDENT"), requireId, asyn
 });
 
 router.post("/", allowRoles("ADMIN"), validateBody(createAssignmentSchema), async (req, res, next) => {
+  let client;
   try {
     const { unitId, userId, relationshipType, isPrimaryPayer, startDate, endDate } = req.validatedBody;
     if (!(await ensureAssignableResident(userId, res))) return;
 
-    const result = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const result = await client.query(
       `INSERT INTO unit_assignments
         (unit_id, user_id, relationship_type, is_primary_payer, start_date, end_date)
        VALUES ($1, $2, $3, $4, COALESCE($5::date, CURRENT_DATE), $6)
        RETURNING id`,
       [unitId, userId, relationshipType, isPrimaryPayer, startDate || null, endDate]
     );
-    const assignment = await findAssignment(result.rows[0].id);
+    const assignment = await findAssignment(result.rows[0].id, client);
+    await markAssignedUnitOccupied(client, assignment);
     await writeAuditLog({
+      client,
       actorUserId: req.user.id,
       entityName: "UNIT_ASSIGNMENT",
       entityId: assignment.id,
       action: "CREATE",
       newValues: assignment,
     });
+    await client.query("COMMIT");
     return res.status(201).json({ message: "Unit assignment created.", assignment });
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
+  } finally {
+    client?.release();
   }
 });
 
 router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateAssignmentSchema), async (req, res, next) => {
+  let client;
   try {
     const before = await findAssignment(req.resourceId);
     if (!before) return res.status(404).json({ message: "Unit assignment not found." });
@@ -150,13 +169,17 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateAssignme
     }
 
     values.push(req.resourceId);
-    const result = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const result = await client.query(
       `UPDATE unit_assignments SET ${updates.join(", ")}
        WHERE id = $${values.length} RETURNING id`,
       values
     );
-    const assignment = await findAssignment(result.rows[0].id);
+    const assignment = await findAssignment(result.rows[0].id, client);
+    await markAssignedUnitOccupied(client, assignment);
     await writeAuditLog({
+      client,
       actorUserId: req.user.id,
       entityName: "UNIT_ASSIGNMENT",
       entityId: assignment.id,
@@ -164,9 +187,13 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateAssignme
       oldValues: before,
       newValues: assignment,
     });
+    await client.query("COMMIT");
     return res.json({ message: "Unit assignment updated.", assignment });
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
+  } finally {
+    client?.release();
   }
 });
 

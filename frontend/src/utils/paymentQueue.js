@@ -1,5 +1,5 @@
 import { purposeLabels } from './chargePayments.js'
-import { paymentMethodLabel } from './paymentHistory.js'
+import { paymentMethodLabel, paymentResidentName } from './paymentHistory.js'
 
 export const defaultPaymentFilters = { search: '', status: 'ALL', purpose: 'ALL', method: 'ALL', source: 'ALL', dateFrom: '', dateTo: '', sort: 'NEWEST' }
 const collator = new Intl.Collator('en', { numeric: true, sensitivity: 'base' })
@@ -38,7 +38,7 @@ export function filterPaymentQueue(payments, options = {}) {
     if (!terms.length) return true
     // Search references and invoices without exposing the full ledger in the list.
     const searchable = normalize([
-      payment.submittedByName, `Unit ${payment.unitNumber ?? ''}`, `Payment ${payment.id}`,
+      paymentResidentName(payment), `Unit ${payment.unitNumber ?? ''}`, `Payment ${payment.id}`,
       payment.verifiedReferenceNo, payment.ocrReferenceNo, purposeLabels[payment.paymentPurpose],
       paymentMethodLabel(payment.paymentMethod), ...(payment.allocations || []).map(row => row.invoiceNumber),
     ].join(' '))
@@ -48,7 +48,7 @@ export function filterPaymentQueue(payments, options = {}) {
     let comparison = 0
     if (filters.sort === 'OLDEST') comparison = receivedTimestamp(a) - receivedTimestamp(b)
     if (filters.sort === 'UNIT') comparison = collator.compare(String(a.unitNumber ?? ''), String(b.unitNumber ?? ''))
-    if (filters.sort === 'RESIDENT') comparison = collator.compare(a.submittedByName || '', b.submittedByName || '')
+    if (filters.sort === 'RESIDENT') comparison = collator.compare(paymentResidentName(a), paymentResidentName(b))
     if (filters.sort === 'PENDING_FIRST') comparison = Number(b.reviewStatus === 'PENDING') - Number(a.reviewStatus === 'PENDING')
     if (filters.sort === 'AMOUNT_HIGH' || filters.sort === 'AMOUNT_LOW') {
       const aAmount = paymentQueueAmount(a), bAmount = paymentQueueAmount(b)

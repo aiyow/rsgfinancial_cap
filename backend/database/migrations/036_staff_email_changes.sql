@@ -1,0 +1,15 @@
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS email_change_challenges (
+  id UUID PRIMARY KEY,
+  user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  original_email VARCHAR(255) NOT NULL,
+  new_email VARCHAR(255) NOT NULL,
+  auth_version INTEGER NOT NULL,
+  otp_hash VARCHAR(64) NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 5)
+);
+
+COMMIT;

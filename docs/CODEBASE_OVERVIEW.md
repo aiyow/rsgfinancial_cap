@@ -1,116 +1,150 @@
 # RSG Condo Codebase Overview
 
-This guide explains how the RSG Condo Water Billing & Management System is assembled and how a request travels through the application. It is the starting point for the more detailed [frontend code guide](FRONTEND_CODE_GUIDE.md) and [backend code guide](BACKEND_CODE_GUIDE.md).
+Source checked: October 13, 2026. Start here, then read the [frontend guide](FRONTEND_CODE_GUIDE.md) and [backend guide](BACKEND_CODE_GUIDE.md). The [docs index](README.md) contains a study plan.
 
-## 1. What the system does
+## 1. What you are learning
 
-RSG Condo is a role-based condominium billing system. It maintains residents and units, imports monthly water-meter readings, calculates charges, produces Statements of Account (SOAs), publishes statements, accepts payment receipts, verifies payments, and provides water-use analytics.
+RSG Condo manages condominium units, resident assignments, monthly water and association charges, Statements of Account (SOAs), payment proofs, accounting allocations, and water-use analytics.
 
-The three operating roles are:
+| Role in code | Responsibilities in the current implementation |
+| --- | --- |
+| `ADMIN` | Manage accounts, units and assignments; configure the SOA template/assets; publish or unpublish SOAs; record and verify payments; review reports, billing errors and audit history. |
+| `COLLECTOR` | Create live billing periods, import readings, generate and forward batches; import analytics history; review approved payments; enter invoice references; correct eligible SOAs and resolve billing-error reports. The UI also calls this role Billing Associate. |
+| `RESIDENT` | View published SOAs for assigned units, submit permitted payment proofs, report SOA errors, view payment history and water insights. Owner/tenant assignment changes payment permissions within this role. |
 
-| Role | Main responsibilities |
-|---|---|
-| **ADMIN** | Manage users, units, and assignments; review and publish SOAs; verify or record payments; review audit logs; manage recommendations. |
-| **COLLECTOR** | Configure the SOA template; create billing periods; upload readings; generate and forward SOAs; import historical analytics; review bills, payments, and recommendations. |
-| **RESIDENT** | View published SOAs for assigned units; upload payment receipts; view payment history; view resident-facing water insights. |
+Public registration creates a Resident account only. The account can become eligible for login through email verification or Admin approval; both are not required together. Residents still need a unit assignment to see that unit's records.
 
-## 2. Technology and runtime boundaries
+## 2. Architecture
 
-- **Frontend:** React 19, React Router, Vite, Tailwind CSS, Lucide icons, and Recharts. The browser entry point is `frontend/src/main.jsx`.
-- **Backend:** Node.js, Express, PostgreSQL (`pg`), Zod validation, ExcelJS workbook parsing, Multer uploads, Tesseract OCR, Sharp image processing, Cloudinary receipt storage, and Nodemailer.
-- **Authentication:** The backend issues JWTs. The frontend stores the token in `localStorage` through `AuthContext` and sends it as `Authorization: Bearer <token>`.
-- **Database:** `backend/config/db.js` creates a PostgreSQL connection pool. Routes and services use parameterized SQL against the schema and numbered migrations in `backend/database`.
-- **External services:** SMTP is used for SOA email; Cloudinary stores private receipt images; Tesseract/Sharp inspect receipt uploads. These integrations are optional/configured through backend environment variables.
-
-## 3. Folder map
-
-```text
-frontend/
-  src/
-    App.jsx                 Route table and role-protected page composition
-    components/             Reusable layout, SOA, notification, and guard components
-    context/                Authentication state and React context
-    hooks/                  Small reusable React hooks
-    pages/                  Login/register and role-specific screens
-    services/api.js         Fetch wrapper used by all screens
-    constants/routes.js     Role-to-dashboard route mapping
-
-backend/
-  server.js                 Express app, middleware, route registration, health check
-  config/db.js              PostgreSQL pool
-  middleware/               JWT authorization, validation, and error normalization
-  routes/                   HTTP endpoints and SQL orchestration
-  services/                 Reusable calculations, storage, email, analytics, and audit logic
-  scripts/                  Database setup, seeding, data import, and receipt migration
-  test/                     Node's built-in test cases for isolated services
-  database/                 Base schema and migrations
+```mermaid
+flowchart LR
+  Browser[React browser app] -->|HTTP JSON or multipart + JWT| API[Express API]
+  API --> DB[(PostgreSQL)]
+  API --> OCR[Sharp + Tesseract receipt analysis]
+  API --> Storage[Cloudinary private assets]
+  API --> Mail[SMTP through Nodemailer]
+  Scheduler[Optional Node cron reminder job] --> DB
+  Scheduler --> Mail
 ```
 
-## 4. How a browser request works
+The browser handles forms, navigation, filtering and presentation. The backend decides access, validates readings, calculates balances and forecasts, and coordinates database writes. PostgreSQL stores the records and enforces constraints. OCR suggests receipt facts; Admin verifies the accounting facts.
 
-1. `main.jsx` mounts `App` inside `AuthProvider` and `BrowserRouter`.
-2. `App.jsx` selects a page from the URL. `ProtectedRoute` checks the authenticated user and permitted role before rendering role-specific pages.
-3. A page calls `apiRequest` or `apiFile` from `frontend/src/services/api.js`.
-4. The API helper adds JSON or multipart headers and the JWT authorization header, then calls the configured `VITE_API_URL` (default `http://localhost:5000`).
-5. `server.js` sends the request to a route module such as `/api/bills` or `/api/payments`.
-6. Authentication and role middleware reject missing or unauthorized tokens. Zod schemas validate request bodies where applicable.
-7. The route performs parameterized PostgreSQL queries and delegates calculations or integrations to a service.
-8. The route returns JSON (or an authenticated receipt file). The page updates React state, displays a success/error message, and may reload related data.
+The forecasting implementation runs in JavaScript under `backend/services/`; the `ml/` folder contains historical workbook inputs, not a separate running prediction API.
 
-## 5. Main business flows
+| Folder | What to look for |
+| --- | --- |
+| [frontend/src](../frontend/src/) | React entry point, route table, pages, components, authentication and API helper. |
+| [backend/routes](../backend/routes/) | HTTP handlers, role checks, SQL and workflow orchestration. There is no `backend/src/` directory. |
+| [backend/services](../backend/services/) | Reusable calculations, forecasting, OCR, mail, storage, notifications and audits. |
+| [backend/database](../backend/database/) | Base schema and numbered migrations: the executable database definition. |
+| [backend/scripts](../backend/scripts/) | Setup, imports, migration checks, regression and analytics diagnostics. |
+| [backend/test](../backend/test/) and [frontend/test](../frontend/test/) | Examples of expected behavior using Node's built-in test runner. |
+| [database](../database/) | Additional SQL artifacts, including the shareable units-only seed. |
+| [system](../system/) | Operational user manual and its generator. |
 
-### Login and role routing
+## 3. Vocabulary and data relationships
 
-1. `Login.jsx` submits credentials to `POST /api/auth/login`.
-2. `AuthContext` stores the returned token and user, then `dashboardPathFor` maps the role to `/admin`, `/collector`, or `/resident`.
-3. On refresh, `AuthContext` calls `GET /api/auth/me`. An invalid token clears the session.
-4. `ProtectedRoute` prevents access to another role's pages and redirects unauthenticated users to `/login`.
+| Term/table | Meaning |
+| --- | --- |
+| `users` | Login identity, role, active/approval/verification state, password hash and session version. |
+| `units` | Physical unit number, floor, occupancy and billable area in square meters. |
+| `unit_assignments` | Connect a Resident to a unit as `OWNER` or `TENANT`, with dates and primary-payer flag. |
+| `billing_periods` | Dates, rates and workflow state. `LIVE_BILLING` creates SOAs; `HISTORICAL_ANALYTICS` supplies analytics readings only. |
+| `meter_readings` | Previous/current cumulative readings, calculated consumption and validation status. |
+| `unit_bills` | One SOA for a unit and period, with snapshots, publication state, penalty and revision metadata. |
+| `bill_charges` | Charge lines such as `WATER` and `ASSOCIATION_DUES`, using quantity times rate. |
+| `payment_submissions` | Proof or manual payment record, purpose, intended SOA, OCR facts and review state. |
+| `payment_charge_allocations` | Approved cash designated to a charge category; invoice number belongs here. |
+| `payment_applications` | Amount of a category allocation actually applied to a bill's principal or late penalty. |
+| `billing_forecasts` | Forecast per unit/source period, model and eligibility metadata. |
+| `prescriptive_recommendations` | Explainable advice and its current `OPEN`, `VIEWED` or `SUPERSEDED` state. |
+| `billing_error_reports` | Resident report and staff resolution about an SOA. |
+| `soa_templates`, `soa_email_deliveries`, `soa_reminder_deliveries` | Template configuration, publication mail attempts and deduplicated due-date reminders. |
+| `user_notifications`, `audit_logs` | User-facing alerts and administrative change history. |
 
-### Monthly billing and SOA publication
+```mermaid
+flowchart TD
+  U[users] --> A[unit_assignments]
+  A --> N[units]
+  N --> R[meter_readings]
+  P[billing_periods] --> R
+  P --> B[unit_bills]
+  N --> B
+  B --> C[bill_charges]
+  N --> S[payment_submissions]
+  S --> K[payment_charge_allocations]
+  K --> X[payment_applications]
+  B --> X
+```
 
-1. A Collector creates a draft billing period at `POST /api/billing-periods` with dates, due date, water rate, and association-dues rate.
-2. The Collector previews an `.xlsx` meter workbook at `POST /api/billing-periods/:id/readings/preview`. The backend validates unit numbers, previous/current readings, continuity, and duplicates.
-3. The Collector saves corrected readings with `PUT /api/billing-periods/:id/readings`.
-4. `POST /api/billing-periods/:id/generate` calculates consumption, water charge, association dues, late-penalty inputs, and a bill/SOA for each applicable unit. Forecasts and recommendations may be regenerated as part of this workflow.
-5. The Collector reviews or edits generated, unforwarded bills, then forwards the batch with `POST /api/billing-periods/:id/forward`.
-6. An Admin reviews the forwarded batch and publishes selected SOAs with `POST /api/billing-periods/:id/publish`. Publishing creates email-delivery records and sends configured SOA emails.
-7. Residents can see only published SOAs for their active unit assignments.
+This is a conceptual relationship map, not a complete ERD. Read migrations for foreign keys and deletion behavior. Older migrations mention `billing_events`, `payment_submission_targets` and `prescriptive_recommendation_actions`; later migrations remove them. Current payment targets live on `payment_submissions.target_unit_bill_id`, and audits use `audit_logs`.
 
-### Receipt submission and payment verification
+## 4. Follow one request
 
-1. A Resident selects an unpaid SOA and uploads a JPG/PNG receipt to `POST /api/payments/bills/:id/preview` for OCR/quality preview.
-2. The final upload goes to `POST /api/payments/bills/:id`. The backend stores the private receipt, records OCR data, and creates a pending payment submission.
-3. An Admin opens the payment detail and retrieves the receipt through the authenticated `GET /api/payments/:id/receipt` endpoint.
-4. The Admin approves or rejects the submission at `POST /api/payments/:id/review`, supplying verified amount/date/method/reference or a rejection reason.
-5. Approved amounts are allocated through `paymentLedger.js` to open SOAs. Excess becomes unit credit; the ledger tables are the source of truth for balances.
-6. Residents and Collectors see payment records according to their role and unit visibility rules.
+Example: Resident opens an SOA.
 
-### Predictive and prescriptive analytics
+1. [App.jsx](../frontend/src/App.jsx) matches `/resident/bills/:id` and renders `ProtectedRoute` around `ResidentBillPage`.
+2. The page obtains `token` from `useAuth` and calls `apiRequest('/api/bills/<id>', { token })`.
+3. [api.js](../frontend/src/services/api.js) adds `Authorization: Bearer <token>` and calls `VITE_API_URL`.
+4. [server.js](../backend/server.js) mounts [billRoutes.js](../backend/routes/billRoutes.js) at `/api/bills`.
+5. `requireAuth` verifies the JWT and checks the current database user/session version. The bill route checks resident visibility, including publication and assignment.
+6. SQL and payment services build the bill's charges, balances and resident-specific payable fields.
+7. The response contains `bill`; the page updates React state and renders `SoaViewer` and payment controls.
 
-1. A Collector imports historical workbooks through `/api/analytics/imports`. Historical periods improve forecasting and do not create live SOAs.
-2. `predictiveAnalytics.js` selects five consecutive valid monthly readings, performs linear regression, and produces a next-period consumption forecast and accuracy data.
-3. `prescriptiveAnalytics.js` evaluates forecasts and history for rising consumption, possible vacant-unit use, payment reminders, high-use thresholds, and insufficient-data monitoring insights.
-4. Staff see aggregate analytics through `/api/analytics/overview`; Residents see only assigned-unit insights through `/api/analytics/resident` and `/api/prescriptive-recommendations/resident`.
-5. A resident can mark their own recommendation viewed. Admin/Collector can delete recommendations; audit logging records important actions.
+A frontend route such as `/resident/bills/12` is a browser page. `/api/bills/12` is the backend endpoint returning data. Sharing a similar name does not make them the same route.
 
-## 6. Data and security rules
+## 5. Monthly billing lifecycle
 
-- Never expose `DB_*`, `JWT_SECRET`, SMTP credentials, or Cloudinary secrets in `frontend/.env`; only `VITE_*` values are bundled into the browser.
-- Receipts are private financial records. The frontend receives them through an authenticated API file response rather than a public Cloudinary URL.
-- SQL queries should remain parameterized. Route-level role checks are required even though the UI also hides unavailable actions.
-- Residents are filtered to published bills, active assignments, and their own unit/payment data. Collectors can review approved payments but cannot approve or reject them.
-- Billing events, account changes, payment actions, and recommendation actions are retained in `audit_logs` where implemented by the route/service.
+```mermaid
+stateDiagram-v2
+  DRAFT --> GENERATED: Collector generates SOAs
+  GENERATED --> DRAFT: Collector reopens eligible batch
+  GENERATED --> FORWARDED: Collector forwards
+  FORWARDED --> FORWARDED: Admin publishes selected or all SOAs
+```
 
-## 7. Current developer notes
+Publication is stored on each bill (`published_at`). The current publish/unpublish handlers change bill visibility without changing batch status, so a fully published live batch can remain `FORWARDED`. `CLOSED` is an accepted state used by historical imports and supported by staff/resident reads; do not infer it from publication alone.
 
-- The source tree contains `backend/node_modules`; it is intentionally excluded from the code guides because it is third-party code.
-- `frontend/src/services/api.js` currently declares `API_URL` but its `apiRequest` fetch expression references `APIc_URL`. If that spelling is present at runtime, API requests fail before reaching the backend; verify and correct it during development.
-- The current project enables public role registration as a development helper. Production deployment should restrict account creation to Admin-controlled user management.
-- The five-month forecast requirement means a unit with missing, flagged, or discontinuous readings may show a monitoring/insufficient-history state rather than a forecast.
+1. Admin creates units/assignments and configures the template.
+2. Collector creates a draft period with coverage, due date, rates and penalty percentage.
+3. Workbook preview parses `UNIT`, `PREVIOUS`, `PRESENT`. Saving normalized readings is a separate operation.
+4. Generation snapshots the statement data and creates water/association charge lines. Missing or flagged readings produce zero water charge plus a warning; unit billable areas are required.
+5. Collector resolves flagged readings before forwarding. Forwarding refreshes forecasts and recommendations and notifies Admin.
+6. Admin publishes selected or all SOAs, optionally sending email. Residents see only published bills they can access.
 
-## 8. Related references
+Generation makes bills; forwarding submits them for review; publication exposes them to Residents. These are separate actions.
 
-- [Frontend Code Guide](FRONTEND_CODE_GUIDE.md)
-- [Backend Code Guide](BACKEND_CODE_GUIDE.md)
-- [Project README](../README.md)
-- [End-user manual](../system/RSG_Condo_User_Manual.html)
+### Calculation example
+
+For a valid reading from 100 to 108, consumption is 8 cubic meters. At PHP 50 per cubic meter, water is PHP 400. A 30-square-meter unit at PHP 20 per square meter owes PHP 600 in association principal. The base SOA is PHP 1,000. A configured 5% late penalty on fully unpaid association principal adds PHP 30 after the due date; water does not receive that penalty. Approved applications reduce the balance.
+
+## 6. Payments: four different concepts
+
+Submission is a claim/proof. Approval verifies the cash facts. Allocation designates that cash to water or association dues. Application reduces a particular SOA component. Unapplied allocated cash remains category credit.
+
+For association PHP 1,608.84 and water PHP 58.90, an approved `WATER` payment of PHP 58.90 settles water only. The SOA remains partially paid because association dues remain. A tenant may nevertheless see their water payable balance as zero.
+
+An `OWNER` can choose `WATER`, `ASSOCIATION_DUES` or `COMBINED`. A tenant without an owner assignment can choose `WATER` only. Combined payment covers association principal/penalty before water; excess remains association advance. Category-only excess stays in its category.
+
+Approval applies to the selected SOA. It does not sweep unrelated old bills or existing credit. Future bill generation can consume eligible category advances. Invoice numbers are per approved payment/category, allowing multiple partial payments on one SOA. The [backend guide](BACKEND_CODE_GUIDE.md#5-payments-and-the-accounting-ledger) explains these rules in detail.
+
+## 7. Water analytics
+
+Read [predictiveAnalytics.js](../backend/services/predictiveAnalytics.js) for calculations and [analyticsPeriods.js](../backend/services/analyticsPeriods.js) for training-data visibility.
+
+- Eligibility requires at least five consecutive valid months; the training window uses up to 12.
+- A flagged newest reading or gap interrupts the valid segment. A real zero reading remains valid and visible on charts.
+- The active policy is `stable`: five/six readings use full-window linear regression; with at least seven, an exact nonzero linear trend still uses regression, otherwise the model averages last month, recent three-month average and recent five-month median.
+- Forecasts estimate next-month consumption and water charge. They do not create actual bill charges.
+- Accuracy uses valid forecast/actual pairs and includes MAE, RMSE and WAPE. `accuracy` is derived from WAPE, not a confidence probability.
+- Prescriptive rules turn history, forecasts, occupancy and balances into review tasks, high/rising-use alerts, monitoring insights and payment reminders.
+
+Generated-batch resident insights can be visible before SOA publication. This is distinct from bill visibility and from the separate mail reminder scheduler.
+
+## 8. How to study a feature
+
+Pick one action and locate its click/submit handler. Find the `apiRequest` call and JSON/FormData fields. Match the endpoint to `server.js` and its router. Read middleware, validation, transaction, service calls and SQL in that order. Then read the relevant test to see an example that must keep working.
+
+Use browser Network tools to compare the request with the handler. A 401 usually means session/token failure; 403 means permission/account state; 409 often means a workflow or uniqueness conflict; 400 usually means input validation. The exact response message is more useful than status alone.
+
+For setup and runnable checks, follow the detailed guides. Do not run migration, import, approval or mail commands against a shared database just to understand the code.

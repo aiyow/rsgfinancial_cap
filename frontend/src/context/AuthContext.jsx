@@ -27,13 +27,16 @@ export function AuthProvider({ children }) {
       return
     }
 
+    let active = true
     apiRequest('/api/auth/me', { token })
       .then(({ user: currentUser }) => {
+        if (!active) return
         setUser(currentUser)
         localStorage.setItem('condo_user', JSON.stringify(currentUser))
       })
-      .catch(clearSession)
-      .finally(() => setInitializing(false))
+      .catch(() => { if (active) clearSession() })
+      .finally(() => { if (active) setInitializing(false) })
+    return () => { active = false }
   }, [token])
 
   async function login(credentials) {
@@ -53,8 +56,13 @@ export function AuthProvider({ children }) {
     setToken(nextToken)
   }
 
+  function updateUser(nextUser) {
+    localStorage.setItem('condo_user', JSON.stringify(nextUser))
+    setUser(nextUser)
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, initializing, login, replaceToken, logout: clearSession }}>
+    <AuthContext.Provider value={{ user, token, initializing, login, replaceToken, updateUser, logout: clearSession }}>
       {children}
     </AuthContext.Provider>
   )

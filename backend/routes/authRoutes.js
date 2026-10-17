@@ -1,4 +1,5 @@
 import express from "express";
+import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
@@ -14,8 +15,14 @@ import {
   verificationExpiryDate,
 } from "../services/emailVerification.js";
 import {
+  createPasswordResetOtp,
   createPasswordResetToken,
   hashPasswordResetToken,
+  hashPasswordResetOtp,
+  passwordResetOtpMatches,
+  PASSWORD_RESET_MAX_ATTEMPTS,
+  PASSWORD_RESET_COOLDOWN_SECONDS,
+  userIdentityOrderSql,
   passwordResetExpiryDate,
   sendPasswordResetEmail,
 } from "../services/passwordReset.js";
@@ -24,7 +31,6 @@ import { normalizeEmailIdentity } from "../services/emailIdentity.js";
 const router = express.Router();
 const passwordSchema = z.string().min(8).max(72);
 const VERIFICATION_RESEND_COOLDOWN_MS = 60 * 1000;
-const PASSWORD_RESET_RESEND_COOLDOWN_MS = 60 * 1000;
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(1).max(150),
@@ -42,8 +48,14 @@ const resendVerificationSchema = z.object({
 const forgotPasswordSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
 }).strict();
+const verifyPasswordResetSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(255),
+  challengeId: z.uuid(),
+  otp: z.string().trim().regex(/^\d{6}$/, "Enter the six-digit code from your email."),
+}).strict();
 const resetPasswordSchema = z.object({
-  token: z.string().trim().min(1).max(512),
+  email: z.string().trim().toLowerCase().email().max(255),
+  resetToken: z.string().min(40).max(128),
   password: passwordSchema,
 }).strict();
 const changePasswordSchema = z.object({
@@ -130,7 +142,8 @@ router.post("/login", validateBody(loginSchema), async (req, res, next) => {
     const result = await pool.query(
       `SELECT ${userColumns}, auth_version AS "authVersion", password_hash AS "passwordHash"
        FROM users
-       WHERE LOWER(email) = LOWER($1)`,
+       WHERE LOWER(BTRIM(email)) = $1
+       ORDER BY ${userIdentityOrderSql} LIMIT 1`,
       [email]
     );
     const user = result.rows[0];
@@ -169,70 +182,147 @@ router.post("/login", validateBody(loginSchema), async (req, res, next) => {
 });
 
 router.post("/forgot-password", validateBody(forgotPasswordSchema), async (req, res, next) => {
-  const genericMessage = "If an eligible account exists for that email, a password-reset link has been sent.";
+  const genericMessage = "If an active account matches this email, a six-digit code has been sent. Check your inbox and spam folder.";
+  let client;
   try {
     const { email } = req.validatedBody;
-    const result = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const result = await client.query(
       `SELECT id, full_name AS "fullName", email, password_reset_last_sent_at AS "lastSentAt"
        FROM users
-       WHERE LOWER(email) = LOWER($1)
+       WHERE LOWER(BTRIM(email)) = $1
          AND is_active = TRUE
-         AND (approval_status = 'APPROVED' OR email_verified = TRUE)`,
+         AND (approval_status = 'APPROVED' OR email_verified = TRUE)
+       ORDER BY ${userIdentityOrderSql} LIMIT 1 FOR UPDATE`,
       [email]
     );
     const user = result.rows[0];
-    if (!user) return res.json({ message: genericMessage });
-
-    const lastSentAt = user.lastSentAt ? new Date(user.lastSentAt).getTime() : 0;
-    if (PASSWORD_RESET_RESEND_COOLDOWN_MS - (Date.now() - lastSentAt) > 0) {
-      return res.json({ message: genericMessage });
+    const challengeId = randomUUID();
+    const response = { message: genericMessage, challengeId, retryAfterSeconds: PASSWORD_RESET_COOLDOWN_SECONDS };
+    if (!user) {
+      await client.query("COMMIT");
+      return res.json(response);
     }
 
-    const token = createPasswordResetToken();
-    await pool.query(
+    // Read after acquiring the user lock so concurrent sends see the newest code.
+    const existingChallenge = (await client.query("SELECT id FROM password_reset_challenges WHERE user_id = $1", [user.id])).rows[0];
+    const lastSentAt = user.lastSentAt ? new Date(user.lastSentAt).getTime() : 0;
+    if (existingChallenge && Date.now() - lastSentAt < PASSWORD_RESET_COOLDOWN_SECONDS * 1000) {
+      await client.query("COMMIT");
+      return res.json({ ...response, challengeId: existingChallenge.id });
+    }
+
+    const otp = createPasswordResetOtp();
+    await client.query(
+      `INSERT INTO password_reset_challenges (id, user_id, otp_hash, expires_at)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id) DO UPDATE SET id = EXCLUDED.id, otp_hash = EXCLUDED.otp_hash,
+         expires_at = EXCLUDED.expires_at, attempts = 0`,
+      [challengeId, user.id, hashPasswordResetOtp(challengeId, otp), passwordResetExpiryDate()]
+    );
+    await client.query(
       `UPDATE users
-       SET password_reset_token_hash = $1,
-           password_reset_expires_at = $2,
+       SET password_reset_token_hash = NULL,
+           password_reset_expires_at = NULL,
            password_reset_last_sent_at = NOW()
-       WHERE id = $3`,
-      [hashPasswordResetToken(token), passwordResetExpiryDate(), user.id]
+       WHERE id = $1`,
+      [user.id]
     );
     try {
-      await sendPasswordResetEmail({ fullName: user.fullName, email: user.email, token });
+      await sendPasswordResetEmail({ fullName: user.fullName, email: user.email, otp });
     } catch (error) {
       console.error("Unable to send password reset email:", error.message);
-      const unavailable = new Error("Password reset emails are unavailable right now. Please contact an administrator.");
+      const unavailable = new Error("We could not send the code. Please try again shortly or contact an administrator.");
       unavailable.status = 503;
-      return next(unavailable);
+      throw unavailable;
     }
-    return res.json({ message: genericMessage });
+    await client.query("COMMIT");
+    return res.json(response);
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
+  } finally {
+    client?.release();
+  }
+});
+
+router.post("/verify-password-reset-otp", validateBody(verifyPasswordResetSchema), async (req, res, next) => {
+  let client;
+  try {
+    const { email, challengeId, otp } = req.validatedBody;
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const userResult = await client.query(
+      `SELECT id
+       FROM users
+       WHERE LOWER(BTRIM(email)) = $1
+         AND is_active = TRUE
+         AND (approval_status = 'APPROVED' OR email_verified = TRUE)
+       ORDER BY ${userIdentityOrderSql} LIMIT 1 FOR UPDATE`,
+      [email]
+    );
+    const user = userResult.rows[0];
+    const challengeResult = user ? await client.query(
+      `SELECT otp_hash AS "otpHash", attempts, expires_at > NOW() AS "isValid"
+       FROM password_reset_challenges WHERE id = $1 AND user_id = $2 FOR UPDATE`,
+      [challengeId, user.id]
+    ) : { rows: [] };
+    const challenge = challengeResult.rows[0];
+    if (!challenge || !challenge.isValid) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ message: "This code is invalid or has expired. Request a new code to continue." });
+    }
+    if (challenge.attempts >= PASSWORD_RESET_MAX_ATTEMPTS) {
+      await client.query("ROLLBACK");
+      return res.status(429).json({ message: "Too many incorrect attempts. Request a new code to continue." });
+    }
+    if (!passwordResetOtpMatches(challengeId, otp, challenge.otpHash)) {
+      // Commit failed attempts so repeated requests cannot reset the limit.
+      await client.query("UPDATE password_reset_challenges SET attempts = attempts + 1 WHERE id = $1", [challengeId]);
+      await client.query("COMMIT");
+      const remaining = PASSWORD_RESET_MAX_ATTEMPTS - challenge.attempts - 1;
+      return res.status(remaining ? 400 : 429).json({ message: remaining
+        ? `Incorrect code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`
+        : "Too many incorrect attempts. Request a new code to continue." });
+    }
+
+    const resetToken = createPasswordResetToken();
+    await client.query(
+      `UPDATE users SET password_reset_token_hash = $1, password_reset_expires_at = $2 WHERE id = $3`,
+      [hashPasswordResetToken(resetToken), passwordResetExpiryDate(), user.id]
+    );
+    await client.query("DELETE FROM password_reset_challenges WHERE user_id = $1", [user.id]);
+    await client.query("COMMIT");
+    res.set("Cache-Control", "no-store");
+    return res.json({ message: "Code verified.", resetToken });
+  } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
+    return next(error);
+  } finally {
+    client?.release();
   }
 });
 
 router.post("/reset-password", validateBody(resetPasswordSchema), async (req, res, next) => {
   let client;
   try {
-    const { token, password } = req.validatedBody;
+    const { email, resetToken, password } = req.validatedBody;
     client = await pool.connect();
     await client.query("BEGIN");
-    const userResult = await client.query(
-      `SELECT id
-       FROM users
-       WHERE password_reset_token_hash = $1
-         AND password_reset_expires_at > NOW()
-         AND is_active = TRUE
+    const result = await client.query(
+      `SELECT id, password_reset_token_hash AS "resetHash",
+         password_reset_expires_at > NOW() AS "isValid"
+       FROM users WHERE LOWER(BTRIM(email)) = $1 AND is_active = TRUE
          AND (approval_status = 'APPROVED' OR email_verified = TRUE)
-       FOR UPDATE`,
-      [hashPasswordResetToken(token)]
+       ORDER BY ${userIdentityOrderSql} LIMIT 1 FOR UPDATE`,
+      [email]
     );
-    const user = userResult.rows[0];
-    if (!user) {
+    const user = result.rows[0];
+    if (!user || !user.isValid || user.resetHash !== hashPasswordResetToken(resetToken)) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ message: "This password-reset link is invalid or has expired. Request a new link to continue." });
+      return res.status(400).json({ code: "PASSWORD_RESET_VERIFICATION_EXPIRED", message: "Verification expired. Request a new code." });
     }
-
     const passwordHash = await bcrypt.hash(password, 12);
     await client.query(
       `UPDATE users
@@ -244,6 +334,7 @@ router.post("/reset-password", validateBody(resetPasswordSchema), async (req, re
        WHERE id = $2`,
       [passwordHash, user.id]
     );
+    await client.query("DELETE FROM password_reset_challenges WHERE user_id = $1", [user.id]);
     await writeAuditLog({
       client,
       actorUserId: user.id,
@@ -251,7 +342,7 @@ router.post("/reset-password", validateBody(resetPasswordSchema), async (req, re
       entityId: user.id,
       action: "PASSWORD_RESET",
       newValues: { sessionsInvalidated: true },
-      remarks: "Password reset through emailed link.",
+      remarks: "Password reset with a single-use email code.",
     });
     await client.query("COMMIT");
     return res.json({ message: "Your password was changed. Sign in with your new password." });
@@ -263,7 +354,7 @@ router.post("/reset-password", validateBody(resetPasswordSchema), async (req, re
   }
 });
 
-router.post("/change-password", requireAuth, allowRoles("RESIDENT"), validateBody(changePasswordSchema), async (req, res, next) => {
+router.post("/change-password", requireAuth, allowRoles("ADMIN", "COLLECTOR", "RESIDENT"), validateBody(changePasswordSchema), async (req, res, next) => {
   let client;
   try {
     const { currentPassword, newPassword } = req.validatedBody;
@@ -274,7 +365,6 @@ router.post("/change-password", requireAuth, allowRoles("RESIDENT"), validateBod
       `SELECT password_hash AS "passwordHash"
        FROM users
        WHERE id = $1
-         AND role = 'RESIDENT'
        FOR UPDATE`,
       [req.user.id]
     );
@@ -289,18 +379,21 @@ router.post("/change-password", requireAuth, allowRoles("RESIDENT"), validateBod
     const updateResult = await client.query(
       `UPDATE users
        SET password_hash = $1,
+           password_reset_token_hash = NULL,
+           password_reset_expires_at = NULL,
            auth_version = auth_version + 1
        WHERE id = $2
        RETURNING auth_version AS "authVersion"`,
       [passwordHash, req.user.id]
     );
+    await client.query('DELETE FROM password_reset_challenges WHERE user_id=$1', [req.user.id]);
     await writeAuditLog({
       client,
       actorUserId: req.user.id,
       entityName: "USER_ACCOUNT",
       entityId: req.user.id,
       action: "PASSWORD_CHANGE",
-      remarks: "Resident changed their own password.",
+      remarks: "Account owner changed their own password.",
     });
     if (!process.env.JWT_SECRET) {
       throw new Error("JWT_SECRET is not configured.");

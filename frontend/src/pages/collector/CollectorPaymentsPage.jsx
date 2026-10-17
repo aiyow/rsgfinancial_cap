@@ -7,7 +7,7 @@ import { apiRequest } from '../../services/api'
 import AdminPaymentQueue from '../../components/AdminPaymentQueue'
 import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
 import { currency } from '../../utils/chargePayments'
-import { paymentDateLabel, paymentMethodLabel } from '../../utils/paymentHistory'
+import { paymentDateLabel, paymentMethodLabel, paymentResidentName } from '../../utils/paymentHistory'
 
 export default function CollectorPaymentsPage() {
   const { token } = useAuth()
@@ -64,7 +64,7 @@ function PaymentDetailsDialog({ payment, onClose }) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 id="collector-payment-details-title" className="text-lg font-black">Payment details</h2>
-          <p className="mt-1 break-words text-sm text-slate-500">{payment.submittedByName || 'Unknown resident'} · Unit {payment.unitNumber || '—'}</p>
+          <p className="mt-1 break-words text-sm text-slate-500">{paymentResidentName(payment)} · Unit {payment.unitNumber || '—'}</p>
         </div>
         <button type="button" autoFocus onClick={onClose} aria-label="Close payment details" className="grid size-11 shrink-0 place-items-center rounded-lg text-slate-500 hover:bg-slate-100"><X size={18} /></button>
       </div>

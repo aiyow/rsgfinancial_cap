@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, LayoutDashboard, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
 import { dashboardPathFor } from '../constants/routes'
@@ -28,8 +28,9 @@ function saveRememberedEmail(email, shouldRemember) {
 
 export default function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, login } = useAuth()
-  const [form, setForm] = useState(() => ({ email: readRememberedEmail(), password: '' }))
+  const [form, setForm] = useState(() => ({ email: location.state?.email || readRememberedEmail(), password: '' }))
   const [rememberEmail, setRememberEmail] = useState(() => Boolean(readRememberedEmail()))
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -74,7 +75,7 @@ export default function Login() {
       </section>
 
       <section id="sign-in" aria-labelledby="sign-in-heading" className="login-form-panel flex min-h-screen items-center justify-center bg-[#f7faf8] px-6 py-12 sm:px-12 lg:px-[9%]"><div className="w-full max-w-xl"><div className="login-form-heading mb-8"><h2 id="sign-in-heading" className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Sign in to your portal</h2><p className="mt-2 text-base text-slate-500">Enter your credentials to continue.</p></div>
-        <div className="login-card"><form onSubmit={submit} className="space-y-5">{error && <p className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        <div className="login-card"><form onSubmit={submit} className="space-y-5">{location.state?.passwordReset && <p role="status" className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-800">Password changed. Enter your new password to sign in.</p>}{error && <p className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
           <label className="block text-sm font-bold text-slate-800">Email address<div className="input-with-icon"><Mail size={19} /><input required type="email" autoComplete="username" placeholder="you@example.com" value={form.email} onChange={(e) => update('email', e.target.value)} /></div></label>
           <label className="block text-sm font-bold text-slate-800">Password<div className="input-with-icon"><LockKeyhole size={19} /><input required type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password" value={form.password} onChange={(e) => update('password', e.target.value)} /><button type="button" onClick={() => setShowPassword(!showPassword)} className="password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button></div></label>
           <div className="-mt-2 flex justify-end"><Link to="/forgot-password" className="account-registration-link text-sm">Forgot password?</Link></div>

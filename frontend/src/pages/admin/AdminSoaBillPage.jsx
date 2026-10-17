@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Info } from 'lucide-react'
 import DashboardLayout from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import SoaDocument from '../../components/SoaDocument'
@@ -207,7 +208,14 @@ function CorrectionModal({ busy, correction, inputClass, onCancel, onSave, onUpd
             <label className="text-xs font-bold">Previous reading<input type="number" min="0" step="0.001" value={correction.previousReading} onChange={(event) => onUpdateCorrection('previousReading', event.target.value)} className={inputClass} /></label>
             <label className="text-xs font-bold">Current reading<input type="number" min="0" step="0.001" value={correction.currentReading} onChange={(event) => onUpdateCorrection('currentReading', event.target.value)} className={inputClass} /></label>
           </div>
-          <div className="space-y-3">{correction.charges.map((charge, index) => <div key={charge.id} className="grid gap-3 rounded-lg bg-slate-50 p-3 md:grid-cols-3"><label className="text-xs font-bold">{charge.chargeType} description<input value={charge.description} onChange={(event) => onUpdateCharge(index, 'description', event.target.value)} className={inputClass} /></label><label className="text-xs font-bold">Quantity<input disabled={charge.chargeType === 'WATER'} type="number" min="0" step="0.001" value={charge.quantity} onChange={(event) => onUpdateCharge(index, 'quantity', event.target.value)} className={inputClass} /></label><label className="text-xs font-bold">Rate<input type="number" min="0" step="0.01" value={charge.rateApplied} onChange={(event) => onUpdateCharge(index, 'rateApplied', event.target.value)} className={inputClass} /></label></div>)}</div>
+          <div className="space-y-3">{correction.charges.map((charge, index) => (
+            <div key={charge.id} className="grid gap-3 rounded-lg bg-slate-50 p-3 md:grid-cols-3">
+              <label className="text-xs font-bold"><span className="block min-h-5">{charge.chargeType} description</span><input value={charge.description} onChange={(event) => onUpdateCharge(index, 'description', event.target.value)} className={inputClass} /></label>
+              <label className="text-xs font-bold"><span className="flex min-h-5 items-center justify-between gap-2">Quantity{charge.chargeType === 'WATER' && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">Auto-calculated</span>}</span><input disabled={charge.chargeType === 'WATER'} aria-describedby={charge.chargeType === 'WATER' ? `water-quantity-help-${charge.id}` : undefined} type="number" min="0" step="0.001" value={charge.quantity} onChange={(event) => onUpdateCharge(index, 'quantity', event.target.value)} className={`${inputClass} disabled:cursor-not-allowed disabled:bg-emerald-50 disabled:text-emerald-900`} /></label>
+              <label className="text-xs font-bold"><span className="block min-h-5">Rate</span><input type="number" min="0" step="0.01" value={charge.rateApplied} onChange={(event) => onUpdateCharge(index, 'rateApplied', event.target.value)} className={inputClass} /></label>
+              {charge.chargeType === 'WATER' && <p id={`water-quantity-help-${charge.id}`} className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-5 text-emerald-900 md:col-span-3"><Info size={15} aria-hidden="true" className="mt-0.5 shrink-0 text-emerald-700" /><span>Water quantity cannot be edited directly. Update <strong>Previous reading</strong> or <strong>Current reading</strong> above to change it.</span></p>}
+            </div>
+          ))}</div>
           <label className="block text-xs font-bold">Reason for correction<textarea required minLength="3" value={correction.reason} onChange={(event) => onUpdateCorrection('reason', event.target.value)} className={`${inputClass} min-h-24`} /></label>
           <div className="flex flex-wrap justify-end gap-3"><button type="button" disabled={busy} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Cancel</button><button disabled={busy} className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-50">{busy ? 'Saving...' : 'Save corrected SOA'}</button></div>
         </form>

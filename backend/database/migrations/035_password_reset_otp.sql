@@ -1,0 +1,11 @@
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS password_reset_challenges (
+  id UUID PRIMARY KEY,
+  user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  otp_hash VARCHAR(64) NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts BETWEEN 0 AND 5)
+);
+
+COMMIT;

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Eye, EyeOff, KeyRound } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Pencil } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
@@ -64,6 +65,7 @@ export default function ProfilePage() {
               <dd className="rounded-full bg-[var(--active-bg)] px-2.5 py-1 text-xs font-bold text-[var(--primary)]">{roleLabel(user.role)}</dd>
             </div>
           </dl>
+          {!isResident && <div className="mt-4 flex justify-end border-t border-[var(--border)] pt-4"><Link to="/settings#account-profile" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"><Pencil size={16} aria-hidden="true" />Edit profile</Link></div>}
         </Panel>
 
         {!isResident && <Panel title="Access summary" description="Your available workspace is based on your assigned role.">

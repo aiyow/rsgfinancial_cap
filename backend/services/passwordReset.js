@@ -1,7 +1,13 @@
 import crypto from "node:crypto";
 import nodemailer from "nodemailer";
 
-const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
+export const PASSWORD_RESET_TTL_MS = 10 * 60 * 1000;
+export const PASSWORD_RESET_MAX_ATTEMPTS = 5;
+export const PASSWORD_RESET_COOLDOWN_SECONDS = 60;
+
+// Login and recovery must select the same account when legacy duplicates remain.
+export const userIdentityOrderSql = `is_active DESC,
+  (approval_status = 'APPROVED' OR email_verified = TRUE) DESC, created_at ASC, id ASC`;
 
 function emailConfiguration(environment) {
   const missing = ["SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"]
@@ -34,26 +40,39 @@ function escapeHtml(value) {
   })[character]);
 }
 
+export function createPasswordResetOtp() {
+  return crypto.randomInt(0, 1000000).toString().padStart(6, "0");
+}
+
 export function createPasswordResetToken() {
   return crypto.randomBytes(32).toString("base64url");
 }
 
 export function hashPasswordResetToken(token) {
-  return crypto.createHash("sha256").update(String(token)).digest("hex");
+  return crypto.createHash("sha256").update(`verified-otp-reset:${token}`).digest("hex");
+}
+
+export function hashPasswordResetOtp(challengeId, otp, secret = process.env.JWT_SECRET) {
+  if (!secret) throw new Error("JWT_SECRET is not configured.");
+  return crypto.createHmac("sha256", secret).update(`${challengeId}:${otp}`).digest("hex");
+}
+
+export function passwordResetOtpMatches(challengeId, otp, expectedHash, secret = process.env.JWT_SECRET) {
+  const actual = Buffer.from(hashPasswordResetOtp(challengeId, otp, secret), "hex");
+  const expected = Buffer.from(expectedHash || "", "hex");
+  return actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
 }
 
 export function passwordResetExpiryDate(now = new Date()) {
   return new Date(now.getTime() + PASSWORD_RESET_TTL_MS);
 }
 
-export function buildPasswordResetEmailMessage({ fullName, token, clientUrl }) {
-  const url = `${String(clientUrl || "http://localhost:5173").replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
+export function buildPasswordResetEmailMessage({ fullName, otp }) {
   const recipient = fullName ? `Hello ${fullName},` : "Hello,";
   return {
-    subject: "Reset your The ResiDens password",
-    text: `${recipient}\n\nWe received a request to reset your The ResiDens password.\n\nReset password: ${url}\n\nThis link expires in 1 hour. If you did not request a password reset, you can safely ignore this email.`,
-    html: `<p>${escapeHtml(recipient)}</p><p>We received a request to reset your <strong>The ResiDens</strong> password.</p><p><a href="${escapeHtml(url)}">Reset your password</a></p><p>This link expires in 1 hour. If you did not request a password reset, you can safely ignore this email.</p>`,
-    url,
+    subject: "Your The ResiDens password reset code",
+    text: `${recipient}\n\nYour password reset code is: ${otp}\n\nEnter this code on The ResiDens website to set a new password. It expires in 10 minutes and can only be used once. Never share this code. If you did not request it, ignore this email.`,
+    html: `<p>${escapeHtml(recipient)}</p><p>Enter this code on <strong>The ResiDens</strong> website to set a new password:</p><p style="font-size:32px;font-weight:bold;letter-spacing:8px">${escapeHtml(otp)}</p><p>This code expires in 10 minutes and can only be used once. Never share this code. If you did not request it, ignore this email.</p>`,
   };
 }
 
@@ -62,8 +81,8 @@ export function createPasswordResetService({
   createTransport = nodemailer.createTransport,
 } = {}) {
   return {
-    async sendPasswordResetEmail({ fullName, email, token }) {
-      const message = buildPasswordResetEmailMessage({ fullName, token, clientUrl: environment.CLIENT_URL });
+    async sendPasswordResetEmail({ fullName, email, otp }) {
+      const message = buildPasswordResetEmailMessage({ fullName, otp });
       const config = emailConfiguration(environment);
       const transporter = createTransport({ host: config.host, port: config.port, secure: config.secure, auth: config.auth });
       await transporter.sendMail({ from: config.from, to: email, subject: message.subject, text: message.text, html: message.html });

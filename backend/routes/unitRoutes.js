@@ -130,7 +130,12 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateUnitSche
     for (const [field, column] of Object.entries(columnMap)) {
       if (req.validatedBody[field] !== undefined) {
         values.push(req.validatedBody[field]);
-        updates.push(`${column} = $${values.length}`);
+        updates.push(field === "occupancyStatus"
+          ? `occupancy_status = CASE WHEN EXISTS (
+              SELECT 1 FROM unit_assignments a
+              WHERE a.unit_id = units.id AND a.end_date IS NULL
+            ) THEN 'OCCUPIED' ELSE $${values.length} END`
+          : `${column} = $${values.length}`);
       }
     }
 

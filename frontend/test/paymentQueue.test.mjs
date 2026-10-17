@@ -1,14 +1,23 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { filterPaymentQueue, paginatePaymentQueue, paymentQueueAmount, paymentReceivedDay } from '../src/utils/paymentQueue.js'
+import { paymentResidentName } from '../src/utils/paymentHistory.js'
 
 const payments = [
   { id: 1, submittedByName: 'Juan B Dela Cruz', unitNumber: '232', reviewStatus: 'APPROVED', paymentPurpose: 'ASSOCIATION_DUES', entryType: 'RECEIPT_UPLOAD', paymentMethod: 'GCASH', submittedAt: '2026-10-04T12:27:00Z', verifiedAmount: '1620.00', ocrAmount: 1, verifiedReferenceNo: '804580839866', allocations: [{ invoiceNumber: '#2414' }] },
   { id: 2, submittedByName: 'Anna Dela Cruz', unitNumber: '231', reviewStatus: 'PENDING', paymentPurpose: 'COMBINED', entryType: 'RECEIPT_UPLOAD', paymentMethod: 'GCASH', submittedAt: '2026-10-03T16:30:00Z', ocrAmount: '2030.00', ocrReferenceNo: '6044857861787' },
-  { id: 3, submittedByName: 'Precious Mae Parreño', unitNumber: '209', reviewStatus: 'APPROVED', paymentPurpose: 'WATER', entryType: 'MANUAL', paymentMethod: 'CASH', submittedAt: '2026-10-03T03:00:00Z', verifiedAmount: 58.9, allocations: [{ invoiceNumber: 'W-4212' }] },
+  { id: 3, residentName: 'Precious Mae Parreño', submittedByName: 'Admin Recorder', unitNumber: '209', reviewStatus: 'APPROVED', paymentPurpose: 'WATER', entryType: 'MANUAL', paymentMethod: 'CASH', submittedAt: '2026-10-03T03:00:00Z', verifiedAmount: 58.9, allocations: [{ invoiceNumber: 'W-4212' }] },
   { id: 4, submittedByName: 'Other Resident', unitNumber: '99', reviewStatus: 'REJECTED', paymentPurpose: 'WATER', entryType: 'RECEIPT_UPLOAD', paymentMethod: 'BANK_TRANSFER', submittedAt: '2026-10-01T03:00:00Z', ocrAmount: null },
 ]
 const ids = rows => rows.map(row => row.id)
+
+test('manual payments identify and search the resident separately from the staff recorder', () => {
+  assert.equal(paymentResidentName(payments[2]), 'Precious Mae Parreño')
+  assert.deepEqual(ids(filterPaymentQueue(payments, { search: 'Precious' })), [3])
+  assert.deepEqual(ids(filterPaymentQueue(payments, { search: 'Admin Recorder' })), [])
+  assert.equal(paymentResidentName({ entryType: 'MANUAL', submittedByName: 'Admin Recorder' }), 'Unassigned unit')
+  assert.equal(paymentResidentName(payments[0]), 'Juan B Dela Cruz')
+})
 
 test('search finds residents, units, accents, transaction references and issued invoices', () => {
   assert.deepEqual(ids(filterPaymentQueue(payments, { search: 'JUAN unit 232' })), [1])

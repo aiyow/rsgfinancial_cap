@@ -1,5 +1,10 @@
 import { currency } from './chargePayments.js'
 
+export function paymentResidentName(payment) {
+  return payment.residentName?.trim()
+    || (payment.entryType === 'MANUAL' ? 'Unassigned unit' : payment.submittedByName?.trim() || 'Unknown resident')
+}
+
 function validAmount(value) {
   if (value == null || typeof value === 'boolean' || (typeof value === 'string' && !value.trim())) return null
   const amount = Number(value)
@@ -14,12 +19,12 @@ export function paymentAmountSummary(payment) {
   return { label: 'Amount', value: payment.reviewStatus === 'REJECTED' ? 'Not verified' : 'Awaiting review' }
 }
 
-export function paymentDateTime(value) {
+export function paymentDateTime(value, { month = 'short' } = {}) {
   if (!value) return '—'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
   return new Intl.DateTimeFormat('en-PH', {
-    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Manila',
+    month, day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Manila',
   }).format(date)
 }
 

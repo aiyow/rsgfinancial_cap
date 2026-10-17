@@ -29,6 +29,7 @@ import {
 } from "../services/paymentLedger.js";
 import { cents } from '../services/paymentAllocation.js';
 import { validateResidentPurpose } from '../services/paymentPermissions.js';
+import { paymentResidentNameSql } from '../services/paymentIdentity.js';
 
 const router = express.Router();
 const uploadDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../uploads/payment-proofs");
@@ -93,6 +94,7 @@ const paymentSelect = `SELECT ps.id, ps.target_unit_bill_id AS "targetBillId", p
   ps.verified_payment_date AS "verifiedPaymentDate", ps.remarks, ps.submitted_at AS "submittedAt",
   COALESCE(b.unit_number_snapshot, u.unit_number) AS "unitNumber", b.due_date_snapshot AS "dueDate", b.published_at AS "publishedAt",
   COALESCE(submitter.full_name, 'Deleted user') AS "submittedByName",
+  ${paymentResidentNameSql} AS "residentName",
   COALESCE(reviewer.full_name, 'Deleted user') AS "reviewedByName",
   ${billTotalSql} AS "billTotal", ${billAppliedSql} AS "approvedTotal",
   ${paymentApplicationSql} AS "appliedAmount",
