@@ -1,0 +1,13 @@
+{
+  "verifiedAt": "2026-10-21T14:42:41.448Z",
+  "readOnlyApi": true,
+  "staffRoles": [
+    "ADMIN",
+    "COLLECTOR"
+  ],
+  "residentModels": [
+    "LINEAR_REGRESSION",
+    "STABLE_RECENT_ENSEMBLE"
+  ],
+  "browserErrors": []
+}

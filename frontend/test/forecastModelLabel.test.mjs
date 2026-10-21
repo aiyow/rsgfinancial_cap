@@ -13,3 +13,12 @@ test('other models and missing model names retain their existing display', () =>
   assert.equal(forecastModelLabel(null), 'LINEAR REGRESSION')
   assert.equal(forecastModelLabel('OTHER_MODEL'), 'OTHER MODEL')
 })
+
+
+test('unavailable forecasts hide the default stored regression model', () => {
+  for (const status of ['INSUFFICIENT_DATA', 'FLAGGED_READING']) {
+    assert.equal(forecastModelLabel('LINEAR_REGRESSION', status), 'No forecast')
+    assert.equal(forecastModelLabel('STABLE_RECENT_ENSEMBLE', status), 'No forecast')
+  }
+  assert.equal(forecastModelLabel('LINEAR_REGRESSION', 'READY'), 'LINEAR REGRESSION')
+})

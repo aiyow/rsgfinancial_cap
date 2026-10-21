@@ -1,0 +1,43 @@
+{
+  "committedAt": "2026-10-21T14:39:52.822Z",
+  "periodCount": 9,
+  "verifiedForecasts": 1278,
+  "sourceTablesUnchanged": true,
+  "protectedTables": [
+    {
+      "name": "billing_periods",
+      "count": 9,
+      "hash": "2daa64000593a277fe7721e4ceb403ab"
+    },
+    {
+      "name": "meter_readings",
+      "count": 1278,
+      "hash": "47fa192280e3d525fe7afc43268f3d78"
+    },
+    {
+      "name": "unit_bills",
+      "count": 142,
+      "hash": "7569916f171b3eb5eb0042dbc7e7ee04"
+    },
+    {
+      "name": "payment_submissions",
+      "count": 1,
+      "hash": "6f9eb7337d4f1ff13453e22a86ee406c"
+    },
+    {
+      "name": "payment_applications",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "payment_charge_allocations",
+      "count": 0,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "name": "units",
+      "count": 142,
+      "hash": "278689615b5ca5ef172885fc3975fa73"
+    }
+  ]
+}

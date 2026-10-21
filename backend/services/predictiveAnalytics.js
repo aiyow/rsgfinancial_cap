@@ -1,11 +1,12 @@
 import { analyticsPeriodCondition } from './analyticsPeriods.js';
+import { classifyUsageChange, usageReviewRule } from './usageAnomalies.js';
 
 // Keep model training bounded and preserve the five-reading eligibility rule.
 const MIN_WINDOW_SIZE = 5;
 const MAX_WINDOW_SIZE = 12;
 const WINDOW_SIZE = MAX_WINDOW_SIZE;
-// Promote only after a connected-history comparison passes every acceptance gate.
-export const ACTIVE_FORECAST_POLICY = 'stable';
+// Regression is primary; recent qualifying spikes/zeros temporarily use the stable ensemble.
+export const ACTIVE_FORECAST_POLICY = 'regression_first';
 
 function numeric(value) {
   if (value === null || value === undefined || typeof value === 'boolean'
@@ -168,6 +169,35 @@ export function selectStableForecastModel(values) {
   };
 }
 
+// Receives the consecutive, valid, source-bounded training window from buildForecast.
+// Each event sees only its own five preceding months, never later observations.
+export function selectRegressionFirstForecastModel(readings) {
+  const candidates = forecastCandidates(readings.map((row) => row.consumption));
+  if (!candidates.length) return null;
+  for (let index = readings.length - 1; index >= Math.max(0, readings.length - 3); index -= 1) {
+    if (index < usageReviewRule.historyMonths) continue;
+    const change = classifyUsageChange(
+      readings.slice(index - usageReviewRule.historyMonths, index).map((row) => row.consumption),
+      readings[index].consumption,
+    );
+    if (!change || !['USAGE_SPIKE', 'ZERO_AFTER_REGULAR_USE'].includes(change.type)) continue;
+    const month = new Date(readings[index].periodStart).toLocaleDateString('en-US', {
+      month: 'short', year: 'numeric', timeZone: 'UTC',
+    });
+    const event = change.type === 'USAGE_SPIKE' ? 'unusually high consumption' : 'unexpected zero consumption';
+    const stable = candidates.filter((candidate) =>
+      ['LAST_MONTH_CONSUMPTION', 'RECENT_3_MONTH_AVERAGE', 'RECENT_5_MONTH_MEDIAN'].includes(candidate.name));
+    return {
+      name: 'STABLE_RECENT_ENSEMBLE',
+      predicted: stable.reduce((sum, candidate) => sum + candidate.predicted, 0) / stable.length,
+      slope: null,
+      intercept: null,
+      reason: `Stable Recent Months: ${event} in ${month}, within the latest three months.`,
+    };
+  }
+  return { ...candidates[0], reason: 'Linear Regression: no qualifying spike or unexpected zero detected in the latest three months (five prior valid months required).' };
+}
+
 export function selectConsecutiveReadings(history, windowSize = MAX_WINDOW_SIZE) {
   if (!Array.isArray(history) || history.length === 0) return [];
   const sorted = [...history].sort((a, b) => monthIndex(a.periodStart) - monthIndex(b.periodStart));
@@ -215,13 +245,14 @@ export function buildForecast(history, { waterRate = 0, minWindow = MIN_WINDOW_S
 
   const selectModel = policy === 'stable' ? selectStableForecastModel
     : policy === 'revised' ? selectForecastModel : selectLegacyForecastModel;
-  const model = selectModel(selected.map((reading) => reading.consumption));
+  const model = policy === 'regression_first' ? selectRegressionFirstForecastModel(selected)
+    : selectModel(selected.map((reading) => reading.consumption));
   if (!model) return { status: 'INSUFFICIENT_DATA', reason: 'Valid numeric readings are required.', sampleCount: selected.length };
   const predictedConsumption = Number(model.predicted.toFixed(3));
 
   return {
     status: "READY",
-    reason: null,
+    reason: model.reason ?? null,
     sampleCount: selected.length,
     predictedConsumption,
     estimatedWaterCharge: Number((predictedConsumption * numeric(waterRate || 0)).toFixed(2)),

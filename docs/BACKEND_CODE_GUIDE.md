@@ -189,11 +189,12 @@ Private images are served through authenticated `/api/payments/:id/receipt` with
 
 1. Filter history to source month. Missing source-month reading is insufficient; flagged newest reading returns `FLAGGED_READING`.
 2. `selectConsecutiveReadings` walks backward until a gap, invalid row or 12-month maximum. Five valid consecutive rows are required.
-3. `ACTIVE_FORECAST_POLICY` is `stable`. Five/six rows use full-window linear regression.
-4. With at least seven rows, an exact nonzero linear trend retains regression; otherwise `STABLE_RECENT_ENSEMBLE` averages last-month consumption, recent three-month average and recent five-month median.
-5. Round consumption to three decimals and estimated charge to two; return `READY`, sample count, model name and applicable model parameters.
+3. `ACTIVE_FORECAST_POLICY` is `regression_first`: full-window Linear Regression is primary.
+4. Check each of the latest three readings against its five preceding valid months. Without that baseline, it cannot trigger a switch. A spike must exceed the prior median by more than `max(3 m3, 75% of median, 3 times median absolute deviation)`. An unexpected zero requires prior median at least 1 m3 and three immediately preceding positive months. Ordinary drops and recurring zeros do not trigger a switch.
+5. While a qualifying event remains in that three-month window, `STABLE_RECENT_ENSEMBLE` averages last-month consumption, recent three-month average and recent five-month median. Return to regression after it expires; preserve all actual readings.
+6. Round consumption to three decimals and estimated charge to two; return `READY`, sample count, model name, selection explanation in `reason`, and applicable model parameters. Unavailable forecasts retain their eligibility reason and display as "No forecast".
 
-Other candidate/selectors support legacy/revised comparisons; their presence does not make them the active default. Forecast estimates do not create real charges.
+The `stable`, `legacy`, and `revised` policies remain available for comparisons; their presence does not make them the active default. Forecast estimates do not create real charges.
 
 Five consumptions `2, 4, 6, 8, 10` produce regression prediction 12. Fewer than five consecutive valid months produce no ready forecast. Valid zero is data, not missing input.
 

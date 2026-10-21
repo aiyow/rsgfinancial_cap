@@ -1,55 +1,14 @@
 import { calculateAccuracy, monthIndex, selectConsecutiveReadings } from './predictiveAnalytics.js';
 
-// A fixed usage-review rule, independent of forecast error or the chosen model.
-// It describes unusual actuals after they arrive; it never changes training,
-// stored validation statuses, or the primary evaluation score.
-export const usageReviewRule = {
-  historyMonths: 5,
-  minimumChange: 3,
-  relativeChange: 0.75,
-  deviationMultiplier: 3,
-  zeroBaselineMinimum: 1,
-  positiveMonthsBeforeZero: 3,
-};
-
-function median(values) {
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
-}
-
-function validNumber(value) {
-  return value !== null && value !== undefined && typeof value !== 'boolean'
-    && !(typeof value === 'string' && value.trim() === '') && Number.isFinite(Number(value)) && Number(value) >= 0;
-}
+import { classifyUsageChange, usageReviewRule } from './usageAnomalies.js';
+export { usageReviewRule } from './usageAnomalies.js';
 
 export function detectUsageChange(history, sourceMonth, actualConsumption) {
-  if (!validNumber(actualConsumption)) return null;
   const training = (history || []).filter((row) => monthIndex(row.periodStart) <= monthIndex(sourceMonth));
   const selected = selectConsecutiveReadings(training, usageReviewRule.historyMonths);
   if (selected.length < usageReviewRule.historyMonths
     || monthIndex(selected.at(-1).periodStart) !== monthIndex(sourceMonth)) return null;
-  const values = selected.map((row) => Number(row.consumption));
-  const usualConsumption = median(values);
-  const medianDeviation = median(values.map((value) => Math.abs(value - usualConsumption)));
-  const changeThreshold = Math.max(usageReviewRule.minimumChange,
-    usualConsumption * usageReviewRule.relativeChange, medianDeviation * usageReviewRule.deviationMultiplier);
-  const actual = Number(actualConsumption);
-  const change = actual - usualConsumption;
-  const recent = values.slice(-usageReviewRule.positiveMonthsBeforeZero);
-  // A zero already present in recent history is not a new shutdown pattern.
-  if (actual === 0 && recent.some((value) => value === 0)) return null;
-  const unexpectedZero = actual === 0 && usualConsumption >= usageReviewRule.zeroBaselineMinimum
-    && recent.every((value) => value > 0);
-  if (!unexpectedZero && Math.abs(change) <= changeThreshold) return null;
-  return {
-    type: unexpectedZero ? 'ZERO_AFTER_REGULAR_USE' : change > 0 ? 'USAGE_SPIKE' : 'USAGE_DROP',
-    usualConsumption: Number(usualConsumption.toFixed(3)),
-    actualConsumption: actual,
-    change: Number(change.toFixed(3)),
-    changeThreshold: Number(changeThreshold.toFixed(3)),
-    priorMonthCount: selected.length,
-  };
+  return classifyUsageChange(selected.map((row) => row.consumption), actualConsumption);
 }
 
 function totals(rows) {

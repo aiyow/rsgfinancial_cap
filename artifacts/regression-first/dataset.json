@@ -1,0 +1,8290 @@
+{
+  "capturedAt": "2026-10-21T14:37:37.982Z",
+  "periods": [
+    {
+      "id": "25",
+      "periodStart": "2026-01-01",
+      "waterRate": "23.00"
+    },
+    {
+      "id": "26",
+      "periodStart": "2026-02-01",
+      "waterRate": "23.00"
+    },
+    {
+      "id": "27",
+      "periodStart": "2026-03-01",
+      "waterRate": "23.00"
+    },
+    {
+      "id": "28",
+      "periodStart": "2026-04-01",
+      "waterRate": "23.00"
+    },
+    {
+      "id": "29",
+      "periodStart": "2026-05-01",
+      "waterRate": "23.00"
+    },
+    {
+      "id": "30",
+      "periodStart": "2026-06-01",
+      "waterRate": "23.00"
+    },
+    {
+      "id": "31",
+      "periodStart": "2026-07-01",
+      "waterRate": "23.00"
+    },
+    {
+      "id": "32",
+      "periodStart": "2026-08-01",
+      "waterRate": "23.00"
+    },
+    {
+      "id": "39",
+      "periodStart": "2026-09-05",
+      "waterRate": "23.00"
+    }
+  ],
+  "units": [
+    {
+      "unitId": "32",
+      "unitNumber": "231"
+    },
+    {
+      "unitId": "33",
+      "unitNumber": "232"
+    },
+    {
+      "unitId": "34",
+      "unitNumber": "233"
+    },
+    {
+      "unitId": "35",
+      "unitNumber": "234"
+    },
+    {
+      "unitId": "36",
+      "unitNumber": "235"
+    },
+    {
+      "unitId": "37",
+      "unitNumber": "236"
+    },
+    {
+      "unitId": "38",
+      "unitNumber": "237"
+    },
+    {
+      "unitId": "39",
+      "unitNumber": "238"
+    },
+    {
+      "unitId": "40",
+      "unitNumber": "239"
+    },
+    {
+      "unitId": "41",
+      "unitNumber": "240"
+    },
+    {
+      "unitId": "42",
+      "unitNumber": "241"
+    },
+    {
+      "unitId": "43",
+      "unitNumber": "242"
+    },
+    {
+      "unitId": "44",
+      "unitNumber": "243"
+    },
+    {
+      "unitId": "45",
+      "unitNumber": "301"
+    },
+    {
+      "unitId": "46",
+      "unitNumber": "302"
+    },
+    {
+      "unitId": "47",
+      "unitNumber": "303"
+    },
+    {
+      "unitId": "48",
+      "unitNumber": "304"
+    },
+    {
+      "unitId": "49",
+      "unitNumber": "305"
+    },
+    {
+      "unitId": "50",
+      "unitNumber": "306"
+    },
+    {
+      "unitId": "51",
+      "unitNumber": "307"
+    },
+    {
+      "unitId": "52",
+      "unitNumber": "308"
+    },
+    {
+      "unitId": "53",
+      "unitNumber": "309"
+    },
+    {
+      "unitId": "54",
+      "unitNumber": "310"
+    },
+    {
+      "unitId": "55",
+      "unitNumber": "311"
+    },
+    {
+      "unitId": "56",
+      "unitNumber": "312"
+    },
+    {
+      "unitId": "57",
+      "unitNumber": "313"
+    },
+    {
+      "unitId": "58",
+      "unitNumber": "314"
+    },
+    {
+      "unitId": "59",
+      "unitNumber": "315"
+    },
+    {
+      "unitId": "60",
+      "unitNumber": "316"
+    },
+    {
+      "unitId": "61",
+      "unitNumber": "317"
+    },
+    {
+      "unitId": "62",
+      "unitNumber": "318"
+    },
+    {
+      "unitId": "63",
+      "unitNumber": "319"
+    },
+    {
+      "unitId": "64",
+      "unitNumber": "320"
+    },
+    {
+      "unitId": "65",
+      "unitNumber": "321"
+    },
+    {
+      "unitId": "66",
+      "unitNumber": "322"
+    },
+    {
+      "unitId": "67",
+      "unitNumber": "323"
+    },
+    {
+      "unitId": "68",
+      "unitNumber": "324"
+    },
+    {
+      "unitId": "69",
+      "unitNumber": "325"
+    },
+    {
+      "unitId": "70",
+      "unitNumber": "326"
+    },
+    {
+      "unitId": "71",
+      "unitNumber": "327"
+    },
+    {
+      "unitId": "72",
+      "unitNumber": "328"
+    },
+    {
+      "unitId": "73",
+      "unitNumber": "329"
+    },
+    {
+      "unitId": "74",
+      "unitNumber": "330"
+    },
+    {
+      "unitId": "75",
+      "unitNumber": "331"
+    },
+    {
+      "unitId": "76",
+      "unitNumber": "332"
+    },
+    {
+      "unitId": "77",
+      "unitNumber": "333"
+    },
+    {
+      "unitId": "78",
+      "unitNumber": "334"
+    },
+    {
+      "unitId": "79",
+      "unitNumber": "335"
+    },
+    {
+      "unitId": "80",
+      "unitNumber": "336"
+    },
+    {
+      "unitId": "81",
+      "unitNumber": "337"
+    },
+    {
+      "unitId": "82",
+      "unitNumber": "338"
+    },
+    {
+      "unitId": "83",
+      "unitNumber": "339"
+    },
+    {
+      "unitId": "84",
+      "unitNumber": "340"
+    },
+    {
+      "unitId": "85",
+      "unitNumber": "341"
+    },
+    {
+      "unitId": "86",
+      "unitNumber": "342"
+    },
+    {
+      "unitId": "87",
+      "unitNumber": "343"
+    },
+    {
+      "unitId": "88",
+      "unitNumber": "401"
+    },
+    {
+      "unitId": "89",
+      "unitNumber": "402"
+    },
+    {
+      "unitId": "90",
+      "unitNumber": "403"
+    },
+    {
+      "unitId": "91",
+      "unitNumber": "404"
+    },
+    {
+      "unitId": "92",
+      "unitNumber": "405"
+    },
+    {
+      "unitId": "93",
+      "unitNumber": "406"
+    },
+    {
+      "unitId": "94",
+      "unitNumber": "407"
+    },
+    {
+      "unitId": "95",
+      "unitNumber": "408"
+    },
+    {
+      "unitId": "96",
+      "unitNumber": "409"
+    },
+    {
+      "unitId": "97",
+      "unitNumber": "410"
+    },
+    {
+      "unitId": "98",
+      "unitNumber": "411"
+    },
+    {
+      "unitId": "99",
+      "unitNumber": "412"
+    },
+    {
+      "unitId": "100",
+      "unitNumber": "413"
+    },
+    {
+      "unitId": "101",
+      "unitNumber": "414"
+    },
+    {
+      "unitId": "102",
+      "unitNumber": "415"
+    },
+    {
+      "unitId": "103",
+      "unitNumber": "416"
+    },
+    {
+      "unitId": "104",
+      "unitNumber": "417"
+    },
+    {
+      "unitId": "105",
+      "unitNumber": "418"
+    },
+    {
+      "unitId": "106",
+      "unitNumber": "419"
+    },
+    {
+      "unitId": "107",
+      "unitNumber": "420"
+    },
+    {
+      "unitId": "108",
+      "unitNumber": "421"
+    },
+    {
+      "unitId": "109",
+      "unitNumber": "422"
+    },
+    {
+      "unitId": "110",
+      "unitNumber": "423"
+    },
+    {
+      "unitId": "111",
+      "unitNumber": "424"
+    },
+    {
+      "unitId": "112",
+      "unitNumber": "425"
+    },
+    {
+      "unitId": "113",
+      "unitNumber": "426"
+    },
+    {
+      "unitId": "114",
+      "unitNumber": "427"
+    },
+    {
+      "unitId": "115",
+      "unitNumber": "428"
+    },
+    {
+      "unitId": "116",
+      "unitNumber": "429"
+    },
+    {
+      "unitId": "117",
+      "unitNumber": "430"
+    },
+    {
+      "unitId": "118",
+      "unitNumber": "431"
+    },
+    {
+      "unitId": "119",
+      "unitNumber": "432"
+    },
+    {
+      "unitId": "120",
+      "unitNumber": "433"
+    },
+    {
+      "unitId": "121",
+      "unitNumber": "434"
+    },
+    {
+      "unitId": "122",
+      "unitNumber": "435"
+    },
+    {
+      "unitId": "123",
+      "unitNumber": "436"
+    },
+    {
+      "unitId": "124",
+      "unitNumber": "437"
+    },
+    {
+      "unitId": "125",
+      "unitNumber": "438"
+    },
+    {
+      "unitId": "126",
+      "unitNumber": "439"
+    },
+    {
+      "unitId": "127",
+      "unitNumber": "440"
+    },
+    {
+      "unitId": "128",
+      "unitNumber": "441"
+    },
+    {
+      "unitId": "129",
+      "unitNumber": "442"
+    },
+    {
+      "unitId": "130",
+      "unitNumber": "443"
+    },
+    {
+      "unitId": "131",
+      "unitNumber": "501"
+    },
+    {
+      "unitId": "132",
+      "unitNumber": "502"
+    },
+    {
+      "unitId": "133",
+      "unitNumber": "503"
+    },
+    {
+      "unitId": "134",
+      "unitNumber": "504"
+    },
+    {
+      "unitId": "135",
+      "unitNumber": "505"
+    },
+    {
+      "unitId": "136",
+      "unitNumber": "506"
+    },
+    {
+      "unitId": "137",
+      "unitNumber": "507"
+    },
+    {
+      "unitId": "138",
+      "unitNumber": "508"
+    },
+    {
+      "unitId": "139",
+      "unitNumber": "509"
+    },
+    {
+      "unitId": "140",
+      "unitNumber": "510"
+    },
+    {
+      "unitId": "141",
+      "unitNumber": "511"
+    },
+    {
+      "unitId": "142",
+      "unitNumber": "512"
+    },
+    {
+      "unitId": "143",
+      "unitNumber": "513"
+    },
+    {
+      "unitId": "144",
+      "unitNumber": "514"
+    },
+    {
+      "unitId": "145",
+      "unitNumber": "515"
+    },
+    {
+      "unitId": "146",
+      "unitNumber": "516"
+    },
+    {
+      "unitId": "147",
+      "unitNumber": "517"
+    },
+    {
+      "unitId": "148",
+      "unitNumber": "518"
+    },
+    {
+      "unitId": "149",
+      "unitNumber": "519"
+    },
+    {
+      "unitId": "150",
+      "unitNumber": "520"
+    },
+    {
+      "unitId": "151",
+      "unitNumber": "521"
+    },
+    {
+      "unitId": "152",
+      "unitNumber": "522"
+    },
+    {
+      "unitId": "153",
+      "unitNumber": "523"
+    },
+    {
+      "unitId": "154",
+      "unitNumber": "524"
+    },
+    {
+      "unitId": "155",
+      "unitNumber": "525"
+    },
+    {
+      "unitId": "156",
+      "unitNumber": "526"
+    },
+    {
+      "unitId": "157",
+      "unitNumber": "527"
+    },
+    {
+      "unitId": "158",
+      "unitNumber": "528"
+    },
+    {
+      "unitId": "159",
+      "unitNumber": "529"
+    },
+    {
+      "unitId": "160",
+      "unitNumber": "530"
+    },
+    {
+      "unitId": "161",
+      "unitNumber": "531"
+    },
+    {
+      "unitId": "162",
+      "unitNumber": "532"
+    },
+    {
+      "unitId": "163",
+      "unitNumber": "533"
+    },
+    {
+      "unitId": "164",
+      "unitNumber": "534"
+    },
+    {
+      "unitId": "165",
+      "unitNumber": "535"
+    },
+    {
+      "unitId": "166",
+      "unitNumber": "536"
+    },
+    {
+      "unitId": "167",
+      "unitNumber": "537"
+    },
+    {
+      "unitId": "168",
+      "unitNumber": "538"
+    },
+    {
+      "unitId": "169",
+      "unitNumber": "539"
+    },
+    {
+      "unitId": "170",
+      "unitNumber": "540"
+    },
+    {
+      "unitId": "171",
+      "unitNumber": "541"
+    },
+    {
+      "unitId": "172",
+      "unitNumber": "542"
+    },
+    {
+      "unitId": "173",
+      "unitNumber": "543"
+    }
+  ],
+  "readings": [
+    {
+      "unitId": "32",
+      "periodStart": "2026-01-01",
+      "consumption": "4.422",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "32",
+      "periodStart": "2026-02-01",
+      "consumption": "2.967",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "32",
+      "periodStart": "2026-03-01",
+      "consumption": "2.496",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "32",
+      "periodStart": "2026-04-01",
+      "consumption": "10.816",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "32",
+      "periodStart": "2026-05-01",
+      "consumption": "17.261",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "32",
+      "periodStart": "2026-06-01",
+      "consumption": "20.851",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "32",
+      "periodStart": "2026-07-01",
+      "consumption": "27.090",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "32",
+      "periodStart": "2026-08-01",
+      "consumption": "12.201",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "32",
+      "periodStart": "2026-09-05",
+      "consumption": "3.884",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "33",
+      "periodStart": "2026-01-01",
+      "consumption": "3.887",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "33",
+      "periodStart": "2026-02-01",
+      "consumption": "11.299",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "33",
+      "periodStart": "2026-03-01",
+      "consumption": "2.306",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "33",
+      "periodStart": "2026-04-01",
+      "consumption": "4.653",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "33",
+      "periodStart": "2026-05-01",
+      "consumption": "3.565",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "33",
+      "periodStart": "2026-06-01",
+      "consumption": "3.991",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "33",
+      "periodStart": "2026-07-01",
+      "consumption": "4.579",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "33",
+      "periodStart": "2026-08-01",
+      "consumption": "4.629",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "33",
+      "periodStart": "2026-09-05",
+      "consumption": "4.564",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "34",
+      "periodStart": "2026-01-01",
+      "consumption": "2.219",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "34",
+      "periodStart": "2026-02-01",
+      "consumption": "3.872",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "34",
+      "periodStart": "2026-03-01",
+      "consumption": "3.766",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "34",
+      "periodStart": "2026-04-01",
+      "consumption": "3.434",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "34",
+      "periodStart": "2026-05-01",
+      "consumption": "3.532",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "34",
+      "periodStart": "2026-06-01",
+      "consumption": "2.530",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "34",
+      "periodStart": "2026-07-01",
+      "consumption": "0.532",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "34",
+      "periodStart": "2026-08-01",
+      "consumption": "2.940",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "34",
+      "periodStart": "2026-09-05",
+      "consumption": "2.561",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "35",
+      "periodStart": "2026-01-01",
+      "consumption": "0.003",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "35",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "35",
+      "periodStart": "2026-03-01",
+      "consumption": "1.668",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "35",
+      "periodStart": "2026-04-01",
+      "consumption": "1.180",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "35",
+      "periodStart": "2026-05-01",
+      "consumption": "0.792",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "35",
+      "periodStart": "2026-06-01",
+      "consumption": "0.572",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "35",
+      "periodStart": "2026-07-01",
+      "consumption": "0.619",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "35",
+      "periodStart": "2026-08-01",
+      "consumption": "0.770",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "35",
+      "periodStart": "2026-09-05",
+      "consumption": "1.102",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "36",
+      "periodStart": "2026-01-01",
+      "consumption": "1.396",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "36",
+      "periodStart": "2026-02-01",
+      "consumption": "8.298",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "36",
+      "periodStart": "2026-03-01",
+      "consumption": "9.901",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "36",
+      "periodStart": "2026-04-01",
+      "consumption": "13.472",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "36",
+      "periodStart": "2026-05-01",
+      "consumption": "17.598",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "36",
+      "periodStart": "2026-06-01",
+      "consumption": "38.049",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "36",
+      "periodStart": "2026-07-01",
+      "consumption": "50.860",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "36",
+      "periodStart": "2026-08-01",
+      "consumption": "23.437",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "36",
+      "periodStart": "2026-09-05",
+      "consumption": "7.522",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "37",
+      "periodStart": "2026-01-01",
+      "consumption": "2.956",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "37",
+      "periodStart": "2026-02-01",
+      "consumption": "1.284",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "37",
+      "periodStart": "2026-03-01",
+      "consumption": "2.683",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "37",
+      "periodStart": "2026-04-01",
+      "consumption": "3.278",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "37",
+      "periodStart": "2026-05-01",
+      "consumption": "5.934",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "37",
+      "periodStart": "2026-06-01",
+      "consumption": "4.814",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "37",
+      "periodStart": "2026-07-01",
+      "consumption": "2.306",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "37",
+      "periodStart": "2026-08-01",
+      "consumption": "2.499",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "37",
+      "periodStart": "2026-09-05",
+      "consumption": "1.438",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "38",
+      "periodStart": "2026-01-01",
+      "consumption": "1.548",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "38",
+      "periodStart": "2026-02-01",
+      "consumption": "2.919",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "38",
+      "periodStart": "2026-03-01",
+      "consumption": "1.113",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "38",
+      "periodStart": "2026-04-01",
+      "consumption": "0.707",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "38",
+      "periodStart": "2026-05-01",
+      "consumption": "1.663",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "38",
+      "periodStart": "2026-06-01",
+      "consumption": "0.196",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "38",
+      "periodStart": "2026-07-01",
+      "consumption": "1.668",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "38",
+      "periodStart": "2026-08-01",
+      "consumption": "1.653",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "38",
+      "periodStart": "2026-09-05",
+      "consumption": "1.401",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "39",
+      "periodStart": "2026-01-01",
+      "consumption": "14.110",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "39",
+      "periodStart": "2026-02-01",
+      "consumption": "11.832",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "39",
+      "periodStart": "2026-03-01",
+      "consumption": "11.261",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "39",
+      "periodStart": "2026-04-01",
+      "consumption": "13.038",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "39",
+      "periodStart": "2026-05-01",
+      "consumption": "11.355",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "39",
+      "periodStart": "2026-06-01",
+      "consumption": "17.923",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "39",
+      "periodStart": "2026-07-01",
+      "consumption": "15.478",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "39",
+      "periodStart": "2026-08-01",
+      "consumption": "13.387",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "39",
+      "periodStart": "2026-09-05",
+      "consumption": "12.231",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "40",
+      "periodStart": "2026-01-01",
+      "consumption": "0.098",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "40",
+      "periodStart": "2026-02-01",
+      "consumption": "0.049",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "40",
+      "periodStart": "2026-03-01",
+      "consumption": "0.005",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "40",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "40",
+      "periodStart": "2026-05-01",
+      "consumption": "1.092",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "40",
+      "periodStart": "2026-06-01",
+      "consumption": "0.170",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "40",
+      "periodStart": "2026-07-01",
+      "consumption": "0.035",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "40",
+      "periodStart": "2026-08-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "40",
+      "periodStart": "2026-09-05",
+      "consumption": "1.738",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "41",
+      "periodStart": "2026-01-01",
+      "consumption": "10.605",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "41",
+      "periodStart": "2026-02-01",
+      "consumption": "7.944",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "41",
+      "periodStart": "2026-03-01",
+      "consumption": "7.588",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "41",
+      "periodStart": "2026-04-01",
+      "consumption": "9.066",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "41",
+      "periodStart": "2026-05-01",
+      "consumption": "11.231",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "41",
+      "periodStart": "2026-06-01",
+      "consumption": "10.545",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "41",
+      "periodStart": "2026-07-01",
+      "consumption": "8.877",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "41",
+      "periodStart": "2026-08-01",
+      "consumption": "9.680",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "41",
+      "periodStart": "2026-09-05",
+      "consumption": "10.311",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "42",
+      "periodStart": "2026-01-01",
+      "consumption": "7.298",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "42",
+      "periodStart": "2026-02-01",
+      "consumption": "8.915",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "42",
+      "periodStart": "2026-03-01",
+      "consumption": "11.310",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "42",
+      "periodStart": "2026-04-01",
+      "consumption": "8.561",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "42",
+      "periodStart": "2026-05-01",
+      "consumption": "9.542",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "42",
+      "periodStart": "2026-06-01",
+      "consumption": "7.369",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "42",
+      "periodStart": "2026-07-01",
+      "consumption": "7.536",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "42",
+      "periodStart": "2026-08-01",
+      "consumption": "10.423",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "42",
+      "periodStart": "2026-09-05",
+      "consumption": "6.636",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "43",
+      "periodStart": "2026-01-01",
+      "consumption": "2.770",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "43",
+      "periodStart": "2026-02-01",
+      "consumption": "2.071",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "43",
+      "periodStart": "2026-03-01",
+      "consumption": "2.889",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "43",
+      "periodStart": "2026-04-01",
+      "consumption": "2.656",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "43",
+      "periodStart": "2026-05-01",
+      "consumption": "1.728",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "43",
+      "periodStart": "2026-06-01",
+      "consumption": "3.639",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "43",
+      "periodStart": "2026-07-01",
+      "consumption": "2.328",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "43",
+      "periodStart": "2026-08-01",
+      "consumption": "6.670",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "43",
+      "periodStart": "2026-09-05",
+      "consumption": "1.555",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "44",
+      "periodStart": "2026-01-01",
+      "consumption": "4.621",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "44",
+      "periodStart": "2026-02-01",
+      "consumption": "7.121",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "44",
+      "periodStart": "2026-03-01",
+      "consumption": "5.608",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "44",
+      "periodStart": "2026-04-01",
+      "consumption": "3.266",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "44",
+      "periodStart": "2026-05-01",
+      "consumption": "3.448",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "44",
+      "periodStart": "2026-06-01",
+      "consumption": "3.540",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "44",
+      "periodStart": "2026-07-01",
+      "consumption": "3.539",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "44",
+      "periodStart": "2026-08-01",
+      "consumption": "2.549",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "44",
+      "periodStart": "2026-09-05",
+      "consumption": "2.444",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "45",
+      "periodStart": "2026-01-01",
+      "consumption": "0.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "45",
+      "periodStart": "2026-02-01",
+      "consumption": "3.123",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "45",
+      "periodStart": "2026-03-01",
+      "consumption": "6.926",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "45",
+      "periodStart": "2026-04-01",
+      "consumption": "2.084",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "45",
+      "periodStart": "2026-05-01",
+      "consumption": "2.043",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "45",
+      "periodStart": "2026-06-01",
+      "consumption": "2.275",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "45",
+      "periodStart": "2026-07-01",
+      "consumption": "0.292",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "45",
+      "periodStart": "2026-08-01",
+      "consumption": "8.974",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "45",
+      "periodStart": "2026-09-05",
+      "consumption": "4.574",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "46",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "46",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "46",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "46",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "46",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "46",
+      "periodStart": "2026-06-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "46",
+      "periodStart": "2026-07-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "46",
+      "periodStart": "2026-08-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "46",
+      "periodStart": "2026-09-05",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "47",
+      "periodStart": "2026-01-01",
+      "consumption": "8.453",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "47",
+      "periodStart": "2026-02-01",
+      "consumption": "10.083",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "47",
+      "periodStart": "2026-03-01",
+      "consumption": "5.492",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "47",
+      "periodStart": "2026-04-01",
+      "consumption": "7.361",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "47",
+      "periodStart": "2026-05-01",
+      "consumption": "8.029",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "47",
+      "periodStart": "2026-06-01",
+      "consumption": "7.222",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "47",
+      "periodStart": "2026-07-01",
+      "consumption": "8.708",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "47",
+      "periodStart": "2026-08-01",
+      "consumption": "7.881",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "47",
+      "periodStart": "2026-09-05",
+      "consumption": "6.787",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "48",
+      "periodStart": "2026-01-01",
+      "consumption": "1.966",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "48",
+      "periodStart": "2026-02-01",
+      "consumption": "3.238",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "48",
+      "periodStart": "2026-03-01",
+      "consumption": "6.675",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "48",
+      "periodStart": "2026-04-01",
+      "consumption": "5.852",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "48",
+      "periodStart": "2026-05-01",
+      "consumption": "5.048",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "48",
+      "periodStart": "2026-06-01",
+      "consumption": "8.020",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "48",
+      "periodStart": "2026-07-01",
+      "consumption": "7.636",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "48",
+      "periodStart": "2026-08-01",
+      "consumption": "2.427",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "48",
+      "periodStart": "2026-09-05",
+      "consumption": "5.429",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "49",
+      "periodStart": "2026-01-01",
+      "consumption": "1.288",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "49",
+      "periodStart": "2026-02-01",
+      "consumption": "1.512",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "49",
+      "periodStart": "2026-03-01",
+      "consumption": "1.152",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "49",
+      "periodStart": "2026-04-01",
+      "consumption": "1.715",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "49",
+      "periodStart": "2026-05-01",
+      "consumption": "1.834",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "49",
+      "periodStart": "2026-06-01",
+      "consumption": "2.008",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "49",
+      "periodStart": "2026-07-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "49",
+      "periodStart": "2026-08-01",
+      "consumption": "2.086",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "49",
+      "periodStart": "2026-09-05",
+      "consumption": "2.833",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "50",
+      "periodStart": "2026-01-01",
+      "consumption": "13.664",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "50",
+      "periodStart": "2026-02-01",
+      "consumption": "11.586",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "50",
+      "periodStart": "2026-03-01",
+      "consumption": "12.513",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "50",
+      "periodStart": "2026-04-01",
+      "consumption": "15.764",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "50",
+      "periodStart": "2026-05-01",
+      "consumption": "13.590",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "50",
+      "periodStart": "2026-06-01",
+      "consumption": "12.180",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "50",
+      "periodStart": "2026-07-01",
+      "consumption": "11.955",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "50",
+      "periodStart": "2026-08-01",
+      "consumption": "15.675",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "50",
+      "periodStart": "2026-09-05",
+      "consumption": "12.594",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "51",
+      "periodStart": "2026-01-01",
+      "consumption": "14.103",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "51",
+      "periodStart": "2026-02-01",
+      "consumption": "15.111",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "51",
+      "periodStart": "2026-03-01",
+      "consumption": "11.598",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "51",
+      "periodStart": "2026-04-01",
+      "consumption": "12.133",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "51",
+      "periodStart": "2026-05-01",
+      "consumption": "12.260",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "51",
+      "periodStart": "2026-06-01",
+      "consumption": "14.182",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "51",
+      "periodStart": "2026-07-01",
+      "consumption": "16.465",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "51",
+      "periodStart": "2026-08-01",
+      "consumption": "15.087",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "51",
+      "periodStart": "2026-09-05",
+      "consumption": "19.075",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "52",
+      "periodStart": "2026-01-01",
+      "consumption": "1.569",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "52",
+      "periodStart": "2026-02-01",
+      "consumption": "4.413",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "52",
+      "periodStart": "2026-03-01",
+      "consumption": "6.575",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "52",
+      "periodStart": "2026-04-01",
+      "consumption": "4.636",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "52",
+      "periodStart": "2026-05-01",
+      "consumption": "4.891",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "52",
+      "periodStart": "2026-06-01",
+      "consumption": "3.392",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "52",
+      "periodStart": "2026-07-01",
+      "consumption": "3.901",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "52",
+      "periodStart": "2026-08-01",
+      "consumption": "4.896",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "52",
+      "periodStart": "2026-09-05",
+      "consumption": "4.995",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "53",
+      "periodStart": "2026-01-01",
+      "consumption": "0.344",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "53",
+      "periodStart": "2026-02-01",
+      "consumption": "0.085",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "53",
+      "periodStart": "2026-03-01",
+      "consumption": "0.793",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "53",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "53",
+      "periodStart": "2026-05-01",
+      "consumption": "3.267",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "53",
+      "periodStart": "2026-06-01",
+      "consumption": "3.920",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "53",
+      "periodStart": "2026-07-01",
+      "consumption": "4.866",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "53",
+      "periodStart": "2026-08-01",
+      "consumption": "6.480",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "53",
+      "periodStart": "2026-09-05",
+      "consumption": "7.071",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "54",
+      "periodStart": "2026-01-01",
+      "consumption": "1.537",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "54",
+      "periodStart": "2026-02-01",
+      "consumption": "1.545",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "54",
+      "periodStart": "2026-03-01",
+      "consumption": "1.940",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "54",
+      "periodStart": "2026-04-01",
+      "consumption": "0.837",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "54",
+      "periodStart": "2026-05-01",
+      "consumption": "0.833",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "54",
+      "periodStart": "2026-06-01",
+      "consumption": "0.641",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "54",
+      "periodStart": "2026-07-01",
+      "consumption": "0.511",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "54",
+      "periodStart": "2026-08-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "54",
+      "periodStart": "2026-09-05",
+      "consumption": "0.617",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "55",
+      "periodStart": "2026-01-01",
+      "consumption": "0.005",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "55",
+      "periodStart": "2026-02-01",
+      "consumption": "3.577",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "55",
+      "periodStart": "2026-03-01",
+      "consumption": "4.758",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "55",
+      "periodStart": "2026-04-01",
+      "consumption": "3.428",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "55",
+      "periodStart": "2026-05-01",
+      "consumption": "4.311",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "55",
+      "periodStart": "2026-06-01",
+      "consumption": "4.417",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "55",
+      "periodStart": "2026-07-01",
+      "consumption": "2.925",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "55",
+      "periodStart": "2026-08-01",
+      "consumption": "3.208",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "55",
+      "periodStart": "2026-09-05",
+      "consumption": "6.008",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "56",
+      "periodStart": "2026-01-01",
+      "consumption": "3.479",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "56",
+      "periodStart": "2026-02-01",
+      "consumption": "5.689",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "56",
+      "periodStart": "2026-03-01",
+      "consumption": "5.503",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "56",
+      "periodStart": "2026-04-01",
+      "consumption": "9.334",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "56",
+      "periodStart": "2026-05-01",
+      "consumption": "11.028",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "56",
+      "periodStart": "2026-06-01",
+      "consumption": "7.480",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "56",
+      "periodStart": "2026-07-01",
+      "consumption": "3.689",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "56",
+      "periodStart": "2026-08-01",
+      "consumption": "4.714",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "56",
+      "periodStart": "2026-09-05",
+      "consumption": "2.362",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "57",
+      "periodStart": "2026-01-01",
+      "consumption": "0.602",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "57",
+      "periodStart": "2026-02-01",
+      "consumption": "0.006",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "57",
+      "periodStart": "2026-03-01",
+      "consumption": "0.255",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "57",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "57",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "57",
+      "periodStart": "2026-06-01",
+      "consumption": "0.572",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "57",
+      "periodStart": "2026-07-01",
+      "consumption": "1.874",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "57",
+      "periodStart": "2026-08-01",
+      "consumption": "3.549",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "57",
+      "periodStart": "2026-09-05",
+      "consumption": "3.862",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "58",
+      "periodStart": "2026-01-01",
+      "consumption": "3.471",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "58",
+      "periodStart": "2026-02-01",
+      "consumption": "5.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "58",
+      "periodStart": "2026-03-01",
+      "consumption": "4.547",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "58",
+      "periodStart": "2026-04-01",
+      "consumption": "4.533",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "58",
+      "periodStart": "2026-05-01",
+      "consumption": "3.218",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "58",
+      "periodStart": "2026-06-01",
+      "consumption": "5.682",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "58",
+      "periodStart": "2026-07-01",
+      "consumption": "4.950",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "58",
+      "periodStart": "2026-08-01",
+      "consumption": "3.956",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "58",
+      "periodStart": "2026-09-05",
+      "consumption": "3.617",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "59",
+      "periodStart": "2026-01-01",
+      "consumption": "3.901",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "59",
+      "periodStart": "2026-02-01",
+      "consumption": "4.146",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "59",
+      "periodStart": "2026-03-01",
+      "consumption": "3.965",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "59",
+      "periodStart": "2026-04-01",
+      "consumption": "3.686",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "59",
+      "periodStart": "2026-05-01",
+      "consumption": "4.195",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "59",
+      "periodStart": "2026-06-01",
+      "consumption": "2.946",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "59",
+      "periodStart": "2026-07-01",
+      "consumption": "5.380",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "59",
+      "periodStart": "2026-08-01",
+      "consumption": "4.287",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "59",
+      "periodStart": "2026-09-05",
+      "consumption": "4.997",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "60",
+      "periodStart": "2026-01-01",
+      "consumption": "7.204",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "60",
+      "periodStart": "2026-02-01",
+      "consumption": "2.883",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "60",
+      "periodStart": "2026-03-01",
+      "consumption": "2.280",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "60",
+      "periodStart": "2026-04-01",
+      "consumption": "5.065",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "60",
+      "periodStart": "2026-05-01",
+      "consumption": "4.392",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "60",
+      "periodStart": "2026-06-01",
+      "consumption": "4.562",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "60",
+      "periodStart": "2026-07-01",
+      "consumption": "5.439",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "60",
+      "periodStart": "2026-08-01",
+      "consumption": "4.599",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "60",
+      "periodStart": "2026-09-05",
+      "consumption": "4.872",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "61",
+      "periodStart": "2026-01-01",
+      "consumption": "7.773",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "61",
+      "periodStart": "2026-02-01",
+      "consumption": "11.167",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "61",
+      "periodStart": "2026-03-01",
+      "consumption": "10.156",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "61",
+      "periodStart": "2026-04-01",
+      "consumption": "8.650",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "61",
+      "periodStart": "2026-05-01",
+      "consumption": "13.255",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "61",
+      "periodStart": "2026-06-01",
+      "consumption": "10.891",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "61",
+      "periodStart": "2026-07-01",
+      "consumption": "10.300",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "61",
+      "periodStart": "2026-08-01",
+      "consumption": "10.884",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "61",
+      "periodStart": "2026-09-05",
+      "consumption": "9.672",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "62",
+      "periodStart": "2026-01-01",
+      "consumption": "5.034",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "62",
+      "periodStart": "2026-02-01",
+      "consumption": "2.597",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "62",
+      "periodStart": "2026-03-01",
+      "consumption": "7.063",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "62",
+      "periodStart": "2026-04-01",
+      "consumption": "4.035",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "62",
+      "periodStart": "2026-05-01",
+      "consumption": "10.293",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "62",
+      "periodStart": "2026-06-01",
+      "consumption": "7.501",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "62",
+      "periodStart": "2026-07-01",
+      "consumption": "7.807",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "62",
+      "periodStart": "2026-08-01",
+      "consumption": "6.236",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "62",
+      "periodStart": "2026-09-05",
+      "consumption": "8.035",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "63",
+      "periodStart": "2026-01-01",
+      "consumption": "1.828",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "63",
+      "periodStart": "2026-02-01",
+      "consumption": "0.824",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "63",
+      "periodStart": "2026-03-01",
+      "consumption": "1.303",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "63",
+      "periodStart": "2026-04-01",
+      "consumption": "1.748",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "63",
+      "periodStart": "2026-05-01",
+      "consumption": "1.582",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "63",
+      "periodStart": "2026-06-01",
+      "consumption": "2.051",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "63",
+      "periodStart": "2026-07-01",
+      "consumption": "3.070",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "63",
+      "periodStart": "2026-08-01",
+      "consumption": "1.593",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "63",
+      "periodStart": "2026-09-05",
+      "consumption": "2.404",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "64",
+      "periodStart": "2026-01-01",
+      "consumption": "0.211",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "64",
+      "periodStart": "2026-02-01",
+      "consumption": "1.475",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "64",
+      "periodStart": "2026-03-01",
+      "consumption": "5.051",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "64",
+      "periodStart": "2026-04-01",
+      "consumption": "4.606",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "64",
+      "periodStart": "2026-05-01",
+      "consumption": "5.387",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "64",
+      "periodStart": "2026-06-01",
+      "consumption": "6.055",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "64",
+      "periodStart": "2026-07-01",
+      "consumption": "7.005",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "64",
+      "periodStart": "2026-08-01",
+      "consumption": "5.402",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "64",
+      "periodStart": "2026-09-05",
+      "consumption": "8.728",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "65",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "65",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "65",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "65",
+      "periodStart": "2026-04-01",
+      "consumption": "0.520",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "65",
+      "periodStart": "2026-05-01",
+      "consumption": "7.935",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "65",
+      "periodStart": "2026-06-01",
+      "consumption": "2.071",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "65",
+      "periodStart": "2026-07-01",
+      "consumption": "2.263",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "65",
+      "periodStart": "2026-08-01",
+      "consumption": "2.900",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "65",
+      "periodStart": "2026-09-05",
+      "consumption": "2.576",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "66",
+      "periodStart": "2026-01-01",
+      "consumption": "8.154",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "66",
+      "periodStart": "2026-02-01",
+      "consumption": "18.249",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "66",
+      "periodStart": "2026-03-01",
+      "consumption": "3.935",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "66",
+      "periodStart": "2026-04-01",
+      "consumption": "6.529",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "66",
+      "periodStart": "2026-05-01",
+      "consumption": "6.221",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "66",
+      "periodStart": "2026-06-01",
+      "consumption": "10.439",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "66",
+      "periodStart": "2026-07-01",
+      "consumption": "4.885",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "66",
+      "periodStart": "2026-08-01",
+      "consumption": "9.870",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "66",
+      "periodStart": "2026-09-05",
+      "consumption": "8.370",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "67",
+      "periodStart": "2026-01-01",
+      "consumption": "2.761",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "67",
+      "periodStart": "2026-02-01",
+      "consumption": "0.642",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "67",
+      "periodStart": "2026-03-01",
+      "consumption": "3.067",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "67",
+      "periodStart": "2026-04-01",
+      "consumption": "6.771",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "67",
+      "periodStart": "2026-05-01",
+      "consumption": "2.383",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "67",
+      "periodStart": "2026-06-01",
+      "consumption": "2.251",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "67",
+      "periodStart": "2026-07-01",
+      "consumption": "0.456",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "67",
+      "periodStart": "2026-08-01",
+      "consumption": "1.496",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "67",
+      "periodStart": "2026-09-05",
+      "consumption": "6.355",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "68",
+      "periodStart": "2026-01-01",
+      "consumption": "4.418",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "68",
+      "periodStart": "2026-02-01",
+      "consumption": "12.603",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "68",
+      "periodStart": "2026-03-01",
+      "consumption": "9.398",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "68",
+      "periodStart": "2026-04-01",
+      "consumption": "11.906",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "68",
+      "periodStart": "2026-05-01",
+      "consumption": "7.654",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "68",
+      "periodStart": "2026-06-01",
+      "consumption": "7.044",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "68",
+      "periodStart": "2026-07-01",
+      "consumption": "10.374",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "68",
+      "periodStart": "2026-08-01",
+      "consumption": "8.353",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "68",
+      "periodStart": "2026-09-05",
+      "consumption": "5.680",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "69",
+      "periodStart": "2026-01-01",
+      "consumption": "5.183",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "69",
+      "periodStart": "2026-02-01",
+      "consumption": "5.952",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "69",
+      "periodStart": "2026-03-01",
+      "consumption": "6.620",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "69",
+      "periodStart": "2026-04-01",
+      "consumption": "7.642",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "69",
+      "periodStart": "2026-05-01",
+      "consumption": "5.175",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "69",
+      "periodStart": "2026-06-01",
+      "consumption": "7.823",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "69",
+      "periodStart": "2026-07-01",
+      "consumption": "9.447",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "69",
+      "periodStart": "2026-08-01",
+      "consumption": "8.485",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "69",
+      "periodStart": "2026-09-05",
+      "consumption": "5.586",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "70",
+      "periodStart": "2026-01-01",
+      "consumption": "4.614",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "70",
+      "periodStart": "2026-02-01",
+      "consumption": "6.425",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "70",
+      "periodStart": "2026-03-01",
+      "consumption": "5.563",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "70",
+      "periodStart": "2026-04-01",
+      "consumption": "6.148",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "70",
+      "periodStart": "2026-05-01",
+      "consumption": "5.030",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "70",
+      "periodStart": "2026-06-01",
+      "consumption": "5.708",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "70",
+      "periodStart": "2026-07-01",
+      "consumption": "3.371",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "70",
+      "periodStart": "2026-08-01",
+      "consumption": "5.625",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "70",
+      "periodStart": "2026-09-05",
+      "consumption": "5.930",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "71",
+      "periodStart": "2026-01-01",
+      "consumption": "4.390",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "71",
+      "periodStart": "2026-02-01",
+      "consumption": "13.047",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "71",
+      "periodStart": "2026-03-01",
+      "consumption": "9.074",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "71",
+      "periodStart": "2026-04-01",
+      "consumption": "6.470",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "71",
+      "periodStart": "2026-05-01",
+      "consumption": "5.368",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "71",
+      "periodStart": "2026-06-01",
+      "consumption": "6.228",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "71",
+      "periodStart": "2026-07-01",
+      "consumption": "9.442",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "71",
+      "periodStart": "2026-08-01",
+      "consumption": "5.596",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "71",
+      "periodStart": "2026-09-05",
+      "consumption": "5.902",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "72",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "72",
+      "periodStart": "2026-02-01",
+      "consumption": "2.023",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "72",
+      "periodStart": "2026-03-01",
+      "consumption": "1.097",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "72",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "72",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "72",
+      "periodStart": "2026-06-01",
+      "consumption": "0.648",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "72",
+      "periodStart": "2026-07-01",
+      "consumption": "0.061",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "72",
+      "periodStart": "2026-08-01",
+      "consumption": "1.412",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "72",
+      "periodStart": "2026-09-05",
+      "consumption": "2.467",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "73",
+      "periodStart": "2026-01-01",
+      "consumption": "6.544",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "73",
+      "periodStart": "2026-02-01",
+      "consumption": "2.595",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "73",
+      "periodStart": "2026-03-01",
+      "consumption": "1.324",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "73",
+      "periodStart": "2026-04-01",
+      "consumption": "1.999",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "73",
+      "periodStart": "2026-05-01",
+      "consumption": "2.007",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "73",
+      "periodStart": "2026-06-01",
+      "consumption": "5.576",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "73",
+      "periodStart": "2026-07-01",
+      "consumption": "3.015",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "73",
+      "periodStart": "2026-08-01",
+      "consumption": "2.538",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "73",
+      "periodStart": "2026-09-05",
+      "consumption": "2.005",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "74",
+      "periodStart": "2026-01-01",
+      "consumption": "2.103",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "74",
+      "periodStart": "2026-02-01",
+      "consumption": "3.778",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "74",
+      "periodStart": "2026-03-01",
+      "consumption": "4.799",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "74",
+      "periodStart": "2026-04-01",
+      "consumption": "4.173",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "74",
+      "periodStart": "2026-05-01",
+      "consumption": "3.984",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "74",
+      "periodStart": "2026-06-01",
+      "consumption": "2.736",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "74",
+      "periodStart": "2026-07-01",
+      "consumption": "2.850",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "74",
+      "periodStart": "2026-08-01",
+      "consumption": "1.816",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "74",
+      "periodStart": "2026-09-05",
+      "consumption": "1.978",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "75",
+      "periodStart": "2026-01-01",
+      "consumption": "4.599",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "75",
+      "periodStart": "2026-02-01",
+      "consumption": "7.499",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "75",
+      "periodStart": "2026-03-01",
+      "consumption": "6.330",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "75",
+      "periodStart": "2026-04-01",
+      "consumption": "6.532",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "75",
+      "periodStart": "2026-05-01",
+      "consumption": "15.207",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "75",
+      "periodStart": "2026-06-01",
+      "consumption": "8.759",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "75",
+      "periodStart": "2026-07-01",
+      "consumption": "7.226",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "75",
+      "periodStart": "2026-08-01",
+      "consumption": "6.305",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "75",
+      "periodStart": "2026-09-05",
+      "consumption": "9.828",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "76",
+      "periodStart": "2026-01-01",
+      "consumption": "9.291",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "76",
+      "periodStart": "2026-02-01",
+      "consumption": "11.036",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "76",
+      "periodStart": "2026-03-01",
+      "consumption": "9.216",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "76",
+      "periodStart": "2026-04-01",
+      "consumption": "9.500",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "76",
+      "periodStart": "2026-05-01",
+      "consumption": "8.787",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "76",
+      "periodStart": "2026-06-01",
+      "consumption": "10.628",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "76",
+      "periodStart": "2026-07-01",
+      "consumption": "11.184",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "76",
+      "periodStart": "2026-08-01",
+      "consumption": "10.380",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "76",
+      "periodStart": "2026-09-05",
+      "consumption": "10.477",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "77",
+      "periodStart": "2026-01-01",
+      "consumption": "1.464",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "77",
+      "periodStart": "2026-02-01",
+      "consumption": "0.855",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "77",
+      "periodStart": "2026-03-01",
+      "consumption": "3.821",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "77",
+      "periodStart": "2026-04-01",
+      "consumption": "2.928",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "77",
+      "periodStart": "2026-05-01",
+      "consumption": "0.007",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "77",
+      "periodStart": "2026-06-01",
+      "consumption": "1.994",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "77",
+      "periodStart": "2026-07-01",
+      "consumption": "0.125",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "77",
+      "periodStart": "2026-08-01",
+      "consumption": "0.181",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "77",
+      "periodStart": "2026-09-05",
+      "consumption": "0.017",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "78",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "78",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "78",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "78",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "78",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "78",
+      "periodStart": "2026-06-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "78",
+      "periodStart": "2026-07-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "78",
+      "periodStart": "2026-08-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "78",
+      "periodStart": "2026-09-05",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "79",
+      "periodStart": "2026-01-01",
+      "consumption": "2.338",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "79",
+      "periodStart": "2026-02-01",
+      "consumption": "2.052",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "79",
+      "periodStart": "2026-03-01",
+      "consumption": "1.789",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "79",
+      "periodStart": "2026-04-01",
+      "consumption": "5.216",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "79",
+      "periodStart": "2026-05-01",
+      "consumption": "4.557",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "79",
+      "periodStart": "2026-06-01",
+      "consumption": "1.682",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "79",
+      "periodStart": "2026-07-01",
+      "consumption": "4.801",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "79",
+      "periodStart": "2026-08-01",
+      "consumption": "0.726",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "79",
+      "periodStart": "2026-09-05",
+      "consumption": "9.671",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "80",
+      "periodStart": "2026-01-01",
+      "consumption": "13.800",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "80",
+      "periodStart": "2026-02-01",
+      "consumption": "18.729",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "80",
+      "periodStart": "2026-03-01",
+      "consumption": "19.498",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "80",
+      "periodStart": "2026-04-01",
+      "consumption": "22.332",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "80",
+      "periodStart": "2026-05-01",
+      "consumption": "21.348",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "80",
+      "periodStart": "2026-06-01",
+      "consumption": "10.224",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "80",
+      "periodStart": "2026-07-01",
+      "consumption": "15.135",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "80",
+      "periodStart": "2026-08-01",
+      "consumption": "39.967",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "80",
+      "periodStart": "2026-09-05",
+      "consumption": "19.157",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "81",
+      "periodStart": "2026-01-01",
+      "consumption": "5.783",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "81",
+      "periodStart": "2026-02-01",
+      "consumption": "9.209",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "81",
+      "periodStart": "2026-03-01",
+      "consumption": "7.016",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "81",
+      "periodStart": "2026-04-01",
+      "consumption": "7.498",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "81",
+      "periodStart": "2026-05-01",
+      "consumption": "8.760",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "81",
+      "periodStart": "2026-06-01",
+      "consumption": "5.727",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "81",
+      "periodStart": "2026-07-01",
+      "consumption": "13.409",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "81",
+      "periodStart": "2026-08-01",
+      "consumption": "7.534",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "81",
+      "periodStart": "2026-09-05",
+      "consumption": "6.220",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "82",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "82",
+      "periodStart": "2026-02-01",
+      "consumption": "0.339",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "82",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "82",
+      "periodStart": "2026-04-01",
+      "consumption": "0.038",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "82",
+      "periodStart": "2026-05-01",
+      "consumption": "0.731",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "82",
+      "periodStart": "2026-06-01",
+      "consumption": "0.453",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "82",
+      "periodStart": "2026-07-01",
+      "consumption": "0.046",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "82",
+      "periodStart": "2026-08-01",
+      "consumption": "0.580",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "82",
+      "periodStart": "2026-09-05",
+      "consumption": "0.312",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "83",
+      "periodStart": "2026-01-01",
+      "consumption": "1.484",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "83",
+      "periodStart": "2026-02-01",
+      "consumption": "1.576",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "83",
+      "periodStart": "2026-03-01",
+      "consumption": "1.821",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "83",
+      "periodStart": "2026-04-01",
+      "consumption": "2.280",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "83",
+      "periodStart": "2026-05-01",
+      "consumption": "1.965",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "83",
+      "periodStart": "2026-06-01",
+      "consumption": "2.554",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "83",
+      "periodStart": "2026-07-01",
+      "consumption": "1.928",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "83",
+      "periodStart": "2026-08-01",
+      "consumption": "1.509",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "83",
+      "periodStart": "2026-09-05",
+      "consumption": "1.548",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "84",
+      "periodStart": "2026-01-01",
+      "consumption": "6.843",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "84",
+      "periodStart": "2026-02-01",
+      "consumption": "4.399",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "84",
+      "periodStart": "2026-03-01",
+      "consumption": "3.653",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "84",
+      "periodStart": "2026-04-01",
+      "consumption": "4.519",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "84",
+      "periodStart": "2026-05-01",
+      "consumption": "4.180",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "84",
+      "periodStart": "2026-06-01",
+      "consumption": "5.900",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "84",
+      "periodStart": "2026-07-01",
+      "consumption": "5.312",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "84",
+      "periodStart": "2026-08-01",
+      "consumption": "4.199",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "84",
+      "periodStart": "2026-09-05",
+      "consumption": "4.200",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "85",
+      "periodStart": "2026-01-01",
+      "consumption": "2.797",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "85",
+      "periodStart": "2026-02-01",
+      "consumption": "6.117",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "85",
+      "periodStart": "2026-03-01",
+      "consumption": "4.902",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "85",
+      "periodStart": "2026-04-01",
+      "consumption": "6.170",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "85",
+      "periodStart": "2026-05-01",
+      "consumption": "7.462",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "85",
+      "periodStart": "2026-06-01",
+      "consumption": "7.750",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "85",
+      "periodStart": "2026-07-01",
+      "consumption": "5.569",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "85",
+      "periodStart": "2026-08-01",
+      "consumption": "4.116",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "85",
+      "periodStart": "2026-09-05",
+      "consumption": "1.158",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "86",
+      "periodStart": "2026-01-01",
+      "consumption": "5.738",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "86",
+      "periodStart": "2026-02-01",
+      "consumption": "2.343",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "86",
+      "periodStart": "2026-03-01",
+      "consumption": "2.684",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "86",
+      "periodStart": "2026-04-01",
+      "consumption": "3.181",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "86",
+      "periodStart": "2026-05-01",
+      "consumption": "4.193",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "86",
+      "periodStart": "2026-06-01",
+      "consumption": "3.463",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "86",
+      "periodStart": "2026-07-01",
+      "consumption": "3.129",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "86",
+      "periodStart": "2026-08-01",
+      "consumption": "0.069",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "86",
+      "periodStart": "2026-09-05",
+      "consumption": "2.045",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "87",
+      "periodStart": "2026-01-01",
+      "consumption": "5.337",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "87",
+      "periodStart": "2026-02-01",
+      "consumption": "7.304",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "87",
+      "periodStart": "2026-03-01",
+      "consumption": "5.205",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "87",
+      "periodStart": "2026-04-01",
+      "consumption": "6.236",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "87",
+      "periodStart": "2026-05-01",
+      "consumption": "6.004",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "87",
+      "periodStart": "2026-06-01",
+      "consumption": "7.334",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "87",
+      "periodStart": "2026-07-01",
+      "consumption": "8.329",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "87",
+      "periodStart": "2026-08-01",
+      "consumption": "7.199",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "87",
+      "periodStart": "2026-09-05",
+      "consumption": "7.547",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "88",
+      "periodStart": "2026-01-01",
+      "consumption": "12.705",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "88",
+      "periodStart": "2026-02-01",
+      "consumption": "15.650",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "88",
+      "periodStart": "2026-03-01",
+      "consumption": "12.384",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "88",
+      "periodStart": "2026-04-01",
+      "consumption": "12.282",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "88",
+      "periodStart": "2026-05-01",
+      "consumption": "12.842",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "88",
+      "periodStart": "2026-06-01",
+      "consumption": "12.708",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "88",
+      "periodStart": "2026-07-01",
+      "consumption": "11.205",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "88",
+      "periodStart": "2026-08-01",
+      "consumption": "15.282",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "88",
+      "periodStart": "2026-09-05",
+      "consumption": "10.545",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "89",
+      "periodStart": "2026-01-01",
+      "consumption": "8.883",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "89",
+      "periodStart": "2026-02-01",
+      "consumption": "8.599",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "89",
+      "periodStart": "2026-03-01",
+      "consumption": "6.705",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "89",
+      "periodStart": "2026-04-01",
+      "consumption": "7.804",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "89",
+      "periodStart": "2026-05-01",
+      "consumption": "12.476",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "89",
+      "periodStart": "2026-06-01",
+      "consumption": "11.637",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "89",
+      "periodStart": "2026-07-01",
+      "consumption": "10.106",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "89",
+      "periodStart": "2026-08-01",
+      "consumption": "8.571",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "89",
+      "periodStart": "2026-09-05",
+      "consumption": "8.353",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "90",
+      "periodStart": "2026-01-01",
+      "consumption": "2.012",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "90",
+      "periodStart": "2026-02-01",
+      "consumption": "5.189",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "90",
+      "periodStart": "2026-03-01",
+      "consumption": "4.837",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "90",
+      "periodStart": "2026-04-01",
+      "consumption": "4.466",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "90",
+      "periodStart": "2026-05-01",
+      "consumption": "4.680",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "90",
+      "periodStart": "2026-06-01",
+      "consumption": "4.046",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "90",
+      "periodStart": "2026-07-01",
+      "consumption": "5.091",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "90",
+      "periodStart": "2026-08-01",
+      "consumption": "4.358",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "90",
+      "periodStart": "2026-09-05",
+      "consumption": "3.808",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "91",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "91",
+      "periodStart": "2026-02-01",
+      "consumption": "0.264",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "91",
+      "periodStart": "2026-03-01",
+      "consumption": "0.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "91",
+      "periodStart": "2026-04-01",
+      "consumption": "0.321",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "91",
+      "periodStart": "2026-05-01",
+      "consumption": "0.243",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "91",
+      "periodStart": "2026-06-01",
+      "consumption": "0.290",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "91",
+      "periodStart": "2026-07-01",
+      "consumption": "0.763",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "91",
+      "periodStart": "2026-08-01",
+      "consumption": "0.920",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "91",
+      "periodStart": "2026-09-05",
+      "consumption": "2.462",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "92",
+      "periodStart": "2026-01-01",
+      "consumption": "22.230",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "92",
+      "periodStart": "2026-02-01",
+      "consumption": "7.433",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "92",
+      "periodStart": "2026-03-01",
+      "consumption": "5.503",
+      "validationStatus": "FLAGGED"
+    },
+    {
+      "unitId": "92",
+      "periodStart": "2026-04-01",
+      "consumption": "6.548",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "92",
+      "periodStart": "2026-05-01",
+      "consumption": "5.416",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "92",
+      "periodStart": "2026-06-01",
+      "consumption": "5.326",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "92",
+      "periodStart": "2026-07-01",
+      "consumption": "1.648",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "92",
+      "periodStart": "2026-08-01",
+      "consumption": "0.086",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "92",
+      "periodStart": "2026-09-05",
+      "consumption": "0.203",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "93",
+      "periodStart": "2026-01-01",
+      "consumption": "2.985",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "93",
+      "periodStart": "2026-02-01",
+      "consumption": "9.337",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "93",
+      "periodStart": "2026-03-01",
+      "consumption": "7.971",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "93",
+      "periodStart": "2026-04-01",
+      "consumption": "7.671",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "93",
+      "periodStart": "2026-05-01",
+      "consumption": "5.886",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "93",
+      "periodStart": "2026-06-01",
+      "consumption": "10.798",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "93",
+      "periodStart": "2026-07-01",
+      "consumption": "15.632",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "93",
+      "periodStart": "2026-08-01",
+      "consumption": "8.976",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "93",
+      "periodStart": "2026-09-05",
+      "consumption": "9.160",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "94",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "94",
+      "periodStart": "2026-02-01",
+      "consumption": "-0.001",
+      "validationStatus": "FLAGGED"
+    },
+    {
+      "unitId": "94",
+      "periodStart": "2026-03-01",
+      "consumption": "0.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "94",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "94",
+      "periodStart": "2026-05-01",
+      "consumption": "0.311",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "94",
+      "periodStart": "2026-06-01",
+      "consumption": "0.003",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "94",
+      "periodStart": "2026-07-01",
+      "consumption": "0.003",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "94",
+      "periodStart": "2026-08-01",
+      "consumption": "2.061",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "94",
+      "periodStart": "2026-09-05",
+      "consumption": "2.592",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "95",
+      "periodStart": "2026-01-01",
+      "consumption": "0.007",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "95",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "95",
+      "periodStart": "2026-03-01",
+      "consumption": "5.957",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "95",
+      "periodStart": "2026-04-01",
+      "consumption": "7.386",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "95",
+      "periodStart": "2026-05-01",
+      "consumption": "6.931",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "95",
+      "periodStart": "2026-06-01",
+      "consumption": "7.667",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "95",
+      "periodStart": "2026-07-01",
+      "consumption": "5.329",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "95",
+      "periodStart": "2026-08-01",
+      "consumption": "4.088",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "95",
+      "periodStart": "2026-09-05",
+      "consumption": "3.064",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "96",
+      "periodStart": "2026-01-01",
+      "consumption": "2.339",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "96",
+      "periodStart": "2026-02-01",
+      "consumption": "1.960",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "96",
+      "periodStart": "2026-03-01",
+      "consumption": "1.607",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "96",
+      "periodStart": "2026-04-01",
+      "consumption": "1.999",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "96",
+      "periodStart": "2026-05-01",
+      "consumption": "2.176",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "96",
+      "periodStart": "2026-06-01",
+      "consumption": "1.960",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "96",
+      "periodStart": "2026-07-01",
+      "consumption": "2.032",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "96",
+      "periodStart": "2026-08-01",
+      "consumption": "1.967",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "96",
+      "periodStart": "2026-09-05",
+      "consumption": "1.924",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "97",
+      "periodStart": "2026-01-01",
+      "consumption": "1.448",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "97",
+      "periodStart": "2026-02-01",
+      "consumption": "2.554",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "97",
+      "periodStart": "2026-03-01",
+      "consumption": "1.934",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "97",
+      "periodStart": "2026-04-01",
+      "consumption": "2.067",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "97",
+      "periodStart": "2026-05-01",
+      "consumption": "2.289",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "97",
+      "periodStart": "2026-06-01",
+      "consumption": "2.459",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "97",
+      "periodStart": "2026-07-01",
+      "consumption": "2.121",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "97",
+      "periodStart": "2026-08-01",
+      "consumption": "1.694",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "97",
+      "periodStart": "2026-09-05",
+      "consumption": "1.863",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "98",
+      "periodStart": "2026-01-01",
+      "consumption": "6.331",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "98",
+      "periodStart": "2026-02-01",
+      "consumption": "5.659",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "98",
+      "periodStart": "2026-03-01",
+      "consumption": "6.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "98",
+      "periodStart": "2026-04-01",
+      "consumption": "5.804",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "98",
+      "periodStart": "2026-05-01",
+      "consumption": "4.990",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "98",
+      "periodStart": "2026-06-01",
+      "consumption": "6.263",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "98",
+      "periodStart": "2026-07-01",
+      "consumption": "8.336",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "98",
+      "periodStart": "2026-08-01",
+      "consumption": "4.773",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "98",
+      "periodStart": "2026-09-05",
+      "consumption": "2.541",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "99",
+      "periodStart": "2026-01-01",
+      "consumption": "0.025",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "99",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "99",
+      "periodStart": "2026-03-01",
+      "consumption": "0.009",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "99",
+      "periodStart": "2026-04-01",
+      "consumption": "0.108",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "99",
+      "periodStart": "2026-05-01",
+      "consumption": "2.645",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "99",
+      "periodStart": "2026-06-01",
+      "consumption": "8.779",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "99",
+      "periodStart": "2026-07-01",
+      "consumption": "6.392",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "99",
+      "periodStart": "2026-08-01",
+      "consumption": "6.182",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "99",
+      "periodStart": "2026-09-05",
+      "consumption": "5.850",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "100",
+      "periodStart": "2026-01-01",
+      "consumption": "21.973",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "100",
+      "periodStart": "2026-02-01",
+      "consumption": "16.326",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "100",
+      "periodStart": "2026-03-01",
+      "consumption": "20.897",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "100",
+      "periodStart": "2026-04-01",
+      "consumption": "29.389",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "100",
+      "periodStart": "2026-05-01",
+      "consumption": "15.608",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "100",
+      "periodStart": "2026-06-01",
+      "consumption": "6.506",
+      "validationStatus": "FLAGGED"
+    },
+    {
+      "unitId": "100",
+      "periodStart": "2026-07-01",
+      "consumption": "52.565",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "100",
+      "periodStart": "2026-08-01",
+      "consumption": "32.100",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "100",
+      "periodStart": "2026-09-05",
+      "consumption": "37.325",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "101",
+      "periodStart": "2026-01-01",
+      "consumption": "0.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "101",
+      "periodStart": "2026-02-01",
+      "consumption": "-0.001",
+      "validationStatus": "FLAGGED"
+    },
+    {
+      "unitId": "101",
+      "periodStart": "2026-03-01",
+      "consumption": "0.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "101",
+      "periodStart": "2026-04-01",
+      "consumption": "0.293",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "101",
+      "periodStart": "2026-05-01",
+      "consumption": "1.811",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "101",
+      "periodStart": "2026-06-01",
+      "consumption": "20.715",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "101",
+      "periodStart": "2026-07-01",
+      "consumption": "17.591",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "101",
+      "periodStart": "2026-08-01",
+      "consumption": "11.867",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "101",
+      "periodStart": "2026-09-05",
+      "consumption": "13.548",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "102",
+      "periodStart": "2026-01-01",
+      "consumption": "5.397",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "102",
+      "periodStart": "2026-02-01",
+      "consumption": "13.045",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "102",
+      "periodStart": "2026-03-01",
+      "consumption": "9.763",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "102",
+      "periodStart": "2026-04-01",
+      "consumption": "11.554",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "102",
+      "periodStart": "2026-05-01",
+      "consumption": "9.895",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "102",
+      "periodStart": "2026-06-01",
+      "consumption": "10.934",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "102",
+      "periodStart": "2026-07-01",
+      "consumption": "7.526",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "102",
+      "periodStart": "2026-08-01",
+      "consumption": "10.407",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "102",
+      "periodStart": "2026-09-05",
+      "consumption": "9.986",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "103",
+      "periodStart": "2026-01-01",
+      "consumption": "0.220",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "103",
+      "periodStart": "2026-02-01",
+      "consumption": "0.714",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "103",
+      "periodStart": "2026-03-01",
+      "consumption": "0.225",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "103",
+      "periodStart": "2026-04-01",
+      "consumption": "0.374",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "103",
+      "periodStart": "2026-05-01",
+      "consumption": "0.909",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "103",
+      "periodStart": "2026-06-01",
+      "consumption": "0.929",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "103",
+      "periodStart": "2026-07-01",
+      "consumption": "0.621",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "103",
+      "periodStart": "2026-08-01",
+      "consumption": "0.902",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "103",
+      "periodStart": "2026-09-05",
+      "consumption": "0.054",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "104",
+      "periodStart": "2026-01-01",
+      "consumption": "11.577",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "104",
+      "periodStart": "2026-02-01",
+      "consumption": "16.247",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "104",
+      "periodStart": "2026-03-01",
+      "consumption": "12.890",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "104",
+      "periodStart": "2026-04-01",
+      "consumption": "13.028",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "104",
+      "periodStart": "2026-05-01",
+      "consumption": "11.144",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "104",
+      "periodStart": "2026-06-01",
+      "consumption": "14.268",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "104",
+      "periodStart": "2026-07-01",
+      "consumption": "12.690",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "104",
+      "periodStart": "2026-08-01",
+      "consumption": "0.678",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "104",
+      "periodStart": "2026-09-05",
+      "consumption": "5.812",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "105",
+      "periodStart": "2026-01-01",
+      "consumption": "5.489",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "105",
+      "periodStart": "2026-02-01",
+      "consumption": "13.738",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "105",
+      "periodStart": "2026-03-01",
+      "consumption": "9.149",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "105",
+      "periodStart": "2026-04-01",
+      "consumption": "8.618",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "105",
+      "periodStart": "2026-05-01",
+      "consumption": "1.935",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "105",
+      "periodStart": "2026-06-01",
+      "consumption": "1.085",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "105",
+      "periodStart": "2026-07-01",
+      "consumption": "5.281",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "105",
+      "periodStart": "2026-08-01",
+      "consumption": "3.555",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "105",
+      "periodStart": "2026-09-05",
+      "consumption": "6.343",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "106",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "106",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "106",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "106",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "106",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "106",
+      "periodStart": "2026-06-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "106",
+      "periodStart": "2026-07-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "106",
+      "periodStart": "2026-08-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "106",
+      "periodStart": "2026-09-05",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "107",
+      "periodStart": "2026-01-01",
+      "consumption": "0.007",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "107",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "107",
+      "periodStart": "2026-03-01",
+      "consumption": "0.330",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "107",
+      "periodStart": "2026-04-01",
+      "consumption": "0.016",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "107",
+      "periodStart": "2026-05-01",
+      "consumption": "0.707",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "107",
+      "periodStart": "2026-06-01",
+      "consumption": "10.595",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "107",
+      "periodStart": "2026-07-01",
+      "consumption": "6.607",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "107",
+      "periodStart": "2026-08-01",
+      "consumption": "5.915",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "107",
+      "periodStart": "2026-09-05",
+      "consumption": "3.900",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "108",
+      "periodStart": "2026-01-01",
+      "consumption": "5.696",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "108",
+      "periodStart": "2026-02-01",
+      "consumption": "6.144",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "108",
+      "periodStart": "2026-03-01",
+      "consumption": "5.856",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "108",
+      "periodStart": "2026-04-01",
+      "consumption": "6.543",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "108",
+      "periodStart": "2026-05-01",
+      "consumption": "5.745",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "108",
+      "periodStart": "2026-06-01",
+      "consumption": "5.874",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "108",
+      "periodStart": "2026-07-01",
+      "consumption": "6.531",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "108",
+      "periodStart": "2026-08-01",
+      "consumption": "5.243",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "108",
+      "periodStart": "2026-09-05",
+      "consumption": "5.844",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "109",
+      "periodStart": "2026-01-01",
+      "consumption": "0.111",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "109",
+      "periodStart": "2026-02-01",
+      "consumption": "0.103",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "109",
+      "periodStart": "2026-03-01",
+      "consumption": "0.367",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "109",
+      "periodStart": "2026-04-01",
+      "consumption": "0.391",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "109",
+      "periodStart": "2026-05-01",
+      "consumption": "0.323",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "109",
+      "periodStart": "2026-06-01",
+      "consumption": "0.252",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "109",
+      "periodStart": "2026-07-01",
+      "consumption": "0.086",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "109",
+      "periodStart": "2026-08-01",
+      "consumption": "0.257",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "109",
+      "periodStart": "2026-09-05",
+      "consumption": "9.228",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "110",
+      "periodStart": "2026-01-01",
+      "consumption": "6.178",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "110",
+      "periodStart": "2026-02-01",
+      "consumption": "6.516",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "110",
+      "periodStart": "2026-03-01",
+      "consumption": "5.665",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "110",
+      "periodStart": "2026-04-01",
+      "consumption": "6.618",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "110",
+      "periodStart": "2026-05-01",
+      "consumption": "7.916",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "110",
+      "periodStart": "2026-06-01",
+      "consumption": "6.507",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "110",
+      "periodStart": "2026-07-01",
+      "consumption": "6.949",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "110",
+      "periodStart": "2026-08-01",
+      "consumption": "6.954",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "110",
+      "periodStart": "2026-09-05",
+      "consumption": "6.733",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "111",
+      "periodStart": "2026-01-01",
+      "consumption": "2.961",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "111",
+      "periodStart": "2026-02-01",
+      "consumption": "2.801",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "111",
+      "periodStart": "2026-03-01",
+      "consumption": "5.881",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "111",
+      "periodStart": "2026-04-01",
+      "consumption": "4.561",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "111",
+      "periodStart": "2026-05-01",
+      "consumption": "3.428",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "111",
+      "periodStart": "2026-06-01",
+      "consumption": "7.834",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "111",
+      "periodStart": "2026-07-01",
+      "consumption": "4.861",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "111",
+      "periodStart": "2026-08-01",
+      "consumption": "8.539",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "111",
+      "periodStart": "2026-09-05",
+      "consumption": "9.344",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "112",
+      "periodStart": "2026-01-01",
+      "consumption": "12.026",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "112",
+      "periodStart": "2026-02-01",
+      "consumption": "14.591",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "112",
+      "periodStart": "2026-03-01",
+      "consumption": "13.035",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "112",
+      "periodStart": "2026-04-01",
+      "consumption": "12.699",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "112",
+      "periodStart": "2026-05-01",
+      "consumption": "14.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "112",
+      "periodStart": "2026-06-01",
+      "consumption": "16.577",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "112",
+      "periodStart": "2026-07-01",
+      "consumption": "13.382",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "112",
+      "periodStart": "2026-08-01",
+      "consumption": "10.371",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "112",
+      "periodStart": "2026-09-05",
+      "consumption": "10.702",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "113",
+      "periodStart": "2026-01-01",
+      "consumption": "6.505",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "113",
+      "periodStart": "2026-02-01",
+      "consumption": "10.226",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "113",
+      "periodStart": "2026-03-01",
+      "consumption": "10.901",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "113",
+      "periodStart": "2026-04-01",
+      "consumption": "25.787",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "113",
+      "periodStart": "2026-05-01",
+      "consumption": "18.242",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "113",
+      "periodStart": "2026-06-01",
+      "consumption": "14.019",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "113",
+      "periodStart": "2026-07-01",
+      "consumption": "12.350",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "113",
+      "periodStart": "2026-08-01",
+      "consumption": "11.883",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "113",
+      "periodStart": "2026-09-05",
+      "consumption": "13.743",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "114",
+      "periodStart": "2026-01-01",
+      "consumption": "7.170",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "114",
+      "periodStart": "2026-02-01",
+      "consumption": "28.820",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "114",
+      "periodStart": "2026-03-01",
+      "consumption": "6.185",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "114",
+      "periodStart": "2026-04-01",
+      "consumption": "7.166",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "114",
+      "periodStart": "2026-05-01",
+      "consumption": "5.249",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "114",
+      "periodStart": "2026-06-01",
+      "consumption": "5.444",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "114",
+      "periodStart": "2026-07-01",
+      "consumption": "6.962",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "114",
+      "periodStart": "2026-08-01",
+      "consumption": "5.860",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "114",
+      "periodStart": "2026-09-05",
+      "consumption": "5.899",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "115",
+      "periodStart": "2026-01-01",
+      "consumption": "0.028",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "115",
+      "periodStart": "2026-02-01",
+      "consumption": "0.090",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "115",
+      "periodStart": "2026-03-01",
+      "consumption": "1.627",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "115",
+      "periodStart": "2026-04-01",
+      "consumption": "0.174",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "115",
+      "periodStart": "2026-05-01",
+      "consumption": "0.018",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "115",
+      "periodStart": "2026-06-01",
+      "consumption": "0.034",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "115",
+      "periodStart": "2026-07-01",
+      "consumption": "0.048",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "115",
+      "periodStart": "2026-08-01",
+      "consumption": "0.002",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "115",
+      "periodStart": "2026-09-05",
+      "consumption": "0.153",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "116",
+      "periodStart": "2026-01-01",
+      "consumption": "2.440",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "116",
+      "periodStart": "2026-02-01",
+      "consumption": "9.740",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "116",
+      "periodStart": "2026-03-01",
+      "consumption": "7.678",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "116",
+      "periodStart": "2026-04-01",
+      "consumption": "5.277",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "116",
+      "periodStart": "2026-05-01",
+      "consumption": "5.319",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "116",
+      "periodStart": "2026-06-01",
+      "consumption": "1.834",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "116",
+      "periodStart": "2026-07-01",
+      "consumption": "0.071",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "116",
+      "periodStart": "2026-08-01",
+      "consumption": "0.994",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "116",
+      "periodStart": "2026-09-05",
+      "consumption": "6.212",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "117",
+      "periodStart": "2026-01-01",
+      "consumption": "7.253",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "117",
+      "periodStart": "2026-02-01",
+      "consumption": "10.561",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "117",
+      "periodStart": "2026-03-01",
+      "consumption": "9.793",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "117",
+      "periodStart": "2026-04-01",
+      "consumption": "9.691",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "117",
+      "periodStart": "2026-05-01",
+      "consumption": "9.984",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "117",
+      "periodStart": "2026-06-01",
+      "consumption": "4.027",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "117",
+      "periodStart": "2026-07-01",
+      "consumption": "3.535",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "117",
+      "periodStart": "2026-08-01",
+      "consumption": "9.594",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "117",
+      "periodStart": "2026-09-05",
+      "consumption": "8.862",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "118",
+      "periodStart": "2026-01-01",
+      "consumption": "1.779",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "118",
+      "periodStart": "2026-02-01",
+      "consumption": "3.448",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "118",
+      "periodStart": "2026-03-01",
+      "consumption": "2.958",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "118",
+      "periodStart": "2026-04-01",
+      "consumption": "1.791",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "118",
+      "periodStart": "2026-05-01",
+      "consumption": "1.628",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "118",
+      "periodStart": "2026-06-01",
+      "consumption": "1.580",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "118",
+      "periodStart": "2026-07-01",
+      "consumption": "4.198",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "118",
+      "periodStart": "2026-08-01",
+      "consumption": "4.843",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "118",
+      "periodStart": "2026-09-05",
+      "consumption": "5.486",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "119",
+      "periodStart": "2026-01-01",
+      "consumption": "5.415",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "119",
+      "periodStart": "2026-02-01",
+      "consumption": "5.583",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "119",
+      "periodStart": "2026-03-01",
+      "consumption": "3.298",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "119",
+      "periodStart": "2026-04-01",
+      "consumption": "7.322",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "119",
+      "periodStart": "2026-05-01",
+      "consumption": "8.393",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "119",
+      "periodStart": "2026-06-01",
+      "consumption": "18.323",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "119",
+      "periodStart": "2026-07-01",
+      "consumption": "16.618",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "119",
+      "periodStart": "2026-08-01",
+      "consumption": "15.184",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "119",
+      "periodStart": "2026-09-05",
+      "consumption": "16.352",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "120",
+      "periodStart": "2026-01-01",
+      "consumption": "3.126",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "120",
+      "periodStart": "2026-02-01",
+      "consumption": "1.537",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "120",
+      "periodStart": "2026-03-01",
+      "consumption": "2.879",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "120",
+      "periodStart": "2026-04-01",
+      "consumption": "2.260",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "120",
+      "periodStart": "2026-05-01",
+      "consumption": "5.997",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "120",
+      "periodStart": "2026-06-01",
+      "consumption": "9.869",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "120",
+      "periodStart": "2026-07-01",
+      "consumption": "0.466",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "120",
+      "periodStart": "2026-08-01",
+      "consumption": "1.407",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "120",
+      "periodStart": "2026-09-05",
+      "consumption": "3.029",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "121",
+      "periodStart": "2026-01-01",
+      "consumption": "5.259",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "121",
+      "periodStart": "2026-02-01",
+      "consumption": "8.654",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "121",
+      "periodStart": "2026-03-01",
+      "consumption": "8.253",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "121",
+      "periodStart": "2026-04-01",
+      "consumption": "8.574",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "121",
+      "periodStart": "2026-05-01",
+      "consumption": "9.021",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "121",
+      "periodStart": "2026-06-01",
+      "consumption": "8.489",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "121",
+      "periodStart": "2026-07-01",
+      "consumption": "7.618",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "121",
+      "periodStart": "2026-08-01",
+      "consumption": "8.487",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "121",
+      "periodStart": "2026-09-05",
+      "consumption": "7.302",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "122",
+      "periodStart": "2026-01-01",
+      "consumption": "4.816",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "122",
+      "periodStart": "2026-02-01",
+      "consumption": "5.807",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "122",
+      "periodStart": "2026-03-01",
+      "consumption": "4.416",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "122",
+      "periodStart": "2026-04-01",
+      "consumption": "3.956",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "122",
+      "periodStart": "2026-05-01",
+      "consumption": "4.933",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "122",
+      "periodStart": "2026-06-01",
+      "consumption": "4.148",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "122",
+      "periodStart": "2026-07-01",
+      "consumption": "3.432",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "122",
+      "periodStart": "2026-08-01",
+      "consumption": "3.687",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "122",
+      "periodStart": "2026-09-05",
+      "consumption": "4.700",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "123",
+      "periodStart": "2026-01-01",
+      "consumption": "5.434",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "123",
+      "periodStart": "2026-02-01",
+      "consumption": "13.280",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "123",
+      "periodStart": "2026-03-01",
+      "consumption": "8.470",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "123",
+      "periodStart": "2026-04-01",
+      "consumption": "5.374",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "123",
+      "periodStart": "2026-05-01",
+      "consumption": "4.724",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "123",
+      "periodStart": "2026-06-01",
+      "consumption": "5.814",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "123",
+      "periodStart": "2026-07-01",
+      "consumption": "5.054",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "123",
+      "periodStart": "2026-08-01",
+      "consumption": "4.652",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "123",
+      "periodStart": "2026-09-05",
+      "consumption": "5.335",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "124",
+      "periodStart": "2026-01-01",
+      "consumption": "11.244",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "124",
+      "periodStart": "2026-02-01",
+      "consumption": "13.446",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "124",
+      "periodStart": "2026-03-01",
+      "consumption": "7.260",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "124",
+      "periodStart": "2026-04-01",
+      "consumption": "5.190",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "124",
+      "periodStart": "2026-05-01",
+      "consumption": "6.839",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "124",
+      "periodStart": "2026-06-01",
+      "consumption": "2.105",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "124",
+      "periodStart": "2026-07-01",
+      "consumption": "6.750",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "124",
+      "periodStart": "2026-08-01",
+      "consumption": "8.609",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "124",
+      "periodStart": "2026-09-05",
+      "consumption": "27.214",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "125",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "125",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "125",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "125",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "125",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "125",
+      "periodStart": "2026-06-01",
+      "consumption": "15.652",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "125",
+      "periodStart": "2026-07-01",
+      "consumption": "1.103",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "125",
+      "periodStart": "2026-08-01",
+      "consumption": "1.095",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "125",
+      "periodStart": "2026-09-05",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "126",
+      "periodStart": "2026-01-01",
+      "consumption": "5.164",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "126",
+      "periodStart": "2026-02-01",
+      "consumption": "17.862",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "126",
+      "periodStart": "2026-03-01",
+      "consumption": "6.413",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "126",
+      "periodStart": "2026-04-01",
+      "consumption": "5.552",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "126",
+      "periodStart": "2026-05-01",
+      "consumption": "6.289",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "126",
+      "periodStart": "2026-06-01",
+      "consumption": "11.556",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "126",
+      "periodStart": "2026-07-01",
+      "consumption": "5.613",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "126",
+      "periodStart": "2026-08-01",
+      "consumption": "11.122",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "126",
+      "periodStart": "2026-09-05",
+      "consumption": "9.167",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "127",
+      "periodStart": "2026-01-01",
+      "consumption": "2.805",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "127",
+      "periodStart": "2026-02-01",
+      "consumption": "3.538",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "127",
+      "periodStart": "2026-03-01",
+      "consumption": "3.830",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "127",
+      "periodStart": "2026-04-01",
+      "consumption": "3.190",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "127",
+      "periodStart": "2026-05-01",
+      "consumption": "6.636",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "127",
+      "periodStart": "2026-06-01",
+      "consumption": "4.161",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "127",
+      "periodStart": "2026-07-01",
+      "consumption": "1.862",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "127",
+      "periodStart": "2026-08-01",
+      "consumption": "8.773",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "127",
+      "periodStart": "2026-09-05",
+      "consumption": "41.681",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "128",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "128",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "128",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "128",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "128",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "128",
+      "periodStart": "2026-06-01",
+      "consumption": "0.187",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "128",
+      "periodStart": "2026-07-01",
+      "consumption": "0.268",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "128",
+      "periodStart": "2026-08-01",
+      "consumption": "1.253",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "128",
+      "periodStart": "2026-09-05",
+      "consumption": "2.602",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "129",
+      "periodStart": "2026-01-01",
+      "consumption": "9.103",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "129",
+      "periodStart": "2026-02-01",
+      "consumption": "15.695",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "129",
+      "periodStart": "2026-03-01",
+      "consumption": "10.791",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "129",
+      "periodStart": "2026-04-01",
+      "consumption": "10.951",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "129",
+      "periodStart": "2026-05-01",
+      "consumption": "8.686",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "129",
+      "periodStart": "2026-06-01",
+      "consumption": "4.994",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "129",
+      "periodStart": "2026-07-01",
+      "consumption": "9.288",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "129",
+      "periodStart": "2026-08-01",
+      "consumption": "9.085",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "129",
+      "periodStart": "2026-09-05",
+      "consumption": "7.977",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "130",
+      "periodStart": "2026-01-01",
+      "consumption": "1.371",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "130",
+      "periodStart": "2026-02-01",
+      "consumption": "3.100",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "130",
+      "periodStart": "2026-03-01",
+      "consumption": "3.849",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "130",
+      "periodStart": "2026-04-01",
+      "consumption": "2.852",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "130",
+      "periodStart": "2026-05-01",
+      "consumption": "3.168",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "130",
+      "periodStart": "2026-06-01",
+      "consumption": "3.300",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "130",
+      "periodStart": "2026-07-01",
+      "consumption": "2.079",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "130",
+      "periodStart": "2026-08-01",
+      "consumption": "1.688",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "130",
+      "periodStart": "2026-09-05",
+      "consumption": "1.632",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "131",
+      "periodStart": "2026-01-01",
+      "consumption": "3.579",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "131",
+      "periodStart": "2026-02-01",
+      "consumption": "6.805",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "131",
+      "periodStart": "2026-03-01",
+      "consumption": "5.907",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "131",
+      "periodStart": "2026-04-01",
+      "consumption": "5.576",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "131",
+      "periodStart": "2026-05-01",
+      "consumption": "6.049",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "131",
+      "periodStart": "2026-06-01",
+      "consumption": "2.612",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "131",
+      "periodStart": "2026-07-01",
+      "consumption": "1.386",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "131",
+      "periodStart": "2026-08-01",
+      "consumption": "1.615",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "131",
+      "periodStart": "2026-09-05",
+      "consumption": "1.275",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "132",
+      "periodStart": "2026-01-01",
+      "consumption": "7.461",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "132",
+      "periodStart": "2026-02-01",
+      "consumption": "6.921",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "132",
+      "periodStart": "2026-03-01",
+      "consumption": "6.136",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "132",
+      "periodStart": "2026-04-01",
+      "consumption": "8.619",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "132",
+      "periodStart": "2026-05-01",
+      "consumption": "6.918",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "132",
+      "periodStart": "2026-06-01",
+      "consumption": "10.949",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "132",
+      "periodStart": "2026-07-01",
+      "consumption": "12.405",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "132",
+      "periodStart": "2026-08-01",
+      "consumption": "5.300",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "132",
+      "periodStart": "2026-09-05",
+      "consumption": "5.149",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "133",
+      "periodStart": "2026-01-01",
+      "consumption": "1.100",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "133",
+      "periodStart": "2026-02-01",
+      "consumption": "0.647",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "133",
+      "periodStart": "2026-03-01",
+      "consumption": "1.345",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "133",
+      "periodStart": "2026-04-01",
+      "consumption": "0.301",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "133",
+      "periodStart": "2026-05-01",
+      "consumption": "0.742",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "133",
+      "periodStart": "2026-06-01",
+      "consumption": "0.629",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "133",
+      "periodStart": "2026-07-01",
+      "consumption": "0.008",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "133",
+      "periodStart": "2026-08-01",
+      "consumption": "0.013",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "133",
+      "periodStart": "2026-09-05",
+      "consumption": "40.052",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "134",
+      "periodStart": "2026-01-01",
+      "consumption": "0.020",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "134",
+      "periodStart": "2026-02-01",
+      "consumption": "0.826",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "134",
+      "periodStart": "2026-03-01",
+      "consumption": "1.435",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "134",
+      "periodStart": "2026-04-01",
+      "consumption": "3.626",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "134",
+      "periodStart": "2026-05-01",
+      "consumption": "1.940",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "134",
+      "periodStart": "2026-06-01",
+      "consumption": "2.578",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "134",
+      "periodStart": "2026-07-01",
+      "consumption": "1.907",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "134",
+      "periodStart": "2026-08-01",
+      "consumption": "2.268",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "134",
+      "periodStart": "2026-09-05",
+      "consumption": "2.202",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "135",
+      "periodStart": "2026-01-01",
+      "consumption": "0.289",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "135",
+      "periodStart": "2026-02-01",
+      "consumption": "0.009",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "135",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "135",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "135",
+      "periodStart": "2026-05-01",
+      "consumption": "0.556",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "135",
+      "periodStart": "2026-06-01",
+      "consumption": "0.240",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "135",
+      "periodStart": "2026-07-01",
+      "consumption": "0.315",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "135",
+      "periodStart": "2026-08-01",
+      "consumption": "0.096",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "135",
+      "periodStart": "2026-09-05",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "136",
+      "periodStart": "2026-01-01",
+      "consumption": "0.191",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "136",
+      "periodStart": "2026-02-01",
+      "consumption": "0.181",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "136",
+      "periodStart": "2026-03-01",
+      "consumption": "1.382",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "136",
+      "periodStart": "2026-04-01",
+      "consumption": "1.460",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "136",
+      "periodStart": "2026-05-01",
+      "consumption": "1.975",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "136",
+      "periodStart": "2026-06-01",
+      "consumption": "1.290",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "136",
+      "periodStart": "2026-07-01",
+      "consumption": "0.115",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "136",
+      "periodStart": "2026-08-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "136",
+      "periodStart": "2026-09-05",
+      "consumption": "0.008",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "137",
+      "periodStart": "2026-01-01",
+      "consumption": "3.889",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "137",
+      "periodStart": "2026-02-01",
+      "consumption": "2.541",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "137",
+      "periodStart": "2026-03-01",
+      "consumption": "5.346",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "137",
+      "periodStart": "2026-04-01",
+      "consumption": "4.433",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "137",
+      "periodStart": "2026-05-01",
+      "consumption": "4.027",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "137",
+      "periodStart": "2026-06-01",
+      "consumption": "9.235",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "137",
+      "periodStart": "2026-07-01",
+      "consumption": "1.166",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "137",
+      "periodStart": "2026-08-01",
+      "consumption": "7.304",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "137",
+      "periodStart": "2026-09-05",
+      "consumption": "8.632",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "138",
+      "periodStart": "2026-01-01",
+      "consumption": "3.882",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "138",
+      "periodStart": "2026-02-01",
+      "consumption": "6.264",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "138",
+      "periodStart": "2026-03-01",
+      "consumption": "5.534",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "138",
+      "periodStart": "2026-04-01",
+      "consumption": "10.143",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "138",
+      "periodStart": "2026-05-01",
+      "consumption": "5.466",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "138",
+      "periodStart": "2026-06-01",
+      "consumption": "7.134",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "138",
+      "periodStart": "2026-07-01",
+      "consumption": "12.081",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "138",
+      "periodStart": "2026-08-01",
+      "consumption": "13.466",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "138",
+      "periodStart": "2026-09-05",
+      "consumption": "10.769",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "139",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "139",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "139",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "139",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "139",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "139",
+      "periodStart": "2026-06-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "139",
+      "periodStart": "2026-07-01",
+      "consumption": "0.436",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "139",
+      "periodStart": "2026-08-01",
+      "consumption": "6.305",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "139",
+      "periodStart": "2026-09-05",
+      "consumption": "6.887",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "140",
+      "periodStart": "2026-01-01",
+      "consumption": "32.800",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "140",
+      "periodStart": "2026-02-01",
+      "consumption": "15.800",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "140",
+      "periodStart": "2026-03-01",
+      "consumption": "14.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "140",
+      "periodStart": "2026-04-01",
+      "consumption": "13.400",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "140",
+      "periodStart": "2026-05-01",
+      "consumption": "9.900",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "140",
+      "periodStart": "2026-06-01",
+      "consumption": "11.300",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "140",
+      "periodStart": "2026-07-01",
+      "consumption": "13.900",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "140",
+      "periodStart": "2026-08-01",
+      "consumption": "15.100",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "140",
+      "periodStart": "2026-09-05",
+      "consumption": "13.200",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "141",
+      "periodStart": "2026-01-01",
+      "consumption": "2.132",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "141",
+      "periodStart": "2026-02-01",
+      "consumption": "2.308",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "141",
+      "periodStart": "2026-03-01",
+      "consumption": "2.042",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "141",
+      "periodStart": "2026-04-01",
+      "consumption": "2.146",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "141",
+      "periodStart": "2026-05-01",
+      "consumption": "1.502",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "141",
+      "periodStart": "2026-06-01",
+      "consumption": "0.685",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "141",
+      "periodStart": "2026-07-01",
+      "consumption": "1.870",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "141",
+      "periodStart": "2026-08-01",
+      "consumption": "1.460",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "141",
+      "periodStart": "2026-09-05",
+      "consumption": "1.352",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "142",
+      "periodStart": "2026-01-01",
+      "consumption": "9.609",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "142",
+      "periodStart": "2026-02-01",
+      "consumption": "7.576",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "142",
+      "periodStart": "2026-03-01",
+      "consumption": "6.325",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "142",
+      "periodStart": "2026-04-01",
+      "consumption": "5.756",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "142",
+      "periodStart": "2026-05-01",
+      "consumption": "7.971",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "142",
+      "periodStart": "2026-06-01",
+      "consumption": "7.260",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "142",
+      "periodStart": "2026-07-01",
+      "consumption": "6.906",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "142",
+      "periodStart": "2026-08-01",
+      "consumption": "5.834",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "142",
+      "periodStart": "2026-09-05",
+      "consumption": "7.120",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "143",
+      "periodStart": "2026-01-01",
+      "consumption": "1.862",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "143",
+      "periodStart": "2026-02-01",
+      "consumption": "8.166",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "143",
+      "periodStart": "2026-03-01",
+      "consumption": "7.073",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "143",
+      "periodStart": "2026-04-01",
+      "consumption": "9.629",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "143",
+      "periodStart": "2026-05-01",
+      "consumption": "7.965",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "143",
+      "periodStart": "2026-06-01",
+      "consumption": "7.812",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "143",
+      "periodStart": "2026-07-01",
+      "consumption": "10.482",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "143",
+      "periodStart": "2026-08-01",
+      "consumption": "10.026",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "143",
+      "periodStart": "2026-09-05",
+      "consumption": "9.374",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "144",
+      "periodStart": "2026-01-01",
+      "consumption": "13.427",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "144",
+      "periodStart": "2026-02-01",
+      "consumption": "12.892",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "144",
+      "periodStart": "2026-03-01",
+      "consumption": "11.365",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "144",
+      "periodStart": "2026-04-01",
+      "consumption": "13.799",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "144",
+      "periodStart": "2026-05-01",
+      "consumption": "12.954",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "144",
+      "periodStart": "2026-06-01",
+      "consumption": "20.108",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "144",
+      "periodStart": "2026-07-01",
+      "consumption": "17.610",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "144",
+      "periodStart": "2026-08-01",
+      "consumption": "13.355",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "144",
+      "periodStart": "2026-09-05",
+      "consumption": "13.320",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "145",
+      "periodStart": "2026-01-01",
+      "consumption": "0.026",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "145",
+      "periodStart": "2026-02-01",
+      "consumption": "0.308",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "145",
+      "periodStart": "2026-03-01",
+      "consumption": "0.048",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "145",
+      "periodStart": "2026-04-01",
+      "consumption": "0.005",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "145",
+      "periodStart": "2026-05-01",
+      "consumption": "0.048",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "145",
+      "periodStart": "2026-06-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "145",
+      "periodStart": "2026-07-01",
+      "consumption": "0.225",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "145",
+      "periodStart": "2026-08-01",
+      "consumption": "5.412",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "145",
+      "periodStart": "2026-09-05",
+      "consumption": "4.619",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "146",
+      "periodStart": "2026-01-01",
+      "consumption": "1.862",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "146",
+      "periodStart": "2026-02-01",
+      "consumption": "3.831",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "146",
+      "periodStart": "2026-03-01",
+      "consumption": "5.102",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "146",
+      "periodStart": "2026-04-01",
+      "consumption": "2.269",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "146",
+      "periodStart": "2026-05-01",
+      "consumption": "1.567",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "146",
+      "periodStart": "2026-06-01",
+      "consumption": "1.325",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "146",
+      "periodStart": "2026-07-01",
+      "consumption": "4.231",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "146",
+      "periodStart": "2026-08-01",
+      "consumption": "5.432",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "146",
+      "periodStart": "2026-09-05",
+      "consumption": "2.194",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "147",
+      "periodStart": "2026-01-01",
+      "consumption": "9.255",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "147",
+      "periodStart": "2026-02-01",
+      "consumption": "21.057",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "147",
+      "periodStart": "2026-03-01",
+      "consumption": "14.127",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "147",
+      "periodStart": "2026-04-01",
+      "consumption": "14.542",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "147",
+      "periodStart": "2026-05-01",
+      "consumption": "8.183",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "147",
+      "periodStart": "2026-06-01",
+      "consumption": "10.125",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "147",
+      "periodStart": "2026-07-01",
+      "consumption": "4.071",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "147",
+      "periodStart": "2026-08-01",
+      "consumption": "0.473",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "147",
+      "periodStart": "2026-09-05",
+      "consumption": "7.944",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "148",
+      "periodStart": "2026-01-01",
+      "consumption": "2.098",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "148",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "148",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "148",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "148",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "148",
+      "periodStart": "2026-06-01",
+      "consumption": "3.010",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "148",
+      "periodStart": "2026-07-01",
+      "consumption": "3.725",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "148",
+      "periodStart": "2026-08-01",
+      "consumption": "4.893",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "148",
+      "periodStart": "2026-09-05",
+      "consumption": "8.044",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "149",
+      "periodStart": "2026-01-01",
+      "consumption": "3.022",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "149",
+      "periodStart": "2026-02-01",
+      "consumption": "6.427",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "149",
+      "periodStart": "2026-03-01",
+      "consumption": "7.342",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "149",
+      "periodStart": "2026-04-01",
+      "consumption": "9.711",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "149",
+      "periodStart": "2026-05-01",
+      "consumption": "6.868",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "149",
+      "periodStart": "2026-06-01",
+      "consumption": "3.693",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "149",
+      "periodStart": "2026-07-01",
+      "consumption": "3.402",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "149",
+      "periodStart": "2026-08-01",
+      "consumption": "3.112",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "149",
+      "periodStart": "2026-09-05",
+      "consumption": "2.927",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "150",
+      "periodStart": "2026-01-01",
+      "consumption": "4.314",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "150",
+      "periodStart": "2026-02-01",
+      "consumption": "4.368",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "150",
+      "periodStart": "2026-03-01",
+      "consumption": "4.463",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "150",
+      "periodStart": "2026-04-01",
+      "consumption": "4.802",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "150",
+      "periodStart": "2026-05-01",
+      "consumption": "3.900",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "150",
+      "periodStart": "2026-06-01",
+      "consumption": "5.280",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "150",
+      "periodStart": "2026-07-01",
+      "consumption": "6.126",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "150",
+      "periodStart": "2026-08-01",
+      "consumption": "4.530",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "150",
+      "periodStart": "2026-09-05",
+      "consumption": "2.800",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "151",
+      "periodStart": "2026-01-01",
+      "consumption": "20.928",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "151",
+      "periodStart": "2026-02-01",
+      "consumption": "23.369",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "151",
+      "periodStart": "2026-03-01",
+      "consumption": "27.378",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "151",
+      "periodStart": "2026-04-01",
+      "consumption": "22.754",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "151",
+      "periodStart": "2026-05-01",
+      "consumption": "11.903",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "151",
+      "periodStart": "2026-06-01",
+      "consumption": "17.054",
+      "validationStatus": "FLAGGED"
+    },
+    {
+      "unitId": "151",
+      "periodStart": "2026-07-01",
+      "consumption": "8.067",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "151",
+      "periodStart": "2026-08-01",
+      "consumption": "19.614",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "151",
+      "periodStart": "2026-09-05",
+      "consumption": "22.577",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "152",
+      "periodStart": "2026-01-01",
+      "consumption": "2.924",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "152",
+      "periodStart": "2026-02-01",
+      "consumption": "3.361",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "152",
+      "periodStart": "2026-03-01",
+      "consumption": "2.274",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "152",
+      "periodStart": "2026-04-01",
+      "consumption": "5.928",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "152",
+      "periodStart": "2026-05-01",
+      "consumption": "2.894",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "152",
+      "periodStart": "2026-06-01",
+      "consumption": "1.850",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "152",
+      "periodStart": "2026-07-01",
+      "consumption": "9.212",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "152",
+      "periodStart": "2026-08-01",
+      "consumption": "4.744",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "152",
+      "periodStart": "2026-09-05",
+      "consumption": "2.915",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "153",
+      "periodStart": "2026-01-01",
+      "consumption": "15.967",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "153",
+      "periodStart": "2026-02-01",
+      "consumption": "12.202",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "153",
+      "periodStart": "2026-03-01",
+      "consumption": "22.744",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "153",
+      "periodStart": "2026-04-01",
+      "consumption": "19.203",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "153",
+      "periodStart": "2026-05-01",
+      "consumption": "14.567",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "153",
+      "periodStart": "2026-06-01",
+      "consumption": "18.794",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "153",
+      "periodStart": "2026-07-01",
+      "consumption": "15.018",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "153",
+      "periodStart": "2026-08-01",
+      "consumption": "16.320",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "153",
+      "periodStart": "2026-09-05",
+      "consumption": "12.479",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "154",
+      "periodStart": "2026-01-01",
+      "consumption": "7.332",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "154",
+      "periodStart": "2026-02-01",
+      "consumption": "7.437",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "154",
+      "periodStart": "2026-03-01",
+      "consumption": "9.805",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "154",
+      "periodStart": "2026-04-01",
+      "consumption": "9.521",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "154",
+      "periodStart": "2026-05-01",
+      "consumption": "12.103",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "154",
+      "periodStart": "2026-06-01",
+      "consumption": "15.247",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "154",
+      "periodStart": "2026-07-01",
+      "consumption": "13.272",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "154",
+      "periodStart": "2026-08-01",
+      "consumption": "2.231",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "154",
+      "periodStart": "2026-09-05",
+      "consumption": "3.513",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "155",
+      "periodStart": "2026-01-01",
+      "consumption": "6.224",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "155",
+      "periodStart": "2026-02-01",
+      "consumption": "6.986",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "155",
+      "periodStart": "2026-03-01",
+      "consumption": "6.875",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "155",
+      "periodStart": "2026-04-01",
+      "consumption": "3.898",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "155",
+      "periodStart": "2026-05-01",
+      "consumption": "3.540",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "155",
+      "periodStart": "2026-06-01",
+      "consumption": "5.991",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "155",
+      "periodStart": "2026-07-01",
+      "consumption": "3.828",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "155",
+      "periodStart": "2026-08-01",
+      "consumption": "5.993",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "155",
+      "periodStart": "2026-09-05",
+      "consumption": "5.367",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "156",
+      "periodStart": "2026-01-01",
+      "consumption": "23.058",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "156",
+      "periodStart": "2026-02-01",
+      "consumption": "21.329",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "156",
+      "periodStart": "2026-03-01",
+      "consumption": "18.080",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "156",
+      "periodStart": "2026-04-01",
+      "consumption": "16.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "156",
+      "periodStart": "2026-05-01",
+      "consumption": "15.165",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "156",
+      "periodStart": "2026-06-01",
+      "consumption": "17.189",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "156",
+      "periodStart": "2026-07-01",
+      "consumption": "16.928",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "156",
+      "periodStart": "2026-08-01",
+      "consumption": "15.592",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "156",
+      "periodStart": "2026-09-05",
+      "consumption": "9.801",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "157",
+      "periodStart": "2026-01-01",
+      "consumption": "6.593",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "157",
+      "periodStart": "2026-02-01",
+      "consumption": "5.688",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "157",
+      "periodStart": "2026-03-01",
+      "consumption": "4.516",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "157",
+      "periodStart": "2026-04-01",
+      "consumption": "6.173",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "157",
+      "periodStart": "2026-05-01",
+      "consumption": "5.782",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "157",
+      "periodStart": "2026-06-01",
+      "consumption": "5.446",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "157",
+      "periodStart": "2026-07-01",
+      "consumption": "6.907",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "157",
+      "periodStart": "2026-08-01",
+      "consumption": "6.683",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "157",
+      "periodStart": "2026-09-05",
+      "consumption": "2.754",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "158",
+      "periodStart": "2026-01-01",
+      "consumption": "4.500",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "158",
+      "periodStart": "2026-02-01",
+      "consumption": "0.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "158",
+      "periodStart": "2026-03-01",
+      "consumption": "5.406",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "158",
+      "periodStart": "2026-04-01",
+      "consumption": "10.401",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "158",
+      "periodStart": "2026-05-01",
+      "consumption": "0.940",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "158",
+      "periodStart": "2026-06-01",
+      "consumption": "4.443",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "158",
+      "periodStart": "2026-07-01",
+      "consumption": "5.618",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "158",
+      "periodStart": "2026-08-01",
+      "consumption": "5.657",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "158",
+      "periodStart": "2026-09-05",
+      "consumption": "11.739",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "159",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "159",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "159",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "159",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "159",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "159",
+      "periodStart": "2026-06-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "159",
+      "periodStart": "2026-07-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "159",
+      "periodStart": "2026-08-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "159",
+      "periodStart": "2026-09-05",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "160",
+      "periodStart": "2026-01-01",
+      "consumption": "0.784",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "160",
+      "periodStart": "2026-02-01",
+      "consumption": "1.929",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "160",
+      "periodStart": "2026-03-01",
+      "consumption": "0.881",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "160",
+      "periodStart": "2026-04-01",
+      "consumption": "2.104",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "160",
+      "periodStart": "2026-05-01",
+      "consumption": "0.875",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "160",
+      "periodStart": "2026-06-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "160",
+      "periodStart": "2026-07-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "160",
+      "periodStart": "2026-08-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "160",
+      "periodStart": "2026-09-05",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "161",
+      "periodStart": "2026-01-01",
+      "consumption": "1.079",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "161",
+      "periodStart": "2026-02-01",
+      "consumption": "3.347",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "161",
+      "periodStart": "2026-03-01",
+      "consumption": "2.687",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "161",
+      "periodStart": "2026-04-01",
+      "consumption": "4.714",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "161",
+      "periodStart": "2026-05-01",
+      "consumption": "5.520",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "161",
+      "periodStart": "2026-06-01",
+      "consumption": "4.384",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "161",
+      "periodStart": "2026-07-01",
+      "consumption": "3.883",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "161",
+      "periodStart": "2026-08-01",
+      "consumption": "0.541",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "161",
+      "periodStart": "2026-09-05",
+      "consumption": "0.646",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "162",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "162",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "162",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "162",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "162",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "162",
+      "periodStart": "2026-06-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "162",
+      "periodStart": "2026-07-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "162",
+      "periodStart": "2026-08-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "162",
+      "periodStart": "2026-09-05",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "163",
+      "periodStart": "2026-01-01",
+      "consumption": "1.063",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "163",
+      "periodStart": "2026-02-01",
+      "consumption": "5.620",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "163",
+      "periodStart": "2026-03-01",
+      "consumption": "1.525",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "163",
+      "periodStart": "2026-04-01",
+      "consumption": "1.280",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "163",
+      "periodStart": "2026-05-01",
+      "consumption": "1.242",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "163",
+      "periodStart": "2026-06-01",
+      "consumption": "0.840",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "163",
+      "periodStart": "2026-07-01",
+      "consumption": "0.729",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "163",
+      "periodStart": "2026-08-01",
+      "consumption": "16.584",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "163",
+      "periodStart": "2026-09-05",
+      "consumption": "1.648",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "164",
+      "periodStart": "2026-01-01",
+      "consumption": "3.057",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "164",
+      "periodStart": "2026-02-01",
+      "consumption": "4.721",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "164",
+      "periodStart": "2026-03-01",
+      "consumption": "4.123",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "164",
+      "periodStart": "2026-04-01",
+      "consumption": "4.400",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "164",
+      "periodStart": "2026-05-01",
+      "consumption": "4.845",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "164",
+      "periodStart": "2026-06-01",
+      "consumption": "3.665",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "164",
+      "periodStart": "2026-07-01",
+      "consumption": "3.871",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "164",
+      "periodStart": "2026-08-01",
+      "consumption": "3.826",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "164",
+      "periodStart": "2026-09-05",
+      "consumption": "2.989",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "165",
+      "periodStart": "2026-01-01",
+      "consumption": "2.297",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "165",
+      "periodStart": "2026-02-01",
+      "consumption": "3.708",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "165",
+      "periodStart": "2026-03-01",
+      "consumption": "3.707",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "165",
+      "periodStart": "2026-04-01",
+      "consumption": "2.777",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "165",
+      "periodStart": "2026-05-01",
+      "consumption": "2.711",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "165",
+      "periodStart": "2026-06-01",
+      "consumption": "1.810",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "165",
+      "periodStart": "2026-07-01",
+      "consumption": "0.743",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "165",
+      "periodStart": "2026-08-01",
+      "consumption": "2.957",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "165",
+      "periodStart": "2026-09-05",
+      "consumption": "2.303",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "166",
+      "periodStart": "2026-01-01",
+      "consumption": "7.964",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "166",
+      "periodStart": "2026-02-01",
+      "consumption": "8.269",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "166",
+      "periodStart": "2026-03-01",
+      "consumption": "7.697",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "166",
+      "periodStart": "2026-04-01",
+      "consumption": "8.388",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "166",
+      "periodStart": "2026-05-01",
+      "consumption": "5.669",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "166",
+      "periodStart": "2026-06-01",
+      "consumption": "3.321",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "166",
+      "periodStart": "2026-07-01",
+      "consumption": "8.332",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "166",
+      "periodStart": "2026-08-01",
+      "consumption": "9.020",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "166",
+      "periodStart": "2026-09-05",
+      "consumption": "7.937",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "167",
+      "periodStart": "2026-01-01",
+      "consumption": "1.794",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "167",
+      "periodStart": "2026-02-01",
+      "consumption": "3.035",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "167",
+      "periodStart": "2026-03-01",
+      "consumption": "2.178",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "167",
+      "periodStart": "2026-04-01",
+      "consumption": "2.640",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "167",
+      "periodStart": "2026-05-01",
+      "consumption": "2.164",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "167",
+      "periodStart": "2026-06-01",
+      "consumption": "2.611",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "167",
+      "periodStart": "2026-07-01",
+      "consumption": "1.921",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "167",
+      "periodStart": "2026-08-01",
+      "consumption": "2.977",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "167",
+      "periodStart": "2026-09-05",
+      "consumption": "2.300",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "168",
+      "periodStart": "2026-01-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "168",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "168",
+      "periodStart": "2026-03-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "168",
+      "periodStart": "2026-04-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "168",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "168",
+      "periodStart": "2026-06-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "168",
+      "periodStart": "2026-07-01",
+      "consumption": "1.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "168",
+      "periodStart": "2026-08-01",
+      "consumption": "-1.000",
+      "validationStatus": "FLAGGED"
+    },
+    {
+      "unitId": "168",
+      "periodStart": "2026-09-05",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "169",
+      "periodStart": "2026-01-01",
+      "consumption": "1.275",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "169",
+      "periodStart": "2026-02-01",
+      "consumption": "2.756",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "169",
+      "periodStart": "2026-03-01",
+      "consumption": "2.161",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "169",
+      "periodStart": "2026-04-01",
+      "consumption": "1.517",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "169",
+      "periodStart": "2026-05-01",
+      "consumption": "0.351",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "169",
+      "periodStart": "2026-06-01",
+      "consumption": "0.481",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "169",
+      "periodStart": "2026-07-01",
+      "consumption": "0.221",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "169",
+      "periodStart": "2026-08-01",
+      "consumption": "0.227",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "169",
+      "periodStart": "2026-09-05",
+      "consumption": "0.132",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "170",
+      "periodStart": "2026-01-01",
+      "consumption": "11.904",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "170",
+      "periodStart": "2026-02-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "170",
+      "periodStart": "2026-03-01",
+      "consumption": "0.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "170",
+      "periodStart": "2026-04-01",
+      "consumption": "0.002",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "170",
+      "periodStart": "2026-05-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "170",
+      "periodStart": "2026-06-01",
+      "consumption": "0.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "170",
+      "periodStart": "2026-07-01",
+      "consumption": "0.164",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "170",
+      "periodStart": "2026-08-01",
+      "consumption": "7.836",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "170",
+      "periodStart": "2026-09-05",
+      "consumption": "10.523",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "171",
+      "periodStart": "2026-01-01",
+      "consumption": "7.120",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "171",
+      "periodStart": "2026-02-01",
+      "consumption": "6.679",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "171",
+      "periodStart": "2026-03-01",
+      "consumption": "8.089",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "171",
+      "periodStart": "2026-04-01",
+      "consumption": "3.015",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "171",
+      "periodStart": "2026-05-01",
+      "consumption": "10.746",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "171",
+      "periodStart": "2026-06-01",
+      "consumption": "6.411",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "171",
+      "periodStart": "2026-07-01",
+      "consumption": "8.954",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "171",
+      "periodStart": "2026-08-01",
+      "consumption": "9.723",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "171",
+      "periodStart": "2026-09-05",
+      "consumption": "8.495",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "172",
+      "periodStart": "2026-01-01",
+      "consumption": "2.713",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "172",
+      "periodStart": "2026-02-01",
+      "consumption": "3.852",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "172",
+      "periodStart": "2026-03-01",
+      "consumption": "2.713",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "172",
+      "periodStart": "2026-04-01",
+      "consumption": "5.204",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "172",
+      "periodStart": "2026-05-01",
+      "consumption": "4.444",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "172",
+      "periodStart": "2026-06-01",
+      "consumption": "0.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "172",
+      "periodStart": "2026-07-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "172",
+      "periodStart": "2026-08-01",
+      "consumption": "0.147",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "172",
+      "periodStart": "2026-09-05",
+      "consumption": "0.001",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "173",
+      "periodStart": "2026-01-01",
+      "consumption": "0.134",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "173",
+      "periodStart": "2026-02-01",
+      "consumption": "0.154",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "173",
+      "periodStart": "2026-03-01",
+      "consumption": "0.134",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "173",
+      "periodStart": "2026-04-01",
+      "consumption": "0.121",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "173",
+      "periodStart": "2026-05-01",
+      "consumption": "0.050",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "173",
+      "periodStart": "2026-06-01",
+      "consumption": "0.019",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "173",
+      "periodStart": "2026-07-01",
+      "consumption": "0.114",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "173",
+      "periodStart": "2026-08-01",
+      "consumption": "0.000",
+      "validationStatus": "VALID"
+    },
+    {
+      "unitId": "173",
+      "periodStart": "2026-09-05",
+      "consumption": "0.012",
+      "validationStatus": "VALID"
+    }
+  ]
+}

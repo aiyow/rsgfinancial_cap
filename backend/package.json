@@ -20,7 +20,8 @@
     "forecasts:verify-reads": "node scripts/verifyForecastAnalytics.js",
     "soa-reminders:run": "node scripts/runSoaReminders.js",
     "data:import-history": "node scripts/importHistoricalAnalytics.js",
-    "receipts:migrate-cloudinary": "node scripts/migrateLocalReceiptsToCloudinary.js"
+    "receipts:migrate-cloudinary": "node scripts/migrateLocalReceiptsToCloudinary.js",
+    "forecasts:compare-policies": "node scripts/compareForecastPolicies.js"
   },
   "keywords": [],
   "author": "",

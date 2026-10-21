@@ -9,6 +9,7 @@ import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 import { chartNumber as number, connectForecastLine } from '../../utils/forecastChart'
 import { forecastModelLabel } from '../../utils/forecastModelLabel'
+import UnitWaterAnalytics from '../../components/UnitWaterAnalytics'
 
 function valueOrDash(value, suffix = '') {
   return value === null || value === undefined ? '-' : `${Number(value).toFixed(2)}${suffix}`
@@ -63,6 +64,7 @@ export default function AnalyticsPage() {
   const [waterBillRange, setWaterBillRange] = useState('sixMonths')
   const [showForecastQuality, setShowForecastQuality] = useState(false)
   const [refreshingForecasts, setRefreshingForecasts] = useState(false)
+  const [unitAnalyticsVersion, setUnitAnalyticsVersion] = useState(0)
   const [confirmation, setConfirmation] = useState(null)
   const [error, setError] = useState('')
 
@@ -109,6 +111,7 @@ export default function AnalyticsPage() {
       ])
       setData(analyticsData)
       setRecommendations(recommendationData.recommendations || [])
+      setUnitAnalyticsVersion(current => current + 1)
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -258,6 +261,8 @@ export default function AnalyticsPage() {
             </ChartCard>
           </div>
 
+          <UnitWaterAnalytics token={token} refreshKey={unitAnalyticsVersion} />
+
           <div ref={prescriptiveRecommendationsRef} className="scroll-mt-20">
           <Panel title="Prescriptive Recommendations" description="A prioritized action queue for the latest billing batch forwarded to Admin.">
             <div className="mb-5 grid gap-3 sm:grid-cols-3">
@@ -318,7 +323,7 @@ export default function AnalyticsPage() {
                       <tr key={`${row.unitId}-${row.forecastForMonth}`} className={row.status !== 'READY' || row.actualValidationStatus !== 'VALID' ? 'bg-amber-50' : ''}>
                         <td className="p-3 font-bold">Unit {row.unitNumber}</td>
                         <td>{String(row.forecastForMonth).slice(0, 10)}</td>
-                        <td className="text-xs font-semibold text-slate-600">{forecastModelLabel(row.modelName)}</td>
+                        <td className="py-3 pr-4 text-xs font-semibold text-slate-600">{forecastModelLabel(row.modelName, row.status)}</td>
                         <td>{row.predictedConsumption === null ? '-' : `${Number(row.predictedConsumption).toFixed(3)} m3`}</td>
                         <td>{row.actualConsumption === null ? '-' : `${Number(row.actualConsumption).toFixed(3)} m3`}</td>
                         <td>{row.absoluteError === null ? '-' : `${Number(row.absoluteError).toFixed(3)} m3`}</td>

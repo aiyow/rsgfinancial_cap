@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, X } from 'lucide-react'
+import { AlertTriangle, LoaderCircle, X } from 'lucide-react'
 import DashboardLayout, { EmptyRow } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
@@ -19,6 +19,9 @@ export default function CollectorBillsPage() {
   const { token } = useAuth()
   const [periods, setPeriods] = useState([])
   const [bills, setBills] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [loadAttempt, setLoadAttempt] = useState(0)
   const [busyId, setBusyId] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [reopenTarget, setReopenTarget] = useState(null)
@@ -36,11 +39,13 @@ export default function CollectorBillsPage() {
 
   useEffect(() => {
     let active = true
+    queueMicrotask(() => { if (active) { setLoading(true); setLoadError('') } })
     Promise.all([apiRequest('/api/billing-periods', { token }), apiRequest('/api/bills', { token })])
       .then(([periodData, billData]) => { if (active) { setPeriods(periodData.periods); setBills(billData.bills) } })
-      .catch((error) => { if (active) setNotice({ error: error.message, message: '' }) })
+      .catch((error) => { if (active) setLoadError(error.message) })
+      .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [token])
+  }, [token, loadAttempt])
 
   async function run(period, path, method, body, successPrompt) {
     setBusyId(period.id)
@@ -92,7 +97,11 @@ export default function CollectorBillsPage() {
   return (
     <DashboardLayout title="Billing batches and SOAs" description="Correct, regenerate, forward, and review monthly billing batches.">
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
-      <div className="space-y-5">
+      <div className="space-y-5" aria-busy={loading}>
+        {loading ? <BillingBatchesSkeleton /> : loadError ? <div role="alert" className="rounded-2xl border border-red-100 bg-white p-5 shadow-sm sm:p-6">
+          <p className="text-sm text-red-700">Could not load billing batches. {loadError}</p>
+          <button type="button" onClick={() => setLoadAttempt(current => current + 1)} className={`${actionClass} mt-3`}>Try again</button>
+        </div> : <>
         {periods.map((period) => {
           const periodBills = bills.filter((bill) => String(bill.billingPeriodId) === String(period.id))
           return <section key={period.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -107,12 +116,31 @@ export default function CollectorBillsPage() {
           </section>
         })}
         {periods.length === 0 && <EmptyRow message="No billing batches found." />}
+        </>}
       </div>
       {reopenTarget && <ReopenBatchModal period={reopenTarget} busy={busyId === reopenTarget.id} onCancel={() => setReopenTarget(null)} onConfirm={confirmReopen} />}
       {forwardTarget && <ForwardBatchModal period={forwardTarget} busy={busyId === forwardTarget.id} onCancel={() => setForwardTarget(null)} onConfirm={confirmForward} />}
       {deleteTarget && <DeleteBatchModal period={deleteTarget} busy={busyId === deleteTarget.id} onCancel={() => setDeleteTarget(null)} onConfirm={confirmDelete} />}
     </DashboardLayout>
   )
+}
+
+function BillingBatchesSkeleton() {
+  return <div role="status" aria-label="Loading billing batches" className="space-y-4">
+    <p className="flex items-center gap-2 text-sm text-[var(--muted)]"><LoaderCircle size={16} aria-hidden="true" className="animate-spin text-[var(--primary)] motion-reduce:animate-none" />Loading billing batches...</p>
+    <div aria-hidden="true" className="space-y-5 animate-pulse motion-reduce:animate-none">
+      {[1, 2, 3].map(id => <div key={id} className="rounded-2xl border border-[var(--border)] bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex flex-wrap items-center gap-3"><div className="h-5 w-72 max-w-full rounded-md bg-emerald-100/70" /><div className="h-6 w-20 rounded-full bg-emerald-50" /></div>
+            <div className="h-3 w-96 max-w-full rounded bg-slate-100" />
+            <div className="h-3 w-48 max-w-full rounded bg-slate-100" />
+          </div>
+          <div className="flex shrink-0 flex-wrap gap-2"><div className="h-10 w-24 rounded-lg bg-emerald-50" /><div className="h-10 w-28 rounded-lg bg-emerald-50" /></div>
+        </div>
+      </div>)}
+    </div>
+  </div>
 }
 
 function ReopenBatchModal({ busy, onCancel, onConfirm, period }) {

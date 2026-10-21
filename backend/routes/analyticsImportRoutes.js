@@ -10,6 +10,7 @@ import { regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.j
 import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
 import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
 import { validateMeterReading } from "../services/meterReadingValidation.js";
+import { exportAnalyticsWorkbook, workbookFilename, workbookMimeType } from "../services/analyticsWorkbook.js";
 
 const router = express.Router();
 
@@ -23,7 +24,7 @@ const upload = multer({
   },
 });
 
-const monthSchema = z.string().regex(/^\d{4}-\d{2}$/, "Use YYYY-MM format.");
+const monthSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Use YYYY-MM format.");
 const readingSchema = z.object({
   unitId: z.coerce.number().int().positive(),
   previousReading: z.coerce.number().min(0),
@@ -225,6 +226,7 @@ router.get("/", async (req, res, next) => {
     const result = await pool.query(
       `SELECT p.id, p.period_start AS "periodStart", p.period_end AS "periodEnd",
         p.water_rate_per_cubic_m AS "waterRatePerCubicM", p.readings_visible_at AS "readingsVisibleAt",
+        (SELECT w.original_name FROM analytics_import_workbooks w WHERE w.billing_period_id = p.id) AS "originalFilename",
         COUNT(DISTINCT m.id)::int AS "readingCount",
         COUNT(DISTINCT m.id) FILTER (WHERE m.validation_status = 'FLAGGED')::int AS "flaggedCount",
         MAX(f.forecast_for_month) AS "forecastForMonth",
@@ -240,13 +242,46 @@ router.get("/", async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
+router.get("/:periodMonth/workbook", async (req, res, next) => {
+  const parsed = monthSchema.safeParse(req.params.periodMonth);
+  if (!parsed.success) return res.status(400).json({ message: "Use YYYY-MM format." });
+  try {
+    const { periodStart } = periodDates(parsed.data);
+    const result = await pool.query(
+      `SELECT p.id, w.original_name AS "originalFilename", w.workbook_data AS "workbookData"
+       FROM billing_periods p LEFT JOIN analytics_import_workbooks w ON w.billing_period_id = p.id
+       WHERE p.period_start = $1 AND p.period_type = 'HISTORICAL_ANALYTICS'`, [periodStart],
+    );
+    const period = result.rows[0];
+    if (!period) return res.status(404).json({ message: "Imported analytics month not found." });
+    let buffer = period.workbookData;
+    if (!buffer) {
+      const readings = await pool.query(
+        `SELECT u.unit_number AS "unitNumber", m.previous_reading AS "previousReading", m.current_reading AS "currentReading",
+          m.current_reading - m.previous_reading AS consumption, p.water_rate_per_cubic_m AS "waterRate",
+          ROUND((m.current_reading - m.previous_reading) * p.water_rate_per_cubic_m, 2) AS "waterCharge",
+          m.validation_status AS "validationStatus", m.validation_notes AS "validationNotes"
+         FROM meter_readings m JOIN units u ON u.id = m.unit_id JOIN billing_periods p ON p.id = m.billing_period_id
+         WHERE p.id = $1 ORDER BY u.unit_number`, [period.id],
+      );
+      buffer = await exportAnalyticsWorkbook(parsed.data, readings.rows);
+    }
+    res.set('Cache-Control', 'private, no-store');
+    res.type(workbookMimeType);
+    res.attachment(workbookFilename(period.originalFilename, parsed.data));
+    return res.send(buffer);
+  } catch (error) { return next(error); }
+});
+
 router.post("/preview", upload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ message: "Select an .xlsx file." });
     const parsedMonth = monthSchema.safeParse(req.body.periodMonth);
     if (!parsedMonth.success) return res.status(400).json({ message: "Select a valid month." });
     const { periodStart } = periodDates(parsedMonth.data);
-    const existing = await pool.query("SELECT period_type AS \"periodType\" FROM billing_periods WHERE period_start = $1", [periodStart]);
+    const existing = await pool.query(`SELECT period_type AS "periodType" FROM billing_periods
+      WHERE DATE_TRUNC('month', period_start) = $1::date
+      ORDER BY CASE WHEN period_type = 'LIVE_BILLING' THEN 0 ELSE 1 END, period_start DESC LIMIT 1`, [periodStart]);
     const unitsResult = await pool.query("SELECT id, unit_number FROM units ORDER BY unit_number");
     const preview = await parseWorkbook(req.file.buffer, unitsResult.rows);
     return res.json({
@@ -265,19 +300,29 @@ router.post("/preview", upload.single("file"), async (req, res, next) => {
   } catch (error) { return next(error); }
 });
 
-router.post("/", async (req, res, next) => {
-  const parsed = importSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0]?.message || "Invalid import payload." });
-
+router.post("/", upload.single("file"), async (req, res, next) => {
   let client;
   try {
+    let payload = req.body;
+    if (req.file) {
+      const units = await pool.query("SELECT id, unit_number FROM units ORDER BY unit_number");
+      const preview = await parseWorkbook(req.file.buffer, units.rows);
+      if (!preview.valid) return res.status(400).json({ message: preview.errors[0] || preview.rows.flatMap(row => row.errors)[0] || "The workbook contains invalid readings." });
+      // Re-parse the confirmed file so the retained original always matches the imported readings.
+      payload = { periodMonth: req.body.periodMonth, waterRatePerCubicM: preview.waterRate,
+        readings: preview.rows.map(({ unitId, previousReading, currentReading }) => ({ unitId, previousReading, currentReading })) };
+    }
+    const parsed = importSchema.safeParse(payload);
+    if (!parsed.success) return res.status(400).json({ message: parsed.error.issues[0]?.message || "Invalid import payload." });
     const body = parsed.data;
     const { periodStart, periodEnd } = periodDates(body.periodMonth);
     client = await pool.connect();
     await client.query("BEGIN");
 
     const existing = await client.query(
-      "SELECT id, period_type AS \"periodType\", water_rate_per_cubic_m AS \"waterRate\" FROM billing_periods WHERE period_start = $1 FOR UPDATE",
+      `SELECT id, period_type AS "periodType", water_rate_per_cubic_m AS "waterRate" FROM billing_periods
+       WHERE DATE_TRUNC('month', period_start) = $1::date
+       ORDER BY CASE WHEN period_type = 'LIVE_BILLING' THEN 0 ELSE 1 END, period_start DESC LIMIT 1 FOR UPDATE`,
       [periodStart],
     );
 
@@ -345,6 +390,18 @@ router.post("/", async (req, res, next) => {
       );
     }
 
+    if (req.file) {
+      await client.query(
+        `INSERT INTO analytics_import_workbooks (billing_period_id, original_name, workbook_data, uploaded_by)
+         VALUES ($1, $2, $3, $4) ON CONFLICT (billing_period_id) DO UPDATE
+         SET original_name = EXCLUDED.original_name, workbook_data = EXCLUDED.workbook_data,
+           uploaded_by = EXCLUDED.uploaded_by, uploaded_at = NOW()`,
+        [periodId, workbookFilename(req.file.originalname, body.periodMonth), req.file.buffer, req.user.id],
+      );
+    } else {
+      // JSON-only integrations cannot supply an original file for their replacement readings.
+      await client.query("DELETE FROM analytics_import_workbooks WHERE billing_period_id = $1", [periodId]);
+    }
     await revalidateAnalyticsReadings(client);
     await regenerateForecastsFromPeriod(client, periodId);
     await regeneratePrescriptiveRecommendations(client);

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, FileSpreadsheet, RotateCcw, Trash2, Upload } from 'lucide-react'
+import { AlertTriangle, Download, FileSpreadsheet, RotateCcw, Trash2, Upload } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
-import { apiRequest } from '../../services/api'
+import { apiFile, apiRequest } from '../../services/api'
 
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal'
 const primaryClass = 'inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300'
@@ -33,6 +33,7 @@ export default function CollectorHistoryImportPage() {
   const [preview, setPreview] = useState(null)
   const [imports, setImports] = useState([])
   const [busy, setBusy] = useState(false)
+  const [downloadingMonth, setDownloadingMonth] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [clearAllOpen, setClearAllOpen] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
@@ -78,16 +79,14 @@ export default function CollectorHistoryImportPage() {
   }
 
   async function importPreview() {
-    if (!preview?.valid) return
+    if (!preview?.valid || !file) return
     setBusy(true)
     setNotice({ error: '', message: '' })
     try {
-      const readings = preview.rows.map(({ unitId, previousReading, currentReading }) => ({ unitId, previousReading, currentReading }))
-      const data = await apiRequest('/api/analytics/imports', {
-        method: 'POST',
-        token,
-        body: { periodMonth: preview.periodMonth, waterRatePerCubicM: preview.waterRate, readings },
-      })
+      const formData = new FormData()
+      formData.append('periodMonth', preview.periodMonth)
+      formData.append('file', file)
+      const data = await apiRequest('/api/analytics/imports', { method: 'POST', token, body: formData })
       await loadImports()
       setPreview(null)
       setFile(null)
@@ -95,6 +94,25 @@ export default function CollectorHistoryImportPage() {
     } catch (error) {
       setNotice({ error: error.message, message: '' })
     } finally { setBusy(false) }
+  }
+
+  async function downloadWorkbook(item) {
+    if (downloadingMonth) return
+    setDownloadingMonth(item.periodMonth)
+    setNotice({ error: '', message: '' })
+    try {
+      const blob = await apiFile(`/api/analytics/imports/${item.periodMonth}/workbook`, { token })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = item.originalFilename || `water-history-${item.periodMonth}.xlsx`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+    } catch (error) {
+      setNotice({ error: error.message, message: '' })
+    } finally { setDownloadingMonth('') }
   }
 
   async function deleteMonth() {
@@ -194,10 +212,12 @@ export default function CollectorHistoryImportPage() {
             <RotateCcw size={16} /> Clear all imports
           </button>
         </div>
+        <p className="mb-3 text-xs leading-5 text-slate-600">Forwarded billing months are included in Water Analytics automatically. They do not need to be uploaded again and are listed under Forward Billings.</p>
+        <p className="mb-3 text-xs leading-5 text-slate-500">Download the original workbook when available, or an Excel copy of the saved readings for older imports.</p>
         {sortedImports.length ? (
           <div className="overflow-auto rounded-xl border border-slate-200">
             <table className="w-full min-w-[780px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs capitalize text-slate-400"><tr><th className="p-3">Month</th><th>Readings</th><th>Flagged</th><th>Forecast month</th><th>Ready forecasts</th><th></th></tr></thead>
+              <thead className="bg-slate-50 text-xs capitalize text-slate-400"><tr><th className="p-3">Month</th><th>Readings</th><th>Flagged</th><th>Forecast month</th><th>Ready forecasts</th><th className="pr-3 text-right">Actions</th></tr></thead>
               <tbody className="divide-y divide-slate-200">
                 {sortedImports.map((item) => (
                   <tr key={item.periodMonth} className="transition-colors hover:bg-slate-50/80">
@@ -206,7 +226,10 @@ export default function CollectorHistoryImportPage() {
                     <td>{item.flaggedCount}</td>
                     <td>{item.forecastForMonth ? monthLabel(item.forecastForMonth) : '-'}</td>
                     <td>{item.readyForecastCount}</td>
-                    <td className="pr-3 text-right"><button type="button" disabled={busy} onClick={() => setDeleteTarget(item)} className={`${outlineClass} border-red-200 text-red-700 transition hover:border-red-300 hover:bg-red-50`}><Trash2 size={16} /> Delete</button></td>
+                    <td className="p-2 pr-3"><div className="flex justify-end gap-2 whitespace-nowrap">
+                      <button type="button" aria-label={`Download Excel for ${monthLabel(item.periodMonth)}`} aria-busy={downloadingMonth === item.periodMonth} title={item.originalFilename ? 'Download original uploaded workbook' : 'Download Excel copy of saved readings'} disabled={busy || Boolean(downloadingMonth)} onClick={() => downloadWorkbook(item)} className={`${outlineClass} border-emerald-200 text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-50`}><Download size={16} aria-hidden="true" />{downloadingMonth === item.periodMonth ? 'Downloading...' : 'Download Excel'}</button>
+                      <button type="button" disabled={busy || Boolean(downloadingMonth)} onClick={() => setDeleteTarget(item)} className={`${outlineClass} border-red-200 text-red-700 transition hover:border-red-300 hover:bg-red-50`}><Trash2 size={16} /> Delete</button>
+                    </div></td>
                   </tr>
                 ))}
               </tbody>

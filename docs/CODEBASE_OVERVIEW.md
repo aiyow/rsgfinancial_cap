@@ -134,7 +134,7 @@ Read [predictiveAnalytics.js](../backend/services/predictiveAnalytics.js) for ca
 
 - Eligibility requires at least five consecutive valid months; the training window uses up to 12.
 - A flagged newest reading or gap interrupts the valid segment. A real zero reading remains valid and visible on charts.
-- The active policy is `stable`: five/six readings use full-window linear regression; with at least seven, an exact nonzero linear trend still uses regression, otherwise the model averages last month, recent three-month average and recent five-month median.
+- The active policy is `regression_first`: use Linear Regression normally. A qualifying spike or unexpected zero in the latest three readings temporarily activates Stable Recent Months; each event needs five preceding valid months. The stable formula averages last month, the recent three-month average and the recent five-month median. Return to regression when the event expires, without replacing readings. Staff see the model-selection reason; unavailable results display as "No forecast".
 - Forecasts estimate next-month consumption and water charge. They do not create actual bill charges.
 - Accuracy uses valid forecast/actual pairs and includes MAE, RMSE and WAPE. `accuracy` is derived from WAPE, not a confidence probability.
 - Prescriptive rules turn history, forecasts, occupancy and balances into review tasks, high/rising-use alerts, monitoring insights and payment reminders.

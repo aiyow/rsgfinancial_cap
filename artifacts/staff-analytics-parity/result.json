@@ -1,0 +1,19 @@
+{
+  "verifiedAt": "2026-10-21T14:49:47.176Z",
+  "roles": [
+    "ADMIN",
+    "COLLECTOR"
+  ],
+  "matchingSectionOrder": true,
+  "matchingPerUnitPanel": true,
+  "unitSelection": true,
+  "billAndConsumptionTabs": true,
+  "historyFilter": true,
+  "refreshUpdatesUnitChart": true,
+  "viewportWidths": [
+    1366,
+    390,
+    320
+  ],
+  "browserErrors": []
+}
