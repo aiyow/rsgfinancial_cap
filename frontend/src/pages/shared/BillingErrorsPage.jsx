@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
-const label = (value) => String(value || '').replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())
+const label = (value) => value === 'PAYMENT_OR' ? 'Invoice / payment reference' : String(value || '').replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())
 
 export default function BillingErrorsPage() {
   const { token, user } = useAuth()
@@ -61,7 +62,28 @@ export default function BillingErrorsPage() {
     <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
     <Panel title="Resident billing-error reports" description={panelDescription}>
       <div className="mb-5 flex gap-2"><button type="button" onClick={() => setStatus('OPEN')} className={`rounded-lg px-3 py-2 text-sm font-bold ${status === 'OPEN' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700'}`}>Open</button><button type="button" onClick={() => setStatus('RESOLVED')} className={`rounded-lg px-3 py-2 text-sm font-bold ${status === 'RESOLVED' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700'}`}>Resolved</button><button type="button" onClick={() => setStatus('ALL')} className={`rounded-lg px-3 py-2 text-sm font-bold ${status === 'ALL' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700'}`}>All</button></div>
-      <div className="space-y-4">{reports.map((report) => <article key={report.id} className="rounded-xl border border-slate-200 p-4"><div className="flex flex-col justify-between gap-3 sm:flex-row"><div><div className="flex flex-wrap items-center gap-2"><p className="font-black">Unit {report.unitNumber}</p><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${report.status === 'OPEN' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'}`}>{report.status}</span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{label(report.category)}</span></div><p className="mt-1 text-sm text-slate-500">Reported by {report.reportedByName} · SOA period {String(report.periodStart).slice(0, 10)}</p></div></div><p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{report.description}</p>{report.status === 'RESOLVED' ? <p className="mt-3 text-sm"><span className="font-bold">Resolution:</span> {report.resolutionNote}</p> : canResolveReports ? <button type="button" disabled={busyId === report.id} onClick={() => openResolutionDialog(report)} className="mt-4 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Resolve report</button> : <p className="mt-3 text-sm text-slate-500">Awaiting review by a Billing Associate.</p>}</article>)}</div>
+      <div className="space-y-4">{reports.map((report) => {
+        const canFixReport = canResolveReports && report.status === 'OPEN'
+        const invoiceReport = report.category === 'PAYMENT_OR'
+        const billPath = `${canResolveReports ? '/collector/bills' : '/admin/soa/bills'}/${report.billId}?from=billing-errors${canFixReport ? `&reportId=${report.id}` : ''}${canFixReport && invoiceReport ? '&section=invoices' : ''}`
+        return <article key={report.id} className="rounded-xl border border-slate-200 p-4">
+          <div className="flex flex-col justify-between gap-3 sm:flex-row">
+            <div>
+              <div className="flex flex-wrap items-center gap-2"><p className="font-black">Unit {report.unitNumber}</p><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${report.status === 'OPEN' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'}`}>{report.status}</span><span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">{label(report.category)}</span></div>
+              <p className="mt-1 text-sm text-slate-500">Reported by {report.reportedByName} · SOA period {String(report.periodStart).slice(0, 10)}</p>
+            </div>
+          </div>
+          <p className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{report.description}</p>
+          {report.status === 'RESOLVED' && <p className="mt-3 text-sm"><span className="font-bold">Resolution:</span> {report.resolutionNote}</p>}
+          {canResolveReports && <div className="mt-4 flex flex-wrap gap-2">
+            <Link to={billPath} style={canFixReport ? { color: '#fff' } : undefined} className={`inline-flex min-h-10 items-center justify-center rounded-lg px-4 py-2 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 ${canFixReport ? 'bg-emerald-700 text-white hover:bg-emerald-800' : 'border border-emerald-300 text-emerald-800 hover:bg-emerald-50'}`}>
+              {canFixReport ? invoiceReport ? 'Fix invoice' : 'Open / Fix SOA' : 'View SOA'}
+            </Link>
+            {canFixReport && <button type="button" disabled={busyId === report.id} onClick={() => openResolutionDialog(report)} className="min-h-10 rounded-lg border border-emerald-300 px-4 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50">Resolve report</button>}
+          </div>}
+          {report.status === 'OPEN' && !canResolveReports && <p className="mt-3 text-sm text-slate-500">Awaiting review by a Billing Associate.</p>}
+        </article>
+      })}</div>
       {!reports.length && <EmptyRow message={status === 'OPEN' ? 'No open billing-error reports.' : 'No billing-error reports match this filter.'} />}
     </Panel>
     {canResolveReports && resolutionTarget && <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4 backdrop-blur-[1px]" role="presentation" onMouseDown={() => { if (!busyId) setResolutionTarget(null) }}>

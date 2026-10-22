@@ -1,0 +1,23 @@
+{
+  "verifiedAt": "2026-10-22T15:45:31.472Z",
+  "directInvoiceReportLink": true,
+  "zeroPaymentGuidance": true,
+  "unitScopedApprovedPayments": true,
+  "paymentDialogInvoiceEditing": true,
+  "linkedSoaInvoiceRefresh": true,
+  "bothChargeTypes": true,
+  "failedSaveRetry": true,
+  "clearInvoice": true,
+  "pendingApprovalGuidance": true,
+  "emptyPaymentList": true,
+  "normalInvoiceEditorsPreserved": true,
+  "amountsAndReferencesUnchanged": true,
+  "reportStaysOpen": true,
+  "mobileWidths": [
+    390,
+    320
+  ],
+  "successfulInvoiceUpdates": 4,
+  "browserErrors": [],
+  "mockedRequestsOnly": true
+}

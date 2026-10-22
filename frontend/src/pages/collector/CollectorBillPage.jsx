@@ -82,7 +82,7 @@ export default function CollectorBillPage() {
       setBill(data.bill)
       setForm(formFromBill(data.bill))
       setEditing(false)
-      setNotice({ error: '', message: 'Payment note is now up to date.' })
+      setNotice({ error: '', message: data.message || 'Statement of Account corrected.' })
     } catch (error) {
       setNotice({ error: error.message, message: '' })
     } finally { setBusy(false) }
@@ -107,18 +107,30 @@ export default function CollectorBillPage() {
   const backLabel = openedFromBillingErrors ? 'Back to Billing Errors' : openedFromPayments ? 'Back to Payment Records' : 'Back to batches'
   const billingErrorReportId = Number(searchParams.get('reportId'))
   const hasBillingErrorContext = openedFromBillingErrors && Number.isSafeInteger(billingErrorReportId) && billingErrorReportId > 0
+  const openedForInvoices = openedFromBillingErrors && searchParams.get('section') === 'invoices'
+  const showInvoiceEditor = Boolean(bill && (openedFromBillingErrors || Number(bill.approvedAmount || 0) > 0))
   const correctionBlockedReason = bill && Number(bill.approvedAmount || 0) > 0
     ? 'This SOA has an approved payment, so billing amounts are protected. You can still add its invoice number or payment note below.'
     : bill?.hasPendingPayment
       ? 'This SOA has a payment awaiting review, so billing amounts are temporarily protected until the payment is reviewed.'
       : ''
   const canCorrect = Boolean(bill && ['GENERATED', 'FORWARDED', 'CLOSED'].includes(bill.status) && (!correctionBlockedReason || hasBillingErrorContext))
+  const invoiceEditor = showInvoiceEditor && <div ref={invoiceRef} id="soa-invoice-numbers" tabIndex={-1} role="region" aria-label="SOA invoice entry" className="print-hidden scroll-mt-24 rounded-xl border border-emerald-100 bg-white p-4 focus:outline-none focus:ring-2 focus:ring-emerald-300">
+    <PaymentInvoiceEditor bill={bill} initiallyExpanded={openedForInvoices} onSaved={async () => { const data = await apiRequest(`/api/bills/${id}`, { token }); setBill(data.bill) }} emptyState={<div className="space-y-3">
+      <h3 className="text-sm font-black">Invoice numbers</h3>
+      <p className="text-sm text-slate-600">{bill?.hasPendingPayment ? 'This SOA has a payment awaiting Admin approval. Its invoice can be added or corrected after approval.' : 'No approved payment is applied to this SOA, so there is no linked payment invoice to edit yet.'}</p>
+      <p className="text-xs text-slate-500">Review the unit's approved payments to check an invoice recorded on a different payment. Invoice changes do not change paid amounts or the SOA balance.</p>
+      <Link to={`/collector/payments?unitId=${bill?.unitId}&billId=${bill?.id}${hasBillingErrorContext ? `&reportId=${billingErrorReportId}` : ''}`} className="inline-flex min-h-10 items-center rounded-lg border border-emerald-300 px-4 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-50">Review unit payments</Link>
+    </div>} />
+  </div>
+
 
   return (
     <DashboardLayout title="Statement of Account" description="Review, correct, and print the generated statement.">
-      <div className="print-hidden flex flex-wrap gap-3"><Link to={backPath} className={actionClass}>{backLabel}</Link><button onClick={() => window.print()} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Print / Save PDF</button>{bill && Number(bill.approvedAmount || 0) > 0 && <InvoiceSectionButton targetRef={invoiceRef} />}{canCorrect && <button disabled={busy} onClick={() => setEditing((value) => !value)} className="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{editing ? 'Cancel correction' : openedFromBillingErrors ? 'Correct reported SOA' : 'Correct SOA'}</button>}</div>
+      <div className="print-hidden flex flex-wrap gap-3"><Link to={backPath} className={actionClass}>{backLabel}</Link><button onClick={() => window.print()} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white">Print / Save PDF</button>{showInvoiceEditor && <InvoiceSectionButton targetRef={invoiceRef} label={openedForInvoices ? 'Fix invoice' : 'Invoice Numbers'} />}{canCorrect && <button disabled={busy} onClick={() => setEditing((value) => !value)} className="rounded-lg border border-emerald-600 bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{editing ? 'Cancel correction' : openedFromBillingErrors ? 'Correct reported SOA' : 'Correct SOA'}</button>}</div>
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
       {openedFromBillingErrors && correctionBlockedReason && <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">{hasBillingErrorContext ? 'This SOA has payment activity. Because it was opened from an active Billing Error report, you may correct all SOA details. The system will preserve the payment record and recalculate its applications and remaining balance.' : correctionBlockedReason}</p>}
+      {openedFromBillingErrors && invoiceEditor}
       {editing && form && <Panel title="Edit SOA" description="Changes affect only this statement and are recorded in the billing audit history.">
         <form onSubmit={save} className="space-y-5">
           <div className="grid gap-3 md:grid-cols-4"><Field label="Payer name"><input value={form.payerName} onChange={(event) => update('payerName', event.target.value)} className={inputClass} /></Field><Field label="Payer email"><input type="email" value={form.payerEmail} onChange={(event) => update('payerEmail', event.target.value)} className={inputClass} /></Field><Field label="Statement date"><input required type="date" value={form.statementDate} onChange={(event) => update('statementDate', event.target.value)} className={inputClass} /></Field><Field label="Due date"><input required type="date" value={form.dueDate} onChange={(event) => update('dueDate', event.target.value)} className={inputClass} /></Field></div>
@@ -130,7 +142,7 @@ export default function CollectorBillPage() {
       </Panel>}
       {!bill && !notice.error && <p className="text-sm text-slate-500">Loading statement...</p>}
       {bill && <SoaDocument bill={bill} />}
-      {bill && Number(bill.approvedAmount || 0) > 0 && <div ref={invoiceRef} id="soa-invoice-numbers" tabIndex={-1} role="region" aria-label="SOA invoice entry" className="print-hidden scroll-mt-24 rounded-xl border border-emerald-100 bg-white p-4 focus:outline-none focus:ring-2 focus:ring-emerald-300"><PaymentInvoiceEditor bill={bill} onSaved={async () => { const data = await apiRequest(`/api/bills/${id}`, { token }); setBill(data.bill) }} /></div>}
+      {!openedFromBillingErrors && invoiceEditor}
       {bill && Number(bill.approvedAmount || 0) > 0 && <details className="print-hidden rounded-xl border border-emerald-100 bg-white p-4"><summary className="min-h-11 cursor-pointer py-2 text-sm font-bold text-emerald-800">Payment note (optional)</summary><form onSubmit={saveReferences} className="mt-3 grid gap-4"><Field label="Payment note"><textarea maxLength={1000} value={references.paymentNote} onChange={(event) => setReferences((current) => ({ ...current, paymentNote: event.target.value }))} className={`${inputClass} min-h-20`} /></Field><button disabled={busy} className="w-fit rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">Save payment note</button></form></details>}
     </DashboardLayout>
   )

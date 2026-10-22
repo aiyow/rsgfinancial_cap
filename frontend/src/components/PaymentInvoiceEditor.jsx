@@ -4,7 +4,7 @@ import { apiRequest } from '../services/api'
 import { currency, purposeLabels } from '../utils/chargePayments'
 import { paymentDateLabel, paymentMethodLabel } from '../utils/paymentHistory'
 
-export default function PaymentInvoiceEditor({ bill, payment, onSaved }) {
+export default function PaymentInvoiceEditor({ bill, payment, onSaved, initiallyExpanded = false, emptyState = null }) {
   const categories = ['WATER', 'ASSOCIATION_DUES'].map(chargeType => {
     const rows = payment
       ? (payment.reviewStatus === 'APPROVED' ? (payment.allocations || []).filter(row => row.chargeType === chargeType).map(row => ({ ...row, paymentId: payment.id })) : [])
@@ -12,21 +12,21 @@ export default function PaymentInvoiceEditor({ bill, payment, onSaved }) {
     return { chargeType, entries: [...new Map(rows.map(row => [row.paymentId, row])).values()] }
   }).filter(category => category.entries.length)
 
-  if (!categories.length) return null
+  if (!categories.length) return emptyState
   return <section className="space-y-3" aria-label="Invoice numbers">
     <h3 className="text-sm font-black">Invoice numbers</h3>
     <p className="text-xs text-slate-500">Add the invoice number for each approved charge payment. A combined payment may use the same invoice number for both charges.</p>
     <div className="grid gap-3 sm:grid-cols-2">
-      {categories.map(({ chargeType, entries }) => <InvoiceCategory key={chargeType} chargeType={chargeType} entries={entries} initialPayment={payment} onSaved={onSaved} />)}
+      {categories.map(({ chargeType, entries }) => <InvoiceCategory key={chargeType} chargeType={chargeType} entries={entries} initialPayment={payment} onSaved={onSaved} initiallyExpanded={initiallyExpanded} />)}
     </div>
   </section>
 }
 
-function InvoiceCategory({ chargeType, entries, initialPayment, onSaved }) {
-  const [open, setOpen] = useState(false)
+function InvoiceCategory({ chargeType, entries, initialPayment, onSaved, initiallyExpanded }) {
+  const [open, setOpen] = useState(initiallyExpanded)
   const label = purposeLabels[chargeType]
   const hasInvoice = entries.some(row => row.invoiceNumber)
-  return <details className="min-w-0 rounded-xl border border-emerald-100 bg-white" onToggle={event => setOpen(event.currentTarget.open)}>
+  return <details open={open} className="min-w-0 rounded-xl border border-emerald-100 bg-white" onToggle={event => setOpen(event.currentTarget.open)}>
     <summary className="min-h-11 cursor-pointer rounded-xl px-4 py-3 text-sm font-bold text-emerald-800 focus-visible:outline-2 focus-visible:outline-emerald-600">{hasInvoice ? 'Edit' : 'Add'} {label} Invoice</summary>
     {open && <div className="space-y-3 border-t border-emerald-100 p-3">
       {entries.map(entry => <InvoiceForm key={entry.paymentId} id={entry.paymentId} chargeType={chargeType} initialPayment={initialPayment} onSaved={onSaved} />)}
@@ -67,7 +67,10 @@ function InvoiceForm({ id, chargeType, initialPayment, onSaved }) {
     try {
       const data = await apiRequest(`/api/payments/${id}/invoice-references`, { method: 'PATCH', token,
         body: { invoices: [{ chargeType, invoiceNumber: value.trim() || null }] } })
-      setPayment(data.payment); await onSaved?.(); setMessage(data.message)
+      setPayment(data.payment)
+      setValue(data.payment.allocations.find(row => row.chargeType === chargeType)?.invoiceNumber || '')
+      await onSaved?.()
+      setMessage(data.message)
     } catch (error) { setMessage(error.message) } finally { setBusy(false) }
   }
   if (loading) return <p role="status" className="text-xs text-slate-500">Loading approved payment…</p>

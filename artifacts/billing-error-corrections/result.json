@@ -1,0 +1,18 @@
+{
+  "verifiedAt": "2026-10-22T15:46:19.529Z",
+  "reportOpensCorrectBill": true,
+  "reportIdIncludedInCorrection": true,
+  "paidBillCorrection": true,
+  "pendingBillCorrection": true,
+  "resolutionRequiresNote": true,
+  "saveDoesNotAutoResolve": true,
+  "resolvedReportsViewable": true,
+  "resolvedReportsDoNotBypassPaymentProtection": true,
+  "adminViewOnlyReportActions": true,
+  "mobileWidths": [
+    390,
+    320
+  ],
+  "browserErrors": [],
+  "mockedRequestsOnly": true
+}

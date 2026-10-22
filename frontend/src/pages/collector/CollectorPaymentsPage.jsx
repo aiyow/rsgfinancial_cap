@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { BadgeCheck, CircleDollarSign, FileText, WalletCards, X } from 'lucide-react'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 import AdminPaymentQueue from '../../components/AdminPaymentQueue'
 import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
+import PaymentInvoiceEditor from '../../components/PaymentInvoiceEditor'
 import { currency } from '../../utils/chargePayments'
 import { paymentDateLabel, paymentMethodLabel, paymentResidentName } from '../../utils/paymentHistory'
 
+const positiveId = value => Number.isSafeInteger(Number(value)) && Number(value) > 0 ? Number(value) : null
+
 export default function CollectorPaymentsPage() {
   const { token } = useAuth()
+  const [searchParams] = useSearchParams()
+  const unitId = positiveId(searchParams.get('unitId'))
+  const billId = positiveId(searchParams.get('billId'))
+  const reportId = positiveId(searchParams.get('reportId'))
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -26,15 +33,26 @@ export default function CollectorPaymentsPage() {
     return () => { active = false }
   }, [token])
 
+  const scopedPayments = useMemo(() => unitId ? payments.filter(payment => Number(payment.unitId) === unitId) : payments, [payments, unitId])
   const summary = useMemo(() => ({
-    approvals: payments.length,
-    collected: payments.reduce((sum, payment) => sum + Number(payment.verifiedAmount || 0), 0),
-    paidBills: new Set(payments.filter((payment) => payment.paymentStatus === 'PAID' && payment.targetBillId).map((payment) => payment.targetBillId)).size,
-  }), [payments])
-  const selectedPayment = payments.find((payment) => payment.id === selectedPaymentId)
+    approvals: scopedPayments.length,
+    collected: scopedPayments.reduce((sum, payment) => sum + Number(payment.verifiedAmount || 0), 0),
+    paidBills: new Set(scopedPayments.filter((payment) => payment.paymentStatus === 'PAID' && payment.targetBillId).map((payment) => payment.targetBillId)).size,
+  }), [scopedPayments])
+  const selectedPayment = scopedPayments.find((payment) => payment.id === selectedPaymentId)
+  async function refreshPayment() {
+    if (!selectedPayment) return
+    const data = await apiRequest(`/api/payments/${selectedPayment.id}`, { token })
+    setPayments(current => current.map(payment => String(payment.id) === String(data.payment.id) ? data.payment : payment))
+  }
+
 
   return (
     <DashboardLayout title="Verified payment records" className="collector-payments-shell" description="View Admin-approved payments and edit staff-issued invoice references.">
+      {(unitId || billId) && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-white p-4">
+        <p className="text-sm text-slate-600">{unitId ? `Showing approved payments for ${scopedPayments[0]?.unitNumber ? `Unit ${scopedPayments[0].unitNumber}` : 'the reported unit'}.` : 'Review approved payment invoice numbers.'}</p>
+        <div className="flex flex-wrap gap-2">{billId && <Link to={`/collector/bills/${billId}?${reportId ? `from=billing-errors&reportId=${reportId}&section=invoices` : 'from=payments'}`} className="rounded-lg border border-emerald-300 px-3 py-2 text-xs font-bold text-emerald-800">Back to reported SOA</Link>}<Link to="/collector/payments" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">View all payments</Link></div>
+      </div>}
       <div className="grid gap-3 md:grid-cols-3">
         <SummaryCard label="Approved payments" value={loading ? '—' : summary.approvals} icon={WalletCards} accent="blue" />
         <SummaryCard label="Approved amount" value={loading ? '—' : currency(summary.collected)} icon={CircleDollarSign} accent="green" />
@@ -42,15 +60,15 @@ export default function CollectorPaymentsPage() {
       </div>
 
       <Panel className="collector-payments-panel" title="Approved records" description="Find a payment quickly. Open View Details for allocations, invoice references and the SOA.">
-        <AdminPaymentQueue payments={payments} loading={loading} error={error} approvedOnly onViewDetails={(payment) => setSelectedPaymentId(payment.id)} />
+        <AdminPaymentQueue key={unitId || 'all'} payments={scopedPayments} loading={loading} error={error} approvedOnly onViewDetails={(payment) => setSelectedPaymentId(payment.id)} />
       </Panel>
 
-      {selectedPayment && <PaymentDetailsDialog payment={selectedPayment} onClose={() => setSelectedPaymentId(null)} />}
+      {selectedPayment && <PaymentDetailsDialog payment={selectedPayment} onSaved={refreshPayment} onClose={() => setSelectedPaymentId(null)} />}
     </DashboardLayout>
   )
 }
 
-function PaymentDetailsDialog({ payment, onClose }) {
+function PaymentDetailsDialog({ payment, onClose, onSaved }) {
   const dialogRef = useRef(null)
 
   useEffect(() => {
@@ -82,7 +100,7 @@ function PaymentDetailsDialog({ payment, onClose }) {
         <h3 className="mb-2 text-sm font-black">Payment allocations</h3>
         <PaymentAllocationDetails payment={payment} />
       </section>
-      {payment.targetBillId && <p className="mt-4 text-xs text-slate-500">Open the SOA to review the statement and add invoice numbers.</p>}
+      {payment.reviewStatus === 'APPROVED' && <div className="mt-5 border-t border-slate-100 pt-4"><PaymentInvoiceEditor key={payment.id} payment={payment} initiallyExpanded onSaved={onSaved} /></div>}
       <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
         <button type="button" onClick={onClose} className="min-h-11 rounded-lg border border-slate-200 px-4 text-xs font-bold text-slate-600">Close</button>
         {payment.targetBillId && <Link to={`/collector/bills/${payment.targetBillId}?from=payments`} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-800 hover:bg-emerald-100"><FileText size={14} aria-hidden="true" />Open SOA</Link>}
