@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, CheckCircle2, Eye, EyeOff, RotateCw } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, RotateCw } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import BrandMark from '../components/BrandMark'
 import OtpInput from '../components/OtpInput'
+import PasswordInput from '../components/PasswordInput'
+import { passwordError } from '../utils/passwordPolicy'
 import { apiRequest } from '../services/api'
 import useAuth from '../hooks/useAuth'
 import { clearPasswordRecovery, readPasswordRecovery, savePasswordRecovery } from '../utils/passwordRecovery'
-
-function PasswordInput({ label, value, onChange, visible, onToggle }) {
-  return <label className="block text-sm font-bold">{label}<div className="relative mt-1.5"><input required minLength="8" type={visible ? 'text' : 'password'} autoComplete="new-password" value={value} onChange={onChange} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 pr-11 font-normal" /><button type="button" onClick={onToggle} aria-label={visible ? 'Hide password' : 'Show password'} className="absolute inset-y-0 right-0 grid w-11 place-items-center text-slate-500">{visible ? <EyeOff size={18} /> : <Eye size={18} />}</button></div></label>
-}
 
 export default function ResetPassword() {
   const location = useLocation()
@@ -20,8 +18,6 @@ export default function ResetPassword() {
   const [resetToken, setResetToken] = useState('')
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmation, setShowConfirmation] = useState(false)
   const [loading, setLoading] = useState(false)
   const [resending, setResending] = useState(false)
   const [error, setError] = useState('')
@@ -78,8 +74,9 @@ export default function ResetPassword() {
     event.preventDefault()
     if (!recovery || !resetToken || loading) return
     setError('')
-    if (password !== confirmation) {
-      setError('Passwords do not match.')
+    const validationError = passwordError(password, confirmation)
+    if (validationError) {
+      setError(validationError)
       return
     }
     setLoading(true)
@@ -116,10 +113,10 @@ export default function ResetPassword() {
           <div className="mt-3"><p className="text-sm text-slate-500">Request a code to reset your password.</p><Link to="/forgot-password" className="login-submit mt-5 inline-flex items-center justify-center">Send code</Link></div>
         ) : resetToken ? (
           <>
-            <p className="mt-2 text-sm text-slate-500">Use at least 8 characters.</p>
+            <p className="mt-2 text-sm text-slate-500">Choose a unique password you do not use for another account.</p>
             <form onSubmit={changePassword} className="mt-6 space-y-4">
-              <PasswordInput label="New password" value={password} onChange={(event) => setPassword(event.target.value)} visible={showPassword} onToggle={() => setShowPassword((current) => !current)} />
-              <PasswordInput label="Confirm password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} visible={showConfirmation} onToggle={() => setShowConfirmation((current) => !current)} />
+              <PasswordInput label="New password" value={password} onChange={(event) => setPassword(event.target.value)} />
+              <PasswordInput label="Confirm password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} confirmationFor={password} />
               <button disabled={loading} aria-busy={loading} className="login-submit">{loading ? 'Saving...' : 'Save password'}</button>
             </form>
           </>

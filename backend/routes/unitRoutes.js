@@ -1,5 +1,5 @@
 import express from "express";
-import bcrypt from "bcrypt";
+import { verifyPassword } from "../services/passwordHash.js";
 import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
@@ -30,7 +30,7 @@ const updateUnitSchema = z.object({
 });
 
 const deleteUnitSchema = z.object({
-  currentPassword: z.string().min(1).max(200),
+  currentPassword: z.string().min(1).max(256),
 }).strict();
 
 router.use(requireAuth);
@@ -83,9 +83,12 @@ router.get("/:id", allowRoles("ADMIN", "COLLECTOR", "RESIDENT"), requireId, asyn
 });
 
 router.post("/", allowRoles("ADMIN"), validateBody(createUnitSchema), async (req, res, next) => {
+  let client;
   try {
+    client = await pool.connect();
+    await client.query("BEGIN");
     const { unitNumber, floor, billableAreaSqm, occupancyStatus } = req.validatedBody;
-    const result = await pool.query(
+    const result = await client.query(
       `INSERT INTO units (unit_number, floor, billable_area_sqm, occupancy_status)
        VALUES ($1, $2, $3, $4)
        RETURNING id, unit_number AS "unitNumber", floor,
@@ -95,21 +98,27 @@ router.post("/", allowRoles("ADMIN"), validateBody(createUnitSchema), async (req
       [unitNumber, floor, billableAreaSqm, occupancyStatus]
     );
     await writeAuditLog({
+      client,
       actorUserId: req.user.id,
       entityName: "UNIT",
       entityId: result.rows[0].id,
       action: "CREATE",
       newValues: result.rows[0],
     });
+    await client.query("COMMIT");
     return res.status(201).json({ message: "Unit created.", unit: result.rows[0] });
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
-  }
+  } finally { client?.release(); }
 });
 
 router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateUnitSchema), async (req, res, next) => {
+  let client;
   try {
-    const beforeResult = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const beforeResult = await client.query(
       `SELECT id, unit_number AS "unitNumber", floor,
         billable_area_sqm AS "billableAreaSqm",
         occupancy_status AS "occupancyStatus",
@@ -117,7 +126,7 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateUnitSche
        FROM units WHERE id = $1`,
       [req.resourceId]
     );
-    if (!beforeResult.rows[0]) return res.status(404).json({ message: "Unit not found." });
+    if (!beforeResult.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "Unit not found." }); }
     const values = [];
     const updates = [];
     const columnMap = {
@@ -140,7 +149,7 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateUnitSche
     }
 
     values.push(req.resourceId);
-    const result = await pool.query(
+    const result = await client.query(
       `UPDATE units SET ${updates.join(", ")} WHERE id = $${values.length}
        RETURNING id, unit_number AS "unitNumber", floor,
          billable_area_sqm AS "billableAreaSqm",
@@ -149,6 +158,7 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateUnitSche
       values
     );
     await writeAuditLog({
+      client,
       actorUserId: req.user.id,
       entityName: "UNIT",
       entityId: req.resourceId,
@@ -156,35 +166,43 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateUnitSche
       oldValues: beforeResult.rows[0],
       newValues: result.rows[0],
     });
+    await client.query("COMMIT");
     return res.json({ message: "Unit updated.", unit: result.rows[0] });
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
-  }
+  } finally { client?.release(); }
 });
 
 router.delete("/:id", allowRoles("ADMIN"), requireId, validateBody(deleteUnitSchema), async (req, res, next) => {
+  let client;
   try {
-    const actor = await pool.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1", [req.user.id]);
-    const passwordMatches = actor.rows[0] && await bcrypt.compare(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
-    if (!passwordMatches) return res.status(401).json({ message: "Your current Admin password is required to delete a unit." });
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const actor = await client.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1", [req.user.id]);
+    const passwordMatches = actor.rows[0] && await verifyPassword(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
+    if (!passwordMatches) { await client.query("ROLLBACK"); return res.status(401).json({ message: "Your current Admin password is required to delete a unit." }); }
 
-    const result = await pool.query(
+    const result = await client.query(
       `DELETE FROM units WHERE id = $1
        RETURNING id, unit_number AS "unitNumber"`,
       [req.resourceId]
     );
-    if (!result.rows[0]) return res.status(404).json({ message: "Unit not found." });
+    if (!result.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "Unit not found." }); }
     await writeAuditLog({
+      client,
       actorUserId: req.user.id,
       entityName: "UNIT",
       entityId: req.resourceId,
       action: "DELETE",
       oldValues: result.rows[0],
     });
+    await client.query("COMMIT");
     return res.json({ message: "Unit permanently deleted.", unit: result.rows[0] });
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
-  }
+  } finally { client?.release(); }
 });
 
 export default router;

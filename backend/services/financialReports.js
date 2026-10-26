@@ -1,3 +1,5 @@
+import { cents, money } from './paymentAllocation.js';
+
 const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -91,12 +93,20 @@ function normalizeBill(row) {
   };
 }
 
+function compareUnitRows(left, right) {
+  return String(left.unitNumber ?? '').localeCompare(String(right.unitNumber ?? ''), undefined, { numeric: true })
+    || String(left.periodStart ?? '').localeCompare(String(right.periodStart ?? ''))
+    || Number(left.billId || 0) - Number(right.billId || 0)
+    || String(left.paymentDate ?? '').localeCompare(String(right.paymentDate ?? ''))
+    || Number(left.paymentId || 0) - Number(right.paymentId || 0);
+}
+
 async function readBills(pool, endDate, conditions, values) {
   const result = await pool.query(
     `${billDetailSql}\n      ${conditions.join('\n      ')}\n    GROUP BY b.id, p.status`,
     [endDate, ...values],
   );
-  return result.rows.map(normalizeBill);
+  return result.rows.map(normalizeBill).sort(compareUnitRows);
 }
 
 function sum(rows, key) {
@@ -116,6 +126,39 @@ function toChargeBillingRow(bill, charge) {
   };
 }
 
+const combinedMoneyFields = ['duesBilled', 'waterBilled', 'latePenalty', 'totalBilled', 'paidAmount', 'remainingBalance'];
+
+export function buildCombinedReport(bills, appliedByBill, units, asOfDate) {
+  const byUnit = new Map();
+  function addUnit(unit) {
+    const row = { unitId:Number(unit.unitId), unitNumber:unit.unitNumber, directoryNames:unit.residentNames || 'Unassigned resident',
+      payerNames:new Set(), billCount:0, ...Object.fromEntries(combinedMoneyFields.map(key => [key,0])) };
+    byUnit.set(String(unit.unitId),row);
+    return row;
+  }
+  units.forEach(addUnit);
+  for (const bill of bills) {
+    const row = byUnit.get(String(bill.unitId)) || addUnit(bill);
+    const dues = cents(bill.duesBilled), water = cents(bill.waterBilled), penalty = cents(bill.latePenalty);
+    const billed = dues+water+penalty;
+    // Cap payments per SOA before aggregation: surplus on one bill cannot settle another.
+    const paid = Math.min(cents(appliedByBill.get(Number(bill.billId)) || 0),billed);
+    row.billCount++;
+    row.payerNames.add(String(bill.payerName || 'Unassigned resident').trim() || 'Unassigned resident');
+    row.duesBilled+=dues;row.waterBilled+=water;row.latePenalty+=penalty;
+    row.totalBilled+=billed;row.paidAmount+=paid;row.remainingBalance+=billed-paid;
+  }
+  const totals = Object.fromEntries(combinedMoneyFields.map(key => [key,0]));
+  const rows = [...byUnit.values()].sort(compareUnitRows).map(row => {
+    for (const key of combinedMoneyFields) totals[key]+=row[key];
+    return { unitId:row.unitId, unitNumber:row.unitNumber, billCount:row.billCount,
+      payerName:row.billCount ? [...row.payerNames].sort((a,b)=>a.localeCompare(b)).join(', ') : row.directoryNames,
+      status:!row.billCount ? 'NO_SOA' : !row.totalBilled ? 'NO_CHARGES' : !row.remainingBalance ? 'PAID' : row.paidAmount ? 'PARTIAL' : 'UNPAID',
+      ...Object.fromEntries(combinedMoneyFields.map(key => [key,money(row[key])])) };
+  });
+  return { asOfDate, rows, totals:Object.fromEntries(combinedMoneyFields.map(key => [key,money(totals[key])])) };
+}
+
 export async function getFinancialReport(pool, filters) {
   const billedBills = await readBills(pool, filters.endDate, [
     'AND b.period_start_snapshot >= $2::date',
@@ -126,8 +169,7 @@ export async function getFinancialReport(pool, filters) {
     'AND b.period_start_snapshot <= $2::date',
   ], [filters.endDate]);
 
-  const [collectionResult, receivableAppliedResult, occupancyResult] = await Promise.all([
-    pool.query(
+  const collectionResult = await pool.query(
       `SELECT ps.id AS "paymentId", ps.verified_payment_date AS "paymentDate",
          ps.payment_method AS "paymentMethod", ps.verified_reference_no AS "paymentReference",
          pa.amount_applied AS "appliedAmount", a.charge_type AS "chargeType", pa.component,
@@ -154,8 +196,8 @@ export async function getFinancialReport(pool, filters) {
        GROUP BY ps.id, pa.id, a.id, b.id, p.status
        ORDER BY ps.verified_payment_date, ps.id, pa.id`,
       [filters.endDate, filters.startDate, filters.endDate],
-    ),
-    pool.query(
+    );
+  const receivableAppliedResult = await pool.query(
       `SELECT pa.unit_bill_id AS "billId", COALESCE(SUM(pa.amount_applied), 0) AS applied
        FROM payment_applications pa
        JOIN payment_submissions ps ON ps.id = pa.payment_submission_id
@@ -163,8 +205,8 @@ export async function getFinancialReport(pool, filters) {
          AND ps.verified_payment_date <= $1::date
        GROUP BY pa.unit_bill_id`,
       [filters.endDate],
-    ),
-    pool.query(
+    );
+  const occupancyResult = await pool.query(
       `SELECT u.id AS "unitId", u.unit_number AS "unitNumber", u.floor,
          u.occupancy_status AS "occupancyStatus",
          COALESCE(STRING_AGG(DISTINCT usr.full_name, ', ' ORDER BY usr.full_name), 'Unassigned resident') AS "residentNames"
@@ -173,8 +215,7 @@ export async function getFinancialReport(pool, filters) {
        LEFT JOIN users usr ON usr.id = a.user_id
        GROUP BY u.id
        ORDER BY u.unit_number`,
-    ),
-  ]);
+    );
 
   const applicationRows = collectionResult.rows.map((row) => {
     const bill = normalizeBill(row);
@@ -188,7 +229,7 @@ export async function getFinancialReport(pool, filters) {
       ...bill,
       ...allocation,
     };
-  });
+  }).sort(compareUnitRows);
 
   const cashResult = await pool.query(
     `SELECT COALESCE(SUM(verified_amount), 0) AS "totalCollections"
@@ -209,11 +250,11 @@ export async function getFinancialReport(pool, filters) {
       ? 'PAID'
       : paidAmount > 0 ? 'PARTIAL' : bill.dueDate < filters.endDate ? 'OVERDUE' : 'UNPAID';
     return { ...bill, paidAmount, remainingBalance, paymentStatus };
-  }).filter((row) => row.remainingBalance > 0).sort((left, right) => String(left.unitNumber).localeCompare(String(right.unitNumber), undefined, { numeric: true }));
+  }).filter((row) => row.remainingBalance > 0).sort(compareUnitRows);
   const occupancyRows = occupancyResult.rows.map((row) => ({
     ...row,
     unitId: Number(row.unitId),
-  }));
+  })).sort(compareUnitRows);
   const occupiedUnits = occupancyRows.filter((row) => row.occupancyStatus === 'OCCUPIED').length;
   const paidByTransaction = new Map();
   for(const row of applicationRows) {
@@ -225,6 +266,7 @@ export async function getFinancialReport(pool, filters) {
 
   return {
     filters,
+    combined: buildCombinedReport(billedBills,appliedByBill,occupancyRows,filters.endDate),
     overview: {
       totalBilling,
       totalCollections,

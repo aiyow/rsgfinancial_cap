@@ -4,7 +4,7 @@ import { filterPaymentQueue, paginatePaymentQueue, paymentQueueAmount, paymentRe
 import { paymentResidentName } from '../src/utils/paymentHistory.js'
 
 const payments = [
-  { id: 1, submittedByName: 'Juan B Dela Cruz', unitNumber: '232', reviewStatus: 'APPROVED', paymentPurpose: 'ASSOCIATION_DUES', entryType: 'RECEIPT_UPLOAD', paymentMethod: 'GCASH', submittedAt: '2026-10-04T12:27:00Z', verifiedAmount: '1620.00', ocrAmount: 1, verifiedReferenceNo: '804580839866', allocations: [{ invoiceNumber: '#2414' }] },
+  { id: 1, officialReceiptNo:'REF-0000001', submittedByName: 'Juan B Dela Cruz', unitNumber: '232', reviewStatus: 'APPROVED', paymentPurpose: 'ASSOCIATION_DUES', entryType: 'RECEIPT_UPLOAD', paymentMethod: 'GCASH', submittedAt: '2026-10-04T12:27:00Z', verifiedAmount: '1620.00', ocrAmount: 1, verifiedReferenceNo: '804580839866', allocations: [{ invoiceNumber: '#2414' }] },
   { id: 2, submittedByName: 'Anna Dela Cruz', unitNumber: '231', reviewStatus: 'PENDING', paymentPurpose: 'COMBINED', entryType: 'RECEIPT_UPLOAD', paymentMethod: 'GCASH', submittedAt: '2026-10-03T16:30:00Z', ocrAmount: '2030.00', ocrReferenceNo: '6044857861787' },
   { id: 3, residentName: 'Precious Mae Parreño', submittedByName: 'Admin Recorder', unitNumber: '209', reviewStatus: 'APPROVED', paymentPurpose: 'WATER', entryType: 'MANUAL', paymentMethod: 'CASH', submittedAt: '2026-10-03T03:00:00Z', verifiedAmount: 58.9, allocations: [{ invoiceNumber: 'W-4212' }] },
   { id: 4, submittedByName: 'Other Resident', unitNumber: '99', reviewStatus: 'REJECTED', paymentPurpose: 'WATER', entryType: 'RECEIPT_UPLOAD', paymentMethod: 'BANK_TRANSFER', submittedAt: '2026-10-01T03:00:00Z', ocrAmount: null },
@@ -26,6 +26,7 @@ test('search finds residents, units, accents, transaction references and issued 
   assert.deepEqual(ids(filterPaymentQueue(payments, { search: '6044857861787' })), [2])
   assert.deepEqual(ids(filterPaymentQueue(payments, { search: '#2414' })), [1])
   assert.deepEqual(ids(filterPaymentQueue(payments, { search: 'W-4212' })), [3])
+  assert.deepEqual(ids(filterPaymentQueue(payments, { search: 'ref-0000001' })), [1])
   assert.equal(filterPaymentQueue(payments, { search: 'unmatched' }).length, 0)
 })
 

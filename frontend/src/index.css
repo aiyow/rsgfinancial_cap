@@ -483,14 +483,14 @@ body:has(.resident-bills-shell), body:has(.resident-payments-shell) { min-width:
   margin-right: 6px;
 }
 
-.soa-signature-band { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #285b78; background: var(--soa-secondary, #a9cbe8); text-align: center; font-size: 10px; font-weight: 900; }
+.soa-signature-band { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #285b78; background: var(--soa-secondary, #a9cbe8); text-align: center; font-size: 13px; font-weight: 700; line-height: 1.45; }
 .soa-signature-band > div:first-child { border-right: 1px solid #285b78; }
-.soa-signature-band p { min-height: 26px; margin: 0; padding: 7px 8px; }
+.soa-signature-band p { min-height: 32px; margin: 0; padding: 8px 10px; }
 .soa-signature-band p:first-child { border-bottom: 1px solid #285b78; }
-.soa-footer { background: var(--soa-secondary, #a9cbe8); text-align: center; font-size: 10px; font-weight: 900; }
-.soa-footer > p { min-height: 25px; margin: 0; border-bottom: 1px solid #285b78; padding: 7px 12px; }
+.soa-footer { background: var(--soa-secondary, #a9cbe8); text-align: center; font-size: 13px; font-weight: 600; line-height: 1.45; }
+.soa-footer > p { min-height: 32px; margin: 0; border-bottom: 1px solid #285b78; padding: 8px 14px; }
 .soa-footer > p:last-child { border-bottom: 0; }
-.soa-footer .soa-thank-you { background: var(--soa-highlight, #cceabd); font-size: 12px; letter-spacing: 0.35em; }
+.soa-footer .soa-thank-you { background: var(--soa-highlight, #cceabd); font-size: 12px; font-weight: 700; letter-spacing: 0.35em; }
 .resident-soa-scroll { overflow-x: auto; overscroll-behavior-x: contain; border-radius: 4px; }
 .resident-soa-scroll > div { min-width: 780px; }
 .soa-viewer-viewport { overflow: auto; max-height: 65dvh; padding: 8px; background: #edf3ef; overscroll-behavior: contain; }
@@ -543,11 +543,18 @@ body:has(.resident-bills-shell), body:has(.resident-payments-shell) { min-width:
     width: 100% !important;
     max-width: 100% !important;
   }
+  html:has(.soa-sheet),
+  body:has(.soa-sheet),
+  body:has(.soa-sheet) .dashboard-shell,
+  body:has(.soa-sheet) main { background: #fff !important; }
+  body:has(.soa-sheet) main > .mx-auto { max-width: none !important; padding: 0 !important; }
   .soa-sheet {
     width: 100% !important;
+    margin: 0 !important;
     font-size: 12px;
     page-break-inside: avoid;
   }
+  .soa-signature-band, .soa-footer { break-inside: avoid; }
   .soa-brand-panel { min-height: 120px; }
   .soa-brand-logo { max-height: 82px; }
   .soa-payment-band { min-height: 84px; }
@@ -592,4 +599,98 @@ body:has(.resident-bills-shell), body:has(.resident-payments-shell) { min-width:
   .settings-panel { padding: 20px 16px; }
   .settings-shell header .dashboard-breadcrumb-separator,
   .settings-shell header .ui-title { display: none; }
+}
+
+/* Password feedback opens when typing begins, without an abrupt layout jump. */
+.password-feedback-reveal {
+  display: grid;
+  grid-template-rows: 1fr;
+  animation: password-feedback-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes password-feedback-enter {
+  from { grid-template-rows: 0fr; opacity: 0; transform: translateY(-6px); }
+  to { grid-template-rows: 1fr; opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .password-feedback-reveal { animation: none; }
+}
+
+/* Financial report printouts use ordinary document typography and no theme colors. */
+@media print {
+  html:has(.financial-report-print) { --app-bg: #fff; --ink: #000; }
+  html:has(.financial-report-print),
+  body:has(.financial-report-print),
+  body:has(.financial-report-print) #root,
+  body:has(.financial-report-print) .dashboard-shell,
+  body:has(.financial-report-print) main {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .financial-report-print {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 10pt;
+    line-height: 1.25;
+  }
+  .financial-report-print,
+  .financial-report-print * {
+    color: #000 !important;
+    background: #fff !important;
+    background-image: none !important;
+    border-color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    font-style: normal !important;
+    letter-spacing: normal !important;
+  }
+  .financial-report-print h1 {
+    margin: 0 0 4pt;
+    font-size: 14pt !important;
+    font-weight: 700 !important;
+  }
+  .financial-report-print p { font-size: 10pt !important; font-weight: 400 !important; }
+  .financial-report-print .financial-report-table-scroll {
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+  .financial-report-print .financial-report-table {
+    width: 100% !important;
+    font-size: 10pt !important;
+  }
+  .financial-report-print .financial-report-table thead { position: static !important; }
+  .financial-report-print .financial-report-table th,
+  .financial-report-print .financial-report-table td {
+    padding: 4pt 5pt !important;
+    border: 0.5pt solid #000 !important;
+    font-size: inherit !important;
+    font-weight: 400 !important;
+    line-height: 1.25 !important;
+    vertical-align: top !important;
+  }
+  .financial-report-print .financial-report-table thead th,
+  .financial-report-print .financial-report-table tfoot th,
+  .financial-report-print .financial-report-table tfoot td { font-weight: 700 !important; }
+  .financial-report-print .financial-report-table td span {
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+  }
+  .combined-billing-table th:nth-child(2),
+  .combined-billing-table td:nth-child(2) { min-width: 0 !important; width: 18%; }
+}
+
+/* Audit navigation stays still on hover, click and keyboard focus. */
+.audit-feed-panel { padding: 16px; }
+.audit-feed-panel > h2 { font-size: 1rem; }
+.audit-feed-panel > p { font-size: 0.75rem; line-height: 1.5; }
+.audit-feed-panel > div { margin-top: 12px; }
+.audit-pagination button,
+.audit-pagination button:is(:hover, :active, :focus) {
+  transform: none;
+  translate: none;
+  box-shadow: none;
+  transition: none;
+  background-color: white;
 }

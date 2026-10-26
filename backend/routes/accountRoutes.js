@@ -1,6 +1,6 @@
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import bcrypt from 'bcrypt';
+import { verifyPassword } from '../services/passwordHash.js';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import pool from '../config/db.js';
@@ -14,10 +14,10 @@ import { createEmailChangeCode, emailChangeExpiry, hashEmailChangeCode, emailCha
 const router = express.Router();
 const userColumns = `id, full_name AS "fullName", email, role, is_active AS "isActive",
   approval_status AS "approvalStatus", email_verified AS "emailVerified", created_at AS "createdAt", updated_at AS "updatedAt"`;
-const nameSchema = z.object({ fullName: z.string().trim().min(1).max(150) }).strict();
+const nameSchema = z.object({ fullName: z.string().trim().min(1).max(205) }).strict();
 const emailSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
-  currentPassword: z.string().min(1).max(72),
+  currentPassword: z.string().min(1).max(256),
 }).strict();
 const verifySchema = z.object({ challengeId: z.uuid(), otp: z.string().regex(/^\d{6}$/, 'Enter the six-digit code.') }).strict();
 
@@ -53,7 +53,7 @@ router.post('/email-change', validateBody(emailSchema), async (req, res, next) =
     const { email, currentPassword } = req.validatedBody;
     const user = (await client.query(`SELECT ${userColumns}, password_hash AS "passwordHash", auth_version AS "authVersion"
       FROM users WHERE id=$1 FOR UPDATE`, [req.user.id])).rows[0];
-    if (!user || !await bcrypt.compare(currentPassword, user.passwordHash)) {
+    if (!user || !await verifyPassword(currentPassword, user.passwordHash)) {
       await client.query('ROLLBACK');
       return res.status(403).json({ message: 'Your current password is incorrect.' });
     }

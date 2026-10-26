@@ -1,14 +1,9 @@
+import { saveDeliveryOutcomes } from './auditDelivery.js';
 import pool from "../config/db.js";
 import { billAppliedSql, billTotalSql, chargePaymentsSql } from "./paymentLedger.js";
 import { recipientPaymentDetails } from './paymentRecipients.js';
 import { sendSoaNotification } from "./soaEmail.js";
 
-function deliveryError(error) {
-  const message = error?.code === "EMAIL_NOT_CONFIGURED"
-    ? "Email service is not configured."
-    : String(error?.message || "Email delivery failed.");
-  return message.slice(0, 500);
-}
 
 export async function deliverSoaEmailNotifications(deliveryIds) {
   const ids = [...new Set((deliveryIds || []).map(Number).filter(Number.isSafeInteger))];
@@ -29,26 +24,11 @@ export async function deliverSoaEmailNotifications(deliveryIds) {
     [ids],
   );
 
-  const summary = { sent: 0, failed: 0 };
+  const outcomes = [];
   for (const delivery of result.rows.map(recipientPaymentDetails)) {
-    try {
-      await sendSoaNotification(delivery);
-      await pool.query(
-        `UPDATE soa_email_deliveries
-         SET status = 'SENT', attempt_count = attempt_count + 1, last_attempted_at = NOW(), sent_at = NOW(), last_error = NULL
-         WHERE id = $1 AND status = 'PENDING'`,
-        [delivery.id],
-      );
-      summary.sent += 1;
-    } catch (error) {
-      await pool.query(
-        `UPDATE soa_email_deliveries
-         SET status = 'FAILED', attempt_count = attempt_count + 1, last_attempted_at = NOW(), last_error = $2
-         WHERE id = $1 AND status = 'PENDING'`,
-        [delivery.id, deliveryError(error)],
-      );
-      summary.failed += 1;
-    }
+    let error = null;
+    try { await sendSoaNotification(delivery); } catch (failure) { error = failure; }
+    outcomes.push({ delivery, error });
   }
-  return summary;
+  return saveDeliveryOutcomes(pool, outcomes);
 }

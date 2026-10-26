@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, Eye, EyeOff, KeyRound, Mail, RotateCw, Save, ShieldCheck, UserRound } from 'lucide-react'
+import { CheckCircle2, KeyRound, Mail, RotateCw, Save, ShieldCheck, UserRound } from 'lucide-react'
 import { Panel } from './DashboardLayout'
 import OtpInput from './OtpInput'
+import PasswordField from './PasswordInput'
+import { passwordError } from '../utils/passwordPolicy'
 import useAuth from '../hooks/useAuth'
 import { apiRequest } from '../services/api'
 
@@ -21,11 +23,6 @@ function FormActions({ children }) {
 function Notice({ notice }) {
   if (!notice.error && !notice.message) return null
   return <p role={notice.error ? 'alert' : 'status'} className={`rounded-lg border p-3 text-sm ${notice.error ? 'border-red-100 bg-red-50 text-red-700' : 'border-emerald-100 bg-emerald-50 text-emerald-800'}`}>{notice.error || notice.message}</p>
-}
-
-function PasswordField({ label, value, onChange, current = false }) {
-  const [visible, setVisible] = useState(false)
-  return <label className="block text-sm font-semibold text-[var(--ink)]">{label}<div className="relative"><input required minLength={current ? 1 : 8} maxLength={72} type={visible ? 'text' : 'password'} autoComplete={current ? 'current-password' : 'new-password'} value={value} onChange={onChange} className={`${inputClass} pr-11`} /><button type="button" onClick={() => setVisible(value => !value)} aria-label={`${visible ? 'Hide' : 'Show'} ${label.toLowerCase()}`} className="absolute inset-y-0 right-0 mt-1.5 grid w-11 place-items-center rounded-lg text-[var(--muted)] hover:text-[var(--ink)]">{visible ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></label>
 }
 
 function NameSettings() {
@@ -49,7 +46,7 @@ function NameSettings() {
     } finally { setSaving(false) }
   }
 
-  return <SettingsPanel icon={UserRound} title="Profile details" description="Update the name shown on your account."><form onSubmit={save} className="space-y-4"><Notice notice={notice} /><label className="block text-sm font-semibold text-[var(--ink)]">Full name<input required maxLength={150} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} className={inputClass} /></label><FormActions><button disabled={saving || !name.trim() || name.trim() === user.fullName} aria-busy={saving} className={primaryClass}><Save size={16} aria-hidden="true" />{saving ? 'Saving...' : 'Save name'}</button></FormActions></form></SettingsPanel>
+  return <SettingsPanel icon={UserRound} title="Profile details" description="Update the name shown on your account."><form onSubmit={save} className="space-y-4"><Notice notice={notice} /><label className="block text-sm font-semibold text-[var(--ink)]">Full name<input required maxLength={205} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} className={inputClass} /></label><FormActions><button disabled={saving || !name.trim() || name.trim() === user.fullName} aria-busy={saving} className={primaryClass}><Save size={16} aria-hidden="true" />{saving ? 'Saving...' : 'Save name'}</button></FormActions></form></SettingsPanel>
 }
 
 function EmailSettings() {
@@ -144,8 +141,9 @@ function PasswordSettings() {
     event.preventDefault()
     if (busy) return
     setNotice(emptyNotice)
-    if (form.newPassword !== form.confirmation) {
-      setNotice({ error: 'Passwords do not match.', message: '' })
+    const validationError = passwordError(form.newPassword, form.confirmation)
+    if (validationError) {
+      setNotice({ error: validationError, message: '' })
       return
     }
     setBusy(true)
@@ -159,7 +157,7 @@ function PasswordSettings() {
     } finally { setBusy(false) }
   }
 
-  return <SettingsPanel icon={KeyRound} title="Password" description="Use at least 8 characters. Other sessions will be signed out."><form onSubmit={save} className="space-y-4"><Notice notice={notice} /><PasswordField label="Current password" current value={form.currentPassword} onChange={(event) => update('currentPassword', event.target.value)} /><div className="grid gap-4 min-[1440px]:grid-cols-2"><PasswordField label="New password" value={form.newPassword} onChange={(event) => update('newPassword', event.target.value)} /><PasswordField label="Confirm password" value={form.confirmation} onChange={(event) => update('confirmation', event.target.value)} /></div><FormActions><button disabled={busy} aria-busy={busy} className={primaryClass}><KeyRound size={17} aria-hidden="true" />{busy ? 'Saving...' : 'Change password'}</button></FormActions></form></SettingsPanel>
+  return <SettingsPanel icon={KeyRound} title="Password" description="Meet all five requirements below. Other sessions will be signed out."><form onSubmit={save} className="space-y-4"><Notice notice={notice} /><PasswordField label="Current password" current value={form.currentPassword} onChange={(event) => update('currentPassword', event.target.value)} /><div className="grid gap-4 min-[1440px]:grid-cols-2"><PasswordField label="New password" value={form.newPassword} onChange={(event) => update('newPassword', event.target.value)} /><PasswordField confirmationFor={form.newPassword} label="Confirm password" value={form.confirmation} onChange={(event) => update('confirmation', event.target.value)} /></div><FormActions><button disabled={busy} aria-busy={busy} className={primaryClass}><KeyRound size={17} aria-hidden="true" />{busy ? 'Saving...' : 'Change password'}</button></FormActions></form></SettingsPanel>
 }
 
 export default function StaffAccountSettings({ children }) {

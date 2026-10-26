@@ -6,7 +6,6 @@ import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 import AdminPaymentQueue from '../../components/AdminPaymentQueue'
 import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
-import PaymentInvoiceEditor from '../../components/PaymentInvoiceEditor'
 import { currency } from '../../utils/chargePayments'
 import { paymentDateLabel, paymentMethodLabel, paymentResidentName } from '../../utils/paymentHistory'
 
@@ -40,15 +39,10 @@ export default function CollectorPaymentsPage() {
     paidBills: new Set(scopedPayments.filter((payment) => payment.paymentStatus === 'PAID' && payment.targetBillId).map((payment) => payment.targetBillId)).size,
   }), [scopedPayments])
   const selectedPayment = scopedPayments.find((payment) => payment.id === selectedPaymentId)
-  async function refreshPayment() {
-    if (!selectedPayment) return
-    const data = await apiRequest(`/api/payments/${selectedPayment.id}`, { token })
-    setPayments(current => current.map(payment => String(payment.id) === String(data.payment.id) ? data.payment : payment))
-  }
 
 
   return (
-    <DashboardLayout title="Verified payment records" className="collector-payments-shell" description="View Admin-approved payments and edit staff-issued invoice references.">
+    <DashboardLayout title="Verified payment records" className="collector-payments-shell" description="View Admin-approved payments, invoice references, and linked SOAs.">
       {(unitId || billId) && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-100 bg-white p-4">
         <p className="text-sm text-slate-600">{unitId ? `Showing approved payments for ${scopedPayments[0]?.unitNumber ? `Unit ${scopedPayments[0].unitNumber}` : 'the reported unit'}.` : 'Review approved payment invoice numbers.'}</p>
         <div className="flex flex-wrap gap-2">{billId && <Link to={`/collector/bills/${billId}?${reportId ? `from=billing-errors&reportId=${reportId}&section=invoices` : 'from=payments'}`} className="rounded-lg border border-emerald-300 px-3 py-2 text-xs font-bold text-emerald-800">Back to reported SOA</Link>}<Link to="/collector/payments" className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-600">View all payments</Link></div>
@@ -63,12 +57,12 @@ export default function CollectorPaymentsPage() {
         <AdminPaymentQueue key={unitId || 'all'} payments={scopedPayments} loading={loading} error={error} approvedOnly onViewDetails={(payment) => setSelectedPaymentId(payment.id)} />
       </Panel>
 
-      {selectedPayment && <PaymentDetailsDialog payment={selectedPayment} onSaved={refreshPayment} onClose={() => setSelectedPaymentId(null)} />}
+      {selectedPayment && <PaymentDetailsDialog payment={selectedPayment} onClose={() => setSelectedPaymentId(null)} />}
     </DashboardLayout>
   )
 }
 
-function PaymentDetailsDialog({ payment, onClose, onSaved }) {
+function PaymentDetailsDialog({ payment, onClose }) {
   const dialogRef = useRef(null)
 
   useEffect(() => {
@@ -88,6 +82,7 @@ function PaymentDetailsDialog({ payment, onClose, onSaved }) {
       </div>
 
       <dl className="mt-5 grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4 sm:grid-cols-3">
+        <PaymentDetail label="Reference number" value={payment.officialReceiptNo || '—'} />
         <PaymentDetail label="Approved amount" value={currency(payment.verifiedAmount)} />
         <PaymentDetail label="Applied amount" value={currency(payment.appliedAmount)} />
         <PaymentDetail label="SOA status" value={payment.paymentStatus || '—'} />
@@ -100,7 +95,6 @@ function PaymentDetailsDialog({ payment, onClose, onSaved }) {
         <h3 className="mb-2 text-sm font-black">Payment allocations</h3>
         <PaymentAllocationDetails payment={payment} />
       </section>
-      {payment.reviewStatus === 'APPROVED' && <div className="mt-5 border-t border-slate-100 pt-4"><PaymentInvoiceEditor key={payment.id} payment={payment} initiallyExpanded onSaved={onSaved} /></div>}
       <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
         <button type="button" onClick={onClose} className="min-h-11 rounded-lg border border-slate-200 px-4 text-xs font-bold text-slate-600">Close</button>
         {payment.targetBillId && <Link to={`/collector/bills/${payment.targetBillId}?from=payments`} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-800 hover:bg-emerald-100"><FileText size={14} aria-hidden="true" />Open SOA</Link>}

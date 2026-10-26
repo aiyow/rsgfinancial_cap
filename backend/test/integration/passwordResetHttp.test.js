@@ -92,14 +92,25 @@ test('email OTP recovery and login agree, including legacy duplicate accounts', 
     const cooldown = await request('/forgot-password', { email });
     assert.equal(cooldown.data.challengeId, challengeId);
     assert.equal(mail.length, 1);
-    for (const address of ['missing@example.invalid', 'pending@example.invalid', 'inactive@example.invalid']) {
+    for (const [address, status, code] of [
+      ['missing@example.invalid', 404, 'EMAIL_NOT_REGISTERED'],
+      ['pending@example.invalid', 403, 'ACCOUNT_APPROVAL_REQUIRED'],
+      ['inactive@example.invalid', 403, 'ACCOUNT_INACTIVE'],
+    ]) {
       const result = await request('/forgot-password', { email: address });
-      assert.equal(result.status, 200);
-      assert.equal(result.data.message, sent.data.message);
-      assert.deepEqual(Object.keys(result.data).sort(), Object.keys(sent.data).sort());
+      assert.equal(result.status, status);
+      assert.equal(result.data.code, code);
+      assert.equal(result.data.challengeId, undefined);
+      assert.equal(result.data.retryAfterSeconds, undefined);
+      if (status === 404) assert.match(result.data.message, /not registered/);
+      assert.equal(mail.length, 1, 'Rejected accounts must not receive email.');
     }
+    assert.equal((await query('SELECT COUNT(*)::int AS count FROM password_reset_challenges')).rows[0].count, 1);
+    assert.equal((await query('SELECT COUNT(*)::int AS count FROM users WHERE id IN (-1003,-1004) AND password_reset_last_sent_at IS NOT NULL')).rows[0].count, 0);
+    assert.equal(cooldown.status, 200);
+    assert.match(cooldown.data.message, /already sent/);
     assert.equal(mail.length, 1);
-    const newPassword = ' New password 456! ';
+    const newPassword = ' ' + 'NewPass7!xyz'.padEnd(126, 'x') + ' ';
     const verifyBody = () => ({ email, challengeId, otp });
     let resetToken = 'unverified-token-'.padEnd(43, 'x');
     const resetBody = () => ({ email, resetToken, password: newPassword });
@@ -127,6 +138,7 @@ test('email OTP recovery and login agree, including legacy duplicate accounts', 
     assert.equal(reset.status, 200, JSON.stringify(reset.data));
     const login = await request('/login', { email: ' RESET@EXAMPLE.INVALID ', password: newPassword });
     assert.equal(login.status, 200, JSON.stringify(login.data));
+    assert.equal((await request('/login', { email, password: newPassword.slice(0, 127) + 'Q' })).status, 401);
     assert.equal(Number(login.data.user.id), -1001);
     assert.equal((await request('/me', undefined, login.data.token)).status, 200);
     assert.equal((await request('/me', undefined, initialLogin.data.token)).status, 401);

@@ -47,7 +47,8 @@ test("sends one current-status catch-up reminder and records it as sent", async 
   assert.deepEqual(summary, { today: "2026-10-01", candidates: 1, sent: 1, failed: 0, skipped: 0 });
   assert.equal(sent.length, 1);
   assert.equal(sent[0].type, REMINDER_TYPES.OVERDUE);
-  assert.match(calls.at(-1).sql, /status = 'SENT'/);
+  assert.ok(calls.some(call => call.sql.startsWith('UPDATE soa_reminder_deliveries SET status = $2') && call.values[1] === 'SENT'));
+  assert.equal(calls.at(-1).sql, 'COMMIT');
 });
 
 test("records an SMTP error so the current reminder can be retried", async () => {
@@ -81,5 +82,6 @@ test("records an SMTP error so the current reminder can be retried", async () =>
   });
 
   assert.equal(summary.failed, 1);
-  assert.match(calls.at(-1).sql, /status = 'FAILED'/);
+  assert.ok(calls.some(call => call.sql.startsWith('UPDATE soa_reminder_deliveries SET status = $2') && call.values[1] === 'FAILED'));
+  assert.equal(calls.at(-1).sql, 'COMMIT');
 });

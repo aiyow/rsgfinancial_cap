@@ -14,7 +14,10 @@ import { ensureBillingErrorSchema } from "../services/billingErrors.js";
 import { regeneratePrescriptiveRecommendations } from '../services/prescriptiveAnalytics.js';
 
 const router = express.Router();
-const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");
+const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.").refine(value => {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number(value.slice(0, 4)) >= 1 && !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}, "Use a valid calendar date.");
 const chargeEditSchema = z.object({
   id: z.coerce.number().int().positive(),
   description: z.string().trim().min(1).max(255).optional(),
@@ -23,7 +26,7 @@ const chargeEditSchema = z.object({
 }).strict().refine((body) => Object.keys(body).length > 1, { message: "Change at least one charge field." });
 const editBillSchema = z.object({
   reason: z.string().trim().min(3).max(500),
-  payerName: z.union([z.string().trim().max(150), z.null()]).optional(),
+  payerName: z.union([z.string().trim().max(205), z.null()]).optional(),
   payerEmail: z.union([z.string().trim().max(255), z.null()]).optional(),
   periodStart: dateSchema.optional(),
   periodEnd: dateSchema.optional(),
@@ -247,7 +250,6 @@ router.patch("/:id", allowRoles("ADMIN", "COLLECTOR"), requireId, validateBody(e
     const currentReading = body.currentReading ?? storedCurrent;
     const periodStart = body.periodStart ?? dateOnly(current.period_start_snapshot);
     const periodEnd = body.periodEnd ?? dateOnly(current.period_end_snapshot);
-    const dueDate = body.dueDate ?? dateOnly(current.due_date_snapshot);
     if ((body.previousReading !== undefined || body.currentReading !== undefined)
       && (previousReading === null || currentReading === null)) {
       await client.query("ROLLBACK");
@@ -257,9 +259,11 @@ router.patch("/:id", allowRoles("ADMIN", "COLLECTOR"), requireId, validateBody(e
       await client.query("ROLLBACK");
       return res.status(400).json({ message: "Current reading cannot be lower than previous reading." });
     }
-    if (periodEnd < periodStart || dueDate < periodEnd) {
+    // Association dues can be billed in advance: the due date may fall before
+    // coverage ends. That schedule must not block a statement-date correction.
+    if (periodEnd < periodStart) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ message: "Coverage and due dates are not in a valid order." });
+      return res.status(400).json({ message: "Period end cannot be earlier than period start." });
     }
 
     const columnMap = {

@@ -1,0 +1,955 @@
+TAP version 13
+# Subtest: all application mutation endpoints declare audited or excluded coverage
+ok 1 - all application mutation endpoints declare audited or excluded coverage
+  ---
+  duration_ms: 39.5675
+  ...
+# ◇ injected env (28) from  // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+# Subtest: audit snapshots recursively exclude credentials, storage identifiers, file data and OCR text
+ok 2 - audit snapshots recursively exclude credentials, storage identifiers, file data and OCR text
+  ---
+  duration_ms: 47.1595
+  ...
+# Subtest: no-op comparison ignores technical timestamps but preserves business status changes
+ok 3 - no-op comparison ignores technical timestamps but preserves business status changes
+  ---
+  duration_ms: 2.1312
+  ...
+# Subtest: legacy deleted batch details use stored coverage and counts even with no current batch
+ok 4 - legacy deleted batch details use stored coverage and counts even with no current batch
+  ---
+  duration_ms: 4.9564
+  ...
+# Subtest: bulk reading diffs include actual changes and deletions, not identical units
+ok 5 - bulk reading diffs include actual changes and deletions, not identical units
+  ---
+  duration_ms: 5.2118
+  ...
+# Subtest: common writer skips no-ops and sanitizes data before storage
+ok 6 - common writer skips no-ops and sanitizes data before storage
+  ---
+  duration_ms: 5.3614
+  ...
+# Subtest: automatic changes do not create user activity while delivery states still persist
+ok 7 - automatic changes do not create user activity while delivery states still persist
+  ---
+  duration_ms: 36.4297
+  ...
+# Subtest: API: calendar months clamp at month end and account for leap years and year rollover
+ok 8 - API: calendar months clamp at month end and account for leap years and year rollover
+  ---
+  duration_ms: 9.2947
+  ...
+# Subtest: API: valid periods include exactly one and two calendar months
+ok 9 - API: valid periods include exactly one and two calendar months
+  ---
+  duration_ms: 3.6058
+  ...
+# Subtest: API: rates cannot be zero, negative, missing, nonfinite or round down to zero
+ok 10 - API: rates cannot be zero, negative, missing, nonfinite or round down to zero
+  ---
+  duration_ms: 2.7417
+  ...
+# Subtest: API: real date checks reject rollover dates, non-leap February and year zero
+ok 11 - API: real date checks reject rollover dates, non-leap February and year zero
+  ---
+  duration_ms: 3.6517
+  ...
+# Subtest: API: date ordering and minimum/maximum gaps reject every out-of-range boundary
+ok 12 - API: date ordering and minimum/maximum gaps reject every out-of-range boundary
+  ---
+  duration_ms: 1.0898
+  ...
+# Subtest: browser: calendar months clamp at month end and account for leap years and year rollover
+ok 13 - browser: calendar months clamp at month end and account for leap years and year rollover
+  ---
+  duration_ms: 1.0101
+  ...
+# Subtest: browser: valid periods include exactly one and two calendar months
+ok 14 - browser: valid periods include exactly one and two calendar months
+  ---
+  duration_ms: 1.0257
+  ...
+# Subtest: browser: rates cannot be zero, negative, missing, nonfinite or round down to zero
+ok 15 - browser: rates cannot be zero, negative, missing, nonfinite or round down to zero
+  ---
+  duration_ms: 0.5775
+  ...
+# Subtest: browser: real date checks reject rollover dates, non-leap February and year zero
+ok 16 - browser: real date checks reject rollover dates, non-leap February and year zero
+  ---
+  duration_ms: 1.6228
+  ...
+# Subtest: browser: date ordering and minimum/maximum gaps reject every out-of-range boundary
+ok 17 - browser: date ordering and minimum/maximum gaps reject every out-of-range boundary
+  ---
+  duration_ms: 1.86
+  ...
+# Subtest: receipt upload uses authenticated Cloudinary storage
+ok 18 - receipt upload uses authenticated Cloudinary storage
+  ---
+  duration_ms: 9.9002
+  ...
+# Subtest: receipt delivery remains signed and authenticated
+ok 19 - receipt delivery remains signed and authenticated
+  ---
+  duration_ms: 1.7482
+  ...
+# Subtest: missing Cloudinary credentials fail without attempting an upload
+ok 20 - missing Cloudinary credentials fail without attempting an upload
+  ---
+  duration_ms: 2.0186
+  ...
+# ◇ injected env (28) from  // tip: ◈ secrets for agents [www.dotenvx.com]
+# Subtest: combined Excel has numeric reconciled totals, all rows, readable headers and repeatable print titles
+ok 21 - combined Excel has numeric reconciled totals, all rows, readable headers and repeatable print titles
+  ---
+  duration_ms: 482.0928
+  ...
+# Subtest: email change codes are bound to their challenge, recipient and secret
+ok 22 - email change codes are bound to their challenge, recipient and secret
+  ---
+  duration_ms: 8.2643
+  ...
+# Subtest: email changes send a code to the new address and explain that the old one stays active
+ok 23 - email changes send a code to the new address and explain that the old one stays active
+  ---
+  duration_ms: 1.4856
+  ...
+# Subtest: email identity ignores casing and accidental surrounding spaces
+ok 24 - email identity ignores casing and accidental surrounding spaces
+  ---
+  duration_ms: 3.0597
+  ...
+# Subtest: verification email uses a frontend verification link and escapes the recipient
+ok 25 - verification email uses a frontend verification link and escapes the recipient
+  ---
+  duration_ms: 3.281
+  ...
+# Subtest: verification email service uses the configured SMTP transport
+ok 26 - verification email service uses the configured SMTP transport
+  ---
+  duration_ms: 1.504
+  ...
+# Subtest: tokens are stored as stable SHA-256 hashes and expire in 24 hours
+ok 27 - tokens are stored as stable SHA-256 hashes and expire in 24 hours
+  ---
+  duration_ms: 4.2177
+  ...
+# Subtest: defaults financial reports to the current calendar month
+ok 28 - defaults financial reports to the current calendar month
+  ---
+  duration_ms: 9.3164
+  ...
+# Subtest: accepts an inclusive custom report date range
+ok 29 - accepts an inclusive custom report date range
+  ---
+  duration_ms: 1.1472
+  ...
+# Subtest: rejects mixed, incomplete, and reversed financial report filters
+ok 30 - rejects mixed, incomplete, and reversed financial report filters
+  ---
+  duration_ms: 2.4086
+  ...
+# Subtest: uses actual water applications rather than a proportional whole-SOA estimate
+ok 31 - uses actual water applications rather than a proportional whole-SOA estimate
+  ---
+  duration_ms: 1.3485
+  ...
+# Subtest: reports association principal and penalties independently without double counting
+ok 32 - reports association principal and penalties independently without double counting
+  ---
+  duration_ms: 1.4225
+  ...
+# Subtest: calculates collection efficiency from approved collections and billed amounts
+ok 33 - calculates collection efficiency from approved collections and billed amounts
+  ---
+  duration_ms: 2.2988
+  ...
+# Subtest: combined unit report includes paid, partial, unpaid, zero-charge and unbilled directory units
+ok 34 - combined unit report includes paid, partial, unpaid, zero-charge and unbilled directory units
+  ---
+  duration_ms: 45.8405
+  ...
+# Subtest: combined report preserves selected bill units missing from the directory and handles an empty directory
+ok 35 - combined report preserves selected bill units missing from the directory and handles an empty directory
+  ---
+  duration_ms: 1.0605
+  ...
+# Subtest: monthly model and baseline scores use identical eligible pairs and count exclusions
+ok 36 - monthly model and baseline scores use identical eligible pairs and count exclusions
+  ---
+  duration_ms: 14.9605
+  ...
+# Subtest: baseline construction cannot read the evaluated month
+ok 37 - baseline construction cannot read the evaluated month
+  ---
+  duration_ms: 2.3521
+  ...
+# Subtest: benchmark gate does not promote equal policies or invent an evaluated future month
+ok 38 - benchmark gate does not promote equal policies or invent an evaluated future month
+  ---
+  duration_ms: 11.1922
+  ...
+# Subtest: benchmark includes live billing periods starting on the fifth instead of skipping September
+ok 39 - benchmark includes live billing periods starting on the fifth instead of skipping September
+  ---
+  duration_ms: 8.3968
+  ...
+# Subtest: error breakdown retains zero actuals and excludes invalid pairs
+ok 40 - error breakdown retains zero actuals and excludes invalid pairs
+  ---
+  duration_ms: 3.248
+  ...
+# Subtest: compares identical pairs including spikes and zeros, with transparent exclusions and model counts
+ok 41 - compares identical pairs including spikes and zeros, with transparent exclusions and model counts
+  ---
+  duration_ms: 110.6408
+  ...
+# Subtest: only eligibility or invalid actuals exclude pairs; future changes never leak into earlier predictions
+ok 42 - only eligibility or invalid actuals exclude pairs; future changes never leak into earlier predictions
+  ---
+  duration_ms: 32.1177
+  ...
+# Subtest: recognizes a zero-start replacement meter as a valid reset
+ok 43 - recognizes a zero-start replacement meter as a valid reset
+  ---
+  duration_ms: 4.952
+  ...
+# Subtest: flags an unexplained break in meter-reading continuity
+ok 44 - flags an unexplained break in meter-reading continuity
+  ---
+  duration_ms: 0.6816
+  ...
+# Subtest: flags a reading that decreases within the same meter
+ok 45 - flags a reading that decreases within the same meter
+  ---
+  duration_ms: 0.6483
+  ...
+# Subtest: new hashes verify the complete 128-character password without a 72-byte cutoff
+ok 46 - new hashes verify the complete 128-character password without a 72-byte cutoff
+  ---
+  duration_ms: 3890.7796
+  ...
+# Subtest: long Unicode passwords, spaces, and salts are retained exactly
+ok 47 - long Unicode passwords, spaces, and salts are retained exactly
+  ---
+  duration_ms: 4362.0738
+  ...
+# Subtest: legacy bcrypt credentials continue working without password resets
+ok 48 - legacy bcrypt credentials continue working without password resets
+  ---
+  duration_ms: 42.2564
+  ...
+# Subtest: unknown or malformed stored hash formats fail closed
+ok 49 - unknown or malformed stored hash formats fail closed
+  ---
+  duration_ms: 0.8894
+  ...
+# ◇ injected env (28) from  // tip: ◈ encrypted .env [www.dotenvx.com]
+# Subtest: accepts 12–128 Unicode characters and preserves the exact password
+ok 50 - accepts 12–128 Unicode characters and preserves the exact password
+  ---
+  duration_ms: 15.2511
+  ...
+# Subtest: each missing requirement independently blocks acceptance and turns its checklist row off
+ok 51 - each missing requirement independently blocks acceptance and turns its checklist row off
+  ---
+  duration_ms: 2.6559
+  ...
+# Subtest: punctuation counts as a symbol; spaces, line breaks and letters do not
+ok 52 - punctuation counts as a symbol; spaces, line breaks and letters do not
+  ---
+  duration_ms: 3.476
+  ...
+# Subtest: confirmation is exact, including spaces and case
+ok 53 - confirmation is exact, including spaces and case
+  ---
+  duration_ms: 1.1978
+  ...
+# Subtest: browser and API policy stay identical across independent deployment roots
+ok 54 - browser and API policy stay identical across independent deployment roots
+  ---
+  duration_ms: 68.908
+  ...
+# Subtest: API post /register enforces the new policy
+ok 55 - API post /register enforces the new policy
+  ---
+  duration_ms: 14.1574
+  ...
+# Subtest: API post /reset-password enforces the new policy
+ok 56 - API post /reset-password enforces the new policy
+  ---
+  duration_ms: 2.6485
+  ...
+# Subtest: API post /change-password enforces the new policy
+ok 57 - API post /change-password enforces the new policy
+  ---
+  duration_ms: 1.8836
+  ...
+# Subtest: API post / enforces the new policy
+ok 58 - API post / enforces the new policy
+  ---
+  duration_ms: 3.4193
+  ...
+# Subtest: API patch /:id enforces the new policy
+ok 59 - API patch /:id enforces the new policy
+  ---
+  duration_ms: 4.411
+  ...
+# Subtest: existing 8-character credentials still pass sign-in and current-password validation
+ok 60 - existing 8-character credentials still pass sign-in and current-password validation
+  ---
+  duration_ms: 1.4887
+  ...
+# Subtest: admin edits may omit a new password, but cannot submit an empty or weak one
+ok 61 - admin edits may omit a new password, but cannot submit an empty or weak one
+  ---
+  duration_ms: 1.1607
+  ...
+# Subtest: password-reset email contains a six-digit OTP and no reset link
+ok 62 - password-reset email contains a six-digit OTP and no reset link
+  ---
+  duration_ms: 5.9343
+  ...
+# Subtest: OTP hashes are secret-keyed and scoped to one recovery challenge
+ok 63 - OTP hashes are secret-keyed and scoped to one recovery challenge
+  ---
+  duration_ms: 4.5389
+  ...
+# Subtest: password-reset email service uses the configured SMTP transport
+ok 64 - password-reset email service uses the configured SMTP transport
+  ---
+  duration_ms: 1.3522
+  ...
+# Subtest: tenant purpose is specific to the unit relationship; owner can choose all purposes
+ok 65 - tenant purpose is specific to the unit relationship; owner can choose all purposes
+  ---
+  duration_ms: 4.1447
+  ...
+# Subtest: water and association designations never cross categories
+ok 66 - water and association designations never cross categories
+  ---
+  duration_ms: 0.7745
+  ...
+# Subtest: combined partial prioritizes association; excess remains association
+ok 67 - combined partial prioritizes association; excess remains association
+  ---
+  duration_ms: 0.5764
+  ...
+# Subtest: all centavo splits reconcile exactly including zero charges
+ok 68 - all centavo splits reconcile exactly including zero charges
+  ---
+  duration_ms: 4.067
+  ...
+# Subtest: invalid monetary values and purposes are rejected, not converted to zero
+ok 69 - invalid monetary values and purposes are rejected, not converted to zero
+  ---
+  duration_ms: 1.1034
+  ...
+# Subtest: category applications cap principal and penalty without compounding
+ok 70 - category applications cap principal and penalty without compounding
+  ---
+  duration_ms: 0.8921
+  ...
+# Subtest: tenant reminders stop at water settlement and do not include owner penalties
+ok 71 - tenant reminders stop at water settlement and do not include owner penalties
+  ---
+  duration_ms: 0.8903
+  ...
+# ◇ injected env (28) from  // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+# Subtest: allocates one payment across a bill and leaves advance balance
+ok 72 - allocates one payment across a bill and leaves advance balance
+  ---
+  duration_ms: 4.2535
+  ...
+# Subtest: allocates multiple partial payments in order
+ok 73 - allocates multiple partial payments in order
+  ---
+  duration_ms: 0.7215
+  ...
+# Subtest: keeps bill balance when credit is insufficient
+ok 74 - keeps bill balance when credit is insufficient
+  ---
+  duration_ms: 0.5104
+  ...
+# Subtest: generates traceable manual references
+ok 75 - generates traceable manual references
+  ---
+  duration_ms: 0.4136
+  ...
+# Subtest: applies a one-time percentage penalty only after the due date
+ok 76 - applies a one-time percentage penalty only after the due date
+  ---
+  duration_ms: 0.4701
+  ...
+# Subtest: uses an explicitly supplied local calendar date when applying late penalties
+ok 77 - uses an explicitly supplied local calendar date when applying late penalties
+  ---
+  duration_ms: 1.4931
+  ...
+# Subtest: server rejects forged combined/association tenant submissions and allows water
+ok 78 - server rejects forged combined/association tenant submissions and allows water
+  ---
+  duration_ms: 5.4469
+  ...
+# Subtest: owner purposes remain available only for the specific assigned unit
+ok 79 - owner purposes remain available only for the specific assigned unit
+  ---
+  duration_ms: 0.985
+  ...
+# Subtest: settled water rejects another proof while overall SOA remains partly unpaid
+ok 80 - settled water rejects another proof while overall SOA remains partly unpaid
+  ---
+  duration_ms: 1.3005
+  ...
+# Subtest: linear regression predicts the next point
+ok 81 - linear regression predicts the next point
+  ---
+  duration_ms: 4.8948
+  ...
+# Subtest: linear regression clamps a negative prediction to zero
+ok 82 - linear regression clamps a negative prediction to zero
+  ---
+  duration_ms: 0.4642
+  ...
+# Subtest: adaptive selection retains linear regression for a small, clear trend
+ok 83 - adaptive selection retains linear regression for a small, clear trend
+  ---
+  duration_ms: 1.8152
+  ...
+# Subtest: adaptive selection can choose a stable model after back-testing irregular use
+ok 84 - adaptive selection can choose a stable model after back-testing irregular use
+  ---
+  duration_ms: 13.8716
+  ...
+# Subtest: weighted regression preserves an exact trend and clamps negative predictions
+ok 85 - weighted regression preserves an exact trend and clamps negative predictions
+  ---
+  duration_ms: 0.887
+  ...
+# Subtest: requires two internal comparison months and breaks ties in favor of last-month
+ok 86 - requires two internal comparison months and breaks ties in favor of last-month
+  ---
+  duration_ms: 1.5637
+  ...
+# Subtest: stable policy preserves warm-up regression and exact increasing or decreasing trends
+ok 87 - stable policy preserves warm-up regression and exact increasing or decreasing trends
+  ---
+  duration_ms: 4.8498
+  ...
+# Subtest: stable policy moderates spikes, stays within recent component forecasts, and handles numeric strings
+ok 88 - stable policy moderates spikes, stays within recent component forecasts, and handles numeric strings
+  ---
+  duration_ms: 2.8716
+  ...
+# Subtest: PostgreSQL numeric strings produce the same candidates and selected method as numbers
+ok 89 - PostgreSQL numeric strings produce the same candidates and selected method as numbers
+  ---
+  duration_ms: 1.9811
+  ...
+# Subtest: missing values are rejected while real zero consumption is retained
+ok 90 - missing values are rejected while real zero consumption is retained
+  ---
+  duration_ms: 3.8815
+  ...
+# Subtest: source month requires its own valid reading and ignores all future readings
+ok 91 - source month requires its own valid reading and ignores all future readings
+  ---
+  duration_ms: 1.6347
+  ...
+# Subtest: training never bridges missing or invalid months and uses at most twelve months
+ok 92 - training never bridges missing or invalid months and uses at most twelve months
+  ---
+  duration_ms: 3.866
+  ...
+# Subtest: adapts to a sustained usage change without losing real zero readings
+ok 93 - adapts to a sustained usage change without losing real zero readings
+  ---
+  duration_ms: 0.6966
+  ...
+# Subtest: accuracy excludes negative forecasts and reports an error above one hundred percent honestly
+ok 94 - accuracy excludes negative forecasts and reports an error above one hundred percent honestly
+  ---
+  duration_ms: 0.5776
+  ...
+# Subtest: persisted generation filters training visibility and marks units missing the source month insufficient
+ok 95 - persisted generation filters training visibility and marks units missing the source month insufficient
+  ---
+  duration_ms: 2.4374
+  ...
+# Subtest: only the latest consecutive valid segment is selected
+ok 96 - only the latest consecutive valid segment is selected
+  ---
+  duration_ms: 0.7937
+  ...
+# Subtest: forecast requires five consecutive valid readings
+ok 97 - forecast requires five consecutive valid readings
+  ---
+  duration_ms: 0.6998
+  ...
+# Subtest: a flagged latest reading prevents a forecast
+ok 98 - a flagged latest reading prevents a forecast
+  ---
+  duration_ms: 0.3987
+  ...
+# Subtest: accuracy reports MAE, RMSE, WAPE, and bounded accuracy
+ok 99 - accuracy reports MAE, RMSE, WAPE, and bounded accuracy
+  ---
+  duration_ms: 0.4543
+  ...
+# ◇ injected env (28) from  // tip: ⌘ suppress logs { quiet: true }
+# Subtest: recommends a meter recheck for a flagged latest reading
+ok 100 - recommends a meter recheck for a flagged latest reading
+  ---
+  duration_ms: 48.8361
+  ...
+# Subtest: keeps the staff-only insufficient-history recommendation
+ok 101 - keeps the staff-only insufficient-history recommendation
+  ---
+  duration_ms: 4.1088
+  ...
+# Subtest: flags a forecast exactly 15 percent above the three-month average
+ok 102 - flags a forecast exactly 15 percent above the three-month average
+  ---
+  duration_ms: 1.1671
+  ...
+# Subtest: does not flag a forecast just below the 15 percent threshold
+ok 103 - does not flag a forecast just below the 15 percent threshold
+  ---
+  duration_ms: 0.9611
+  ...
+# Subtest: suppresses high-usage percentages when the recent baseline is mostly zero
+ok 104 - suppresses high-usage percentages when the recent baseline is mostly zero
+  ---
+  duration_ms: 0.8893
+  ...
+# Subtest: uses only positive readings after two positive baseline readings exist
+ok 105 - uses only positive readings after two positive baseline readings exist
+  ---
+  duration_ms: 1.0338
+  ...
+# Subtest: encourages early monitoring when a forecast is near the recent high
+ok 106 - encourages early monitoring when a forecast is near the recent high
+  ---
+  duration_ms: 0.5839
+  ...
+# Subtest: creates a resident monitoring insight when no warning threshold is active
+ok 107 - creates a resident monitoring insight when no warning threshold is active
+  ---
+  duration_ms: 0.7545
+  ...
+# Subtest: flags vacant units only above one cubic meter
+ok 108 - flags vacant units only above one cubic meter
+  ---
+  duration_ms: 1.8532
+  ...
+# Subtest: detects exactly three rising consecutive valid readings
+ok 109 - detects exactly three rising consecutive valid readings
+  ---
+  duration_ms: 1.8184
+  ...
+# Subtest: creates payment reminders only for unpaid balances due within five days
+ok 110 - creates payment reminders only for unpaid balances due within five days
+  ---
+  duration_ms: 1.2185
+  ...
+# Subtest: exposes only resident-safe recommendation types
+ok 111 - exposes only resident-safe recommendation types
+  ---
+  duration_ms: 0.4046
+  ...
+# Subtest: detects the complete amount in ₱1,220.00
+ok 112 - detects the complete amount in ₱1,220.00
+  ---
+  duration_ms: 14.1269
+  ...
+# Subtest: detects the complete amount in £1,030.00
+ok 113 - detects the complete amount in £1,030.00
+  ---
+  duration_ms: 2.2704
+  ...
+# Subtest: detects the complete amount in $1,600.00
+ok 114 - detects the complete amount in $1,600.00
+  ---
+  duration_ms: 0.4307
+  ...
+# Subtest: detects the complete amount in £1 500.00
+ok 115 - detects the complete amount in £1 500.00
+  ---
+  duration_ms: 0.377
+  ...
+# Subtest: detects the complete amount in PHP 1, 500.00
+ok 116 - detects the complete amount in PHP 1, 500.00
+  ---
+  duration_ms: 16.8471
+  ...
+# Subtest: detects the complete amount in P 1 500.00
+ok 117 - detects the complete amount in P 1 500.00
+  ---
+  duration_ms: 1.457
+  ...
+# Subtest: detects the complete amount in 1 500.00
+ok 118 - detects the complete amount in 1 500.00
+  ---
+  duration_ms: 0.6588
+  ...
+# Subtest: detects the complete amount in 1 234 567.89
+ok 119 - detects the complete amount in 1 234 567.89
+  ---
+  duration_ms: 1.7147
+  ...
+# Subtest: detects the complete amount in 1500.50
+ok 120 - detects the complete amount in 1500.50
+  ---
+  duration_ms: 1.5727
+  ...
+# Subtest: detects the complete amount in 71,220.00
+ok 121 - detects the complete amount in 71,220.00
+  ---
+  duration_ms: 1.4465
+  ...
+# Subtest: the total takes precedence over the transfer amount or fee
+ok 122 - the total takes precedence over the transfer amount or fee
+  ---
+  duration_ms: 3.2817
+  ...
+# Subtest: reads an amount on the line following its label
+ok 123 - reads an amount on the line following its label
+  ---
+  duration_ms: 2.4879
+  ...
+# Subtest: does not return a positive partial amount for 1,50.00
+ok 124 - does not return a positive partial amount for 1,50.00
+  ---
+  duration_ms: 2.2433
+  ...
+# Subtest: does not return a positive partial amount for 1 50.00
+ok 125 - does not return a positive partial amount for 1 50.00
+  ---
+  duration_ms: 1.5321
+  ...
+# Subtest: does not return a positive partial amount for 1,500.000
+ok 126 - does not return a positive partial amount for 1,500.000
+  ---
+  duration_ms: 0.3062
+  ...
+# Subtest: does not return a positive partial amount for 0.00
+ok 127 - does not return a positive partial amount for 0.00
+  ---
+  duration_ms: 0.2436
+  ...
+# Subtest: does not return a positive partial amount for -1500.00
+ok 128 - does not return a positive partial amount for -1500.00
+  ---
+  duration_ms: 0.2378
+  ...
+# Subtest: ignores phone numbers, reference numbers and environmental footer numbers
+ok 129 - ignores phone numbers, reference numbers and environmental footer numbers
+  ---
+  duration_ms: 1.0705
+  ...
+# Subtest: requires a clear OCR pass to resolve the peso-as-7 ambiguity for 1,220.00
+ok 130 - requires a clear OCR pass to resolve the peso-as-7 ambiguity for 1,220.00
+  ---
+  duration_ms: 0.8597
+  ...
+# Subtest: requires a clear OCR pass to resolve the peso-as-7 ambiguity for 1,030.00
+ok 131 - requires a clear OCR pass to resolve the peso-as-7 ambiguity for 1,030.00
+  ---
+  duration_ms: 0.3889
+  ...
+# Subtest: requires a clear OCR pass to resolve the peso-as-7 ambiguity for 1,600.00
+ok 132 - requires a clear OCR pass to resolve the peso-as-7 ambiguity for 1,600.00
+  ---
+  duration_ms: 0.2932
+  ...
+# Subtest: keeps a genuine total starting with 7 when the currency or repeated amount confirms it
+ok 133 - keeps a genuine total starting with 7 when the currency or repeated amount confirms it
+  ---
+  duration_ms: 0.3793
+  ...
+# Subtest: does not choose between genuine conflicting OCR amounts, dates or references
+ok 134 - does not choose between genuine conflicting OCR amounts, dates or references
+  ---
+  duration_ms: 6.6177
+  ...
+# Subtest: reads payment date Oct 10,2026 8:53 AM
+ok 135 - reads payment date Oct 10,2026 8:53 AM
+  ---
+  duration_ms: 0.4039
+  ...
+# Subtest: reads payment date Oct 10, 2026 8:53 AM
+ok 136 - reads payment date Oct 10, 2026 8:53 AM
+  ---
+  duration_ms: 0.2494
+  ...
+# Subtest: reads payment date October 10 , 2026
+ok 137 - reads payment date October 10 , 2026
+  ---
+  duration_ms: 0.2314
+  ...
+# Subtest: reads payment date 10 Oct 2026
+ok 138 - reads payment date 10 Oct 2026
+  ---
+  duration_ms: 0.2544
+  ...
+# Subtest: reads payment date 2026-10-10
+ok 139 - reads payment date 2026-10-10
+  ---
+  duration_ms: 0.2497
+  ...
+# Subtest: reads payment date 10/10/2026
+ok 140 - reads payment date 10/10/2026
+  ---
+  duration_ms: 0.2252
+  ...
+# Subtest: rejects invalid dates even when date punctuation is repaired
+ok 141 - rejects invalid dates even when date punctuation is repaired
+  ---
+  duration_ms: 0.5266
+  ...
+# Subtest: keeps the reference separate from an adjacent date
+ok 142 - keeps the reference separate from an adjacent date
+  ---
+  duration_ms: 0.444
+  ...
+# Subtest: field parsing preserves the original names, masks and OCR transcription
+ok 143 - field parsing preserves the original names, masks and OCR transcription
+  ---
+  duration_ms: 0.4108
+  ...
+# ◇ injected env (28) from  // tip: ◈ encrypted .env [www.dotenvx.com]
+# Subtest: receipt metadata allows only the four requested extensions and enforces size
+ok 144 - receipt metadata allows only the four requested extensions and enforces size
+  ---
+  duration_ms: 4.804
+  ...
+# Subtest: browser and API receipt policies stay identical
+ok 145 - browser and API receipt policies stay identical
+  ---
+  duration_ms: 23.9582
+  ...
+# Subtest: both resident upload endpoints validate images before their payment handlers
+ok 146 - both resident upload endpoints validate images before their payment handlers
+  ---
+  duration_ms: 0.9291
+  ...
+# Subtest: multipart preview and submission reject spoofed files and accept genuine JPEG/JFIF/PNG
+ok 147 - multipart preview and submission reject spoofed files and accept genuine JPEG/JFIF/PNG
+  ---
+  duration_ms: 2024.6219
+  ...
+# ◇ injected env (28) from  // tip: ⌘ enable debugging { debug: true }
+# Subtest: history-only refresh rebuilds chronologically, then updates recommendations
+ok 148 - history-only refresh rebuilds chronologically, then updates recommendations
+  ---
+  duration_ms: 10.3404
+  ...
+# Subtest: mixed live and history refresh rebuilds chronologically, then updates recommendations
+ok 149 - mixed live and history refresh rebuilds chronologically, then updates recommendations
+  ---
+  duration_ms: 1.6473
+  ...
+# Subtest: generate failure rolls back the entire refresh and releases the connection
+ok 150 - generate failure rolls back the entire refresh and releases the connection
+  ---
+  duration_ms: 5.0093
+  ...
+# Subtest: recommend failure rolls back the entire refresh and releases the connection
+ok 151 - recommend failure rolls back the entire refresh and releases the connection
+  ---
+  duration_ms: 1.159
+  ...
+# Subtest: empty installations return zero coverage without regenerating recommendations
+ok 152 - empty installations return zero coverage without regenerating recommendations
+  ---
+  duration_ms: 0.9041
+  ...
+# ◇ injected env (28) from  // tip: ⌁ auth for agents [www.vestauth.com]
+# Subtest: registration accepts optional MI or 1–2 letters with one optional final period
+ok 153 - registration accepts optional MI or 1–2 letters with one optional final period
+  ---
+  duration_ms: 20.9536
+  ...
+# Subtest: registration rejects nonletters, misplaced/repeated periods, spaces, and excess letters
+ok 154 - registration rejects nonletters, misplaced/repeated periods, spaces, and excess letters
+  ---
+  duration_ms: 16.4229
+  ...
+# Subtest: the server assembles trimmed names and preserves 100-character individual and 205-character complete-name limits
+ok 155 - the server assembles trimmed names and preserves 100-character individual and 205-character complete-name limits
+  ---
+  duration_ms: 5.6914
+  ...
+# Subtest: fullName clients still require verified-email proof
+ok 156 - fullName clients still require verified-email proof
+  ---
+  duration_ms: 1.078
+  ...
+# ◇ injected env (28) from  // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+# Subtest: registration codes and grants are random, purpose-bound, email-bound and stored as keyed hashes
+ok 157 - registration codes and grants are random, purpose-bound, email-bound and stored as keyed hashes
+  ---
+  duration_ms: 6.5782
+  ...
+# Subtest: registration email explains OTP expiry and never sends a password or activation shortcut
+ok 158 - registration email explains OTP expiry and never sends a password or activation shortcut
+  ---
+  duration_ms: 1.483
+  ...
+# Subtest: regression is active for normal fluctuations, exact trends, regular zeros and all zeros
+ok 159 - regression is active for normal fluctuations, exact trends, regular zeros and all zeros
+  ---
+  duration_ms: 28.8574
+  ...
+# Subtest: each event requires five earlier months, and six readings can already activate stable
+ok 160 - each event requires five earlier months, and six readings can already activate stable
+  ---
+  duration_ms: 86.0917
+  ...
+# Subtest: spike thresholds are strict at minimum, relative and MAD boundaries
+ok 161 - spike thresholds are strict at minimum, relative and MAD boundaries
+  ---
+  duration_ms: 3.005
+  ...
+# Subtest: unexpected zero requires median at least one and three immediately preceding positive months
+ok 162 - unexpected zero requires median at least one and three immediately preceding positive months
+  ---
+  duration_ms: 2.8329
+  ...
+# Subtest: spike activation expires after the event leaves the latest three months
+ok 163 - spike activation expires after the event leaves the latest three months
+  ---
+  duration_ms: 4.3965
+  ...
+# Subtest: repeated zeros do not restart the event window
+ok 164 - repeated zeros do not restart the event window
+  ---
+  duration_ms: 3.6777
+  ...
+# Subtest: most recent qualifying event explains selection; an ordinary drop does not hide a spike
+ok 165 - most recent qualifying event explains selection; an ordinary drop does not hide a spike
+  ---
+  duration_ms: 3.2366
+  ...
+# Subtest: formula, charge rounding, numeric strings and original readings are preserved
+ok 166 - formula, charge rounding, numeric strings and original readings are preserved
+  ---
+  duration_ms: 4.4743
+  ...
+# Subtest: flagged readings, gaps and invalid values still interrupt eligibility and event baselines
+ok 167 - flagged readings, gaps and invalid values still interrupt eligibility and event baselines
+  ---
+  duration_ms: 2.3562
+  ...
+# Subtest: future values and validation flags cannot affect prediction or the event baseline
+ok 168 - future values and validation flags cannot affect prediction or the event baseline
+  ---
+  duration_ms: 4.8589
+  ...
+# Subtest: selected training history remains capped at twelve and no earlier baseline is borrowed
+ok 169 - selected training history remains capped at twelve and no earlier baseline is borrowed
+  ---
+  duration_ms: 0.9311
+  ...
+# Subtest: shared helper validates numeric inputs and retains usage-drop review classification
+ok 170 - shared helper validates numeric inputs and retains usage-drop review classification
+  ---
+  duration_ms: 0.6029
+  ...
+# Subtest: saved forecast generation persists the selection explanation without changing model identifiers
+ok 171 - saved forecast generation persists the selection explanation without changing model identifiers
+  ---
+  duration_ms: 2.3398
+  ...
+# Subtest: SOA email uses a secure dashboard link and escapes rendered fields
+ok 172 - SOA email uses a secure dashboard link and escapes rendered fields
+  ---
+  duration_ms: 4.9917
+  ...
+# Subtest: SOA email service uses the configured generic SMTP transport
+ok 173 - SOA email service uses the configured generic SMTP transport
+  ---
+  duration_ms: 5.8585
+  ...
+# Subtest: SOA email service reports missing SMTP configuration
+ok 174 - SOA email service reports missing SMTP configuration
+  ---
+  duration_ms: 2.4096
+  ...
+# Subtest: SOA reminder emails describe the due status and include the current balance
+ok 175 - SOA reminder emails describe the due status and include the current balance
+  ---
+  duration_ms: 1.2964
+  ...
+# ◇ injected env (28) from  // tip: ◈ secrets for agents [www.dotenvx.com]
+# Subtest: classifies three-day, due-today, and overdue reminder states
+ok 176 - classifies three-day, due-today, and overdue reminder states
+  ---
+  duration_ms: 3.5254
+  ...
+# Subtest: uses the Philippines calendar date regardless of the server timezone
+ok 177 - uses the Philippines calendar date regardless of the server timezone
+  ---
+  duration_ms: 80.2775
+  ...
+# Subtest: sends one current-status catch-up reminder and records it as sent
+ok 178 - sends one current-status catch-up reminder and records it as sent
+  ---
+  duration_ms: 3.1742
+  ...
+# Subtest: records an SMTP error so the current reminder can be retried
+ok 179 - records an SMTP error so the current reminder can be retried
+  ---
+  duration_ms: 1.5542
+  ...
+# Subtest: fixed historical usage limits identify both spikes and large drops
+ok 180 - fixed historical usage limits identify both spikes and large drops
+  ---
+  duration_ms: 9.8631
+  ...
+# Subtest: absolute minimum change avoids treating tiny near-zero differences as spikes
+ok 181 - absolute minimum change avoids treating tiny near-zero differences as spikes
+  ---
+  duration_ms: 1.2509
+  ...
+# Subtest: recurring zero usage remains typical while a new zero after regular use prompts review
+ok 182 - recurring zero usage remains typical while a new zero after regular use prompts review
+  ---
+  duration_ms: 1.4438
+  ...
+# Subtest: variable histories and ordinary linear trends widen the review band
+ok 183 - variable histories and ordinary linear trends widen the review band
+  ---
+  duration_ms: 1.214
+  ...
+# Subtest: review windows never cross invalid or missing readings and require the source month
+ok 184 - review windows never cross invalid or missing readings and require the source month
+  ---
+  duration_ms: 4.3737
+  ...
+# Subtest: review baselines cannot read the evaluated or future months
+ok 185 - review baselines cannot read the evaluated or future months
+  ---
+  duration_ms: 3.7217
+  ...
+# Subtest: secondary metrics partition valid pairs by usage changes, not prediction errors
+ok 186 - secondary metrics partition valid pairs by usage changes, not prediction errors
+  ---
+  duration_ms: 19.2473
+  ...
+# Subtest: secondary scores remain unavailable for empty subsets and zero actual totals
+ok 187 - secondary scores remain unavailable for empty subsets and zero actual totals
+  ---
+  duration_ms: 3.4013
+  ...
+1..187
+# tests 187
+# suites 0
+# pass 187
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13469.4141

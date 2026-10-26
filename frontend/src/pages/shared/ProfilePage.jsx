@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { Eye, EyeOff, KeyRound, Pencil } from 'lucide-react'
+import { KeyRound, Pencil } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import PasswordField from '../../components/PasswordInput'
+import { passwordError } from '../../utils/passwordPolicy'
 
 const roleLabel = (role) => ({ ADMIN: 'Admin', COLLECTOR: 'Billing Associate', RESIDENT: 'Resident' }[role] || role)
 
@@ -11,9 +13,6 @@ export default function ProfilePage() {
   const { user, token, replaceToken } = useAuth()
   const isResident = user.role === 'RESIDENT'
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmation: '' })
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmation, setShowConfirmation] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
   const [submitting, setSubmitting] = useState(false)
 
@@ -25,8 +24,9 @@ export default function ProfilePage() {
     event.preventDefault()
     setNotice({ error: '', message: '' })
 
-    if (form.newPassword !== form.confirmation) {
-      setNotice({ error: 'New password and confirmation do not match.', message: '' })
+    const validationError = passwordError(form.newPassword, form.confirmation)
+    if (validationError) {
+      setNotice({ error: validationError, message: '' })
       return
     }
 
@@ -81,9 +81,9 @@ export default function ProfilePage() {
             <form onSubmit={changePassword} className="space-y-4">
               {notice.error && <p role="alert" className="rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">{notice.error}</p>}
               {notice.message && <p role="status" className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-800">{notice.message}</p>}
-              <PasswordField label="Current password" value={form.currentPassword} visible={showCurrentPassword} onChange={(event) => updateField('currentPassword', event.target.value)} onToggle={() => setShowCurrentPassword((current) => !current)} autoComplete="current-password" />
-              <PasswordField label="New password" value={form.newPassword} visible={showNewPassword} onChange={(event) => updateField('newPassword', event.target.value)} onToggle={() => setShowNewPassword((current) => !current)} autoComplete="new-password" />
-              <PasswordField label="Confirm new password" value={form.confirmation} visible={showConfirmation} onChange={(event) => updateField('confirmation', event.target.value)} onToggle={() => setShowConfirmation((current) => !current)} autoComplete="new-password" />
+              <PasswordField label="Current password" value={form.currentPassword} onChange={(event) => updateField('currentPassword', event.target.value)} current />
+              <PasswordField label="New password" value={form.newPassword} onChange={(event) => updateField('newPassword', event.target.value)} />
+              <PasswordField confirmationFor={form.newPassword} label="Confirm new password" value={form.confirmation} onChange={(event) => updateField('confirmation', event.target.value)} />
               <div className="flex justify-end"><button disabled={submitting} className="inline-flex items-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"><KeyRound size={17} />{submitting ? 'Changing password...' : 'Change password'}</button></div>
             </form>
           </Panel>
@@ -91,8 +91,4 @@ export default function ProfilePage() {
       )}
     </DashboardLayout>
   )
-}
-
-function PasswordField({ label, value, visible, onChange, onToggle, autoComplete }) {
-  return <label className="block text-sm font-semibold text-[var(--ink)]">{label}<div className="relative mt-1.5"><input required minLength="8" maxLength="72" type={visible ? 'text' : 'password'} autoComplete={autoComplete} value={value} onChange={onChange} className="w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2.5 pr-11 text-sm font-normal outline-none transition focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--active-bg)]" /><button type="button" onClick={onToggle} aria-label={visible ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`} className="absolute inset-y-0 right-0 grid w-11 place-items-center text-[var(--muted)] hover:text-[var(--ink)]">{visible ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></label>
 }

@@ -3,10 +3,12 @@ import { Building2, Download, FileText, Gauge, Printer, ReceiptText, Users, Wall
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
+import CombinedBillingReport from '../../components/CombinedBillingReport'
 import { apiFile, apiRequest } from '../../services/api'
 
 const tabs = [
   { key: 'overview', label: 'Overview' },
+  { key: 'combined', label: 'Overall Billing' },
   { key: 'dues', label: 'Association Dues' },
   { key: 'water', label: 'Water Billing' },
   { key: 'paidDues', label: 'Paid Monthly Dues' },
@@ -158,11 +160,11 @@ function FinancialCharts({ overview }) {
   </div>
 }
 
-function Receivables({ rows }) {
+function Receivables({ rows, endDate }) {
   const totalBilled = rows.reduce((total, row) => total + Number(row.totalBilled || 0), 0)
   const totalPaid = rows.reduce((total, row) => total + Number(row.paidAmount || 0), 0)
   const totalBalance = rows.reduce((total, row) => total + Number(row.remainingBalance || 0), 0)
-  return <Panel title="Accounts Receivable" description="Outstanding resident balances as of the selected reporting end date.">
+  return <Panel title="Accounts Receivable" description={`Unpaid balances through ${date(endDate)}, including earlier months.`}>
     {rows.length ? <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Bill period</HeaderCell><HeaderCell>Due date</HeaderCell><HeaderCell>Billed</HeaderCell><HeaderCell>Paid</HeaderCell><HeaderCell>Balance</HeaderCell><HeaderCell>Status</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={row.billId} className={row.paymentStatus === 'OVERDUE' ? 'bg-red-50/50' : ''}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.payerName}</DataCell><DataCell>{date(row.periodStart)}</DataCell><DataCell>{date(row.dueDate)}</DataCell><DataCell moneyValue>{money(row.totalBilled)}</DataCell><DataCell moneyValue>{money(row.paidAmount)}</DataCell><DataCell moneyValue>{money(row.remainingBalance)}</DataCell><DataCell><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${row.paymentStatus === 'OVERDUE' ? 'bg-red-100 text-red-700' : row.paymentStatus === 'PARTIAL' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}`}>{row.paymentStatus}</span></DataCell></tr>)}</tbody><tfoot className="border-t-2 border-emerald-200 bg-emerald-50/70"><tr><td colSpan={4} className="px-4 py-3 text-right text-sm font-black text-emerald-950">Total</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(totalBilled)}</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(totalPaid)}</td><td className="px-4 py-3 text-right text-sm font-black tabular-nums text-emerald-950">{money(totalBalance)}</td><td /></tr></tfoot></Table> : <EmptyRow message="No outstanding resident balances exist as of this date." />}
   </Panel>
 }
@@ -195,7 +197,7 @@ function FinancialReportPrint({ activeLabel, report, tab }) {
     ['Water collected', report.overview.waterCollected],
     ['Outstanding balance', report.overview.outstandingBalance],
   ]
-  return <section className="financial-report-print"><h1 className="text-xl font-black text-slate-900">{activeLabel}</h1><p className="mb-4 text-sm text-slate-600">Reporting period: {report.filters.label}</p>{tab === 'overview' && <Table><TableHead><HeaderCell>Financial summary</HeaderCell><HeaderCell>Amount</HeaderCell></TableHead><tbody>{overviewRows.map(([label, amount]) => <tr key={label}><DataCell>{label}</DataCell><DataCell moneyValue>{money(amount)}</DataCell></tr>)}</tbody><TotalRow colSpan={1} label="Total billing" total={report.overview.totalBilling} /></Table>}{(tab === 'dues' || tab === 'water') && <PrintChargeTables report={report[tab]} kind={tab} />}{tab === 'paidDues' && <PrintPaidMonthlyDues rows={report.paidDues.rows} />}{tab === 'receivables' && <PrintReceivables rows={report.receivables} />}{tab === 'occupancy' && <PrintOccupancy rows={report.occupancy.rows} />}</section>
+  return <section className="financial-report-print"><h1 className="text-xl font-black text-slate-900">{activeLabel}</h1><p className="mb-4 text-sm text-slate-600">{tab === 'receivables' ? `Outstanding as of ${date(report.filters.endDate)} · Includes earlier unpaid bills` : `Reporting period: ${report.filters.label}`}</p>{tab === 'combined' && <CombinedBillingReport report={report} print />}{tab === 'overview' && <Table><TableHead><HeaderCell>Financial summary</HeaderCell><HeaderCell>Amount</HeaderCell></TableHead><tbody>{overviewRows.map(([label, amount]) => <tr key={label}><DataCell>{label}</DataCell><DataCell moneyValue>{money(amount)}</DataCell></tr>)}</tbody><TotalRow colSpan={1} label="Total billing" total={report.overview.totalBilling} /></Table>}{(tab === 'dues' || tab === 'water') && <PrintChargeTables report={report[tab]} kind={tab} />}{tab === 'paidDues' && <PrintPaidMonthlyDues rows={report.paidDues.rows} />}{tab === 'receivables' && <PrintReceivables rows={report.receivables} />}{tab === 'occupancy' && <PrintOccupancy rows={report.occupancy.rows} />}</section>
 }
 
 function PrintChargeTables({ report, kind }) {
@@ -231,6 +233,7 @@ export default function FinancialReportsPage() {
   const [appliedFilter, setAppliedFilter] = useState({ mode: 'month', month: currentMonth(), startDate: '', endDate: '' })
   const [tab, setTab] = useState('overview')
   const [report, setReport] = useState(null)
+  const [loadedQuery, setLoadedQuery] = useState(null)
   const [loading, setLoading] = useState(true)
   const [requestVersion, setRequestVersion] = useState(0)
   const [exporting, setExporting] = useState(false)
@@ -239,12 +242,16 @@ export default function FinancialReportsPage() {
   const query = useMemo(() => reportQuery(appliedFilter), [appliedFilter])
   useEffect(() => {
     let active = true
-    apiRequest(`/api/reports/financial?${query}`, { token })
-      .then((data) => { if (active) setReport(data) })
-      .catch((requestError) => { if (active) setError(requestError.message) })
+    const controller = new AbortController()
+    queueMicrotask(() => { if (active) { setLoading(true); setReport(null); setLoadedQuery(null); setError('') } })
+    apiRequest(`/api/reports/financial?${query}`, { token, signal:controller.signal })
+      .then((data) => { if (active) { setReport(data); setLoadedQuery(query) } })
+      .catch((requestError) => { if (active) { setReport(null); setLoadedQuery(null); setError(requestError.message) } })
       .finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
+    return () => { active = false; controller.abort() }
   }, [query, requestVersion, token])
+  const canExport = Boolean(report) && !loading && loadedQuery === query && (tab !== 'combined' || Boolean(report.combined))
+
 
   function viewReport(event) {
     event.preventDefault()
@@ -255,6 +262,7 @@ export default function FinancialReportsPage() {
   }
 
   async function exportExcel() {
+    if (!canExport || exporting) return
     setExporting(true)
     setError('')
     try {
@@ -277,8 +285,8 @@ export default function FinancialReportsPage() {
         <div className="flex flex-wrap items-end gap-4"><div className="flex gap-2"><button type="button" onClick={() => setForm((value) => ({ ...value, mode: 'month' }))} className={`rounded-lg px-3 py-2 text-sm font-bold ${form.mode === 'month' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700'}`}>Month</button><button type="button" onClick={() => setForm((value) => ({ ...value, mode: 'range' }))} className={`rounded-lg px-3 py-2 text-sm font-bold ${form.mode === 'range' ? 'bg-emerald-700 text-white' : 'bg-slate-100 text-slate-700'}`}>Date range</button></div>{form.mode === 'month' ? <label className="min-w-48 text-sm font-bold text-slate-700">Select month<input required type="month" value={form.month} onChange={(event) => setForm((value) => ({ ...value, month: event.target.value }))} className={inputClass} /></label> : <><label className="min-w-44 text-sm font-bold text-slate-700">Start date<input required type="date" value={form.startDate} onChange={(event) => setForm((value) => ({ ...value, startDate: event.target.value }))} className={inputClass} /></label><label className="min-w-44 text-sm font-bold text-slate-700">End date<input required type="date" value={form.endDate} onChange={(event) => setForm((value) => ({ ...value, endDate: event.target.value }))} className={inputClass} /></label></>}<button type="submit" className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-800">View report</button></div>
       </form>
       {error && <p className="print-hidden rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-      <div className="print-hidden flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2" role="tablist" aria-label="Financial report tabs">{tabs.map((item) => <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} onClick={() => setTab(item.key)} className={`rounded-lg px-3 py-2 text-sm font-bold ${tab === item.key ? 'bg-emerald-700 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>{item.label}</button>)}</div>{tab !== 'overview' && <div className="flex gap-2"><button type="button" disabled={exporting || !report} onClick={exportExcel} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 disabled:opacity-50"><Download size={16} />{exporting ? 'Exporting…' : 'Export Excel'}</button><button type="button" disabled={!report} onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><Printer size={16} />Print / Save PDF</button></div>}</div>
-      {report && <><div className="print-hidden">{loading ? <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel> : <>{tab === 'overview' && <Overview overview={report.overview} />}{tab === 'dues' && <ChargeReport report={report.dues} kind="dues" />}{tab === 'water' && <ChargeReport report={report.water} kind="water" />}{tab === 'paidDues' && <PaidMonthlyDues report={report.paidDues} />}{tab === 'receivables' && <Receivables rows={report.receivables} />}{tab === 'occupancy' && <OccupancyReport occupancy={report.occupancy} />}</>}</div><div className="hidden print:block"><FinancialReportPrint activeLabel={activeLabel} report={report} tab={tab} /></div></>}
+      <div className="print-hidden flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2" role="tablist" aria-label="Financial report tabs">{tabs.map((item) => <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} onClick={() => setTab(item.key)} className={`rounded-lg px-3 py-2 text-sm font-bold ${tab === item.key ? 'bg-emerald-700 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>{item.label}</button>)}</div>{tab !== 'overview' && <div className="flex gap-2"><button type="button" disabled={exporting || !canExport} onClick={exportExcel} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 disabled:opacity-50"><Download size={16} />{exporting ? 'Exporting…' : 'Export Excel'}</button><button type="button" disabled={!canExport} onClick={() => { if (canExport) window.print() }} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><Printer size={16} />Print / Save PDF</button></div>}</div>
+      {report && <><div className="print-hidden">{loading ? <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel> : <>{tab === 'overview' && <Overview overview={report.overview} />}{tab === 'combined' && <CombinedBillingReport report={report} />}{tab === 'dues' && <ChargeReport report={report.dues} kind="dues" />}{tab === 'water' && <ChargeReport report={report.water} kind="water" />}{tab === 'paidDues' && <PaidMonthlyDues report={report.paidDues} />}{tab === 'receivables' && <Receivables rows={report.receivables} endDate={report.filters.endDate} />}{tab === 'occupancy' && <OccupancyReport occupancy={report.occupancy} />}</>}</div><div className="hidden print:block">{canExport && <FinancialReportPrint activeLabel={activeLabel} report={report} tab={tab} />}</div></>}
       {!report && loading && <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel>}
     </div>
   </DashboardLayout>

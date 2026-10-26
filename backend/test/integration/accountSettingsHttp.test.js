@@ -76,12 +76,13 @@ test('admin and billing associate can securely manage their own profile, email a
       const beforeVersion = (await query('SELECT auth_version FROM users WHERE id=$1', [id])).rows[0].auth_version;
       assert.equal((await request('/api/account/profile', { fullName: 'Not allowed', role: 'ADMIN' }, token, 'PATCH')).status, 400);
       assert.equal((await request('/api/account/profile', { fullName: 'Not allowed', email: newEmail }, token, 'PATCH')).status, 400);
-      const name = await request('/api/account/profile', { fullName: ` Updated ${role} ` }, token, 'PATCH');
+      const longName = 'A'.repeat(100) + ' AB. ' + 'B'.repeat(100);
+      const name = await request('/api/account/profile', { fullName: ` ${longName} ` }, token, 'PATCH');
       assert.equal(name.status, 200, JSON.stringify(name.data));
-      assert.equal(name.data.user.fullName, `Updated ${role}`);
+      assert.equal(name.data.user.fullName, longName);
       assert.equal(name.data.user.role, role === 'admin' ? 'ADMIN' : 'COLLECTOR');
       assert.equal('passwordHash' in name.data.user, false);
-      assert.equal((await request('/api/auth/me', undefined, token)).data.user.fullName, `Updated ${role}`);
+      assert.equal((await request('/api/auth/me', undefined, token)).data.user.fullName, longName);
       assert.equal((await request('/api/account/email-change', { email: newEmail, currentPassword: 'Wrong password' }, token)).status, 403);
       assert.equal((await request('/api/account/email-change', { email: originalEmail, currentPassword: password }, token)).status, 400);
       assert.equal((await request('/api/account/email-change', { email: 'TAKEN@example.invalid', currentPassword: password }, token)).status, 409);
@@ -139,14 +140,15 @@ test('admin and billing associate can securely manage their own profile, email a
       }
       assert.equal((await verify()).status, 429);
 
-      assert.equal((await request('/api/auth/change-password', { currentPassword: 'Wrong password', newPassword: 'Changed password 456!' }, token)).status, 403);
-      const changed = await request('/api/auth/change-password', { currentPassword: password, newPassword: 'Changed password 456!' }, token);
+      assert.equal((await request('/api/auth/change-password', { currentPassword: 'Wrong password', newPassword: 'NewPass7!xyz'.padEnd(128, 'x') }, token)).status, 403);
+      const changed = await request('/api/auth/change-password', { currentPassword: password, newPassword: 'NewPass7!xyz'.padEnd(128, 'x') }, token);
       assert.equal(changed.status, 200, JSON.stringify(changed.data));
       assert.equal((await request('/api/auth/me', undefined, token)).status, 401);
       token = changed.data.token;
       assert.equal((await request('/api/auth/me', undefined, token)).status, 200);
       assert.equal((await login(newEmail)).status, 401);
-      assert.equal((await login(newEmail, 'Changed password 456!')).status, 200);
+      assert.equal((await login(newEmail, 'NewPass7!xyz'.padEnd(128, 'x'))).status, 200);
+      assert.equal((await login(newEmail, 'NewPass7!xyz'.padEnd(127, 'x') + 'Q')).status, 401);
       assert.equal((await verify()).status, 400);
       assert.equal((await query('SELECT email FROM users WHERE id=$1', [id])).rows[0].email, newEmail);
     }

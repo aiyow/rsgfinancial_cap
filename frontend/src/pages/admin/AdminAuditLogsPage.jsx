@@ -1,252 +1,156 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Activity, CheckCircle2, ChevronDown, CircleUserRound, FileText, Pencil, Plus, ShieldCheck, Trash2, UserRound, UsersRound, XCircle } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Activity, ChevronDown, LoaderCircle, RefreshCw, Search, SlidersHorizontal } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
-import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import { actionLabels, auditChanges, auditLabel, auditSummary, auditTargetLabel, auditTime, auditValue, entityLabels, roleLabels } from '../../utils/auditLogPresentation'
 
-const entityGroups = [
-  { label: 'All activity', options: ['ALL'] },
-  { label: 'Records', options: ['USER_ACCOUNT', 'UNIT', 'UNIT_ASSIGNMENT', 'BILLING_PERIOD', 'UNIT_BILL'] },
-  { label: 'Payments & insights', options: ['PAYMENT_SUBMISSION', 'PRESCRIPTIVE_RECOMMENDATION'] },
-  { label: 'Resident reports', options: ['BILLING_ERROR_REPORT'] },
-]
-const actionGroups = [
-  { label: 'General', options: ['ALL', 'CREATE', 'CREATE_MANUAL', 'UPDATE'] },
-  { label: 'Records', options: ['DELETE', 'DELETED', 'END', 'GENERATED', 'REOPENED', 'FORWARDED', 'PUBLISHED', 'UNPUBLISHED', 'SOA_EDITED', 'VIEWED', 'ACKNOWLEDGED', 'RESOLVED', 'DISMISSED', 'SHARED_WITH_RESIDENT'] },
-  { label: 'Payments & resident reports', options: ['SUBMIT', 'APPROVE', 'REJECT', 'RESOLVE'] },
-]
-
-const entityLabels = {
-  USER_ACCOUNT: 'User Account',
-  UNIT: 'Unit',
-  UNIT_ASSIGNMENT: 'Unit Assignment',
-  PAYMENT_SUBMISSION: 'Payment',
-  BILLING_PERIOD: 'Billing Batch',
-  UNIT_BILL: 'Unit Bill',
-  BILLING_ERROR_REPORT: 'Report',
-  SOA_TEMPLATE: 'SOA Template',
-  PRESCRIPTIVE_RECOMMENDATION: 'Recommended Action',
-}
-
-const actionLabels = {
-  CREATE: 'Created',
-  CREATE_MANUAL: 'Recorded',
-  UPDATE: 'Updated',
-  DELETE: 'Deleted',// double deleted, but keeping it for consistency with the original code
-  DELETED: 'Deleted',
-  END: 'Ended',
-  SUBMIT: 'Submitted',
-  APPROVE: 'Approved',
-  REJECT: 'Rejected',
-  GENERATED: 'Generated',
-  REOPENED: 'Reopened',
-  FORWARDED: 'Forwarded',
-  PUBLISHED: 'Published',
-  UNPUBLISHED: 'Unpublished',
-  SOA_EDITED: 'Edited',
-  VIEWED: 'Viewed',
-  ACKNOWLEDGED: 'Acknowledged',
-  RESOLVED: 'Resolved',
-  DISMISSED: 'Dismissed',
-  SHARED_WITH_RESIDENT: 'Shared with the Resident',
-  RESOLVE: 'Resolved',
-}
-
-const actionFilterLabels = {
-  ...actionLabels,
-  DELETE: 'Deleted User Account',
-  DELETED: 'Deleted Billing Batch',
-}
-
-const actionIcons = {
-  CREATE: Plus,
-  CREATE_MANUAL: Plus,
-  UPDATE: Pencil,
-  DELETE: Trash2,
-  END: XCircle,
-  SUBMIT: FileText,
-  APPROVE: CheckCircle2,
-  REJECT: XCircle,
-  GENERATED: FileText,
-  REOPENED: Pencil,
-  FORWARDED: FileText,
-  PUBLISHED: CheckCircle2,
-  UNPUBLISHED: XCircle,
-  SOA_EDITED: Pencil,
-  RESOLVE: CheckCircle2,
-}
-
-function formatDate(value) {
-  return value ? new Date(value).toLocaleString() : 'Unknown time'
-}
-
-function labelFor(value, labels) {
-  return labels[value] || value.toLowerCase().replaceAll('_', ' ')
-}
-
-function describeLog(log) {
-  if (log.entityName === 'BILLING_ERROR_REPORT' && ['CREATE', 'SUBMIT'].includes(log.action)) return 'Submitted report'
-  const action = actionLabels[log.action] || log.action.toLowerCase().replaceAll('_', ' ')
-  const entity = entityLabels[log.entityName] || 'record'
-  return `${action} ${entity}`
-}
-
-function initials(name) {
-  return String(name || '?')
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
-}
-
-function actorRoleLabel(role) {
-  return { ADMIN: 'Admin', COLLECTOR: 'Billing Associate', RESIDENT: 'Resident' }[role] || String(role || 'deleted').toLowerCase()
-}
+const inputClass = 'min-h-11 w-full min-w-0 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-2 focus-visible:outline-emerald-600'
+const buttonClass = 'min-h-11 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40'
+const initialFilters = { q: '', entity: '', action: '', actorRole: '', from: '', to: '' }
 
 export default function AdminAuditLogsPage() {
   const { token } = useAuth()
-  const [entity, setEntity] = useState('ALL')
-  const [action, setAction] = useState('ALL')
-  const [entityMenuOpen, setEntityMenuOpen] = useState(false)
-  const [actionMenuOpen, setActionMenuOpen] = useState(false)
-  const [logs, setLogs] = useState([])
-  const [notice, setNotice] = useState({ error: '', message: '' })
-  const [currentPage, setCurrentPage] = useState(1)
-  const pageSize = 10
-
+  const [filters, setFilters] = useState(initialFilters)
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const feedRef = useRef(null)
+  const [feedHeight, setFeedHeight] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [revision, setRevision] = useState(0)
+  const [result, setResult] = useState({ logs: [], summary: {}, pagination: { total: 0, page: 1, pageCount: 1 }, filters: { entities: [], actions: [] } })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const invalidDates = filters.from && filters.to && filters.from > filters.to
   useEffect(() => {
-    let active = true
-    const params = new URLSearchParams()
-    if (entity !== 'ALL') params.set('entity', entity)
-    if (action !== 'ALL') params.set('action', action)
-    const query = params.toString() ? `?${params.toString()}` : ''
-
-    apiRequest(`/api/audit-logs${query}`, { token })
-      .then((data) => { if (active) { setLogs(data.logs); setCurrentPage(1) } })
-      .catch((error) => { if (active) setNotice({ error: error.message, message: '' }) })
-
-    return () => { active = false }
-  }, [action, entity, token])
-
-  const summary = useMemo(() => ({
-    total: logs.length,
-    adminActions: logs.filter((log) => log.actorRole === 'ADMIN').length,
-    collectorActions: logs.filter((log) => log.actorRole === 'COLLECTOR').length,
-    residentActions: logs.filter((log) => log.actorRole === 'RESIDENT').length,
-  }), [logs])
-  const totalPages = Math.max(1, Math.ceil(logs.length / pageSize))
-  const safePage = Math.min(currentPage, totalPages)
-  const firstLogIndex = (safePage - 1) * pageSize
-  const visibleLogs = logs.slice(firstLogIndex, firstLogIndex + pageSize)
-
-  return (
-    <DashboardLayout title="Audit logs" description="A simple history of important actions in the system.">
-      <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
-
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Total entries" value={summary.total} icon={Activity} accent="blue" />
-        <StatCard label="Admin actions" value={summary.adminActions} icon={ShieldCheck} accent="green" />
-        <StatCard label="Billing Associate actions" value={summary.collectorActions} icon={UsersRound} accent="red" />
-        <StatCard label="Resident actions" value={summary.residentActions} icon={UserRound} accent="blue" />
-      </div>
-
-      <Panel title="Filter activity" description="Choose a category to find a specific activity.">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="block text-sm font-bold text-slate-700">
-            <p>What changed?</p>
-            <div className="relative mt-2">
-              <button type="button" aria-expanded={entityMenuOpen} onClick={() => { setEntityMenuOpen((current) => !current); setActionMenuOpen(false) }} style={{ fontWeight: 400 }} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#b8d9c2] bg-white px-3.5 text-left text-sm text-[#345744] shadow-sm transition hover:border-[#2f8f5b]">
-                <span className="truncate">{entity === 'ALL' ? 'Everything' : labelFor(entity, entityLabels)}</span>
-                <ChevronDown size={17} className={`shrink-0 text-[#587064] transition ${entityMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-              </button>
-              {entityMenuOpen && (
-                <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
-                  {entityGroups.map((group) => (
-                    <div key={group.label} className="not-first:mt-3">
-                      <p style={{ fontWeight: 400 }} className="px-2 pb-1.5 text-[10px] capitalize tracking-[0.14em] text-[#668074]">{group.label}</p>
-                      <div className="grid gap-1 sm:grid-cols-2">
-                        {group.options.map((option) => {
-                          const label = option === 'ALL' ? 'Everything' : labelFor(option, entityLabels)
-                          return <button key={option} type="button" onClick={() => { setEntity(option); setEntityMenuOpen(false) }} style={{ fontWeight: 400 }} className={`rounded-lg px-2.5 py-2 text-left text-xs transition ${entity === option ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{label}</button>
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="block text-sm font-bold text-slate-700">
-            <p>What happened?</p>
-            <div className="relative mt-2">
-              <button type="button" aria-expanded={actionMenuOpen} onClick={() => { setActionMenuOpen((current) => !current); setEntityMenuOpen(false) }} style={{ fontWeight: 400 }} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border border-[#b8d9c2] bg-white px-3.5 text-left text-sm text-[#345744] shadow-sm transition hover:border-[#2f8f5b]">
-                <span className="truncate">{action === 'ALL' ? 'Everything' : labelFor(action, actionFilterLabels)}</span>
-                <ChevronDown size={17} className={`shrink-0 text-[#587064] transition ${actionMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-              </button>
-              {actionMenuOpen && (
-                <div className="absolute inset-x-0 top-[calc(100%+8px)] z-30 max-h-80 overflow-y-auto rounded-xl border border-[#d7eadc] bg-white p-3 shadow-xl">
-                  {actionGroups.map((group) => (
-                    <div key={group.label} className="not-first:mt-3">
-                      <p style={{ fontWeight: 400 }} className="px-2 pb-1.5 text-[10px] capitalize tracking-[0.14em] text-[#668074]">{group.label}</p>
-                      <div className="grid gap-1 sm:grid-cols-2">
-                        {group.options.map((option) => {
-                          const label = option === 'ALL' ? 'Everything' : labelFor(option, actionFilterLabels)
-                          return <button key={option} type="button" onClick={() => { setAction(option); setActionMenuOpen(false) }} style={{ fontWeight: 400 }} className={`rounded-lg px-2.5 py-2 text-left text-xs transition ${action === option ? 'bg-[#2f8f5b] text-white' : 'text-[#466653] hover:bg-[#effaf2] hover:text-[#2f8f5b]'}`}>{label}</button>
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </Panel>
-
-      <Panel title="Activity feed" description="Each row explains one action in plain language.">
-        <div className="divide-y divide-slate-300">
-          {visibleLogs.map((log) => {
-            const ActionIcon = actionIcons[log.action] || CircleUserRound
-
-            return (
-              <article key={`${log.source}-${log.id}`} title={log.remarks || undefined} className="flex flex-col gap-3 px-1 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex min-w-0 items-center gap-3">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-700" aria-hidden="true">{initials(log.actorName)}</span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm text-slate-700">
-                      <span className="font-bold text-slate-950">{log.actorName}</span>
-                      <span className="mx-1.5">{describeLog(log)}.</span>
-                      <span className="text-xs text-slate-500">{actorRoleLabel(log.actorRole)}</span>
-                    </p>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2 pl-12 text-xs text-slate-500 sm:pl-0">
-                  <ActionIcon size={15} className="text-indigo-600" aria-hidden="true" />
-                  <time dateTime={log.createdAt}>{formatDate(log.createdAt)}</time>
-                </div>
-              </article>
-            )
-          })}
-        </div>
-        {logs.length === 0 && <EmptyRow message="No activity matches the selected filters." />}
-        {logs.length > 0 && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4"><p className="text-sm text-slate-500">Showing {firstLogIndex + 1} to {Math.min(firstLogIndex + pageSize, logs.length)} of {logs.length} entries</p><div className="flex items-center gap-3"><button type="button" disabled={safePage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 transition hover:border-emerald-700 hover:bg-emerald-700 hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-white disabled:hover:text-slate-300">Previous</button><span className="text-sm font-bold text-slate-700">Page {safePage} of {totalPages}</span><button type="button" disabled={safePage === totalPages} onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm font-bold text-emerald-800 transition hover:border-emerald-700 hover:bg-emerald-700 hover:text-white disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-white disabled:hover:text-slate-300">Next</button></div></div>}
-      </Panel>
-    </DashboardLayout>
-  )
-}
-
-function StatCard({ accent, icon: Icon, label, value }) {
-  return (
-    <div className={`collector-metric collector-metric-${accent} rounded-2xl border border-[var(--border)] p-5 shadow-sm`}>
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-bold text-[var(--muted)]">{label}</p>
-          <p className="mt-3 text-3xl font-black text-[var(--ink)]">{value}</p>
-        </div>
-        <span className="grid size-11 place-items-center rounded-xl"><Icon size={21} /></span>
-      </div>
+    if (invalidDates) return undefined
+    const controller = new AbortController()
+    const timeout = window.setTimeout(async () => {
+      setLoading(true); setError('')
+      try {
+        const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
+        for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value)
+        const data = await apiRequest(`/api/audit-logs?${params}`, { token, signal: controller.signal })
+        if (!controller.signal.aborted) setResult(data)
+      } catch (requestError) { if (!controller.signal.aborted) setError(requestError.message) }
+      finally { if (!controller.signal.aborted) setLoading(false) }
+    }, 200)
+    return () => { window.clearTimeout(timeout); controller.abort() }
+  }, [token, filters, page, pageSize, revision, invalidDates])
+  function update(field, value) { setFilters(current => ({ ...current, [field]: value })); setPage(1); setFeedHeight(0) }
+  function changePage(nextPage) {
+    const rows = [...(feedRef.current?.querySelectorAll('.audit-entry-toggle') || [])]
+    const height = rows.reduce((sum, row) => sum + row.getBoundingClientRect().height + 2, 0) + Math.max(0, rows.length - 1) * 4
+    setFeedHeight(current => Math.max(current, height)); setPage(nextPage)
+  }
+  const activeFilterCount = ['entity', 'action', 'actorRole', 'from', 'to'].filter(key => filters[key]).length
+  const summary = result.summary || {}, pagination = result.pagination
+  const entities = [...new Set([...(result.filters?.entities || []), filters.entity])].filter(Boolean)
+  const actions = [...new Set([...(result.filters?.actions || []), filters.action].map(action => action === 'DELETED' ? 'DELETE' : action))].filter(Boolean)
+  return <DashboardLayout title="Activity log" className="audit-shell" description="Changes made by users. Expand an entry to see exactly what changed."><div className="space-y-4">
+    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" aria-label="Activity totals for selected filters">
+      {Object.entries({ total: 'User changes', admin: 'Admin', collector: 'Billing Associate', resident: 'Resident' }).map(([key, label]) => <div key={key} className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2.5"><p className="text-[11px] font-semibold text-slate-500">{label}</p><p className="text-xl font-black tabular-nums text-slate-950">{summary[key] ?? 0}</p></div>)}
     </div>
-  )
+    <section aria-label="Activity controls" className="rounded-xl border border-emerald-100 bg-white p-3">
+      <div className="flex flex-wrap gap-2">
+        <label className="relative min-w-0 flex-1 basis-52"><span className="sr-only">Search activity</span><Search size={16} className="pointer-events-none absolute left-3 top-3.5 text-slate-400" aria-hidden="true" /><input aria-label="Search activity" type="search" value={filters.q} onChange={event => update('q', event.target.value)} placeholder="Search name, batch, unit or REF" className={`${inputClass} pl-9`} /></label>
+        <button type="button" aria-expanded={filtersOpen} aria-controls="audit-filters" onClick={() => setFiltersOpen(open => !open)} className={`${buttonClass} inline-flex items-center gap-2`}><SlidersHorizontal size={15} aria-hidden="true" />{filtersOpen ? 'Hide filters' : 'Show filters'}{activeFilterCount > 0 && <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px]">{activeFilterCount}</span>}</button>
+        <button type="button" onClick={() => setRevision(value => value + 1)} aria-label="Refresh activity" className={buttonClass}><RefreshCw size={16} aria-hidden="true" /></button>
+      </div>
+      {filtersOpen && <div id="audit-filters" className="mt-3 grid gap-3 border-t border-emerald-100 pt-3 sm:grid-cols-2 xl:grid-cols-3">
+        <Filter label="What changed?" value={filters.entity} onChange={value => update('entity', value)} options={entities} labels={entityLabels} />
+        <Filter label="What happened?" value={filters.action} onChange={value => update('action', value)} options={actions} labels={actionLabels} />
+        <Filter label="Who made the change?" value={filters.actorRole} onChange={value => update('actorRole', value)} options={['ADMIN', 'COLLECTOR', 'RESIDENT']} labels={roleLabels} />
+        <label className="text-xs font-bold text-slate-600">From date<input aria-label="From date" type="date" value={filters.from} onChange={event => update('from', event.target.value)} className={`${inputClass} mt-1.5`} /></label>
+        <label className="text-xs font-bold text-slate-600">To date<input aria-label="To date" type="date" min={filters.from || undefined} value={filters.to} onChange={event => update('to', event.target.value)} className={`${inputClass} mt-1.5`} /></label>
+        <div className="flex items-end"><button type="button" onClick={() => { setFilters(initialFilters); setPage(1); setFeedHeight(0) }} className={buttonClass}>Clear filters</button></div>
+      </div>}
+      {invalidDates && <p role="alert" className="mt-3 text-sm text-rose-700">To date must be on or after From date.</p>}
+    </section>
+    <Panel className="audit-feed-panel" title="Activity feed" description="Select an entry to see record details, before and after values, and affected units.">
+      {error && <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-800"><span>{error}</span><button type="button" onClick={() => setRevision(value => value + 1)} className={buttonClass}>Try again</button></div>}
+      <div ref={feedRef} aria-busy={loading} className="relative" style={feedHeight ? { minHeight: feedHeight } : undefined}>
+        {loading && !result.logs.length ? <p role="status" className="flex items-center gap-2 p-4 text-sm text-slate-500"><LoaderCircle size={18} className="animate-spin" />Loading activity…</p> : <div className="space-y-1">{!error && result.logs.map(log => <AuditEntry key={`${log.id}-${revision}`} log={log} token={token} />)}</div>}
+        {loading && result.logs.length > 0 && <div role="status" aria-label="Loading activity page" className="absolute inset-0 z-10 flex items-start justify-center rounded-lg bg-white/75 pt-4"><LoaderCircle size={18} className="animate-spin text-emerald-700" aria-hidden="true" /></div>}
+      </div>
+      {!loading && !error && result.logs.length === 0 && <EmptyRow message="No saved changes match these filters." />}
+      <div className="audit-pagination mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-emerald-100 pt-3 text-xs text-slate-500">
+        <p>{pagination.total ? `Showing ${(pagination.page - 1) * pageSize + 1}–${Math.min(pagination.page * pageSize, pagination.total)} of ${pagination.total} entries` : '0 entries'}</p>
+        <label className="ml-auto whitespace-nowrap">Per page <select aria-label="Activity entries per page" value={pageSize} onChange={event => { setPageSize(Number(event.target.value)); setPage(1); setFeedHeight(0) }} className="ml-1 min-h-11 rounded-lg border border-emerald-200 px-2">{[10, 25, 50].map(size => <option key={size}>{size}</option>)}</select></label>
+        <nav aria-label="Activity pages" className="flex w-full items-center justify-between gap-1 sm:w-auto sm:gap-2">
+          <button type="button" aria-label="First page" disabled={loading || Boolean(error) || pagination.page <= 1} onClick={() => changePage(1)} className={buttonClass}>First</button>
+          <button type="button" disabled={loading || Boolean(error) || pagination.page <= 1} onClick={() => changePage(pagination.page - 1)} className={buttonClass}>Previous</button>
+          <span className="whitespace-nowrap">Page {pagination.page} of {pagination.pageCount}</span>
+          <button type="button" disabled={loading || Boolean(error) || pagination.page >= pagination.pageCount} onClick={() => changePage(pagination.page + 1)} className={buttonClass}>Next</button>
+          <button type="button" aria-label="Last page" disabled={loading || Boolean(error) || pagination.page >= pagination.pageCount} onClick={() => changePage(pagination.pageCount)} className={buttonClass}>Last</button>
+        </nav>
+      </div>
+    </Panel>
+  </div></DashboardLayout>
+}
+function Filter({ label, value, onChange, options, labels }) {
+  return <label className="text-xs font-bold text-slate-600">{label}<select aria-label={label} value={value} onChange={event => onChange(event.target.value)} className={`${inputClass} mt-1.5`}><option value="">Everything</option>{options.map(option => <option key={option} value={option}>{auditLabel(option, labels)}</option>)}</select></label>
+}
+function AuditEntry({ log, token }) {
+  const [open, setOpen] = useState(false)
+  const [details, setDetails] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const requestRef = useRef(null)
+  useEffect(() => () => requestRef.current?.abort(), [])
+  async function load() {
+    requestRef.current?.abort()
+    const controller = new AbortController(); requestRef.current = controller
+    setLoading(true); setError('')
+    try { const data = await apiRequest(`/api/audit-logs/${log.id}`, { token, signal: controller.signal }); if (!controller.signal.aborted) setDetails(data.log) }
+    catch (requestError) { if (!controller.signal.aborted) setError(requestError.message) }
+    finally { if (!controller.signal.aborted) setLoading(false) }
+  }
+  function toggle() { setOpen(!open); if (!open && !details && !loading) void load() }
+  return <article className="min-w-0 overflow-hidden rounded-lg border border-emerald-100 bg-white">
+    <button type="button" aria-expanded={open} aria-controls={`audit-details-${log.id}`} onClick={toggle} className="audit-entry-toggle flex min-h-16 w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-emerald-50/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-600">
+      <span className="grid size-7 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700"><Activity size={14} aria-hidden="true" /></span>
+      <span className="min-w-0 flex-1"><span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5"><span className="text-xs font-bold text-slate-950">{log.actorName}</span><span className="text-[10px] text-slate-500">{roleLabels[log.actorRole] || 'User'}</span><time dateTime={log.createdAt} className="ml-auto hidden text-[10px] text-slate-500 md:block">{auditTime(log.createdAt)}</time></span><span className="mt-0.5 block break-words text-xs leading-5 text-slate-700">{auditSummary(log)}</span><time dateTime={log.createdAt} className="mt-0.5 block text-[10px] text-slate-500 md:hidden">{auditTime(log.createdAt)}</time></span>
+      <ChevronDown size={16} aria-hidden="true" className={`shrink-0 text-emerald-700 transition ${open ? 'rotate-180' : ''}`} />
+    </button>
+    {open && <div id={`audit-details-${log.id}`} className="min-w-0 border-t border-emerald-100 bg-slate-50/60 p-3 sm:p-4">
+      {loading && <p role="status" className="text-sm text-slate-500">Loading details…</p>}
+      {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-rose-700"><p>{error}</p><button type="button" onClick={load} className={buttonClass}>Retry details</button></div>}
+      {details && <AuditDetails log={details} />}
+    </div>}
+  </article>
+}
+function AuditDetails({ log }) {
+  const changes = auditChanges(log.oldValues, log.newValues)
+  const target = log.context?.target || {}
+  const credentialEvent = /PASSWORD/.test(log.action)
+  return <div className="min-w-0 space-y-4">
+    <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
+      <Fact label="Record" value={auditTargetLabel(log)} /><Fact label="Activity entry" value={`#${log.id}`} />
+      {Object.entries(target).filter(([key]) => !['entityName', 'entityId', 'label'].includes(key)).map(([key, value]) => <Fact key={key} label={auditLabel(key)} value={auditValue(value, key)} />)}
+      {Object.entries(log.context?.counts || {}).map(([key, value]) => <Fact key={key} label={auditLabel(key)} value={auditValue(value, key)} />)}
+    </dl>
+    {log.remarks && <div className="rounded-lg border border-emerald-100 bg-white p-3 text-sm"><p className="font-bold text-slate-800">Reason / notes</p><p className="mt-1 whitespace-pre-wrap break-words leading-6 text-slate-600">{log.remarks}</p></div>}
+    {credentialEvent && <p className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-900">Password changed. Credential values are never recorded.</p>}
+    {changes.length ? <div className="overflow-x-auto rounded-lg border border-emerald-100 bg-white"><table className="w-full min-w-[420px] text-left text-xs"><caption className="sr-only">Changed fields</caption><thead className="bg-emerald-50 text-slate-600"><tr><th className="px-3 py-2">Field</th><th className="px-3 py-2">Before</th><th className="px-3 py-2">After</th></tr></thead><tbody className="divide-y divide-emerald-50">{changes.map(change => <tr key={change.key}><th scope="row" className="max-w-44 break-words px-3 py-2 font-semibold text-slate-700">{change.label}</th><td className="max-w-64 whitespace-pre-wrap break-words px-3 py-2 align-top text-slate-500">{change.before}</td><td className="max-w-64 whitespace-pre-wrap break-words px-3 py-2 align-top font-medium text-emerald-900">{change.after}</td></tr>)}</tbody></table></div> : !credentialEvent && <p className="text-xs text-slate-500">Field-level changes were not recorded for this entry.</p>}
+    <AffectedRecords records={log.context?.affectedRecords || []} />
+    {!log.context?.version && <p className="text-xs leading-5 text-slate-500">Historical entry: details that were not captured at the time are shown as Not recorded.</p>}
+  </div>
+}
+function Fact({ label, value }) { return <div className="min-w-0"><dt className="text-slate-500">{label}</dt><dd className="mt-1 whitespace-pre-wrap break-words font-semibold leading-5 text-slate-800">{value}</dd></div> }
+function AffectedRecords({ records }) {
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(1)
+  if (!records.length) return null
+  const filtered = records.filter(row => [row.unitNumber, row.fullName, row.entityId, row.periodStart, row.periodEnd, row.periodId].join(' ').toLowerCase().includes(search.toLowerCase()))
+  const pageCount = Math.max(1, Math.ceil(filtered.length / 25)), safePage = Math.min(page, pageCount)
+  return <section aria-label="Affected records" className="min-w-0 rounded-lg border border-emerald-100 bg-white p-3">
+    <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-black text-slate-900">Affected records ({records.length})</h3><input type="search" aria-label="Search affected units" value={search} onChange={event => { setSearch(event.target.value); setPage(1) }} placeholder="Find a unit or record" className="min-h-11 max-w-full rounded-lg border border-emerald-200 px-3 text-xs" /></div>
+    <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[460px] text-left text-xs"><thead className="bg-emerald-50"><tr><th className="p-2">Unit / record</th><th className="p-2">Before</th><th className="p-2">After</th></tr></thead><tbody className="divide-y divide-emerald-50">{filtered.slice((safePage - 1) * 25, safePage * 25).map((row, index) => {
+      const changes = auditChanges(row.before, row.after)
+      return <tr key={`${row.entityId || row.unitId}-${index}`}><th scope="row" className="p-2 align-top font-semibold text-slate-800">{row.unitNumber ? `Unit ${row.unitNumber}` : row.unitId ? `Unit ID ${row.unitId}` : auditLabel(row.entityName, entityLabels)}<span className="mt-1 block font-normal text-slate-500">{auditLabel(row.entityName || 'METER_READING', entityLabels)}{row.entityId ? ` #${row.entityId}` : ''}</span>{row.fullName && <span className="mt-1 block font-normal">{row.fullName}</span>}</th><td className="max-w-64 whitespace-pre-wrap break-words p-2 align-top text-slate-500">{row.before === null ? 'None' : changes.length ? changes.map(change => `${change.label}: ${change.before}`).join('\n') : 'Not recorded'}</td><td className="max-w-64 whitespace-pre-wrap break-words p-2 align-top text-emerald-900">{row.after === null ? 'None' : changes.length ? changes.map(change => `${change.label}: ${change.after}`).join('\n') : 'Not recorded'}</td></tr>
+    })}</tbody></table></div>
+    {!filtered.length && <p className="py-3 text-xs text-slate-500">No affected records match.</p>}
+    <div className="audit-pagination mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span>{filtered.length} matching records · Page {safePage} of {pageCount}</span><div className="flex gap-2"><button type="button" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)} className={buttonClass}>Previous units</button><button type="button" disabled={safePage >= pageCount} onClick={() => setPage(safePage + 1)} className={buttonClass}>Next units</button></div></div>
+  </section>
 }

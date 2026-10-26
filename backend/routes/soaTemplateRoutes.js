@@ -47,10 +47,15 @@ router.get("/", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
 });
 
 router.patch("/", allowRoles("ADMIN"), validateBody(templateSchema), async (req, res, next) => {
+  let client;
   try {
-    const before = await ensureSoaTemplate(pool);
+    client = await pool.connect();
+    await client.query("BEGIN");
+    await ensureSoaTemplate(client);
+    await client.query("SELECT id FROM soa_templates WHERE id=1 FOR UPDATE");
+    const before = await ensureSoaTemplate(client);
     const template = normalizeSoaTemplate(req.validatedBody);
-    const result = await pool.query(
+    const result = await client.query(
       `UPDATE soa_templates
        SET template_data = $1::jsonb, updated_by = $2
        WHERE id = 1
@@ -58,6 +63,7 @@ router.patch("/", allowRoles("ADMIN"), validateBody(templateSchema), async (req,
       [JSON.stringify(template), req.user.id],
     );
     await writeAuditLog({
+      client,
       actorUserId: req.user.id,
       entityName: "SOA_TEMPLATE",
       entityId: 1,
@@ -65,8 +71,9 @@ router.patch("/", allowRoles("ADMIN"), validateBody(templateSchema), async (req,
       oldValues: normalizeSoaTemplate(before),
       newValues: result.rows[0].templateData,
     });
+    await client.query("COMMIT");
     return res.json({ message: "SOA template updated for future generated statements.", template: result.rows[0].templateData });
-  } catch (error) { return next(error); }
+  } catch (error) { if (client) await client.query("ROLLBACK").catch(() => {}); return next(error); } finally { client?.release(); }
 });
 
 router.get("/assets/:type", allowRoles("ADMIN", "COLLECTOR", "RESIDENT"), async (req, res, next) => {
@@ -93,19 +100,23 @@ router.post("/assets/:type", allowRoles("ADMIN"), assetUpload.single("asset"), a
   const mimeColumn = type === "logo" ? "logo_asset_mime_type" : type === "qr" ? "qr_asset_mime_type" : null;
   if (!idColumn) return res.status(404).json({ message: "Unknown SOA asset type." });
   if (!req.file) return res.status(400).json({ message: "Select a JPG or PNG image." });
-  let uploaded;
+  let uploaded, client, committed = false;
   try {
-    await ensureSoaTemplate(pool);
-    const before = await pool.query(`SELECT ${idColumn} AS "publicId" FROM soa_templates WHERE id = 1`);
+    client = await pool.connect();
+    await client.query("BEGIN");
+    await ensureSoaTemplate(client);
+    const before = await client.query(`SELECT ${idColumn} AS "publicId", ${mimeColumn} AS "mimeType" FROM soa_templates WHERE id = 1 FOR UPDATE`);
     uploaded = await uploadSoaAsset(req.file.buffer, type);
-    await pool.query(`UPDATE soa_templates SET ${idColumn} = $1, ${mimeColumn} = $2, updated_by = $3 WHERE id = 1`, [uploaded.publicId, req.file.mimetype, req.user.id]);
-    await writeAuditLog({ actorUserId: req.user.id, entityName: "SOA_TEMPLATE", entityId: 1, action: "UPLOAD_ASSET", newValues: { type, mimeType: req.file.mimetype } });
+    await client.query(`UPDATE soa_templates SET ${idColumn} = $1, ${mimeColumn} = $2, updated_by = $3 WHERE id = 1`, [uploaded.publicId, req.file.mimetype, req.user.id]);
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: "SOA_TEMPLATE", entityId: 1, action: "UPLOAD_ASSET", oldValues: { type, mimeType: before.rows[0]?.mimeType || null, assetPresent: Boolean(before.rows[0]?.publicId) }, newValues: { type, mimeType: req.file.mimetype, filename: req.file.originalname, assetPresent: true } });
+    await client.query("COMMIT"); committed = true;
     if (before.rows[0]?.publicId) await destroySoaAsset(before.rows[0].publicId).catch(() => {});
     return res.status(201).json({ message: `${type === "logo" ? "Logo" : "Payment QR code"} uploaded.` });
   } catch (error) {
-    if (uploaded?.publicId) await destroySoaAsset(uploaded.publicId).catch(() => {});
+    if (client && !committed) await client.query("ROLLBACK").catch(() => {});
+    if (!committed && uploaded?.publicId) await destroySoaAsset(uploaded.publicId).catch(() => {});
     return next(error);
-  }
+  } finally { client?.release(); }
 });
 
 export default router;

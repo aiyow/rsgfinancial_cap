@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ChevronDown, Mail, RotateCcw, TriangleAlert } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
+import UnpublishBatchModal from '../../components/UnpublishBatchModal'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -77,9 +78,11 @@ export default function AdminSoaBatchPage() {
   const [notice, setNotice] = useState({ error: '', message: '' })
   const [publishConfirmation, setPublishConfirmation] = useState(null)
   const [actionConfirmation, setActionConfirmation] = useState(null)
+  const [unpublishAllConfirmation, setUnpublishAllConfirmation] = useState(false)
 
   const publishedCount = useMemo(() => bills.filter((bill) => bill.publishedAt).length, [bills])
   const unpublished = useMemo(() => bills.filter((bill) => !bill.publishedAt), [bills])
+  const allPublished = bills.length > 0 && publishedCount === bills.length
   const publishSelectedDisabled = busy || selectedIds.length === 0
   const filteredBills = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -212,6 +215,28 @@ export default function AdminSoaBatchPage() {
     }
   }
 
+  async function unpublishAll(currentPassword) {
+    if (busy) return
+    setBusy(true)
+    setNotice({ error: '', message: '' })
+    try {
+      const data = await apiRequest(`/api/billing-periods/${periodId}/unpublish`, { method: 'POST', token, body: { currentPassword } })
+      setBills(current => current.map(bill => ({ ...bill, publishedAt: null, publishedBy: null, emailDelivery: null })))
+      setSelectedIds([])
+      setPublishFilter('ALL')
+      setDeliveryFilter('ALL')
+      setPage(1)
+      setUnpublishAllConfirmation(false)
+      setNotice({ error: '', message: data.message })
+      try {
+        const refreshed = await apiRequest(`/api/bills?billingPeriodId=${periodId}`, { token })
+        setBills(refreshed.bills)
+      } catch {
+        setNotice({ error: 'The SOAs were unpublished, but the list could not refresh. Reload this page.', message: '' })
+      }
+    } finally { setBusy(false) }
+  }
+
   async function confirmAction() {
     if (!actionConfirmation) return
     const confirmation = actionConfirmation
@@ -226,6 +251,7 @@ export default function AdminSoaBatchPage() {
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
       <Panel title={`${bills.length} Statements of Account`} description={`${publishedCount} published to Residents | ${unpublished.length} still hidden`}>
         <div className="mb-5 flex flex-wrap gap-3">
+          {allPublished && <button type="button" disabled={busy} onClick={() => setUnpublishAllConfirmation(true)} className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50">Unpublish all</button>}
           <button disabled={busy || unpublished.length === 0} onClick={requestPublishAll} className="rounded-lg border border-[#75ba8e] bg-white px-4 py-2 text-sm font-bold text-[#237a4a] shadow-sm transition hover:border-[#237a4a] hover:bg-[#2f8f5b] hover:text-white hover:shadow-md focus:bg-[#2f8f5b] focus:text-white focus:outline-none focus:ring-2 focus:ring-[#2f8f5b] focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-white disabled:text-slate-400 disabled:shadow-none">Publish all remaining</button>
           <button type="button" disabled={publishSelectedDisabled} aria-disabled={publishSelectedDisabled} title={publishSelectedDisabled ? 'Select at least one hidden SOA to publish.' : 'Publish the selected SOAs.'} onClick={requestPublishSelected} className={`rounded-lg border px-4 py-2 text-sm font-bold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#2f8f5b] focus:ring-offset-2 ${publishSelectedDisabled ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 shadow-none' : 'border-[#75ba8e] bg-white text-[#237a4a] hover:border-[#237a4a] hover:bg-[#2f8f5b] hover:text-white hover:shadow-md focus:bg-[#2f8f5b] focus:text-white active:scale-[0.98]'}`}>Publish selected{selectedIds.length ? ` (${selectedIds.length})` : ''}</button>
         </div>
@@ -236,6 +262,7 @@ export default function AdminSoaBatchPage() {
         {bills.length === 0 && <EmptyRow message="No forwarded SOAs found for this batch." />}
         {bills.length > 0 && filteredBills.length === 0 && <EmptyRow message="No SOAs match the selected filters." />}
       </Panel>
+      {unpublishAllConfirmation && <UnpublishBatchModal count={bills.length} busy={busy} onCancel={() => setUnpublishAllConfirmation(false)} onConfirm={unpublishAll} />}
       {publishConfirmation && <PublishConfirmationModal confirmation={publishConfirmation} busy={busy} onCancel={() => setPublishConfirmation(null)} onPublishOnly={() => confirmPublish(false)} onPublishAndSend={() => confirmPublish(true)} />}
       {actionConfirmation && <ActionConfirmationModal confirmation={actionConfirmation} busy={busy} onCancel={() => setActionConfirmation(null)} onConfirm={confirmAction} />}
     </DashboardLayout>

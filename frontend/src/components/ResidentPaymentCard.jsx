@@ -21,6 +21,7 @@ export default function ResidentPaymentCard({ payment }) {
         <p className="max-w-40 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-semibold leading-4 text-emerald-900">{purposeLabels[payment.paymentPurpose] || 'Purpose unavailable'}</p>
       </div>
       <p className="mt-2 flex flex-wrap items-center gap-x-1.5 text-[11px] leading-5 text-slate-500"><time dateTime={payment.submittedAt || undefined}>{paymentDateTime(payment.submittedAt)}</time><span aria-hidden="true">·</span><span>{paymentMethodLabel(payment.paymentMethod)}</span></p>
+      {approved && payment.officialReceiptNo && <p className="mt-1 break-all font-mono text-[11px] font-semibold text-emerald-800">Reference number: {payment.officialReceiptNo}</p>}
       {approved && <p className="mt-1 text-[11px] leading-5 text-slate-600">Applied {currency(payment.appliedAmount)}{Number(payment.unappliedAmount) > 0 && <> · Payment advance {currency(payment.unappliedAmount)}</>}</p>}
       {invoices.length > 0 && <p className="truncate text-[11px] leading-5 text-slate-600" title={invoices.join(', ')}>Invoice {invoices[0]}{invoices.length > 1 ? ` +${invoices.length - 1} more` : ''}</p>}
       {payment.reviewStatus === 'REJECTED' && payment.remarks && <p className="mt-2 line-clamp-2 text-xs leading-5 text-rose-700">{payment.remarks}</p>}

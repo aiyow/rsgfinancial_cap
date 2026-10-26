@@ -28,8 +28,9 @@ test('resident assignment persists occupied status atomically and stale unit edi
         created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT unit_assignments_unique_assignment UNIQUE (unit_id,user_id,start_date)) ON COMMIT DROP;
       CREATE UNIQUE INDEX unit_assignments_active_user_unit_unique ON unit_assignments(unit_id,user_id) WHERE end_date IS NULL;
-      CREATE TEMP TABLE audit_logs (actor_user_id BIGINT, actor_name_snapshot TEXT, actor_role_snapshot TEXT,
+      CREATE TEMP TABLE audit_logs (context JSONB,actor_user_id BIGINT, actor_name_snapshot TEXT, actor_role_snapshot TEXT,
         entity_name TEXT, entity_id BIGINT, action TEXT, old_values JSONB, new_values JSONB, remarks TEXT) ON COMMIT DROP;
+      ALTER TABLE users ADD COLUMN approval_status TEXT DEFAULT 'APPROVED';
       INSERT INTO users(id,full_name,email,role,is_active) VALUES
         (1,'Test Admin','admin@example.invalid','ADMIN',TRUE),
         (2,'Test Owner','owner@example.invalid','RESIDENT',TRUE),

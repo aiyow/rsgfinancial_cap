@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { AlertTriangle, X } from 'lucide-react'
+import { AlertTriangle, LoaderCircle, X } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import { billingPeriodDateBounds, billingPeriodErrors } from '../../utils/billingPeriodPolicy'
 
 const blankPeriod = { periodStart: '', periodEnd: '', dueDate: '', waterRatePerCubicM: 23, associationDuesRatePerSqm: 134.07, latePenaltyPercent: 0 }
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal'
 const primaryClass = 'rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300'
 const unitNumberCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
-function Field({ label, children }) {
-  return <label className="block text-xs font-bold text-slate-600">{label}{children}</label>
+function Field({ label, children, error, errorId }) {
+  return <div><label className="block text-xs font-bold text-slate-600">{label}{children}</label>{error && <p id={errorId} className="mt-1.5 text-xs leading-5 text-rose-700">{error}</p>}</div>
 }
 
 function money(value) {
@@ -26,15 +27,35 @@ export default function CollectorBillingPage() {
   const [periods, setPeriods] = useState([])
   const [selectedId, setSelectedId] = useState('')
   const [periodForm, setPeriodForm] = useState(blankPeriod)
+  const [showPeriodErrors, setShowPeriodErrors] = useState(false)
+  const [periodServerErrors, setPeriodServerErrors] = useState({})
   const [editingPeriodId, setEditingPeriodId] = useState(null)
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState(null)
   const [readingCount, setReadingCount] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [importing, setImporting] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
   const [generateConfirmOpen, setGenerateConfirmOpen] = useState(false)
   const selectedPeriod = useMemo(() => periods.find((period) => String(period.id) === String(selectedId)), [periods, selectedId])
   const sortedPreviewRows = useMemo(() => [...(preview?.rows || [])].sort((left, right) => unitNumberCollator.compare(String(left.unitNumber), String(right.unitNumber))), [preview])
+  const periodErrors = { ...(showPeriodErrors ? billingPeriodErrors(periodForm) : {}), ...periodServerErrors }
+  const periodDateBounds = billingPeriodDateBounds(periodForm)
+
+  function updatePeriodField(field, value) {
+    setPeriodForm(current => ({ ...current, [field]: value }))
+    setPeriodServerErrors({})
+  }
+
+  function periodInputProps(field) {
+    return {
+      name: field,
+      disabled: busy,
+      'aria-invalid': Boolean(periodErrors[field]),
+      'aria-describedby': periodErrors[field] ? `${field}-error` : undefined,
+      onChange: event => updatePeriodField(field, event.target.value),
+    }
+  }
 
   const loadPeriods = useCallback(async () => {
     const data = await apiRequest('/api/billing-periods', { token })
@@ -80,10 +101,20 @@ export default function CollectorBillingPage() {
   function cancelPeriodEdit() {
     setEditingPeriodId(null)
     setPeriodForm(blankPeriod)
+    setShowPeriodErrors(false)
+    setPeriodServerErrors({})
   }
 
   async function savePeriod(event) {
     event.preventDefault()
+    if (busy) return
+    setShowPeriodErrors(true)
+    setPeriodServerErrors({})
+    const errors = billingPeriodErrors(periodForm)
+    if (Object.keys(errors).length) {
+      event.currentTarget.elements.namedItem(Object.keys(errors)[0])?.focus()
+      return
+    }
     setBusy(true)
     setNotice({ error: '', message: '' })
     try {
@@ -93,6 +124,7 @@ export default function CollectorBillingPage() {
       cancelPeriodEdit()
       setNotice({ error: '', message: editingPeriodId ? 'Draft billing settings updated.' : 'Draft billing period created.' })
     } catch (error) {
+      setPeriodServerErrors(Object.fromEntries((error.data?.errors || []).map(issue => [issue.field, issue.message])))
       setNotice({ error: error.message, message: '' })
     } finally { setBusy(false) }
   }
@@ -117,8 +149,9 @@ export default function CollectorBillingPage() {
   }
 
   async function importReadings() {
-    if (!preview?.valid) return
+    if (busy || !preview?.valid) return
     setBusy(true)
+    setImporting(true)
     setNotice({ error: '', message: '' })
     try {
       const readings = preview.rows.map(({ unitId, previousReading, currentReading }) => ({ unitId, previousReading, currentReading }))
@@ -127,7 +160,7 @@ export default function CollectorBillingPage() {
       setNotice({ error: '', message: data.message })
     } catch (error) {
       setNotice({ error: error.message, message: '' })
-    } finally { setBusy(false) }
+    } finally { setImporting(false); setBusy(false) }
   }
 
   async function generateBills() {
@@ -149,28 +182,30 @@ export default function CollectorBillingPage() {
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
 
       <Panel accent="blue" title={editingPeriodId ? '1. Edit draft billing period' : 'Create billing period'} description="The workbook has no dates, so enter the coverage and due date here.">
-        <form onSubmit={savePeriod} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-3 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
-          <Field label="Period start"><input required type="date" value={periodForm.periodStart} onChange={(event) => setPeriodForm({ ...periodForm, periodStart: event.target.value })} className={inputClass} /></Field>
-          <Field label="Period end"><input required type="date" value={periodForm.periodEnd} onChange={(event) => setPeriodForm({ ...periodForm, periodEnd: event.target.value })} className={inputClass} /></Field>
-          <Field label="Due date"><input required type="date" value={periodForm.dueDate} onChange={(event) => setPeriodForm({ ...periodForm, dueDate: event.target.value })} className={inputClass} /></Field>
-          <Field label="Water rate / m3"><input required min="0" step="0.01" type="number" value={periodForm.waterRatePerCubicM} onChange={(event) => setPeriodForm({ ...periodForm, waterRatePerCubicM: Number(event.target.value) })} className={inputClass} /></Field>
-          <Field label="Association Dues"><input required min="0" step="0.01" type="number" value={periodForm.associationDuesRatePerSqm} onChange={(event) => setPeriodForm({ ...periodForm, associationDuesRatePerSqm: Number(event.target.value) })} className={inputClass} /></Field>
-          <Field label="Late penalty (%)"><input required min="0" max="100" step="0.01" type="number" value={periodForm.latePenaltyPercent} onChange={(event) => setPeriodForm({ ...periodForm, latePenaltyPercent: Number(event.target.value) })} className={inputClass} /></Field>
+        <form noValidate onSubmit={savePeriod} aria-label="Billing period settings" className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-3 xl:grid-cols-[repeat(6,minmax(0,1fr))_auto]">
+          <Field label="Period start" error={periodErrors.periodStart} errorId="periodStart-error"><input required type="date" max="9999-12-31" value={periodForm.periodStart} {...periodInputProps('periodStart')} className={inputClass} /></Field>
+          <Field label="Period end" error={periodErrors.periodEnd} errorId="periodEnd-error"><input required type="date" min={periodDateBounds.periodEndMin || undefined} max={periodDateBounds.periodEndMax || '9999-12-31'} value={periodForm.periodEnd} {...periodInputProps('periodEnd')} className={inputClass} /></Field>
+          <Field label="Due date" error={periodErrors.dueDate} errorId="dueDate-error"><input required type="date" min={periodDateBounds.dueDateMin || undefined} max={periodDateBounds.dueDateMax || '9999-12-31'} value={periodForm.dueDate} {...periodInputProps('dueDate')} className={inputClass} /></Field>
+          <Field label="Water rate / m3" error={periodErrors.waterRatePerCubicM} errorId="waterRatePerCubicM-error"><input required min="0.01" step="0.01" type="number" value={periodForm.waterRatePerCubicM} {...periodInputProps('waterRatePerCubicM')} className={inputClass} /></Field>
+          <Field label="Association Dues" error={periodErrors.associationDuesRatePerSqm} errorId="associationDuesRatePerSqm-error"><input required min="0.01" step="0.01" type="number" value={periodForm.associationDuesRatePerSqm} {...periodInputProps('associationDuesRatePerSqm')} className={inputClass} /></Field>
+          <Field label="Late penalty (%)" error={periodErrors.latePenaltyPercent} errorId="latePenaltyPercent-error"><input required min="0" max="100" step="0.01" type="number" value={periodForm.latePenaltyPercent} {...periodInputProps('latePenaltyPercent')} className={inputClass} /></Field>
           <div className="flex self-end gap-2"><button disabled={busy} className={`${primaryClass} whitespace-nowrap`}>{editingPeriodId ? 'Save settings' : 'Create draft'}</button>{editingPeriodId && <button type="button" onClick={cancelPeriodEdit} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold">Cancel</button>}</div>
         </form>
+        <p className="mt-3 text-xs leading-5 text-slate-500">Both rates must be greater than zero. Coverage must span 1–2 calendar months. The due date must be after period end and within 1 calendar month.</p>
         <p className="mt-3 text-xs text-slate-500">The late penalty is applied once to an unpaid SOA after its due date.</p>
       </Panel>
 
       <Panel accent="red" title="Upload and validate readings" description="Required columns: UNIT, PREVIOUS, and PRESENT. Server calculations override spreadsheet formulas.">
         <form onSubmit={previewFile} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-[1fr_1fr_auto]">
-          <Field label="Draft period"><select required value={selectedId} onChange={(event) => selectPeriod(event.target.value)} className={inputClass}><option value="">Select period</option>{periods.map((period) => <option key={period.id} value={period.id}>{period.periodStart} to {period.periodEnd} - {period.status}</option>)}</select></Field>
-          <Field label="Billing Associate workbook"><input required accept=".xlsx" type="file" onChange={(event) => setFile(event.target.files[0] || null)} className={inputClass} /></Field>
+          <Field label="Draft period"><select required disabled={busy} value={selectedId} onChange={(event) => selectPeriod(event.target.value)} className={inputClass}><option value="">Select period</option>{periods.map((period) => <option key={period.id} value={period.id}>{period.periodStart} to {period.periodEnd} - {period.status}</option>)}</select></Field>
+          <Field label="Billing Associate workbook"><input required disabled={busy} accept=".xlsx" type="file" onChange={(event) => setFile(event.target.files[0] || null)} className={inputClass} /></Field>
           <button disabled={busy || !selectedId} className={`${primaryClass} self-end`}>{selectedPeriod?.status === 'DRAFT' ? 'Preview file' : 'Preview corrected file'}</button>
         </form>
         {readingCount > 0 && <p className="mt-3 text-sm font-bold text-emerald-700">{readingCount} readings are currently saved for this period.</p>}
         {preview && (
           <div className="mt-5">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600"><span><strong className="text-slate-900">{preview.summary.rowCount}</strong> spreadsheet rows</span><span><strong className="text-slate-900">{preview.summary.unitCount}</strong> database units</span><span className="text-amber-700"><strong>{preview.summary.flaggedCount || 0}</strong> flagged</span><span><strong>{preview.summary.warningCount}</strong> warnings</span><span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">Sorted by unit number</span></div><button type="button" disabled={!preview.valid || busy} onClick={importReadings} className={primaryClass}>{selectedPeriod?.status === 'DRAFT' ? 'Confirm import' : 'Apply corrected readings'}</button></div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600"><span><strong className="text-slate-900">{preview.summary.rowCount}</strong> spreadsheet rows</span><span><strong className="text-slate-900">{preview.summary.unitCount}</strong> database units</span><span className="text-amber-700"><strong>{preview.summary.flaggedCount || 0}</strong> flagged</span><span><strong>{preview.summary.warningCount}</strong> warnings</span><span className="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700">Sorted by unit number</span></div><button type="button" disabled={!preview.valid || busy} aria-busy={importing} onClick={importReadings} className={`${primaryClass} inline-flex min-w-[150px] items-center justify-center gap-2`} style={importing ? { backgroundColor: 'var(--primary)', cursor: 'wait' } : undefined}>{importing && <LoaderCircle size={17} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}{importing ? (selectedPeriod?.status === 'DRAFT' ? 'Importing…' : 'Applying…') : selectedPeriod?.status === 'DRAFT' ? 'Confirm import' : 'Apply corrected readings'}</button></div>
+            {importing && <p role="status" className="mb-3 text-sm font-medium text-emerald-700">Saving meter readings. Please wait…</p>}
             {preview.errors.map((error) => <p key={error} className="mb-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>)}
             {(preview.warnings || []).map((warning) => <p key={warning} className="mb-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{warning}</p>)}
             <div className="max-h-[520px] overflow-auto rounded-xl border border-slate-200 bg-white">

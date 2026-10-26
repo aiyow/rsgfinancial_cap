@@ -1,0 +1,155 @@
+Overall Billing
+Reporting period: 2026-10
+Unit Resident/Payer Association Dues Water Bill Penalties Total Billed Paid Remaining Balance Status
+2 Historical Payer ₱100.00 ₱25.00 ₱0.00 ₱125.00 ₱125.00 ₱0.00 Paid
+10 First Snapshot, Second
+Snapshot
+₱107.01 ₱10.02 ₱10.00 ₱127.03 ₱37.03 ₱90.00 Partially Paid
+11 Saved Payer ₱0.00 ₱20.00 ₱0.00 ₱20.00 ₱0.00 ₱20.00 Unpaid
+12 Saved Payer ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No Charges
+13 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+14 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+237 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+238 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+239 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+240 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+241 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+242 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+243 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+244 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+245 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+246 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+247 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+248 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+249 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+250 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+Unit Resident/Payer Association Dues Water Bill Penalties Total Billed Paid Remaining Balance Status
+251 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+252 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+253 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+254 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+255 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+256 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+257 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+258 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+259 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+260 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+261 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+262 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+263 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+264 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+265 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+266 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+267 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+268 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+269 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+270 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+271 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+272 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+273 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+274 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+Unit Resident/Payer Association Dues Water Bill Penalties Total Billed Paid Remaining Balance Status
+275 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+276 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+277 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+278 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+279 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+280 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+281 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+282 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+283 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+284 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+285 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+286 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+287 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+288 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+289 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+290 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+291 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+292 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+293 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+294 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+295 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+296 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+297 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+298 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+Unit Resident/Payer Association Dues Water Bill Penalties Total Billed Paid Remaining Balance Status
+299 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+300 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+301 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+302 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+303 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+304 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+305 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+306 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+307 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+308 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+309 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+310 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+311 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+312 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+313 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+314 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+315 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+316 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+317 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+318 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+319 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+320 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+321 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+322 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+Unit Resident/Payer Association Dues Water Bill Penalties Total Billed Paid Remaining Balance Status
+323 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+324 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+325 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+326 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+327 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+328 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+329 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+330 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+331 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+332 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+333 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+334 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+335 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+336 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+337 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+338 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+339 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+340 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+341 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+342 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+343 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+344 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+345 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+346 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+Unit Resident/Payer Association Dues Water Bill Penalties Total Billed Paid Remaining Balance Status
+347 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+348 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+349 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+350 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+351 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+352 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+353 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+354 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+355 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+356 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+357 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+358 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+359 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+360 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+361 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+362 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+363 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+364 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+365 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+366 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+367 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+368 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+369 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+370 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+Unit Resident/Payer Association Dues Water Bill Penalties Total Billed Paid Remaining Balance Status
+371 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+372 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+373 Unassigned resident ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 ₱0.00 No SOA
+Grand Total ₱207.01 ₱55.02 ₱10.00 ₱272.03 ₱162.03 ₱110.00

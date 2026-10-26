@@ -1,6 +1,6 @@
 import express from "express";
 import { randomUUID } from "node:crypto";
-import bcrypt from "bcrypt";
+import { hashPassword, verifyPassword } from "../services/passwordHash.js";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import pool from "../config/db.js";
@@ -28,19 +28,40 @@ import {
 } from "../services/passwordReset.js";
 import { normalizeEmailIdentity } from "../services/emailIdentity.js";
 
+import { newPasswordSchema } from "../services/passwordValidation.js";
+
+import registrationRoutes from './registrationRoutes.js';
+import { consumeRegistrationGrant, registrationQuota } from '../services/registrationVerification.js';
+
 const router = express.Router();
-const passwordSchema = z.string().min(8).max(72);
+router.use(registrationRoutes);
+const passwordSchema = newPasswordSchema;
 const VERIFICATION_RESEND_COOLDOWN_MS = 60 * 1000;
 
-const registerSchema = z.object({
-  fullName: z.string().trim().min(1).max(150),
+const registrationTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/, 'Verify your email before creating an account.');
+const registrationAccountSchema = z.object({
+  fullName: z.string().trim().min(1).max(205),
   email: z.string().trim().toLowerCase().email().max(255),
   password: passwordSchema,
+  registrationToken: registrationTokenSchema,
 }).strict();
+const registrationNameSchema = z.object({
+  firstName: z.string().trim().min(1).max(100),
+  middleInitial: z.string().refine(value => value === '' || (/^[A-Za-z]{1,2}\.?$/.test(value) && value === value.trim()),
+    'MI must be 1–2 letters with an optional period at the end.').optional().default(''),
+  lastName: z.string().trim().min(1).max(100),
+  email: z.string().trim().toLowerCase().email().max(255),
+  password: passwordSchema,
+  registrationToken: registrationTokenSchema,
+}).strict().transform(({ firstName, middleInitial, lastName, email, password, registrationToken }) => ({
+  fullName: [firstName, middleInitial, lastName].filter(Boolean).join(' '), email, password, registrationToken,
+}));
+// Assemble structured names on the server. Existing clients may still send fullName.
+const registerSchema = z.union([registrationNameSchema, registrationAccountSchema]).pipe(registrationAccountSchema);
 
 const loginSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
-  password: z.string().min(1).max(72),
+  password: z.string().min(1).max(256),
 }).strict();
 const resendVerificationSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
@@ -59,7 +80,7 @@ const resetPasswordSchema = z.object({
   password: passwordSchema,
 }).strict();
 const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1).max(72),
+  currentPassword: z.string().min(1).max(256),
   newPassword: passwordSchema,
 }).strict();
 const userColumns = `
@@ -74,66 +95,38 @@ const userColumns = `
   updated_at AS "updatedAt"`;
 
 router.post("/register", validateBody(registerSchema), async (req, res, next) => {
+  res.set('Cache-Control','no-store');
   let client;
   try {
-    const { fullName, password } = req.validatedBody;
+    const { fullName, password, registrationToken } = req.validatedBody;
     const email = normalizeEmailIdentity(req.validatedBody.email);
-    const role = "RESIDENT";
-
-    const existing = await pool.query(
-      "SELECT 1 FROM users WHERE LOWER(BTRIM(email)) = $1 LIMIT 1",
-      [email]
-    );
-    if (existing.rows[0]) {
-      return res.status(409).json({ message: "That email address is already registered. Sign in or resend its verification email instead." });
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-    const verificationToken = createVerificationToken();
-    const verificationExpiry = verificationExpiryDate();
+    await registrationQuota(pool,'complete-ip',req.ip,10,3600);
     client = await pool.connect();
-    await client.query("BEGIN");
-    const result = await client.query(
-      `INSERT INTO users (
-        full_name, email, password_hash, role, approval_status, email_verified,
-        email_verification_token_hash, email_verification_expires_at, email_verification_last_sent_at
-       ) VALUES ($1, $2, $3, $4, 'PENDING', FALSE, $5, $6, NOW())
-       RETURNING ${userColumns}`,
-      [fullName, email, passwordHash, role, hashVerificationToken(verificationToken), verificationExpiry]
-    );
-    const user = result.rows[0];
-    const admins = await client.query("SELECT id FROM users WHERE role = 'ADMIN' AND is_active = TRUE");
-    await createUserNotifications(client, admins.rows.map((admin) => ({
-      recipientUserId: admin.id,
-      type: "ACCOUNT_APPROVAL",
-      title: "New account awaiting activation",
-      message: `${user.fullName} (${user.email}) requested a ${user.role.toLowerCase()} account. They can activate it by email, or you can approve it.`,
-      href: "/admin/users",
-      dedupeKey: `account-approval:${user.id}`,
-    })));
-    await client.query("COMMIT");
-
-    let verificationEmailSent = true;
-    try {
-      await sendVerificationEmail({ fullName: user.fullName, email: user.email, token: verificationToken });
-    } catch (error) {
-      verificationEmailSent = false;
-      console.error("Unable to send account verification email:", error.message);
+    await client.query('BEGIN');
+    await consumeRegistrationGrant(client,email,registrationToken);
+    const existing = await client.query('SELECT 1 FROM users WHERE LOWER(BTRIM(email))=$1 LIMIT 1',[email]);
+    if(existing.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ message:'This email is already registered. Sign in or reset your password.' });
     }
-
-    return res.status(201).json({
-      message: verificationEmailSent
-        ? "Account created. Verify your email or wait for an administrator to approve your account."
-        : "Account created. Email delivery is unavailable, so an administrator can approve your account.",
-      verificationEmailSent,
-      user,
-    });
-  } catch (error) {
-    if (client) await client.query("ROLLBACK").catch(() => {});
+    const passwordHash = await hashPassword(password);
+    const result = await client.query(`INSERT INTO users(full_name,email,password_hash,role,approval_status,email_verified)
+      VALUES($1,$2,$3,'RESIDENT','PENDING',TRUE) RETURNING ${userColumns}`,[fullName,email,passwordHash]);
+    const user = result.rows[0];
+    const admins = await client.query("SELECT id FROM users WHERE role='ADMIN' AND is_active=TRUE");
+    await createUserNotifications(client,admins.rows.map(admin=>({
+      recipientUserId:admin.id,type:'ACCOUNT_APPROVAL',title:'New resident awaiting approval',
+      message:`${user.fullName} (${user.email}) verified their email and requested a resident account. Review their resident details before approval.`,
+      href:'/admin/users',dedupeKey:`account-approval:${user.id}`,
+    })));
+    await writeAuditLog({ client, actorUserId: user.id, entityName: 'USER_ACCOUNT', entityId: user.id, action: 'REGISTER', newValues: user });
+    await client.query('COMMIT');
+    return res.status(201).json({ message:'Account created. Wait for Admin approval before signing in.',user });
+  } catch(error) {
+    if(client)await client.query('ROLLBACK').catch(()=>{});
+    if(error.retryAfterSeconds) res.set('Retry-After',String(error.retryAfterSeconds));
     return next(error);
-  } finally {
-    client?.release();
-  }
+  } finally { client?.release(); }
 });
 
 router.post("/login", validateBody(loginSchema), async (req, res, next) => {
@@ -148,7 +141,7 @@ router.post("/login", validateBody(loginSchema), async (req, res, next) => {
     );
     const user = result.rows[0];
     const passwordMatches = user
-      ? await bcrypt.compare(password, user.passwordHash)
+      ? await verifyPassword(password, user.passwordHash)
       : false;
 
     if (!user || !passwordMatches) {
@@ -159,10 +152,10 @@ router.post("/login", validateBody(loginSchema), async (req, res, next) => {
       return res.status(403).json({ message: "This account has been deactivated." });
     }
 
-    if (user.approvalStatus !== "APPROVED" && !user.emailVerified) {
+    if (user.approvalStatus !== "APPROVED") {
       return res.status(403).json({
         code: "ACCOUNT_APPROVAL_REQUIRED",
-        message: "Verify your email or wait for administrator approval before signing in.",
+        message: "Your account is awaiting Admin approval. You can sign in after approval.",
         email: user.email,
       });
     }
@@ -182,35 +175,43 @@ router.post("/login", validateBody(loginSchema), async (req, res, next) => {
 });
 
 router.post("/forgot-password", validateBody(forgotPasswordSchema), async (req, res, next) => {
-  const genericMessage = "If an active account matches this email, a six-digit code has been sent. Check your inbox and spam folder.";
+  const sentMessage = "A six-digit code was sent to your registered email. Check your inbox and spam folder.";
+  res.set("Cache-Control", "no-store");
   let client;
   try {
     const { email } = req.validatedBody;
     client = await pool.connect();
     await client.query("BEGIN");
     const result = await client.query(
-      `SELECT id, full_name AS "fullName", email, password_reset_last_sent_at AS "lastSentAt"
+      `SELECT id, full_name AS "fullName", email, password_reset_last_sent_at AS "lastSentAt",
+         is_active AS "isActive", approval_status AS "approvalStatus", email_verified AS "emailVerified"
        FROM users
        WHERE LOWER(BTRIM(email)) = $1
-         AND is_active = TRUE
-         AND (approval_status = 'APPROVED' OR email_verified = TRUE)
        ORDER BY ${userIdentityOrderSql} LIMIT 1 FOR UPDATE`,
       [email]
     );
     const user = result.rows[0];
-    const challengeId = randomUUID();
-    const response = { message: genericMessage, challengeId, retryAfterSeconds: PASSWORD_RESET_COOLDOWN_SECONDS };
     if (!user) {
       await client.query("COMMIT");
-      return res.json(response);
+      return res.status(404).json({ code: "EMAIL_NOT_REGISTERED", message: "This email address is not registered. Check your email address and try again." });
     }
+    if (!user.isActive) {
+      await client.query("COMMIT");
+      return res.status(403).json({ code: "ACCOUNT_INACTIVE", message: "This account is inactive. Contact an administrator for help." });
+    }
+    if (user.approvalStatus !== "APPROVED") {
+      await client.query("COMMIT");
+      return res.status(403).json({ code: "ACCOUNT_APPROVAL_REQUIRED", message: "Your account is awaiting Admin approval. Contact an administrator for help." });
+    }
+    const challengeId = randomUUID();
+    const response = { message: sentMessage, challengeId, retryAfterSeconds: PASSWORD_RESET_COOLDOWN_SECONDS };
 
     // Read after acquiring the user lock so concurrent sends see the newest code.
     const existingChallenge = (await client.query("SELECT id FROM password_reset_challenges WHERE user_id = $1", [user.id])).rows[0];
     const lastSentAt = user.lastSentAt ? new Date(user.lastSentAt).getTime() : 0;
     if (existingChallenge && Date.now() - lastSentAt < PASSWORD_RESET_COOLDOWN_SECONDS * 1000) {
       await client.query("COMMIT");
-      return res.json({ ...response, challengeId: existingChallenge.id });
+      return res.json({ ...response, message: "A code was already sent. Use that code or wait before requesting another.", challengeId: existingChallenge.id });
     }
 
     const otp = createPasswordResetOtp();
@@ -258,7 +259,7 @@ router.post("/verify-password-reset-otp", validateBody(verifyPasswordResetSchema
        FROM users
        WHERE LOWER(BTRIM(email)) = $1
          AND is_active = TRUE
-         AND (approval_status = 'APPROVED' OR email_verified = TRUE)
+         AND approval_status = 'APPROVED'
        ORDER BY ${userIdentityOrderSql} LIMIT 1 FOR UPDATE`,
       [email]
     );
@@ -314,7 +315,7 @@ router.post("/reset-password", validateBody(resetPasswordSchema), async (req, re
       `SELECT id, password_reset_token_hash AS "resetHash",
          password_reset_expires_at > NOW() AS "isValid"
        FROM users WHERE LOWER(BTRIM(email)) = $1 AND is_active = TRUE
-         AND (approval_status = 'APPROVED' OR email_verified = TRUE)
+         AND approval_status = 'APPROVED'
        ORDER BY ${userIdentityOrderSql} LIMIT 1 FOR UPDATE`,
       [email]
     );
@@ -323,7 +324,7 @@ router.post("/reset-password", validateBody(resetPasswordSchema), async (req, re
       await client.query("ROLLBACK");
       return res.status(400).json({ code: "PASSWORD_RESET_VERIFICATION_EXPIRED", message: "Verification expired. Request a new code." });
     }
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await hashPassword(password);
     await client.query(
       `UPDATE users
        SET password_hash = $1,
@@ -369,13 +370,13 @@ router.post("/change-password", requireAuth, allowRoles("ADMIN", "COLLECTOR", "R
       [req.user.id]
     );
     const user = userResult.rows[0];
-    const passwordMatches = user && await bcrypt.compare(currentPassword, user.passwordHash);
+    const passwordMatches = user && await verifyPassword(currentPassword, user.passwordHash);
     if (!passwordMatches) {
       await client.query("ROLLBACK");
       return res.status(403).json({ message: "Your current password is incorrect." });
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 12);
+    const passwordHash = await hashPassword(newPassword);
     const updateResult = await client.query(
       `UPDATE users
        SET password_hash = $1,
@@ -428,7 +429,7 @@ router.post("/resend-verification", validateBody(resendVerificationSchema), asyn
       return res.json({ message: "If an account exists for that email, a verification link will be sent." });
     }
     if (user.approvalStatus === "APPROVED" || user.emailVerified) {
-      return res.json({ message: "This account is already active. You can sign in." });
+      return res.json({ message: user.approvalStatus === "APPROVED" ? "This account is approved. You can sign in." : "Your email is verified. Wait for Admin approval before signing in." });
     }
 
     const lastSentAt = user.lastSentAt ? new Date(user.lastSentAt).getTime() : 0;
@@ -450,7 +451,7 @@ router.post("/resend-verification", validateBody(resendVerificationSchema), asyn
       [hashVerificationToken(token), verificationExpiryDate(), user.id]
     );
     await sendVerificationEmail({ fullName: user.fullName, email: user.email, token });
-    return res.json({ message: "Verification email sent. Open its link to activate your account." });
+    return res.json({ message: "Verification email sent. Open its link to verify your email. Admin approval is still required." });
   } catch (error) {
     if (error.code === "EMAIL_NOT_CONFIGURED") error.status = 503;
     return next(error);
@@ -458,16 +459,18 @@ router.post("/resend-verification", validateBody(resendVerificationSchema), asyn
 });
 
 router.get("/verify-email", async (req, res, next) => {
+  let client;
   try {
     const token = String(req.query.token || "").trim();
     if (!token || token.length > 512) {
       return res.status(400).json({ message: "A valid verification link is required." });
     }
 
-    const result = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const result = await client.query(
       `UPDATE users
        SET email_verified = TRUE,
-           approval_status = 'APPROVED',
            email_verification_token_hash = NULL,
            email_verification_expires_at = NULL
        WHERE email_verification_token_hash = $1
@@ -476,15 +479,19 @@ router.get("/verify-email", async (req, res, next) => {
       [hashVerificationToken(token)]
     );
     if (!result.rows[0]) {
+      await client.query("ROLLBACK");
       return res.status(400).json({ message: "This verification link is invalid or has expired. Request a new link to continue." });
     }
+    await writeAuditLog({ client, actorUserId: result.rows[0].id, entityName: "USER_ACCOUNT", entityId: result.rows[0].id, action: "VERIFY_EMAIL", oldValues: { emailVerified: false }, newValues: { emailVerified: true, fullName: result.rows[0].fullName } });
+    await client.query("COMMIT");
     return res.json({
-      message: "Email verified. Your account is active and you can now sign in.",
+      message: "Email verified. Admin approval is still required before signing in.",
       user: result.rows[0],
     });
   } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
-  }
+  } finally { client?.release(); }
 });
 
 router.get("/me", requireAuth, async (req, res, next) => {

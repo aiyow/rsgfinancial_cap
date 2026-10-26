@@ -16,13 +16,13 @@ async function requireAuth(req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const result = await pool.query(
-      `SELECT id, role, is_active, auth_version AS "authVersion"
+      `SELECT id, role, is_active, approval_status, auth_version AS "authVersion"
        FROM users
        WHERE id = $1`,
       [decoded.id]
     );
 
-    if (result.rows.length === 0 || !result.rows[0].is_active || decoded.authVersion !== result.rows[0].authVersion) {
+    if (result.rows.length === 0 || !result.rows[0].is_active || result.rows[0].approval_status !== "APPROVED" || decoded.authVersion !== result.rows[0].authVersion) {
       return res.status(401).json({ message: "Account is unavailable or inactive." });
     }
 

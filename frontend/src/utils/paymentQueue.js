@@ -39,7 +39,7 @@ export function filterPaymentQueue(payments, options = {}) {
     // Search references and invoices without exposing the full ledger in the list.
     const searchable = normalize([
       paymentResidentName(payment), `Unit ${payment.unitNumber ?? ''}`, `Payment ${payment.id}`,
-      payment.verifiedReferenceNo, payment.ocrReferenceNo, purposeLabels[payment.paymentPurpose],
+      payment.officialReceiptNo, payment.verifiedReferenceNo, payment.ocrReferenceNo, purposeLabels[payment.paymentPurpose],
       paymentMethodLabel(payment.paymentMethod), ...(payment.allocations || []).map(row => row.invoiceNumber),
     ].join(' '))
     return terms.every(term => searchable.includes(term))

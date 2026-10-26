@@ -5,11 +5,11 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
 import express from "express";
-import multer from "multer";
 import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
+import { receiptUpload } from "../middleware/receiptUpload.js";
 import { analyzeReceipt } from "../services/receiptOcr.js";
 import { writeAuditLog } from "../services/auditLog.js";
 import { destroyReceipt, receiptDeliveryUrl, uploadReceipt } from "../services/cloudinaryReceipts.js";
@@ -33,14 +33,6 @@ import { paymentResidentNameSql } from '../services/paymentIdentity.js';
 
 const router = express.Router();
 const uploadDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../uploads/payment-proofs");
-const receiptUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
-  fileFilter: (req, file, callback) => {
-    const valid = ["image/jpeg", "image/png"].includes(file.mimetype);
-    callback(valid ? null : new Error("Only JPG and PNG receipt images are accepted."), valid);
-  },
-});
 const paymentMethodSchema = z.enum(["GCASH", "BANK_TRANSFER", "CASH", "OTHER"]);
 const purposeSchema = z.enum(['WATER', 'ASSOCIATION_DUES', 'COMBINED']);
 const amountSchema = z.coerce.number().positive().refine((value) => { try { cents(value); return true; } catch { return false; } }, 'Use at most two decimal places.');
@@ -79,7 +71,7 @@ const manualPaymentSchema = z.object({
 const paymentApplicationSql = `COALESCE((SELECT ROUND(SUM(pa.amount_applied), 2) FROM payment_applications pa WHERE pa.payment_submission_id = ps.id), 0)`;
 const unitAdvanceSql = `COALESCE((SELECT ROUND(SUM(up.verified_amount - COALESCE((SELECT SUM(upa.amount_applied) FROM payment_applications upa WHERE upa.payment_submission_id = up.id), 0)), 2)
   FROM payment_submissions up WHERE up.unit_id = ps.unit_id AND up.review_status = 'APPROVED'), 0)`;
-const paymentSelect = `SELECT ps.id, ps.target_unit_bill_id AS "targetBillId", ps.submitted_by AS "submittedBy",
+const paymentSelect = `SELECT ps.id, ps.official_receipt_no AS "officialReceiptNo", ps.target_unit_bill_id AS "targetBillId", ps.submitted_by AS "submittedBy",
   ps.payment_purpose AS "paymentPurpose", ${chargePaymentsSql} AS "chargePayments",
   COALESCE((SELECT jsonb_agg(jsonb_build_object('chargeType',a.charge_type,'allocatedAmount',a.allocated_amount,'invoiceNumber',a.invoice_number,
     'appliedAmount',COALESCE((SELECT SUM(x.amount_applied) FROM payment_applications x WHERE x.charge_allocation_id=a.id),0)))
@@ -135,11 +127,11 @@ async function residentBill(id, userId, client = pool) {
 }
 
 async function processReceipt(req, res) {
-  if (!req.file) { res.status(400).json({ message: "Select a JPG or PNG receipt image." }); return null; }
+  if (!req.file) { res.status(400).json({ message: "Select a JPEG/JPG (.jpg, .jpeg, .jfif) or PNG (.png) receipt image." }); return null; }
   try {
     return await analyzeReceipt(req.file.buffer);
   } catch {
-    res.status(400).json({ message: "The uploaded file is not a readable JPG or PNG image." });
+    res.status(400).json({ message: "The uploaded file is not a readable JPEG/JPG or PNG image." });
     return null;
   }
 }
@@ -155,7 +147,7 @@ router.use(async (req, res, next) => {
   }
 });
 
-router.post("/bills/:id/preview", allowRoles("RESIDENT"), requireId, receiptUpload.single("receipt"), async (req, res, next) => {
+router.post("/bills/:id/preview", allowRoles("RESIDENT"), requireId, receiptUpload, async (req, res, next) => {
   try {
     const bill = await residentBill(req.resourceId, req.user.id);
     if (!bill) return res.status(404).json({ message: "Published SOA not found." });
@@ -164,7 +156,7 @@ router.post("/bills/:id/preview", allowRoles("RESIDENT"), requireId, receiptUplo
     if (!analysis) return undefined;
     if (analysis.quality.status !== "GOOD") {
       return res.status(422).json({
-        message: analysis.quality.status === "BLURRY" ? "The receipt image appears blurry. Upload a clearer photo." : "The receipt image is too small. Upload a higher-resolution photo.",
+        message: "The receipt image is blurred. Please upload a clearer image and try again.",
         analysis,
       });
     }
@@ -175,7 +167,7 @@ router.post("/bills/:id/preview", allowRoles("RESIDENT"), requireId, receiptUplo
   } catch (error) { return next(error); }
 });
 
-router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.single("receipt"), async (req, res, next) => {
+router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload, async (req, res, next) => {
   let uploadedReceipt;
   let client;
   try {
@@ -191,7 +183,10 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload.singl
     const analysis = await processReceipt(req, res);
     if (!analysis) return undefined;
     if (analysis.quality.status !== "GOOD") {
-      return res.status(422).json({ message: analysis.quality.status === "BLURRY" ? "The receipt image appears blurry. Upload a clearer photo." : "The receipt image is too small. Upload a higher-resolution photo." });
+      return res.status(422).json({
+        message: "The receipt image is blurred. Please upload a clearer image and try again.",
+        analysis,
+      });
     }
 
     uploadedReceipt = await uploadReceipt(req.file.buffer);
@@ -331,7 +326,7 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
         (unit_id, submitted_by, target_unit_bill_id, entry_type, payment_method, review_status,
          reviewed_by, reviewed_at, verified_amount, verified_reference_no, verified_payment_date, remarks, payment_purpose)
        VALUES ($1, $2, $3, 'MANUAL', $4, 'APPROVED', $2, NOW(), $5, $6, $7, $8, $9)
-       RETURNING id`,
+       RETURNING id, official_receipt_no AS "officialReceiptNo"`,
       [unitId, req.user.id, billId, body.paymentMethod, body.amount, placeholderReference, body.paymentDate, body.remarks || null, body.paymentPurpose],
     );
     const paymentId = result.rows[0].id;
@@ -353,6 +348,7 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
         paymentMethod: body.paymentMethod,
         amount: body.amount,
         paymentPurpose: body.paymentPurpose, allocations,
+        officialReceiptNo: result.rows[0].officialReceiptNo,
         verifiedReferenceNo,
         paymentDate: body.paymentDate,
         advanceBalance,
@@ -364,6 +360,7 @@ router.post("/manual", allowRoles("ADMIN"), validateBody(manualPaymentSchema), a
     return res.status(201).json({
       message: billId ? "Manual payment recorded and applied to the SOA." : "Advance payment recorded for the unit.",
       paymentId,
+      officialReceiptNo: result.rows[0].officialReceiptNo,
       advanceBalance,
     });
   } catch (error) {
@@ -405,13 +402,13 @@ router.patch('/:id/invoice-references', allowRoles('ADMIN', 'COLLECTOR'), requir
     if (!payment) { await client.query('ROLLBACK'); return res.status(404).json({ message: 'Payment not found.' }); }
     await lockUnit(client, payment.unit_id);
     if (payment.review_status !== 'APPROVED') { await client.query('ROLLBACK'); return res.status(409).json({ message: 'Invoice entry is for approved payments only.' }); }
-    const before = (await client.query('SELECT charge_type AS "chargeType",invoice_number AS "invoiceNumber" FROM payment_charge_allocations WHERE payment_submission_id=$1', [req.resourceId])).rows;
+    const before = (await client.query('SELECT charge_type AS "chargeType",invoice_number AS "invoiceNumber" FROM payment_charge_allocations WHERE payment_submission_id=$1 ORDER BY charge_type', [req.resourceId])).rows;
     for (const row of body.invoices) {
       if (!before.some(existing => existing.chargeType === row.chargeType)) throw Object.assign(new Error('This payment has no allocation for that category.'), { status: 400 });
       await client.query('UPDATE payment_charge_allocations SET invoice_number=$3 WHERE payment_submission_id=$1 AND charge_type=$2', [req.resourceId,row.chargeType,row.invoiceNumber || null]);
     }
     await writeAuditLog({ client, actorUserId: req.user.id, entityName: 'PAYMENT_SUBMISSION', entityId: req.resourceId,
-      action: 'EDIT_INVOICES', oldValues: { invoices: before }, newValues: body });
+      action: 'EDIT_INVOICES', oldValues: { invoices: before }, newValues: { invoices: (await client.query('SELECT charge_type AS "chargeType",invoice_number AS "invoiceNumber" FROM payment_charge_allocations WHERE payment_submission_id=$1 ORDER BY charge_type', [req.resourceId])).rows } });
     await client.query('COMMIT');
     const result = await pool.query(`${paymentSelect} WHERE ps.id=$1`, [req.resourceId]);
     return res.json({ message: 'Issued invoice references saved.', payment: result.rows[0] });
@@ -475,6 +472,7 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
     if (!locked.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "Payment submission not found." }); }
     if (locked.rows[0].review_status !== "PENDING") { await client.query("ROLLBACK"); return res.status(409).json({ message: "This payment submission was already reviewed." }); }
     const body = req.validatedBody;
+    let officialReceiptNo = null;
     if (body.status === "APPROVED") {
       const unitId = locked.rows[0].unit_id;
       if (!unitId) {
@@ -487,13 +485,14 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
         [verifiedReferenceNo, req.resourceId],
       );
       if (reference.rows[0]) { await client.query("ROLLBACK"); return res.status(409).json({ message: "That payment reference number was already approved." }); }
-      await client.query(
+      const approved = await client.query(
         `UPDATE payment_submissions SET review_status = 'APPROVED', reviewed_by = $2, reviewed_at = NOW(),
           unit_id = $3, payment_method = $4, verified_amount = $5, verified_reference_no = $6,
-          verified_payment_date = $7, remarks = $8 WHERE id = $1`,
+          verified_payment_date = $7, remarks = $8 WHERE id = $1 RETURNING official_receipt_no AS "officialReceiptNo"`,
         [req.resourceId, req.user.id, unitId, body.paymentMethod, body.verifiedAmount,
           verifiedReferenceNo, body.verifiedPaymentDate, body.remarks || null],
       );
+      officialReceiptNo = approved.rows[0].officialReceiptNo;
       const allocations = await createPaymentAllocations(client, req.resourceId);
       const advanceBalance = await getUnitCreditBalance(client, unitId);
       await writeAuditLog({
@@ -506,6 +505,7 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
         newValues: {
           reviewStatus: "APPROVED",
           paymentPurpose: locked.rows[0].payment_purpose, allocations,
+          officialReceiptNo,
           paymentMethod: body.paymentMethod,
           verifiedAmount: body.verifiedAmount,
           verifiedReferenceNo,
@@ -549,7 +549,7 @@ router.post("/:id/review", allowRoles("ADMIN"), requireId, validateBody(reviewSc
       }
       await regeneratePrescriptiveRecommendations(client);
     await client.query("COMMIT");
-    return res.json({ message: body.status === "APPROVED" ? "Payment approved and applied to the SOA." : "Payment proof rejected." });
+    return res.json({ officialReceiptNo, message: body.status === "APPROVED" ? "Payment approved and applied to the SOA." : "Payment proof rejected." });
   } catch (error) {
     if (client) await client.query("ROLLBACK").catch(() => {});
     if (error?.code === "23505") return res.status(409).json({ message: "That payment reference number was already approved." });

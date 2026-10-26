@@ -7,7 +7,7 @@ export const PASSWORD_RESET_COOLDOWN_SECONDS = 60;
 
 // Login and recovery must select the same account when legacy duplicates remain.
 export const userIdentityOrderSql = `is_active DESC,
-  (approval_status = 'APPROVED' OR email_verified = TRUE) DESC, created_at ASC, id ASC`;
+  (approval_status = 'APPROVED') DESC, created_at ASC, id ASC`;
 
 function emailConfiguration(environment) {
   const missing = ["SMTP_HOST", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"]

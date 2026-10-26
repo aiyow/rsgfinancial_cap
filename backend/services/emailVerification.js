@@ -51,8 +51,8 @@ export function buildVerificationEmailMessage({ fullName, token, clientUrl }) {
   const recipient = fullName ? `Hello ${fullName},` : "Hello,";
   return {
     subject: "Verify your RSG Condo account",
-    text: `${recipient}\n\nVerify your email address to activate your RSG Condo Water Billing account.\n\nVerify email: ${url}\n\nThis link expires in 24 hours. If you did not create this account, you can ignore this email.`,
-    html: `<p>${escapeHtml(recipient)}</p><p>Verify your email address to activate your <strong>RSG Condo Water Billing</strong> account.</p><p><a href="${escapeHtml(url)}">Verify email address</a></p><p>This link expires in 24 hours. If you did not create this account, you can ignore this email.</p>`,
+    text: `${recipient}\n\nVerify your email address for your RSG Condo Water Billing account.\n\nVerify email: ${url}\n\nThis link expires in 24 hours. If you did not create this account, you can ignore this email.`,
+    html: `<p>${escapeHtml(recipient)}</p><p>Verify your email address for your <strong>RSG Condo Water Billing</strong> account.</p><p><a href="${escapeHtml(url)}">Verify email address</a></p><p>This link expires in 24 hours. If you did not create this account, you can ignore this email.</p>`,
     url,
   };
 }
@@ -71,6 +71,14 @@ export function createEmailVerificationService({
   createTransport = nodemailer.createTransport,
 } = {}) {
   return {
+    async sendRegistrationCode({ email, otp }) {
+      const config = emailConfiguration(environment);
+      const transporter = createTransport({ host:config.host,port:config.port,secure:config.secure,auth:config.auth,
+        connectionTimeout:10000,greetingTimeout:10000,socketTimeout:15000 });
+      await transporter.sendMail({ from:config.from,to:email,subject:'Your The ResiDens registration code',
+        text:`Your registration code is: ${otp}\n\nEnter this code to verify your email before creating an account. It expires in 10 minutes and can only be used once. Never share it. If you did not request this, ignore this email.`,
+        html:`<p>Your The ResiDens registration code:</p><p style="font-size:32px;font-weight:bold;letter-spacing:8px">${escapeHtml(otp)}</p><p>It expires in 10 minutes and can only be used once. Never share it. If you did not request this, ignore this email.</p>` });
+    },
     async sendEmailChangeCode({ fullName, email, otp }) {
       const message = buildEmailChangeMessage({ fullName, otp });
       const config = emailConfiguration(environment);
@@ -94,4 +102,8 @@ export async function sendVerificationEmail(delivery) {
 
 export async function sendEmailChangeCode(delivery) {
   return createEmailVerificationService().sendEmailChangeCode(delivery);
+}
+
+export async function sendRegistrationCode(delivery) {
+  return createEmailVerificationService().sendRegistrationCode(delivery);
 }

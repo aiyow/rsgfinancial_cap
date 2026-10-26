@@ -36,7 +36,7 @@ router.use(requireAuth);
 // rebuild them after a forecasting-model or historical-reading update.
 router.post("/refresh-forecasts", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
   try {
-    const result = await refreshAnalyticsForecasts(pool);
+    const result = await refreshAnalyticsForecasts(pool, { actorUserId: req.user.id });
     if (!result.periodCount) return res.status(400).json({ message: "There are no visible historical imports or forwarded/closed billing periods to refresh." });
     return res.json({ message: "Forecasts and recommendations were refreshed. Historical results are retrospective evaluations.", ...result });
   } catch (error) { return next(error); }

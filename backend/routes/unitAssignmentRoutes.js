@@ -4,6 +4,7 @@ import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
 import { writeAuditLog } from "../services/auditLog.js";
+import { lockAccountRows } from "../services/accountActionEligibility.js";
 
 const router = express.Router();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");
@@ -46,29 +47,35 @@ async function findAssignment(id, client = pool) {
 
 // Historical assignments do not indicate current occupancy.
 async function markAssignedUnitOccupied(client, assignment) {
-  if (assignment.endDate) return;
+  if (assignment.endDate) return [];
+  const before = (await client.query('SELECT occupancy_status FROM units WHERE id=$1 FOR UPDATE', [assignment.unitId])).rows[0];
   await client.query(
     "UPDATE units SET occupancy_status = 'OCCUPIED' WHERE id = $1 AND occupancy_status <> 'OCCUPIED'",
     [assignment.unitId]
   );
+  return before && before.occupancy_status !== 'OCCUPIED' ? [{ entityName: 'UNIT', entityId: assignment.unitId, unitNumber: assignment.unitNumber, before: { occupancyStatus: before.occupancy_status }, after: { occupancyStatus: 'OCCUPIED' } }] : [];
 }
 
-async function ensureAssignableResident(userId, res) {
-  const result = await pool.query(
-    "SELECT role, is_active FROM users WHERE id = $1",
-    [userId]
-  );
+async function ensureAssignableResident(client, userId) {
+  const result = await client.query('SELECT role,is_active FROM users WHERE id=$1 FOR NO KEY UPDATE', [userId]);
   const user = result.rows[0];
+  if (!user) throw Object.assign(new Error('Resident user not found.'), { status: 404 });
+  if (user.role !== 'RESIDENT' || !user.is_active) {
+    throw Object.assign(new Error('Only active Resident accounts can be assigned to units.'), { status: 409 });
+  }
+}
 
-  if (!user) {
-    res.status(404).json({ message: "Resident user not found." });
-    return false;
+async function lockAssignmentChange(client, id, newUserId) {
+  const candidate = await findAssignment(id, client);
+  if (!candidate) throw Object.assign(new Error('Unit assignment not found.'), { status: 404 });
+  await lockAccountRows(client, [candidate.userId, newUserId ?? candidate.userId]);
+  await client.query('SELECT id FROM unit_assignments WHERE id=$1 FOR UPDATE', [id]);
+  const before = await findAssignment(id, client);
+  if (!before) throw Object.assign(new Error('Unit assignment not found.'), { status: 404 });
+  if (String(before.userId) !== String(candidate.userId)) {
+    throw Object.assign(new Error('The assignment changed. Refresh and try again.'), { status: 409 });
   }
-  if (user.role !== "RESIDENT" || !user.is_active) {
-    res.status(409).json({ message: "Only active Resident accounts can be assigned to units." });
-    return false;
-  }
-  return true;
+  return before;
 }
 
 router.use(requireAuth);
@@ -111,10 +118,9 @@ router.post("/", allowRoles("ADMIN"), validateBody(createAssignmentSchema), asyn
   let client;
   try {
     const { unitId, userId, relationshipType, isPrimaryPayer, startDate, endDate } = req.validatedBody;
-    if (!(await ensureAssignableResident(userId, res))) return;
-
     client = await pool.connect();
     await client.query("BEGIN");
+    await ensureAssignableResident(client, userId);
     const result = await client.query(
       `INSERT INTO unit_assignments
         (unit_id, user_id, relationship_type, is_primary_payer, start_date, end_date)
@@ -123,7 +129,7 @@ router.post("/", allowRoles("ADMIN"), validateBody(createAssignmentSchema), asyn
       [unitId, userId, relationshipType, isPrimaryPayer, startDate || null, endDate]
     );
     const assignment = await findAssignment(result.rows[0].id, client);
-    await markAssignedUnitOccupied(client, assignment);
+    const occupancyChanges = await markAssignedUnitOccupied(client, assignment);
     await writeAuditLog({
       client,
       actorUserId: req.user.id,
@@ -131,6 +137,7 @@ router.post("/", allowRoles("ADMIN"), validateBody(createAssignmentSchema), asyn
       entityId: assignment.id,
       action: "CREATE",
       newValues: assignment,
+      context: { affectedRecords: occupancyChanges },
     });
     await client.query("COMMIT");
     return res.status(201).json({ message: "Unit assignment created.", assignment });
@@ -145,10 +152,13 @@ router.post("/", allowRoles("ADMIN"), validateBody(createAssignmentSchema), asyn
 router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateAssignmentSchema), async (req, res, next) => {
   let client;
   try {
-    const before = await findAssignment(req.resourceId);
-    if (!before) return res.status(404).json({ message: "Unit assignment not found." });
-    if (req.validatedBody.userId !== undefined
-      && !(await ensureAssignableResident(req.validatedBody.userId, res))) return;
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const before = await lockAssignmentChange(client, req.resourceId, req.validatedBody.userId);
+    const endDate = req.validatedBody.endDate === undefined ? before.endDate : req.validatedBody.endDate;
+    if (endDate === null || req.validatedBody.userId !== undefined) {
+      await ensureAssignableResident(client, req.validatedBody.userId ?? before.userId);
+    }
 
     const values = [];
     const updates = [];
@@ -169,15 +179,13 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateAssignme
     }
 
     values.push(req.resourceId);
-    client = await pool.connect();
-    await client.query("BEGIN");
     const result = await client.query(
       `UPDATE unit_assignments SET ${updates.join(", ")}
        WHERE id = $${values.length} RETURNING id`,
       values
     );
     const assignment = await findAssignment(result.rows[0].id, client);
-    await markAssignedUnitOccupied(client, assignment);
+    const occupancyChanges = await markAssignedUnitOccupied(client, assignment);
     await writeAuditLog({
       client,
       actorUserId: req.user.id,
@@ -186,6 +194,7 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateAssignme
       action: "UPDATE",
       oldValues: before,
       newValues: assignment,
+      context: { affectedRecords: occupancyChanges },
     });
     await client.query("COMMIT");
     return res.json({ message: "Unit assignment updated.", assignment });
@@ -198,28 +207,27 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateAssignme
 });
 
 router.delete("/:id", allowRoles("ADMIN"), requireId, async (req, res, next) => {
+  let client;
   try {
-    const before = await findAssignment(req.resourceId);
-    if (!before) return res.status(404).json({ message: "Unit assignment not found." });
-    const result = await pool.query(
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const before = await lockAssignmentChange(client, req.resourceId);
+    // Ending an assignment remains permitted regardless of unpaid balances.
+    const result = await client.query(
       `UPDATE unit_assignments
        SET end_date = COALESCE(end_date, GREATEST(CURRENT_DATE, start_date))
        WHERE id = $1 RETURNING id`,
       [req.resourceId]
     );
-    const assignment = await findAssignment(result.rows[0].id);
-    await writeAuditLog({
-      actorUserId: req.user.id,
-      entityName: "UNIT_ASSIGNMENT",
-      entityId: assignment.id,
-      action: "END",
-      oldValues: before,
-      newValues: assignment,
-    });
-    return res.json({ message: "Unit assignment ended.", assignment });
+    const assignment = await findAssignment(result.rows[0].id, client);
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: 'UNIT_ASSIGNMENT',
+      entityId: assignment.id, action: 'END', oldValues: before, newValues: assignment });
+    await client.query('COMMIT');
+    return res.json({ message: 'Unit assignment ended.', assignment });
   } catch (error) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
     return next(error);
-  }
+  } finally { client?.release(); }
 });
 
 export default router;

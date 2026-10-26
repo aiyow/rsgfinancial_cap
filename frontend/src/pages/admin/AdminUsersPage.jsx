@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ChevronDown, Eye, EyeOff, Plus, Search, TriangleAlert, X } from 'lucide-react'
+import { ChevronDown, Plus, Search, X } from 'lucide-react'
 import DashboardLayout, { EmptyRow } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
+import PasswordField from '../../components/PasswordInput'
+import AccountActionModal from '../../components/AccountActionModal'
+import { passwordError } from '../../utils/passwordPolicy'
 
 const blankUser = { firstName: '', middleInitial: '', lastName: '', email: '', password: '', confirmPassword: '', role: 'RESIDENT' }
 const inputClass = 'mt-1.5 w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--active-bg)]'
@@ -26,11 +29,6 @@ function roleLabel(role) {
 
 function Field({ label, children }) {
   return <label className="block text-xs font-bold text-[var(--muted)]">{label}{children}</label>
-}
-
-function PasswordField({ disabled = false, label, required = false, value, onChange }) {
-  const [visible, setVisible] = useState(false)
-  return <Field label={label}><div className="relative mt-1.5"><input required={required} disabled={disabled} minLength="8" type={visible ? 'text' : 'password'} value={value} onChange={onChange} className={`${inputClass.replace('mt-1.5 ', '')} pr-11 disabled:bg-slate-100 disabled:text-slate-400`} /><button type="button" disabled={disabled} onClick={() => setVisible((current) => !current)} aria-label={visible ? 'Hide password' : 'Show password'} className="absolute inset-y-0 right-0 grid w-10 place-items-center text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-40">{visible ? <EyeOff size={17} /> : <Eye size={17} />}</button></div></Field>
 }
 
 export default function AdminUsersPage() {
@@ -108,8 +106,9 @@ export default function AdminUsersPage() {
 
   async function saveUser(event) {
     event.preventDefault()
-    if (form.password !== form.confirmPassword) {
-      setNotice({ error: 'Password and confirmation do not match.', message: '' })
+    const validationError = (!editingId || form.password) ? passwordError(form.password, form.confirmPassword) : ''
+    if (validationError) {
+      setNotice({ error: validationError, message: '' })
       return
     }
     const body = {
@@ -125,26 +124,28 @@ export default function AdminUsersPage() {
     if (saved) closeModal()
   }
 
-  async function deleteUser(user, currentPassword) {
-    const deleted = await runAction(
+  async function completeAccountAction(request, message, close) {
+    await request()
+    close()
+    setNotice({ error: '', message })
+    try { await loadUsers() }
+    catch { setNotice({ error: `${message} Refresh the page to reload the user list.`, message: '' }) }
+  }
+
+  function deleteUser(user, currentPassword) {
+    return completeAccountAction(
       () => apiRequest(`/api/users/${user.id}`, { method: 'DELETE', token, body: currentPassword ? { currentPassword } : {} }),
-      'User deleted.',
+      'User and their linked billing-error reports deleted.', () => setDeleteTarget(null),
     )
-    if (deleted) setDeleteTarget(null)
-    return deleted
   }
 
-  function requestDelete(user) {
-    setDeleteTarget(user)
-  }
+  function requestDelete(user) { setDeleteTarget(user) }
 
-  async function deactivateUser(user) {
-    const updated = await runAction(
+  function deactivateUser(user) {
+    return completeAccountAction(
       () => apiRequest(`/api/users/${user.id}`, { method: 'PATCH', token, body: { isActive: false } }),
-      'Account deactivated.',
+      'Account deactivated.', () => setDeactivateTarget(null),
     )
-    if (updated) setDeactivateTarget(null)
-    return updated
   }
 
   return (
@@ -175,8 +176,8 @@ export default function AdminUsersPage() {
       </section>
 
       {modalOpen && <UserModal editingSelf={editingSelf} editing={Boolean(editingId)} form={form} onChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))} onClose={closeModal} onSave={saveUser} />}
-      {deactivateTarget && <DeactivateUserModal user={deactivateTarget} onCancel={() => setDeactivateTarget(null)} onConfirm={() => deactivateUser(deactivateTarget)} />}
-      {deleteTarget && <DeleteUserModal user={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={(password) => deleteUser(deleteTarget, password)} />}
+      {deactivateTarget && <AccountActionModal key={`deactivate:${deactivateTarget.id}`} action="deactivate" user={deactivateTarget} onCancel={() => setDeactivateTarget(null)} onConfirm={() => deactivateUser(deactivateTarget)} />}
+      {deleteTarget && <AccountActionModal key={`delete:${deleteTarget.id}`} action="delete" user={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={(password) => deleteUser(deleteTarget, password)} />}
     </DashboardLayout>
   )
 }
@@ -207,84 +208,17 @@ function UserModal({ editing, editingSelf, form, onChange, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4" role="presentation" onMouseDown={onClose}>
-      <section role="dialog" aria-modal="true" aria-labelledby="user-modal-title" className="w-full max-w-2xl rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+      <section role="dialog" aria-modal="true" aria-labelledby="user-modal-title" className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4"><div><h2 id="user-modal-title" className="text-xl font-black text-[var(--ink)]">{editing ? 'Edit user' : 'Add user'}</h2><p className="mt-1 text-sm text-[var(--muted)]">First and last names are required. MI is optional.</p></div><button type="button" onClick={onClose} aria-label="Close user modal" className="rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--app-bg)]"><X size={18} /></button></div>
         <form onSubmit={onSave} className="mt-6 grid gap-4 sm:grid-cols-6">
-          <div className="sm:col-span-2"><Field label="First name"><input required value={form.firstName} onChange={(event) => onChange('firstName', event.target.value)} className={inputClass} /></Field></div>
+          <div className="sm:col-span-2"><Field label="First name"><input required maxLength={100} value={form.firstName} onChange={(event) => onChange('firstName', event.target.value)} className={inputClass} /></Field></div>
           <div className="sm:col-span-1"><Field label="MI (optional)"><input maxLength="20" value={form.middleInitial} onChange={(event) => onChange('middleInitial', event.target.value)} className={inputClass} /></Field></div>
-          <div className="sm:col-span-3"><Field label="Last name"><input required value={form.lastName} onChange={(event) => onChange('lastName', event.target.value)} className={inputClass} /></Field></div>
+          <div className="sm:col-span-3"><Field label="Last name"><input required maxLength={100} value={form.lastName} onChange={(event) => onChange('lastName', event.target.value)} className={inputClass} /></Field></div>
           <div className="sm:col-span-3"><Field label="Email"><input required type="email" value={form.email} onChange={(event) => onChange('email', event.target.value)} className={inputClass} /></Field></div>
           <div className="sm:col-span-3"><PasswordField label={editing ? 'New password (optional)' : 'Password'} required={!editing} value={form.password} onChange={(event) => onChange('password', event.target.value)} /></div>
-          <div className="sm:col-span-3"><PasswordField label={editing ? 'Confirm new password' : 'Confirm password'} disabled={editing && !form.password} required={editing ? Boolean(form.password) : true} value={form.confirmPassword} onChange={(event) => onChange('confirmPassword', event.target.value)} /></div>
+          <div className="sm:col-span-3"><PasswordField confirmationFor={form.password} label={editing ? 'Confirm new password' : 'Confirm password'} disabled={editing && !form.password} required={editing ? Boolean(form.password) : true} value={form.confirmPassword} onChange={(event) => onChange('confirmPassword', event.target.value)} /></div>
           <div className="sm:col-span-3"><Field label="Role"><div className="mt-1.5"><FilterPopover disabled={editingSelf} label="Role" value={form.role} open={roleMenuOpen} onToggle={() => setRoleMenuOpen((current) => !current)} onSelect={(value) => { onChange('role', value); setRoleMenuOpen(false) }} options={[{ value: 'ADMIN', label: 'Admin' }, { value: 'COLLECTOR', label: 'Billing Associate' }, { value: 'RESIDENT', label: 'Resident' }]} /></div></Field></div>
           <div className="flex justify-end gap-3 sm:col-span-6"><button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-bold text-[var(--ink)]">Cancel</button><button className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white">{editing ? 'Save changes' : 'Add user'}</button></div>
-        </form>
-      </section>
-    </div>
-  )
-}
-
-function DeactivateUserModal({ onCancel, onConfirm, user }) {
-  const [submitting, setSubmitting] = useState(false)
-
-  async function confirmDeactivation() {
-    setSubmitting(true)
-    const success = await onConfirm()
-    if (!success) setSubmitting(false)
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4 backdrop-blur-[1px]" role="presentation" onMouseDown={() => { if (!submitting) onCancel() }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="deactivate-user-title" className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-amber-100 text-amber-700"><TriangleAlert size={21} aria-hidden="true" /></span>
-          <div>
-            <h2 id="deactivate-user-title" className="text-xl font-black text-slate-900">Deactivate this account?</h2>
-            <p className="mt-1 text-sm text-slate-600">The user will no longer be able to sign in.</p>
-          </div>
-        </div>
-        <div className="mt-5 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-slate-700">
-          <p>Deactivate <strong className="text-slate-900">{user.fullName}</strong>?</p>
-          <p className="mt-1 text-xs text-slate-600">Their records will be retained, and you can reactivate the account later.</p>
-        </div>
-        <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button type="button" disabled={submitting} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Keep active</button>
-          <button type="button" disabled={submitting} onClick={confirmDeactivation} className="rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-amber-700 disabled:opacity-50">{submitting ? 'Deactivating...' : 'Deactivate account'}</button>
-        </div>
-      </section>
-    </div>
-  )
-}
-
-function DeleteUserModal({ onCancel, onConfirm, user }) {
-  const [password, setPassword] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const requiresPassword = ['ADMIN', 'COLLECTOR'].includes(user.role)
-
-  async function submit(event) {
-    event.preventDefault()
-    setSubmitting(true)
-    const success = await onConfirm(requiresPassword ? password : '')
-    if (!success) setSubmitting(false)
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4 backdrop-blur-[1px]" role="presentation" onMouseDown={() => { if (!submitting) onCancel() }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="delete-user-title" className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-700"><TriangleAlert size={21} aria-hidden="true" /></span>
-          <div>
-            <h2 id="delete-user-title" className="text-xl font-black text-slate-900">Delete this account?</h2>
-            <p className="mt-1 text-sm text-slate-600">This cannot be undone.</p>
-          </div>
-        </div>
-        <div className="mt-5 rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-slate-700">
-          <p>Delete <strong className="text-slate-900">{user.fullName}</strong> and remove their unit assignment records.</p>
-          <p className="mt-1 text-xs font-bold capitalize tracking-wide text-rose-700">{roleLabel(user.role)} account</p>
-        </div>
-        <form onSubmit={submit} className="mt-5 space-y-4">
-          {requiresPassword && <><p className="text-sm text-slate-600">To protect privileged accounts, enter your current Admin password to continue.</p><PasswordField label="Your current password" required value={password} onChange={(event) => setPassword(event.target.value)} /></>}
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" disabled={submitting} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Keep account</button><button disabled={submitting} className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-50">{submitting ? 'Deleting...' : 'Delete permanently'}</button></div>
         </form>
       </section>
     </div>

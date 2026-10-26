@@ -29,6 +29,9 @@ test('history downloads export legacy readings and retain confirmed original wor
       CREATE TEMP TABLE analytics_import_workbooks (billing_period_id BIGINT PRIMARY KEY REFERENCES billing_periods(id) ON DELETE CASCADE,
         original_name TEXT,workbook_data BYTEA,uploaded_by BIGINT,uploaded_at TIMESTAMPTZ DEFAULT NOW()) ON COMMIT DROP;
       CREATE TEMP TABLE prescriptive_recommendations (LIKE public.prescriptive_recommendations INCLUDING DEFAULTS) ON COMMIT DROP;
+      ALTER TABLE users ADD COLUMN full_name TEXT DEFAULT 'Fixture actor';
+      ALTER TABLE users ADD COLUMN approval_status TEXT DEFAULT 'APPROVED';
+      CREATE TEMP TABLE audit_logs (LIKE public.audit_logs INCLUDING DEFAULTS INCLUDING IDENTITY) ON COMMIT DROP;
       INSERT INTO users(id,role,is_active) VALUES (1,'COLLECTOR',TRUE),(2,'RESIDENT',TRUE),(3,'ADMIN',TRUE);
       INSERT INTO units VALUES(1,'101'),(2,'102');
       INSERT INTO billing_periods(id,period_start,period_end,due_date,water_rate_per_cubic_m,period_type,status,readings_visible_at)

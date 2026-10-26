@@ -1,5 +1,7 @@
 import express from "express";
-import bcrypt from "bcrypt";
+import { writeAuditLog } from "../services/auditLog.js";
+import { auditReadings, changedAuditRecords } from "../services/auditDetails.js";
+import { verifyPassword } from "../services/passwordHash.js";
 import ExcelJS from "exceljs";
 import multer from "multer";
 import { z } from "zod";
@@ -36,7 +38,7 @@ const importSchema = z.object({
   readings: z.array(readingSchema).min(1).max(2000),
 }).strict();
 const clearImportsSchema = z.object({
-  currentPassword: z.string().min(8).max(72),
+  currentPassword: z.string().min(8).max(256),
 }).strict();
 
 function cellValue(cell) {
@@ -334,6 +336,7 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       return res.status(400).json({ message: "Submit one reading for every valid unit only." });
     }
 
+    const beforeReadings = existing.rows[0] ? await auditReadings(client, [existing.rows[0].id]) : [];
     if (existing.rows[0]?.periodType === "LIVE_BILLING") {
       const livePeriod = existing.rows[0];
       if (Math.abs(Number(livePeriod.waterRate) - Number(body.waterRatePerCubicM)) > 0.001) {
@@ -347,6 +350,7 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       }
       await regenerateForecastsFromPeriod(client, livePeriod.id);
       await regeneratePrescriptiveRecommendations(client);
+      await writeAuditLog({ client, actorUserId: req.user.id, entityName: "BILLING_PERIOD", entityId: livePeriod.id, action: "REFRESH_FORECASTS", newValues: { periodMonth: body.periodMonth, forecastsRefreshed: true, recommendationsRefreshed: true, verifiedReadingCount: body.readings.length } });
       await client.query("COMMIT");
       return res.json({
         message: `Verified the saved ${body.periodMonth} billing readings and refreshed predictions.`,
@@ -405,6 +409,10 @@ router.post("/", upload.single("file"), async (req, res, next) => {
     await revalidateAnalyticsReadings(client);
     await regenerateForecastsFromPeriod(client, periodId);
     await regeneratePrescriptiveRecommendations(client);
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: "ANALYTICS_IMPORT", entityId: periodId, action: existing.rows[0] ? "REPLACE_IMPORT" : "IMPORT",
+      oldValues: existing.rows[0] ? { periodMonth: body.periodMonth, waterRate: existing.rows[0].waterRate, readingCount: beforeReadings.length } : null,
+      newValues: { periodMonth: body.periodMonth, periodStart, periodEnd, waterRate: body.waterRatePerCubicM, readingCount: body.readings.length, originalFilename: req.file?.originalname, forecastsRefreshed: true, recommendationsRefreshed: true },
+      context: { affectedRecords: changedAuditRecords(beforeReadings, await auditReadings(client, [periodId])) } });
     await client.query("COMMIT");
     return res.status(201).json({ message: `Imported ${body.readings.length} readings for ${body.periodMonth} and updated predictions.` });
   } catch (error) {
@@ -430,6 +438,8 @@ router.delete("/:periodMonth", async (req, res, next) => {
       await client.query("ROLLBACK");
       return res.status(404).json({ message: "Imported analytics month not found." });
     }
+    const removedReadings = await auditReadings(client, [period.rows[0].id]);
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: "ANALYTICS_IMPORT", entityId: period.rows[0].id, action: "DELETE", oldValues: { ...periodDates(parsedMonth.data), periodMonth: parsedMonth.data, readingCount: removedReadings.length }, context: { affectedRecords: changedAuditRecords(removedReadings, []) } });
     await deleteForecastsFrom(client, periodStart);
     await client.query("DELETE FROM meter_readings WHERE billing_period_id = $1", [period.rows[0].id]);
     await client.query("DELETE FROM billing_periods WHERE id = $1", [period.rows[0].id]);
@@ -451,13 +461,18 @@ router.delete("/", validateBody(clearImportsSchema), async (req, res, next) => {
     client = await pool.connect();
     await client.query("BEGIN");
     const actor = await client.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1 FOR UPDATE", [req.user.id]);
-    const passwordMatches = actor.rows[0] && await bcrypt.compare(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
+    const passwordMatches = actor.rows[0] && await verifyPassword(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
     if (!passwordMatches) {
       await client.query("ROLLBACK");
       return res.status(403).json({ message: "Your current password is incorrect. Imported analytics history was not changed." });
     }
     const periods = await client.query("SELECT id FROM billing_periods WHERE period_type = 'HISTORICAL_ANALYTICS' FOR UPDATE");
     const ids = periods.rows.map((period) => period.id);
+    if (ids.length) {
+      const removedReadings = await auditReadings(client, ids);
+      const removedPeriods = (await client.query('SELECT id, period_start AS "periodStart", period_end AS "periodEnd" FROM billing_periods WHERE id=ANY($1::bigint[])', [ids])).rows;
+      await writeAuditLog({ client, actorUserId: req.user.id, entityName: "ANALYTICS_IMPORT", action: "CLEAR_IMPORTS", oldValues: { periods: removedPeriods, periodCount: ids.length, readingCount: removedReadings.length }, context: { target: { label: "All imported analytics history" }, affectedRecords: changedAuditRecords(removedReadings, []) } });
+    }
     if (ids.length) {
       await client.query("DELETE FROM billing_forecasts WHERE based_on_period_id = ANY($1::bigint[])", [ids]);
       await client.query("DELETE FROM meter_readings WHERE billing_period_id = ANY($1::bigint[])", [ids]);

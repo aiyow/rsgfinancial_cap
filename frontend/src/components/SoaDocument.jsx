@@ -217,7 +217,6 @@ export default function SoaDocument({ bill }) {
       </table>
 
       <section className="soa-signature-band">
-        <p className="col-span-2 border-t border-[#285b78] px-2 py-1 text-[10px]">Water consumption: previous reading {bill.previousReading ?? '—'} · current reading {bill.currentReading ?? '—'} · usage {bill.consumption ?? water?.quantity ?? '—'} m³. Readings are not monetary balances.</p>
         <div><p>PREPARED BY: {template.preparedByName}</p><p>{template.preparedByTitle}</p></div>
         <div><p>CHECKED BY: {template.checkedByName}</p><p>{template.checkedByTitle}</p></div>
       </section>

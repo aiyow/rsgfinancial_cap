@@ -13,6 +13,7 @@ for (const [label, ids] of [['history-only', [1, 2, 3]], ['mixed live and histor
   test(`${label} refresh rebuilds chronologically, then updates recommendations`, async () => {
     const f = fixture(ids);
     const result = await refreshAnalyticsForecasts(f.pool, {
+      actorUserId: 1,
       generate: async (client, id) => { assert.equal(client, f.client); f.calls.push(`GENERATE ${id}`); },
       recommend: async () => f.calls.push('RECOMMEND'),
     });
@@ -20,7 +21,7 @@ for (const [label, ids] of [['history-only', [1, 2, 3]], ['mixed live and histor
     assert.match(f.calls[1], /ORDER BY p.period_start FOR UPDATE/);
     assert.match(f.calls[1], /HISTORICAL_ANALYTICS.*readings_visible_at/s);
     assert.match(f.calls[1], /FORWARDED.*CLOSED/);
-    assert.deepEqual(f.calls.slice(2), [...ids.map((id) => `GENERATE ${id}`), 'RECOMMEND', 'COMMIT', 'RELEASE']);
+    assert.deepEqual(f.calls.slice(2).map(sql => sql.includes('INSERT INTO audit_logs') ? 'AUDIT' : sql), [...ids.map((id) => `GENERATE ${id}`), 'RECOMMEND', 'AUDIT', 'COMMIT', 'RELEASE']);
   });
 }
 

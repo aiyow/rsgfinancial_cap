@@ -1,3 +1,4 @@
+import { saveDeliveryOutcomes } from './auditDelivery.js';
 import cron from "node-cron";
 import pool from "../config/db.js";
 import { applyDueLatePenalties, billAppliedSql, billTotalSql, chargePaymentsSql } from "./paymentLedger.js";
@@ -38,12 +39,6 @@ export function reminderTypeForDueDate(dueDate, today) {
   return null;
 }
 
-function reminderError(error) {
-  const message = error?.code === "EMAIL_NOT_CONFIGURED"
-    ? "Email service is not configured."
-    : String(error?.message || "SOA reminder email delivery failed.");
-  return message.slice(0, 500);
-}
 
 async function recoverInterruptedDeliveries(database) {
   await database.query(
@@ -135,21 +130,11 @@ export async function runSoaReminderJob({
       summary.skipped += 1;
       continue;
     }
-    try {
-      await sendReminder(delivery, delivery.reminderType);
-      await database.query(
-        "UPDATE soa_reminder_deliveries SET status = 'SENT', sent_at = NOW(), last_error = NULL WHERE id = $1 AND status = 'PROCESSING'",
-        [claimed.id],
-      );
-      summary.sent += 1;
-    } catch (error) {
-      await database.query(
-        "UPDATE soa_reminder_deliveries SET status = 'FAILED', last_error = $2 WHERE id = $1 AND status = 'PROCESSING'",
-        [claimed.id, reminderError(error)],
-      );
-      summary.failed += 1;
-      logger.error("SOA reminder delivery failed:", error.message);
-    }
+    let failure = null;
+    try { await sendReminder(delivery, delivery.reminderType); } catch (error) { failure = error; }
+    await saveDeliveryOutcomes(database, [{ delivery: { ...delivery, id: claimed.id }, error: failure }], { reminder: true });
+    if (failure) { summary.failed += 1; logger.error("SOA reminder delivery failed:", failure.message); }
+    else summary.sent += 1;
   }
   logger.log(`SOA reminder job complete: ${summary.sent} sent, ${summary.failed} failed, ${summary.skipped} skipped.`);
   return summary;

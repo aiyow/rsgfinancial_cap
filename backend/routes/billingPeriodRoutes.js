@@ -1,5 +1,5 @@
 import express from "express";
-import bcrypt from "bcrypt";
+import { verifyPassword } from "../services/passwordHash.js";
 import ExcelJS from "exceljs";
 import multer from "multer";
 import { z } from "zod";
@@ -8,30 +8,32 @@ import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
 import { regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.js";
 import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
-import { applyUnitCreditToOpenBills, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
+import { lockBillingPeriodUnits, applyUnitCreditToOpenBills, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
 import { ensureSoaTemplate } from "../services/soaTemplate.js";
 import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
 import { writeAuditLog } from "../services/auditLog.js";
 import { deliverSoaEmailNotifications } from "../services/soaEmailDeliveries.js";
 import { validateMeterReading } from "../services/meterReadingValidation.js";
 import { createUserNotifications } from "../services/notifications.js";
+import { auditBatchRecords, auditReadings, changedAuditRecords } from "../services/auditDetails.js";
+import { billingPeriodErrors, isBillingDate } from "../services/billingPeriodPolicy.js";
 
 const router = express.Router();
-const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");
+const dateSchema = z.string().refine(isBillingDate, "Choose a valid date in YYYY-MM-DD format.");
 const createPeriodSchema = z.object({
   periodStart: dateSchema,
   periodEnd: dateSchema,
   dueDate: dateSchema,
-  waterRatePerCubicM: z.coerce.number().min(0),
-  associationDuesRatePerSqm: z.coerce.number().min(0),
+  waterRatePerCubicM: z.coerce.number().min(0.01, "Water rate must be greater than zero (minimum 0.01)."),
+  associationDuesRatePerSqm: z.coerce.number().min(0.01, "Association dues rate must be greater than zero (minimum 0.01)."),
   latePenaltyPercent: z.coerce.number().min(0).max(100).default(0),
 }).strict();
 const updatePeriodSchema = z.object({
   periodStart: dateSchema.optional(),
   periodEnd: dateSchema.optional(),
   dueDate: dateSchema.optional(),
-  waterRatePerCubicM: z.coerce.number().min(0).optional(),
-  associationDuesRatePerSqm: z.coerce.number().min(0).optional(),
+  waterRatePerCubicM: z.coerce.number().min(0.01, "Water rate must be greater than zero (minimum 0.01).").optional(),
+  associationDuesRatePerSqm: z.coerce.number().min(0.01, "Association dues rate must be greater than zero (minimum 0.01).").optional(),
   latePenaltyPercent: z.coerce.number().min(0).max(100).optional(),
 }).strict().refine((body) => Object.keys(body).length > 0, {
   message: "At least one field must be provided.",
@@ -46,8 +48,11 @@ const publishSchema = z.object({
   billIds: z.array(z.coerce.number().int().positive()).min(1).max(2000).optional(),
   sendEmails: z.boolean().optional().default(true),
 }).strict();
+const unpublishBatchSchema = z.object({
+  currentPassword: z.string().min(1).max(256),
+}).strict();
 const deletePeriodSchema = z.object({
-  currentPassword: z.string().min(8).max(72),
+  currentPassword: z.string().min(8).max(256),
   reason: z.string().trim().max(500).optional(),
 }).strict();
 const periodColumns = `id, period_start AS "periodStart", period_end AS "periodEnd",
@@ -116,20 +121,41 @@ router.get("/", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
 });
 
 router.post("/", allowRoles("COLLECTOR"), validateBody(createPeriodSchema), async (req, res, next) => {
+  let client;
   try {
     const body = req.validatedBody;
-    const result = await pool.query(
+    const errors = billingPeriodErrors(body);
+    if (Object.keys(errors).length) return res.status(400).json({ message: Object.values(errors)[0], errors: Object.entries(errors).map(([field, message]) => ({ field, message })) });
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const result = await client.query(
       `INSERT INTO billing_periods
         (period_start, period_end, due_date, water_rate_per_cubic_m, association_dues_rate_per_sqm, late_penalty_percent, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${periodColumns}`,
       [body.periodStart, body.periodEnd, body.dueDate, body.waterRatePerCubicM, body.associationDuesRatePerSqm, body.latePenaltyPercent, req.user.id],
     );
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: "BILLING_PERIOD", entityId: result.rows[0].id, action: "CREATE", newValues: result.rows[0] });
+    await client.query("COMMIT");
     return res.status(201).json({ message: "Billing period created.", period: result.rows[0] });
-  } catch (error) { return next(error); }
+  } catch (error) { if (client) await client.query("ROLLBACK").catch(() => {}); return next(error); }
+  finally { client?.release(); }
 });
 
 router.patch("/:id", allowRoles("COLLECTOR"), requireId, validateBody(updatePeriodSchema), async (req, res, next) => {
+  let client;
   try {
+    client = await pool.connect();
+    await client.query('BEGIN');
+    const current = await client.query(`SELECT ${periodColumns} FROM billing_periods WHERE id=$1 AND status='DRAFT' AND period_type='LIVE_BILLING' FOR UPDATE`, [req.resourceId]);
+    if (!current.rows[0]) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Draft billing period not found.' });
+    }
+    const errors = billingPeriodErrors({ ...current.rows[0], ...req.validatedBody });
+    if (Object.keys(errors).length) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: Object.values(errors)[0], errors: Object.entries(errors).map(([field, message]) => ({ field, message })) });
+    }
     const columnMap = {
       periodStart: "period_start",
       periodEnd: "period_end",
@@ -147,14 +173,18 @@ router.patch("/:id", allowRoles("COLLECTOR"), requireId, validateBody(updatePeri
       }
     }
     values.push(req.resourceId);
-    const result = await pool.query(
+    const result = await client.query(
       `UPDATE billing_periods SET ${updates.join(", ")} WHERE id = $${values.length} AND status = 'DRAFT' AND period_type = 'LIVE_BILLING'
        RETURNING ${periodColumns}`,
       values,
     );
-    if (!result.rows[0]) return res.status(404).json({ message: "Draft billing period not found." });
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: 'BILLING_PERIOD', entityId: req.resourceId, action: 'UPDATE', oldValues: current.rows[0], newValues: result.rows[0] });
+    await client.query('COMMIT');
     return res.json({ message: "Billing period updated.", period: result.rows[0] });
-  } catch (error) { return next(error); }
+  } catch (error) {
+    if (client) await client.query('ROLLBACK').catch(() => {});
+    return next(error);
+  } finally { client?.release(); }
 });
 
 router.post("/:id/readings/preview", allowRoles("ADMIN", "COLLECTOR"), requireId, upload.single("file"), async (req, res, next) => {
@@ -282,6 +312,8 @@ router.put("/:id/readings", allowRoles("ADMIN", "COLLECTOR"), requireId, validat
       await client.query("ROLLBACK");
       return res.status(400).json({ message: "Submit unique readings for valid units only." });
     }
+    const beforeReadings = await auditReadings(client, [req.resourceId]);
+    const beforeCorrectedBills = isCorrection ? await auditBatchRecords(client, req.resourceId) : [];
     const priorReadings = await getPreviousReadings(client, periodResult.rows[0].period_start);
     await client.query("DELETE FROM meter_readings WHERE billing_period_id = $1", [req.resourceId]);
     for (const row of req.validatedBody.readings) {
@@ -340,6 +372,10 @@ router.put("/:id/readings", allowRoles("ADMIN", "COLLECTOR"), requireId, validat
     }
     await regenerateForecastsFromPeriod(client, req.resourceId);
     await regeneratePrescriptiveRecommendations(client);
+    const afterReadings = await auditReadings(client, [req.resourceId]);
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: "BILLING_PERIOD", entityId: req.resourceId, action: isCorrection ? "CORRECT_READINGS" : "IMPORT_READINGS",
+      oldValues: { readingCount: beforeReadings.length }, newValues: { readingCount: afterReadings.length, forecastsRefreshed: true, recommendationsRefreshed: true, soaReissued: isCorrection },
+      context: { affectedRecords: [...changedAuditRecords(beforeReadings, afterReadings), ...(isCorrection ? changedAuditRecords(beforeCorrectedBills, await auditBatchRecords(client, req.resourceId)) : [])] } });
     await client.query("COMMIT");
     const flaggedCount = req.validatedBody.readings.filter((row) => validateMeterReading(
       row.previousReading,
@@ -449,7 +485,9 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
       entityName: "BILLING_PERIOD",
       entityId: req.resourceId,
       action: "GENERATED",
-      newValues: { billCount: counts.unitCount, warningCount: counts.unitCount - counts.validCount },
+      oldValues: { status: "DRAFT" },
+      newValues: { status: "GENERATED", billCount: counts.unitCount, warningCount: counts.unitCount - counts.validCount, forecastsRefreshed: true, recommendationsRefreshed: true },
+      context: { affectedRecords: (await auditBatchRecords(client, req.resourceId)).map(bill => ({ ...bill, entityName: "UNIT_BILL", entityId: bill.id, before: null, after: bill })) },
     });
     await client.query("COMMIT");
     return res.json({ message: `Generated ${counts.unitCount} unit bills with ${counts.unitCount - counts.validCount} reading warning(s).` });
@@ -483,6 +521,7 @@ router.post("/:id/reopen", allowRoles("COLLECTOR"), requireId, async (req, res, 
       action: "REOPENED",
       oldValues: period.rows[0],
       newValues: { status: "DRAFT", removedBills: count.rows[0].count },
+      context: { affectedRecords: (await auditBatchRecords(client, req.resourceId)).map(bill => ({ ...bill, entityName: "UNIT_BILL", entityId: bill.id, before: bill, after: null })) },
       remarks: req.body?.reason || "Billing Associate reopened the batch for correction.",
     });
     await client.query("DELETE FROM unit_bills WHERE billing_period_id = $1", [req.resourceId]);
@@ -557,6 +596,9 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
     }
     const selected = req.validatedBody.billIds;
     const sendEmails = req.validatedBody.sendEmails;
+    // Serialize publication with account balance checks and payment operations.
+    await lockBillingPeriodUnits(client, req.resourceId, selected || null);
+    const beforePublication = await auditBatchRecords(client, req.resourceId);
     let result;
     if (selected) {
       const unique = [...new Set(selected)];
@@ -609,12 +651,13 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
           dedupeKey: `soa-published:${recipient.billId}`,
         })));
       }
-    await writeAuditLog({
+    if (publishedBillIds.length) await writeAuditLog({
       client,
       actorUserId: req.user.id,
       entityName: "BILLING_PERIOD",
       entityId: req.resourceId,
       action: "PUBLISHED",
+      context: { affectedRecords: changedAuditRecords(beforePublication, await auditBatchRecords(client, req.resourceId)), counts: { queuedEmails: deliveries.rowCount } },
       newValues: { billIds: result.rows.map((row) => row.id), mode: selected ? "SELECTED" : "ALL" },
     });
     await client.query("COMMIT");
@@ -635,6 +678,69 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
       emailSummary: sendEmails
         ? { queued: emailQueuedCount, sent: 0, failed: 0, skipped: publishedBillIds.length - deliveryBillIds.size }
         : { queued: 0, sent: 0, failed: 0, skipped: publishedBillIds.length },
+    });
+  } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
+    return next(error);
+  } finally { client?.release(); }
+});
+
+// Bulk visibility changes must be confirmed with the acting Admin's password.
+router.post("/:id/unpublish", allowRoles("ADMIN"), requireId, validateBody(unpublishBatchSchema), async (req, res, next) => {
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const actor = await client.query(
+      `SELECT password_hash AS "passwordHash" FROM users
+       WHERE id = $1 AND role = 'ADMIN' AND is_active = TRUE AND approval_status = 'APPROVED'
+       FOR NO KEY UPDATE`, [req.user.id],
+    );
+    if (!actor.rows[0] || !await verifyPassword(req.validatedBody.currentPassword, actor.rows[0].passwordHash)) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ message: "Your current password is incorrect. No SOAs were unpublished." });
+    }
+    const period = await client.query(
+      "SELECT id, status FROM billing_periods WHERE id = $1 AND period_type = 'LIVE_BILLING' FOR UPDATE", [req.resourceId],
+    );
+    if (!period.rows[0]) { await client.query("ROLLBACK"); return res.status(404).json({ message: "Billing period not found." }); }
+    if (!['FORWARDED', 'CLOSED'].includes(period.rows[0].status)) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ message: "Only a batch forwarded to Admin can be unpublished." });
+    }
+    // Use the same period -> ascending unit -> bill order as publication.
+    await lockBillingPeriodUnits(client, req.resourceId);
+    const bills = await client.query(
+      `SELECT id, unit_number_snapshot AS "unitNumber", period_start_snapshot AS "periodStart", period_end_snapshot AS "periodEnd", published_at AS "publishedAt", published_by AS "publishedBy"
+       FROM unit_bills WHERE billing_period_id = $1 ORDER BY id FOR UPDATE`, [req.resourceId],
+    );
+    if (!bills.rows.length || bills.rows.some(bill => !bill.publishedAt)) {
+      await client.query("ROLLBACK");
+      return res.status(409).json({ message: "Unpublish All requires every SOA in the batch to be published. Refresh the batch and try again." });
+    }
+    const billIds = bills.rows.map(bill => bill.id);
+    const deliveries = await client.query(
+      "DELETE FROM soa_email_deliveries WHERE unit_bill_id = ANY($1::bigint[]) RETURNING id", [billIds],
+    );
+    await client.query(
+      `DELETE FROM user_notifications WHERE notification_type = 'SOA_PUBLISHED'
+       AND (href = ANY($1::text[]) OR dedupe_key = ANY($2::text[]))`,
+      [billIds.map(id => `/resident/bills/${id}`), billIds.map(id => `soa-published:${id}`)],
+    );
+    await client.query(
+      "UPDATE unit_bills SET published_at = NULL, published_by = NULL WHERE billing_period_id = $1 AND id = ANY($2::bigint[])",
+      [req.resourceId, billIds],
+    );
+    await writeAuditLog({
+      client, actorUserId: req.user.id, entityName: "BILLING_PERIOD", entityId: req.resourceId, action: "UNPUBLISHED",
+      oldValues: { bills:bills.rows },
+      newValues: { billIds, mode:"ALL", unpublishedCount:billIds.length, cancelledEmailDeliveries:deliveries.rowCount },
+      remarks: "Admin confirmed their password and hid every SOA in the batch from resident access.",
+    });
+    await client.query("COMMIT");
+    return res.json({
+      message: `Unpublished ${billIds.length} SOA(s). They are now hidden from resident dashboards.`,
+      unpublishedCount: billIds.length, cancelledEmailDeliveries: deliveries.rowCount,
     });
   } catch (error) {
     if (client) await client.query("ROLLBACK").catch(() => {});
@@ -691,6 +797,7 @@ router.post("/:id/bills/:billId/email-deliveries/retry", allowRoles("ADMIN"), re
   const billId = Number(req.params.billId);
   if (!Number.isSafeInteger(billId) || billId <= 0) return res.status(400).json({ message: "A valid bill ID is required." });
 
+  let client;
   try {
     const bill = await pool.query(
       `SELECT b.id
@@ -701,33 +808,33 @@ router.post("/:id/bills/:billId/email-deliveries/retry", allowRoles("ADMIN"), re
     );
     if (!bill.rows[0]) return res.status(404).json({ message: "Published SOA not found in this billing batch." });
 
-    const retries = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const retries = await client.query(
       `UPDATE soa_email_deliveries SET status = 'PENDING'
        WHERE unit_bill_id = $1 AND status = 'FAILED'
        RETURNING id`,
       [billId],
     );
-    if (!retries.rowCount) return res.json({ message: "There are no failed SOA emails to retry.", emailSummary: { sent: 0, failed: 0, skipped: 0 } });
+    if (!retries.rowCount) { await client.query("ROLLBACK"); return res.json({ message: "There are no failed SOA emails to retry.", emailSummary: { sent: 0, failed: 0, skipped: 0 } }); }
 
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: "SOA_EMAIL_DELIVERY", entityId: billId, action: "RETRIED",
+      newValues: { status: "PENDING", deliveryCount: retries.rowCount } });
+    await client.query("COMMIT");
     const deliveryResult = await deliverSoaEmailNotifications(retries.rows.map((row) => row.id));
-    await writeAuditLog({
-      actorUserId: req.user.id,
-      entityName: "SOA_EMAIL_DELIVERY",
-      entityId: billId,
-      action: "RETRIED",
-      newValues: deliveryResult,
-    });
+
     return res.json({
       message: `Retried ${retries.rowCount} failed SOA email(s).`,
       emailSummary: { ...deliveryResult, skipped: 0 },
     });
-  } catch (error) { return next(error); }
+  } catch (error) { if (client) await client.query("ROLLBACK").catch(() => {}); return next(error); } finally { client?.release(); }
 });
 
 router.post("/:id/bills/:billId/email-deliveries/resend", allowRoles("ADMIN"), requireId, async (req, res, next) => {
   const billId = Number(req.params.billId);
   if (!Number.isSafeInteger(billId) || billId <= 0) return res.status(400).json({ message: "A valid bill ID is required." });
 
+  let client;
   try {
     const bill = await pool.query(
       `SELECT b.id
@@ -738,27 +845,26 @@ router.post("/:id/bills/:billId/email-deliveries/resend", allowRoles("ADMIN"), r
     );
     if (!bill.rows[0]) return res.status(404).json({ message: "Published SOA not found in this billing batch." });
 
-    const resend = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const resend = await client.query(
       `UPDATE soa_email_deliveries SET status = 'PENDING'
        WHERE unit_bill_id = $1 AND status IN ('SENT', 'FAILED')
        RETURNING id`,
       [billId],
     );
-    if (!resend.rowCount) return res.status(409).json({ message: "This SOA has no saved recipient email to resend." });
+    if (!resend.rowCount) { await client.query("ROLLBACK"); return res.status(409).json({ message: "This SOA has no saved recipient email to resend." }); }
 
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: "SOA_EMAIL_DELIVERY", entityId: billId, action: "RESENT",
+      newValues: { status: "PENDING", deliveryCount: resend.rowCount } });
+    await client.query("COMMIT");
     const deliveryResult = await deliverSoaEmailNotifications(resend.rows.map((row) => row.id));
-    await writeAuditLog({
-      actorUserId: req.user.id,
-      entityName: "SOA_EMAIL_DELIVERY",
-      entityId: billId,
-      action: "RESENT",
-      newValues: deliveryResult,
-    });
+
     return res.json({
       message: `Resent the SOA to ${resend.rowCount} saved recipient${resend.rowCount === 1 ? '' : 's'}.`,
       emailSummary: { ...deliveryResult, skipped: 0 },
     });
-  } catch (error) { return next(error); }
+  } catch (error) { if (client) await client.query("ROLLBACK").catch(() => {}); return next(error); } finally { client?.release(); }
 });
 
 router.delete("/:id", allowRoles("COLLECTOR"), requireId, validateBody(deletePeriodSchema), async (req, res, next) => {
@@ -768,7 +874,7 @@ router.delete("/:id", allowRoles("COLLECTOR"), requireId, validateBody(deletePer
     await client.query("BEGIN");
     await ensurePaymentLedgerSchema(client);
     const actor = await client.query("SELECT password_hash AS \"passwordHash\" FROM users WHERE id = $1 FOR UPDATE", [req.user.id]);
-    const passwordMatches = actor.rows[0] && await bcrypt.compare(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
+    const passwordMatches = actor.rows[0] && await verifyPassword(req.validatedBody.currentPassword, actor.rows[0].passwordHash);
     if (!passwordMatches) {
       await client.query("ROLLBACK");
       return res.status(403).json({ message: "Your current password is incorrect. The billing batch was not deleted." });
@@ -802,6 +908,10 @@ router.delete("/:id", allowRoles("COLLECTOR"), requireId, validateBody(deletePer
       entityId: req.resourceId,
       action: "DELETED",
       oldValues: { ...period.rows[0], readingCount: readingCount.rows[0].count, billCount: billCount.rows[0].count },
+      context: { affectedRecords: [
+        ...(await auditBatchRecords(client, req.resourceId)).map(bill => ({ ...bill, entityName: "UNIT_BILL", entityId: bill.id, before: bill, after: null })),
+        ...(await auditReadings(client, [req.resourceId])).map(reading => ({ ...reading, entityName: "METER_READING", before: reading, after: null })),
+      ] },
       remarks: req.validatedBody.reason || "Billing Associate permanently deleted the billing batch.",
     });
     await client.query("DELETE FROM unit_bills WHERE billing_period_id = $1", [req.resourceId]);

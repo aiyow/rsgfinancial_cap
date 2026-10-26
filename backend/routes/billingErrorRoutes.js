@@ -104,7 +104,7 @@ router.patch('/:id/resolve', allowRoles('COLLECTOR'), requireId, validateBody(re
       message: req.validatedBody.resolutionNote, href: `/resident/bills/${report.billId}`,
       dedupeKey: `billing-error-resolved:${report.id}`,
     }]);
-    await writeAuditLog({ client, actorUserId: req.user.id, entityName: 'BILLING_ERROR_REPORT', entityId: report.id, action: 'RESOLVE', newValues: { resolutionNote: req.validatedBody.resolutionNote } });
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: 'BILLING_ERROR_REPORT', entityId: report.id, action: 'RESOLVE', oldValues: { status: 'OPEN' }, newValues: { status: 'RESOLVED', resolutionNote: req.validatedBody.resolutionNote, billId: report.billId } });
     await client.query('COMMIT');
     return res.json({ message: 'Billing error report resolved.' });
   } catch (error) {

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Download, FileClock, LoaderCircle, Printer, QrCode, RotateCcw, Upload, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { ArrowLeft, CircleAlert, Download, FileClock, LoaderCircle, Printer, QrCode, RotateCcw, Upload, X, ZoomIn, ZoomOut } from 'lucide-react'
 import DashboardLayout from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import SoaViewer from '../../components/SoaViewer'
@@ -8,6 +8,7 @@ import ChargePaymentSummary from '../../components/ChargePaymentSummary'
 import { isWaterOnly, payableBalance, purposeLabels } from '../../utils/chargePayments'
 import useAuth from '../../hooks/useAuth'
 import { apiFile, apiRequest } from '../../services/api'
+import { RECEIPT_ACCEPT, receiptFileError } from '../../utils/receiptFilePolicy'
 
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-sm file:font-bold file:text-white'
 
@@ -22,6 +23,8 @@ export default function ResidentBillPage() {
   const [bill, setBill] = useState(null)
   const [paymentPurpose, setPaymentPurpose] = useState('')
   const [file, setFile] = useState(null)
+  const [receiptError, setReceiptError] = useState('')
+  const [receiptNotice, setReceiptNotice] = useState({ error: '', message: '', submitted: false })
   const [preview, setPreview] = useState(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState('')
   const [paymentQrUrl, setPaymentQrUrl] = useState('')
@@ -70,39 +73,65 @@ export default function ResidentBillPage() {
     }
   }, [imagePreviewUrl])
 
+  useEffect(() => {
+    if (!receiptNotice.submitted) return undefined
+    const timeout = window.setTimeout(() => {
+      navigate('/resident/payments', { replace: true, state: { filter: 'PENDING' } })
+    }, 3000)
+    return () => window.clearTimeout(timeout)
+  }, [receiptNotice.submitted, navigate])
+
   const purposes = bill?.allowedPaymentPurposes || []
   const selectedPurpose = purposes.includes(paymentPurpose) ? paymentPurpose : purposes.includes('COMBINED') ? 'COMBINED' : purposes[0] || ''
   const selectedBalance = selectedPurpose === 'COMBINED' ? Number(bill?.remainingBalance || 0) : Number(bill?.chargePayments?.[selectedPurpose]?.remainingBalance || 0)
   const canSubmit = Boolean(selectedPurpose && selectedBalance > 0)
 
+  const dismissReceiptNotice = useCallback(() => {
+    setReceiptError('')
+    setReceiptNotice(current => ({ ...current, dismissed: true }))
+  }, [])
+
+  function openPaymentProof() {
+    setFile(null)
+    setImagePreviewUrl('')
+    setPreview(null)
+    setReceiptError('')
+    setReceiptNotice({ error: '', message: '', submitted: false })
+    setPaymentProofOpen(true)
+  }
+
   function selectReceipt(event) {
     const selectedFile = event.target.files?.[0] || null
-    setFile(selectedFile)
-    setImagePreviewUrl(selectedFile ? URL.createObjectURL(selectedFile) : '')
+    const error = selectedFile ? receiptFileError(selectedFile) : ''
+    setReceiptError(error)
+    setFile(error ? null : selectedFile)
+    setImagePreviewUrl(!error && selectedFile ? URL.createObjectURL(selectedFile) : '')
+    if (error) event.target.value = ''
     setPreview(null)
-    setNotice({ error: '', message: '' })
+    setReceiptNotice({ error: '', message: '', submitted: false })
   }
 
   async function previewReceipt(event) {
     event.preventDefault()
-    if (!file) {
-      setNotice({ error: 'Choose a JPG or PNG receipt image first.', message: '' })
+    const fileError = receiptFileError(file)
+    if (fileError) {
+      setReceiptError(fileError)
       return
     }
+    setReceiptError('')
     setBusy(true)
     setOcrPreviewing(true)
     setPreview(null)
-    setNotice({ error: '', message: '' })
+    setReceiptNotice({ error: '', message: '', submitted: false })
     try {
       const body = new FormData()
       body.append('receipt', file)
       body.append('paymentPurpose', selectedPurpose)
       const data = await apiRequest(`/api/payments/bills/${id}/preview`, { method: 'POST', token, body })
       setPreview(data.analysis)
-      setNotice({ error: '', message: data.message })
     } catch (error) {
       if (error.data?.analysis) setPreview(error.data.analysis)
-      setNotice({ error: error.message, message: '' })
+      setReceiptNotice({ error: error.message, message: '', submitted: false })
     } finally {
       setBusy(false)
       setOcrPreviewing(false)
@@ -110,31 +139,32 @@ export default function ResidentBillPage() {
   }
 
   async function submitReceipt() {
-    if (!file) {
-      setNotice({ error: 'Choose a receipt image before submitting.', message: '' })
+    if (busy || receiptNotice.submitted) return
+    const fileError = receiptFileError(file)
+    if (fileError) {
+      setReceiptError(fileError)
       return
     }
+    setReceiptError('')
     setBusy(true)
     setSubmittingReceipt(true)
-    setNotice({ error: '', message: '' })
+    setReceiptNotice({ error: '', message: '', submitted: false })
     try {
       const body = new FormData()
       body.append('receipt', file)
       body.append('paymentPurpose', selectedPurpose)
-      const data = await apiRequest(`/api/payments/bills/${id}`, { method: 'POST', token, body })
+      await apiRequest(`/api/payments/bills/${id}`, { method: 'POST', token, body })
       setFile(null)
       setImagePreviewUrl('')
-      setPaymentProofOpen(false)
-      navigate('/resident/payments', {
-        replace: true,
-        state: {
-          filter: 'PENDING',
-          submissionNotice: `${data.message || 'Your receipt was submitted successfully.'} It is now waiting for Admin review. You will see the verified amount once it is approved.`,
-        },
+      setPreview(null)
+      setReceiptNotice({
+        error: '',
+        message: '',
+        submitted: true,
       })
     } catch (error) {
       if (error.data?.analysis) setPreview(error.data.analysis)
-      setNotice({ error: error.message, message: '' })
+      setReceiptNotice({ error: error.message, message: '', submitted: false })
     } finally {
       setBusy(false)
       setSubmittingReceipt(false)
@@ -201,21 +231,28 @@ export default function ResidentBillPage() {
             <p className="mb-3 text-xs text-slate-600">Selected balance: {money(selectedBalance)}. {isWaterOnly(bill) ? 'Tenants pay water only.' : 'Combined payments pay association dues first; excess stays as association advance.'}</p>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div><h2 className="text-sm font-black text-slate-950">Payment actions</h2><p className="mt-1 text-xs text-slate-600">Pay, then upload your receipt for Admin review.</p></div>
-              <div className="grid grid-cols-2 gap-2 sm:flex"><button type="button" disabled={!paymentQrUrl} onClick={() => setQrFullscreen(true)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><QrCode size={16} aria-hidden="true" />Scan to pay</button><button type="button" disabled={!canSubmit} onClick={() => setPaymentProofOpen(true)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"><Upload size={16} aria-hidden="true" />{canSubmit ? 'Upload receipt' : 'Fully paid'}</button></div>
+              <div className="grid grid-cols-2 gap-2 sm:flex"><button type="button" disabled={!paymentQrUrl} onClick={() => setQrFullscreen(true)} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"><QrCode size={16} aria-hidden="true" />Scan to pay</button><button type="button" disabled={!canSubmit} onClick={openPaymentProof} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300"><Upload size={16} aria-hidden="true" />{canSubmit ? 'Upload receipt' : 'Fully paid'}</button></div>
             </div>
-            <details className="mt-3 border-t border-emerald-100 pt-2 text-xs text-slate-600"><summary className="min-h-11 cursor-pointer py-3 font-semibold text-emerald-800">How to submit payment proof</summary><ol className="list-decimal space-y-1.5 pl-5 pb-2"><li>Open Scan to pay.</li><li>Pay the selected category balance shown above.</li><li>Choose your JPG or PNG receipt image.</li><li>Preview OCR, check the details, then submit proof.</li></ol></details>
+            <details className="mt-3 border-t border-emerald-100 pt-2 text-xs text-slate-600"><summary className="min-h-11 cursor-pointer py-3 font-semibold text-emerald-800">How to submit payment proof</summary><ol className="list-decimal space-y-1.5 pl-5 pb-2"><li>Open Scan to pay.</li><li>Pay the selected category balance shown above.</li><li>Choose your JPEG/JPG or PNG receipt image.</li><li>Preview OCR, check the details, then submit proof.</li></ol></details>
           </section>
         </>
       )}
       {reportingError && <ReportSoaErrorModal busy={busy} errorReport={errorReport} onChange={(field, value) => setErrorReport((current) => ({ ...current, [field]: value }))} onClose={() => setReportingError(false)} onSubmit={submitBillingError} />}
       {qrFullscreen && paymentQrUrl && <PaymentQrModal qrUrl={paymentQrUrl} onClose={() => setQrFullscreen(false)} onDownload={downloadPaymentQr} />}
-      {paymentProofOpen && <SubmitPaymentProofModal paymentPurpose={selectedPurpose} busy={busy} file={file} preview={preview} imagePreviewUrl={imagePreviewUrl} ocrPreviewing={ocrPreviewing} submittingReceipt={submittingReceipt} onClose={() => setPaymentProofOpen(false)} onSelectReceipt={selectReceipt} onPreview={previewReceipt} onSubmit={submitReceipt} />}
+      {paymentProofOpen && <SubmitPaymentProofModal receiptError={receiptError} notice={receiptNotice} onDismissNotice={dismissReceiptNotice} paymentPurpose={selectedPurpose} busy={busy || receiptNotice.submitted} file={file} preview={preview} imagePreviewUrl={imagePreviewUrl} ocrPreviewing={ocrPreviewing} submittingReceipt={submittingReceipt} onClose={() => setPaymentProofOpen(false)} onSelectReceipt={selectReceipt} onPreview={previewReceipt} onSubmit={submitReceipt} />}
     </DashboardLayout>
   )
 }
 
-function SubmitPaymentProofModal({ paymentPurpose, busy, file, preview, imagePreviewUrl, ocrPreviewing, submittingReceipt, onClose, onSelectReceipt, onPreview, onSubmit }) {
+function SubmitPaymentProofModal({ receiptError, notice, onDismissNotice, paymentPurpose, busy, file, preview, imagePreviewUrl, ocrPreviewing, submittingReceipt, onClose, onSelectReceipt, onPreview, onSubmit }) {
   const modalRef = useRef(null)
+  const feedback = notice.dismissed ? '' : receiptError || notice.error
+
+  useEffect(() => {
+    if (!feedback) return undefined
+    const timeout = window.setTimeout(onDismissNotice, 7000)
+    return () => window.clearTimeout(timeout)
+  }, [feedback, notice, onDismissNotice])
 
   useEffect(() => {
     const previousFocus = document.activeElement
@@ -250,18 +287,25 @@ function SubmitPaymentProofModal({ paymentPurpose, busy, file, preview, imagePre
   return (
     <div className="payment-proof-backdrop fixed inset-0 z-50 grid place-items-center bg-slate-950/50" role="presentation" onMouseDown={busy ? undefined : onClose}>
       <section ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="payment-proof-title" className="payment-proof-dialog flex h-[100dvh] w-screen max-w-none flex-col overflow-hidden bg-white shadow-2xl lg:h-[80dvh] lg:w-[80vw] lg:rounded-2xl lg:border lg:border-slate-200" onMouseDown={(event) => event.stopPropagation()}>
-        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6"><div><p className="text-sm font-semibold text-emerald-700">Payment Proof</p><h2 id="payment-proof-title" className="mt-1 text-xl font-black text-slate-950">Submit your receipt</h2><p className="mt-1 text-sm font-bold text-emerald-800">For: {purposeLabels[paymentPurpose]}</p><p className="mt-1 text-sm text-slate-600">Upload a clear JPG or PNG receipt, preview the extracted details, then submit it for Admin review.</p></div><button type="button" disabled={busy} onClick={onClose} aria-label="Close payment proof form" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"><X size={20} /></button></header>
-        <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 lg:grid-cols-[0.9fr_1.1fr] sm:p-6">
+        <header className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6"><div><p className="text-sm font-semibold text-emerald-700">Payment Proof</p><h2 id="payment-proof-title" className="mt-1 text-xl font-black text-slate-950">Submit your receipt</h2><p className="mt-1 text-sm font-bold text-emerald-800">For: {purposeLabels[paymentPurpose]}</p><p className="mt-1 text-sm text-slate-600">Upload a clear JPEG/JPG or PNG receipt, preview the extracted details, then submit it for Admin review.</p></div><button type="button" disabled={busy} onClick={onClose} aria-label="Close payment proof form" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"><X size={20} /></button></header>
+        {feedback && <div role="alert" aria-atomic="true" className="mx-5 my-3 flex max-h-[30dvh] shrink-0 animate-[toast-enter_180ms_ease-out] gap-3 overflow-y-auto rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-950 shadow-lg sm:mx-6">
+          <CircleAlert size={20} className="mt-0.5 shrink-0" aria-hidden="true" />
+          <div className="min-w-0 flex-1"><p className="font-black">Please try again</p><p id="receipt-form-feedback" className="mt-1 break-words leading-5">{feedback}</p></div>
+          <button type="button" onClick={onDismissNotice} aria-label="Dismiss receipt notification" className="-mr-1 -mt-1 shrink-0 self-start rounded-lg p-2 text-slate-500 transition hover:bg-black/5 hover:text-slate-900"><X size={17} aria-hidden="true" /></button>
+        </div>}
+        {notice.submitted ? <div role="status" className="flex min-h-0 flex-1 items-center justify-center gap-3 px-5 py-6 text-sm font-semibold text-emerald-800 sm:px-6">
+          <LoaderCircle size={20} className="shrink-0 animate-spin" aria-hidden="true" />Opening Payments…
+        </div> : <div className="grid min-h-0 flex-1 gap-5 overflow-y-auto p-5 lg:grid-cols-[0.9fr_1.1fr] sm:p-6">
           <form onSubmit={onPreview} className="space-y-4">
             <ol className="grid gap-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs text-emerald-950 sm:grid-cols-3"><li><strong>1. Choose</strong> a receipt image</li><li><strong>2. Preview OCR</strong> and check the details</li><li><strong>3. Submit</strong> for Admin review</li></ol>
-            <label className="block text-sm font-bold text-slate-700">Receipt image<input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={onSelectReceipt} className={inputClass} /></label>
-            <p className="text-xs text-slate-500">Accepted files: JPG or PNG, up to 5 MB.</p>
-            <div className="flex flex-wrap gap-3"><button disabled={busy} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{ocrPreviewing ? <><LoaderCircle size={16} className="animate-spin" />Reading receipt…</> : 'Preview OCR'}</button><button type="button" disabled={busy || !file} onClick={onSubmit} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300">{submittingReceipt ? <><LoaderCircle size={16} className="animate-spin" />Submitting proof…</> : 'Submit payment proof'}</button></div>
+            <label className="block text-sm font-bold text-slate-700">Receipt image<input type="file" accept={RECEIPT_ACCEPT} disabled={busy} aria-invalid={Boolean(receiptError)} aria-describedby={`receipt-file-help${feedback ? ' receipt-form-feedback' : ''}`} onChange={onSelectReceipt} className={inputClass} /></label>
+            <p id="receipt-file-help" className="text-xs text-slate-500">Accepted files: JPEG/JPG (.jpg, .jpeg, .jfif) or PNG (.png), up to 5 MB.</p>
+            <div className="flex flex-wrap gap-3"><button disabled={busy || !file} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50">{ocrPreviewing ? <><LoaderCircle size={16} className="animate-spin" />Reading receipt…</> : 'Preview OCR'}</button><button type="button" disabled={busy || !file} onClick={onSubmit} className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-slate-300">{submittingReceipt ? <><LoaderCircle size={16} className="animate-spin" />Submitting proof…</> : 'Submit payment proof'}</button></div>
             {submittingReceipt && <div role="status" className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-white text-emerald-700 shadow-sm"><LoaderCircle size={18} className="animate-spin" /></span><div><p className="font-black">Submitting your payment proof…</p><p className="mt-0.5 text-emerald-800">Please keep this window open while we upload your receipt.</p></div></div>}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-black text-slate-900">OCR Preview</p>{ocrPreviewing && <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-5 text-center"><span className="mx-auto grid size-11 place-items-center rounded-full bg-white text-emerald-700 shadow-sm"><LoaderCircle size={22} className="animate-spin" /></span><p className="mt-3 font-bold text-slate-900">Reading your receipt…</p><p className="mt-1 text-sm text-slate-600">Checking the image for the amount, reference number, and payment date.</p><div className="mt-4 space-y-2"><div className="h-3 animate-pulse rounded-full bg-emerald-100" /><div className="h-3 w-4/5 animate-pulse rounded-full bg-emerald-100" /><div className="h-3 w-3/5 animate-pulse rounded-full bg-emerald-100" /></div></div>}{!preview && !ocrPreviewing && <p className="mt-3 text-sm text-slate-500">Choose a receipt, then run Preview OCR to check what the system can read.</p>}{preview && <div className="mt-4 space-y-3 text-sm"><InfoRow label="Image quality" value={preview.quality?.status || '—'} /><InfoRow label="Detected amount" value={preview.amount ? money(preview.amount) : 'Not detected'} /><InfoRow label="Detected reference" value={preview.referenceNo || 'Not detected'} /><InfoRow label="Detected payment date" value={preview.paymentDate || 'Not detected'} /><InfoRow label="OCR confidence" value={preview.confidence ? `${preview.confidence}%` : '—'} /></div>}</div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-black text-slate-900">OCR Preview</p>{ocrPreviewing && <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-5 text-center"><span className="mx-auto grid size-11 place-items-center rounded-full bg-white text-emerald-700 shadow-sm"><LoaderCircle size={22} className="animate-spin" /></span><p className="mt-3 font-bold text-slate-900">Reading your receipt…</p><p className="mt-1 text-sm text-slate-600">Checking the image for the amount, reference number, and payment date.</p><div className="mt-4 space-y-2"><div className="h-3 animate-pulse rounded-full bg-emerald-100" /><div className="h-3 w-4/5 animate-pulse rounded-full bg-emerald-100" /><div className="h-3 w-3/5 animate-pulse rounded-full bg-emerald-100" /></div></div>}{!preview && !ocrPreviewing && <p className="mt-3 text-sm text-slate-500">Choose a receipt, then run Preview OCR to check what the system can read.</p>}{preview && <div className="mt-4 space-y-3 text-sm"><InfoRow label="Image quality" value={({ GOOD: 'Clear image', BLURRY: 'Blurred image', LOW_RESOLUTION: 'Blurred image' })[preview.quality?.status] || 'Not checked'} /><InfoRow label="Detected amount" value={preview.amount ? money(preview.amount) : 'Not detected'} /><InfoRow label="Detected reference" value={preview.referenceNo || 'Not detected'} /><InfoRow label="Detected payment date" value={preview.paymentDate || 'Not detected'} /><InfoRow label="OCR confidence" value={preview.confidence ? `${preview.confidence}%` : '—'} /></div>}</div>
           </form>
           <div className="flex min-h-[18rem] flex-col rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-black text-slate-900">Receipt Image Preview</p>{imagePreviewUrl ? <img src={imagePreviewUrl} alt="Selected payment receipt" className="mt-4 min-h-0 flex-1 rounded-xl bg-white object-contain" /> : <p className="mt-3 text-sm text-slate-500">Choose a receipt image to preview it here.</p>}</div>
-        </div>
+        </div>}
       </section>
     </div>
   )

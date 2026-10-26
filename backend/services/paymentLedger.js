@@ -1,3 +1,4 @@
+import { writeAuditLog } from './auditLog.js';
 import { allocateCategoryCredit, allocatePaymentPurpose, cents, money } from './paymentAllocation.js';
 
 const billBaseTotalSql = `COALESCE((SELECT SUM(ROUND(c.quantity * c.rate_applied, 2)) FROM bill_charges c WHERE c.unit_bill_id = b.id), 0)`;
@@ -44,6 +45,12 @@ export async function lockUnit(client, unitId) {
   if (!result.rows[0]) throw Object.assign(new Error('Unit not found.'), { status: 404 });
 }
 
+export async function lockBillingPeriodUnits(client, periodId, billIds = null) {
+  return client.query(`SELECT u.id FROM units u WHERE EXISTS (
+    SELECT 1 FROM unit_bills b WHERE b.unit_id=u.id AND b.billing_period_id=$1
+      AND ($2::bigint[] IS NULL OR b.id=ANY($2))) ORDER BY u.id FOR UPDATE`, [periodId, billIds]);
+}
+
 export function calculateLatePenalty(baseTotal, percentage, isOverdue) {
   const total = Number(baseTotal || 0);
   const rate = Number(percentage || 0);
@@ -86,9 +93,9 @@ async function recalculatePenalties(client, billId, asOfDate) {
     if (cents(amount) === cents(bill.late_penalty_amount)) continue;
     await client.query(`UPDATE unit_bills SET late_penalty_amount=$2,late_penalty_applied_at=CASE WHEN due_date_snapshot < $3::date THEN COALESCE(late_penalty_applied_at,NOW()) ELSE NULL END WHERE id=$1`,[bill.id,amount,today]);
     await trimBillApplications(client,bill.id);
-    await client.query(`INSERT INTO audit_logs(actor_user_id,entity_name,entity_id,action,old_values,new_values,remarks)
-      VALUES(NULL,'UNIT_BILL',$1,'ASSOCIATION_PENALTY_RECALCULATED',$2::jsonb,$3::jsonb,'One-time penalty on unpaid association dues at the due date.')`,
-      [bill.id,JSON.stringify({latePenaltyAmount:Number(bill.late_penalty_amount)}),JSON.stringify({latePenaltyAmount:amount})]);
+    await writeAuditLog({ client, entityName: 'UNIT_BILL', entityId: bill.id, action: 'ASSOCIATION_PENALTY_RECALCULATED',
+      oldValues: { latePenaltyAmount: Number(bill.late_penalty_amount) }, newValues: { latePenaltyAmount: amount },
+      remarks: 'One-time penalty on unpaid association dues at the due date.' });
     changed.push({id:bill.id,latePenaltyAmount:amount});
   }
   return changed;

@@ -1,13 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Download, RotateCcw, Share2, ZoomIn, ZoomOut } from 'lucide-react'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
 import { apiFile, apiRequest } from '../../services/api'
 import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
-import PaymentInvoiceEditor from '../../components/PaymentInvoiceEditor'
 import PaymentAllocationPreview from '../../components/PaymentAllocationPreview'
+import ReceiptImageViewer from '../../components/ReceiptImageViewer'
 import { purposeLabels } from '../../utils/chargePayments'
 import { paymentDateLabel, paymentDateTime, paymentResidentName } from '../../utils/paymentHistory'
 
@@ -15,7 +14,7 @@ const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px
 const methods = ['GCASH', 'BANK_TRANSFER', 'CASH', 'OTHER']
 
 function money(value) {
-  return `PHP ${Number(value || 0).toFixed(2)}`
+  return `PHP ${Number(value || 0).toLocaleString('en-PH', { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\.00$/, '')}`
 }
 
 function dateTime(value) {
@@ -45,7 +44,6 @@ export default function AdminPaymentPage() {
   const [form, setForm] = useState(null)
   const [previewKey, setPreviewKey] = useState('')
   const [receiptUrl, setReceiptUrl] = useState('')
-  const [receiptZoom, setReceiptZoom] = useState(1)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
   const urlRef = useRef('')
@@ -164,30 +162,12 @@ export default function AdminPaymentPage() {
       {!payment && !notice.error && <p className="text-sm text-slate-500">Loading payment...</p>}
 
       {payment && (
-        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-          <Panel title={`${payment.entryType === 'MANUAL' ? 'Manual payment' : 'Receipt'} for Unit ${payment.unitNumber}`} description={payment.entryType === 'MANUAL' ? `${paymentResidentName(payment)} · Recorded by ${payment.submittedByName} on ${dateTime(payment.submittedAt)}.` : `Submitted by ${payment.submittedByName} on ${dateTime(payment.submittedAt)}.`}>
-            {receiptUrl && <div className="relative flex min-h-56 max-h-[440px] items-center justify-center overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <img src={receiptUrl} alt="Uploaded payment receipt" className="max-h-[410px] w-full object-contain" style={{ transform: `scale(${receiptZoom})`, transformOrigin: 'center center' }} />
-              <div className="absolute right-3 top-3 flex gap-2 rounded-lg border border-slate-200 bg-white/95 p-1.5 shadow-sm backdrop-blur">
-                <button type="button" onClick={() => setReceiptZoom((value) => Math.max(0.75, Number((value - 0.25).toFixed(2))))} disabled={receiptZoom <= 0.75} aria-label="Zoom out receipt" title="Zoom out" className="grid size-9 place-items-center rounded-md text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">
-                  <ZoomOut size={18} aria-hidden="true" />
-                </button>
-                <button type="button" onClick={() => setReceiptZoom((value) => Math.min(2.5, Number((value + 0.25).toFixed(2))))} disabled={receiptZoom >= 2.5} aria-label="Zoom in receipt" title="Zoom in" className="grid size-9 place-items-center rounded-md text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700 disabled:cursor-not-allowed disabled:opacity-40">
-                  <ZoomIn size={18} aria-hidden="true" />
-                </button>
-                {receiptZoom !== 1 && <button type="button" onClick={() => setReceiptZoom(1)} aria-label="Reset receipt zoom" title="Reset zoom" className="grid size-9 place-items-center rounded-md text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700">
-                  <RotateCcw size={17} aria-hidden="true" />
-                </button>}
-                <button type="button" onClick={downloadReceipt} aria-label="Download receipt image" title="Download receipt image" className="grid size-9 place-items-center rounded-md text-slate-700 transition hover:bg-slate-100 hover:text-emerald-700">
-                  <Download size={18} aria-hidden="true" />
-                </button>
-                <button type="button" onClick={shareReceipt} aria-label="Share receipt image" title="Share receipt image" className="grid size-9 place-items-center rounded-md text-slate-700 transition hover:bg-indigo-50 hover:text-indigo-700">
-                  <Share2 size={18} aria-hidden="true" />
-                </button>
-              </div>
-            </div>}
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+          <Panel className="min-w-0" title={`${payment.entryType === 'MANUAL' ? 'Manual payment' : 'Receipt'} for Unit ${payment.unitNumber}`} description={payment.entryType === 'MANUAL' ? `${paymentResidentName(payment)} · Recorded by ${payment.submittedByName} on ${dateTime(payment.submittedAt)}.` : `Submitted by ${payment.submittedByName} on ${dateTime(payment.submittedAt)}.`}>
+            {receiptUrl && <ReceiptImageViewer key={receiptUrl} src={receiptUrl} onDownload={downloadReceipt} onShare={shareReceipt} />}
             {payment.entryType === 'MANUAL' && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">This payment was recorded by Admin and does not have an uploaded receipt image.</p>}
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
+              <Fact label="Reference number" value={payment.officialReceiptNo || 'Not issued'} />
               <Fact label="Declared purpose" value={purposeLabels[payment.paymentPurpose]} />
               <Fact label="Review status" value={payment.reviewStatus} />
               <Fact label="Source" value={payment.entryType === 'MANUAL' ? 'Manual entry' : 'Receipt upload'} />
@@ -200,7 +180,6 @@ export default function AdminPaymentPage() {
               <Fact label="OCR confidence" value={payment.ocrConfidence ? `${payment.ocrConfidence}%` : '-'} />
             </dl>
             <div className="mt-4"><PaymentAllocationDetails payment={payment} /></div>
-            {payment.reviewStatus === 'APPROVED' && <div className="mt-4"><PaymentInvoiceEditor key={payment.id} payment={payment} onSaved={async () => { const data = await apiRequest(`/api/payments/${id}`, { token }); setPayment(data.payment) }} /></div>}
             {payment.entryType === 'RECEIPT_UPLOAD' && (
               <div className="mt-5 rounded-xl bg-slate-50 p-4">
                 <p className="text-xs font-bold capitalize text-slate-500">Raw OCR text</p>
@@ -212,7 +191,7 @@ export default function AdminPaymentPage() {
           <div className="space-y-6">
             <Panel title="Detected fields">
               <dl className="grid gap-4 sm:grid-cols-2">
-                <Fact label="OCR amount" value={payment.ocrAmount ? money(payment.ocrAmount) : 'Not detected'} />
+                <Fact label="OCR amount" value={payment.ocrAmount != null && payment.ocrAmount !== '' ? money(payment.ocrAmount) : 'Not detected'} />
                 <Fact label="OCR reference" value={payment.ocrReferenceNo || 'Not detected'} />
                 <Fact label="OCR payment date" value={payment.ocrPaymentDate ? paymentDateLabel(payment.ocrPaymentDate) : 'Not detected'} />
                 <Fact label="Resident due date" value={paymentDateLabel(payment.dueDate)} />
@@ -266,7 +245,7 @@ export default function AdminPaymentPage() {
                   <Fact label="Reviewed at" value={dateTime(payment.reviewedAt)} />
                   <Fact label="Payment method" value={methodLabel(payment.paymentMethod)} />
                   <Fact label="Source" value={payment.entryType === 'MANUAL' ? 'Manual entry' : 'Receipt upload'} />
-                  <Fact label="Verified amount" value={payment.verifiedAmount ? money(payment.verifiedAmount) : '-'} />
+                  <Fact label="Verified amount" value={payment.verifiedAmount != null && payment.verifiedAmount !== '' ? money(payment.verifiedAmount) : '-'} />
                   <Fact label="Applied amount" value={money(payment.appliedAmount)} />
                   <Fact label="Unapplied advance" value={money(payment.unappliedAmount)} />
                   <Fact label="Verified reference" value={payment.verifiedReferenceNo || '-'} />
