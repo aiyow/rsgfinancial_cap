@@ -1,17 +1,19 @@
 services:
   - type: web
     name: rsg-condo-api
-    runtime: node
+    runtime: docker
     region: singapore
+    # Deployment must preserve an SMTP-capable instance and existing mail settings.
+    # The protected export preflight fails closed if SMTP/TLS or encryption fails.
     plan: free
     rootDir: backend
-    buildCommand: npm ci
-    startCommand: npm start
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
       - key: NODE_VERSION
-        value: 22.14.0
+        value: 22.23.4
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
@@ -21,6 +23,20 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: CLIENT_URL
+        sync: false
+      - key: SOA_PROTECTED_EXPORTS_ENABLED
+        value: true
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
         sync: false
       - key: SOA_REMINDER_SCHEDULER_ENABLED
         value: true

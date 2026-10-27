@@ -6,6 +6,7 @@ import { calculateAccuracy } from "../services/predictiveAnalytics.js";
 import { analyticsPeriodCondition } from "../services/analyticsPeriods.js";
 import { summarizeEvaluationHistory, validEvaluationPair } from "../services/forecastEvaluation.js";
 import { refreshAnalyticsForecasts } from "../services/refreshAnalyticsForecasts.js";
+import { loadAdminWaterGuidance } from "../services/adminWaterGuidance.js";
 
 const router = express.Router();
 
@@ -223,6 +224,7 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
       chartSeries: [...chartRows.values()].sort((a, b) => a.month.localeCompare(b.month)),
       diagnostics,
       flaggedReadings: flaggedResult.rows,
+      ...(req.user.role === 'ADMIN' ? { adminWaterGuidance: await loadAdminWaterGuidance(pool, evaluationReadings.rows) } : {}),
     });
   } catch (error) { return next(error); }
 });

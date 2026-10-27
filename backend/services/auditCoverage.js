@@ -9,6 +9,9 @@ export const auditCoverage = {
   billingErrorRoutes: { recorded: ['POST /bills/:id', 'PATCH /:id/resolve'] },
   billingPeriodRoutes: { recorded: ['POST /', 'PATCH /:id', 'PUT /:id/readings', 'POST /:id/generate', 'POST /:id/reopen', 'POST /:id/forward', 'POST /:id/publish', 'POST /:id/unpublish', 'POST /:id/bills/:billId/unpublish', 'POST /:id/bills/:billId/email-deliveries/retry', 'POST /:id/bills/:billId/email-deliveries/resend', 'DELETE /:id'], excluded: ['POST /:id/readings/preview'] },
   billRoutes: { recorded: ['PATCH /:id/payment-references', 'PATCH /:id'] },
+  // Protected exports are downloads, not saved business changes. Their temporary
+  // operational state must never enter Activity Log (especially email/PDF data).
+  soaExportRoutes: { excluded: ['POST /bills/:id/protected-exports', 'GET /soa-exports/:exportId', 'GET /soa-exports/:exportId/file'] },
   notificationRoutes: { excluded: ['PATCH /read-all', 'PATCH /:id/read'] },
   paymentRoutes: { recorded: ['POST /bills/:id', 'POST /manual', 'PATCH /:id/invoice-references', 'POST /:id/review', 'DELETE /:id'], excluded: ['POST /bills/:id/preview', 'POST /allocation-preview'] },
   prescriptiveRecommendationRoutes: { recorded: ['PATCH /:id/view', 'DELETE /:id'] },

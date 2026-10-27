@@ -29,6 +29,7 @@ test('audit API preserves snapshots, redacts secrets, pages all history and comm
       CREATE TABLE audit_logs(LIKE public.audit_logs INCLUDING DEFAULTS INCLUDING IDENTITY INCLUDING GENERATED INCLUDING CONSTRAINTS);
       CREATE TABLE units(LIKE public.units INCLUDING DEFAULTS INCLUDING IDENTITY INCLUDING GENERATED);
       CREATE TABLE unit_assignments(unit_id BIGINT,end_date DATE);
+      CREATE TABLE unit_bills(id BIGINT PRIMARY KEY,unit_number_snapshot TEXT,payer_name_snapshot TEXT,period_start_snapshot DATE,period_end_snapshot DATE);
       CREATE TABLE billing_periods(LIKE public.billing_periods INCLUDING DEFAULTS INCLUDING IDENTITY INCLUDING GENERATED INCLUDING CONSTRAINTS);
       INSERT INTO audit_logs(actor_user_id,actor_name_snapshot,actor_role_snapshot,entity_name,entity_id,action,old_values,created_at)
       SELECT 1,'Original Admin','ADMIN','BILLING_PERIOD',n,'DELETED',jsonb_build_object('periodStart','2026-10-05','periodEnd','2026-11-05','billCount',173,'passwordHash','private-credential'),'2026-10-25 16:00:00Z'::timestamptz
@@ -116,6 +117,55 @@ test('audit API preserves snapshots, redacts secrets, pages all history and comm
       assert.equal(latest.context.affectedCount, 1); assert.equal(latest.context.affectedRecords, undefined);
       const detail = (await request('/api/audit-logs/' + latest.id)).data.log;
       assert.equal(detail.context.affectedRecords[0].before.currentReading, 15); assert.equal(detail.context.affectedRecords[0].after, null);
+    });
+    await t.test('legacy invoice summaries recover saved payment identity without future data or history rewrites', async () => {
+      await setup.query(`INSERT INTO unit_bills VALUES(501,'232','Original Resident','2026-10-05','2026-11-05');
+        INSERT INTO audit_logs(actor_user_id,actor_name_snapshot,actor_role_snapshot,entity_name,entity_id,action,new_values,created_at) VALUES
+          (4,'Original Resident','RESIDENT','PAYMENT_SUBMISSION',174,'SUBMIT','{"targetBillId":501,"ocrAmount":1500,"paymentPurpose":"COMBINED","password":"private-payment"}','2026-10-20 12:00:00Z'),
+          (2,'Other Admin','ADMIN','PAYMENT_SUBMISSION',174,'APPROVE','{"verifiedAmount":1500,"officialReceiptNo":"OR-0000000174","paymentMethod":"GCASH"}','2026-10-21 12:00:00Z'),
+          (2,'Other Admin','ADMIN','PAYMENT_SUBMISSION',174,'UPDATE','{"fullName":"Future Resident","officialReceiptNo":"REF-FUTURE","verifiedAmount":9999}','2026-10-24 12:00:00Z');
+        INSERT INTO audit_logs(actor_user_id,actor_name_snapshot,actor_role_snapshot,entity_name,entity_id,action,old_values,new_values,created_at) VALUES
+          (2,'Other Admin','ADMIN','PAYMENT_SUBMISSION',174,'EDIT_INVOICES','{"invoices":[{"chargeType":"ASSOCIATION_DUES","invoiceNumber":null}]}','{"invoices":[{"chargeType":"ASSOCIATION_DUES","invoiceNumber":"2312"}]}','2026-10-22 12:00:00Z'),
+          (2,'Other Admin','ADMIN','PAYMENT_SUBMISSION',174,'EDIT_INVOICES','{"invoices":[{"chargeType":"ASSOCIATION_DUES","invoiceNumber":"2312"}]}','{"invoices":[{"chargeType":"ASSOCIATION_DUES","invoiceNumber":"#2312"}]}','2026-10-23 12:00:00Z');`);
+      const stored = (await setup.query("SELECT id,old_values,new_values,context FROM audit_logs WHERE entity_name='PAYMENT_SUBMISSION' AND entity_id=174 ORDER BY id")).rows;
+      const result = await request('/api/audit-logs?entity=PAYMENT_SUBMISSION&action=EDIT_INVOICES');
+      assert.equal(result.status, 200, JSON.stringify(result.data)); assert.equal(result.data.pagination.total, 2);
+      for (const row of result.data.logs) {
+        assert.equal(row.context.target.fullName, 'Original Resident');
+        assert.equal(row.context.target.unitNumber, '232');
+        assert.equal(row.context.target.periodStart, '2026-10-05');
+        assert.equal(row.context.target.paymentReference, 'OR-0000000174');
+        assert.equal(row.context.target.amount, 1500);
+        assert.equal(row.context.changes[0].field, 'invoiceNumber');
+        assert.equal(row.context.changes[0].category, 'ASSOCIATION_DUES');
+        assert.equal(row.oldValues, undefined); assert.equal(row.newValues, undefined);
+      }
+      assert.equal(result.data.logs[0].context.changes[0].before, '2312');
+      assert.equal(result.data.logs[0].context.changes[0].after, '#2312');
+      for (const query of ['Original Resident', '232', 'OR-0000000174', '2026-10-05', '2312']) {
+        const search = await request('/api/audit-logs?entity=PAYMENT_SUBMISSION&action=EDIT_INVOICES&q=' + encodeURIComponent(query));
+        assert.equal(search.data.pagination.total, 2, query + ': ' + JSON.stringify(search.data));
+      }
+      assert.equal((await request('/api/audit-logs?entity=PAYMENT_SUBMISSION&action=EDIT_INVOICES&q=Future')).data.pagination.total, 0);
+      assert.equal((await request('/api/audit-logs?q=private-payment')).data.pagination.total, 0);
+      assert.ok(!JSON.stringify(result.data).includes('private-payment'));
+      const submission = (await request('/api/audit-logs?entity=PAYMENT_SUBMISSION&action=SUBMIT')).data.logs[0];
+      assert.equal(submission.context.target.paymentReference, undefined, 'A submission must not acquire a later approval reference');
+      assert.equal(submission.context.target.amount, undefined); assert.equal(submission.context.target.detectedAmount, 1500);
+      assert.deepEqual((await setup.query("SELECT id,old_values,new_values,context FROM audit_logs WHERE entity_name='PAYMENT_SUBMISSION' AND entity_id=174 ORDER BY id")).rows, stored, 'Read-time recovery never rewrites audit history');
+    });
+    await t.test('new payment snapshots retain recognizable details after payment and SOA deletion', async () => {
+      await setup.query(`CREATE TABLE payment_submissions(id BIGINT PRIMARY KEY,unit_id BIGINT,target_unit_bill_id BIGINT,verified_amount NUMERIC,review_status TEXT,official_receipt_no TEXT,payment_purpose TEXT);
+        INSERT INTO unit_bills VALUES(502,'233','Snapshot Resident','2026-10-05','2026-11-05');
+        INSERT INTO payment_submissions VALUES(175,33,502,500,'APPROVED','REF-0000175','WATER');`);
+      await writeAuditLog({ client: setup, actorUserId: 2, entityName: 'PAYMENT_SUBMISSION', entityId: 175, action: 'EDIT_INVOICES', oldValues: { invoices: [{ chargeType: 'WATER', invoiceNumber: null }] }, newValues: { invoices: [{ chargeType: 'WATER', invoiceNumber: 'INV-175' }] } });
+      await setup.query('DELETE FROM payment_submissions WHERE id=175; DELETE FROM unit_bills WHERE id=502');
+      const result = await request('/api/audit-logs?entity=PAYMENT_SUBMISSION&q=Snapshot Resident');
+      assert.equal(result.status, 200, JSON.stringify(result.data));
+      const row = result.data.logs.find(row => String(row.entityId) === '175'); assert.ok(row);
+      assert.equal(row.context.target.fullName, 'Snapshot Resident'); assert.equal(row.context.target.unitNumber, '233');
+      assert.equal(row.context.target.paymentReference, 'REF-0000175'); assert.equal(Number(row.context.target.amount), 500);
+      assert.equal(row.context.target.periodStart, '2026-10-05');
     });
   } finally {
     failAudit = false;

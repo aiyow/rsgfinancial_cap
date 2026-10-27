@@ -6,6 +6,7 @@ import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayo
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 import { chartNumber, connectForecastLine } from '../../utils/forecastChart'
+import AdminWaterGuidance from '../../components/AdminWaterGuidance'
 
 const paymentStatusColors = {
   Paid: '#2f8f5b',
@@ -21,8 +22,8 @@ function money(value) {
   return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }).format(Number(value || 0))
 }
 
-function month(value) {
-  return value ? new Date(`${String(value).slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-PH', { month: 'short', year: 'numeric', timeZone: 'UTC' }) : 'No billing yet'
+function month(value, format = 'short') {
+  return value ? new Date(`${String(value).slice(0, 10)}T00:00:00Z`).toLocaleDateString('en-PH', { month: format, year: 'numeric', timeZone: 'UTC' }) : 'No billing yet'
 }
 
 function ratio(value, total) {
@@ -45,8 +46,8 @@ function Metric({ label, value, detail, subdetail, icon: Icon, tone = 'green', a
   </article>
 }
 
-function ChartPanel({ title, description, descriptionBelow = false, variant, filter, children }) {
-  return <section className={`collector-chart-panel overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-b from-white to-slate-50/60 p-5 shadow-sm sm:p-6 ${variant === 'trend' ? 'collector-trend-chart' : ''}`}><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="capitalize text-[10px] font-black tracking-[0.14em] text-[var(--primary)]">Live insight</p><h2 className="mt-1 capitalize text-base font-black text-[var(--ink)]">{title}</h2>{!descriptionBelow && <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>}</div>{filter}</div><div className="mt-5 h-72">{children}</div>{descriptionBelow && <p className="mt-5 text-sm text-[var(--muted)]">{description}</p>}</section>
+function ChartPanel({ title, description, descriptionBelow = false, variant, filter, footer, children }) {
+  return <section className={`collector-chart-panel min-w-0 overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-b from-white to-slate-50/60 p-5 shadow-sm sm:p-6 ${variant === 'trend' ? 'collector-trend-chart' : ''}`}><div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><p className="capitalize text-[10px] font-black tracking-[0.14em] text-[var(--primary)]">Live insight</p><h2 className="mt-1 capitalize text-base font-black text-[var(--ink)]">{title}</h2>{!descriptionBelow && <p className="mt-1 text-sm text-[var(--muted)]">{description}</p>}</div>{filter}</div><div className="mt-5 h-72">{children}</div>{descriptionBelow && <p className="mt-5 text-sm text-[var(--muted)]">{description}</p>}{footer}</section>
 }
 
 const waterBillStatisticalRanges = [
@@ -112,10 +113,10 @@ function BillStatusChart({ billStatus }) {
   </ChartPanel>
 }
 
-function WaterTrendChart({ waterTrend }) {
+function WaterTrendChart({ waterTrend, isAdmin, guidance }) {
   const [range, setRange] = useState('sixMonths')
   const filteredWaterTrend = filterChartRows(waterTrend, range, waterBillStatisticalRanges)
-  return <ChartPanel title="Historical vs Projected Water Bill" description="Actual water charges compared with the projected water bill for the selected periods." descriptionBelow filter={<StatisticalFilter ranges={waterBillStatisticalRanges} value={range} onChange={setRange} />}>
+  return <ChartPanel title="Historical vs Projected Water Bill" description="Actual water charges compared with the projected water bill for the selected periods." descriptionBelow filter={<StatisticalFilter ranges={waterBillStatisticalRanges} value={range} onChange={setRange} />} footer={isAdmin ? <AdminWaterGuidance guidance={guidance} /> : null}>
     {filteredWaterTrend.length ? <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={filteredWaterTrend} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
         <defs>
@@ -200,21 +201,21 @@ export default function OperationalDashboard({ role }) {
   const roleIsAdmin = role === 'ADMIN'
   const actions = roleIsAdmin
     ? [
-      { title: 'Payment verification', value: metrics.pendingPayments || 0, description: 'payment proof(s) waiting for review', to: '/admin/payments', icon: ReceiptText },
-      { title: 'Pending account verification', value: metrics.pendingAccountVerifications || 0, description: 'account(s) awaiting approval', to: '/admin/users', icon: UserRoundCheck },
-      { title: 'Overdue SOAs', value: metrics.overdueBills || 0, description: 'account(s) still have a balance', to: '/admin/soa', icon: AlertTriangle },
+      { title: 'Payment verification', value: metrics.pendingPayments || 0, description: 'Payment proof(s) waiting for review', to: '/admin/payments', icon: ReceiptText },
+      { title: 'Pending account verification', value: metrics.pendingAccountVerifications || 0, description: 'Account(s) awaiting approval', to: '/admin/users', icon: UserRoundCheck },
+      { title: 'Overdue SOAs', value: metrics.overdueBills || 0, description: 'Account(s) still have a balance', to: '/admin/soa', icon: AlertTriangle },
       { title: 'Water recommendations', value: metrics.openRecommendations || 0, description: `${metrics.highPriorityRecommendations || 0} high priority`, to: '/admin/analytics', icon: Gauge },
     ]
     : [
-      { title: 'Latest billing', value: metrics.latestPeriodStatus || 'Not started', description: metrics.latestPeriodStart ? `${month(metrics.latestPeriodStart)} billing period` : 'Create the first billing period', to: '/collector/billing', icon: FileText },
-      { title: 'Overdue SOAs', value: metrics.overdueBills || 0, description: 'account(s) still have a balance', to: '/collector/bills', icon: AlertTriangle },
+      { title: 'Latest billing', value: metrics.latestPeriodStatus || 'Not started', description: metrics.latestPeriodStart ? `${month(metrics.latestPeriodStart, 'long')} billing period` : 'Create the first billing period', to: '/collector/billing', icon: FileText },
+      { title: 'Overdue SOAs', value: metrics.overdueBills || 0, description: 'Account(s) still have a balance', to: '/collector/bills', icon: AlertTriangle },
       { title: 'Water recommendations', value: metrics.openRecommendations || 0, description: `${metrics.highPriorityRecommendations || 0} high priority`, to: '/collector/analytics', icon: Gauge },
     ]
 
   return <DashboardLayout title={roleIsAdmin ? 'Dashboard' : 'Billing Associate Dashboard'} description="Live operational overview of billing, payments, occupancy, and water use.">
     {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {!data ? <Panel title="Loading dashboard"><EmptyRow message="Loading your latest billing summary..." /></Panel> : <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">{roleIsAdmin ? 'Dashboard' : 'Billing Operations Dashboard'}</h1><p className="mt-1 text-sm text-[var(--muted)]">Current billing period: <strong className="text-[var(--ink)]">{month(metrics.latestPeriodStart)}</strong>{metrics.latestPeriodStatus ? ` (${metrics.latestPeriodStatus.toLowerCase()})` : ''}</p></div><button type="button" onClick={() => { setRefreshing(true); setRefreshKey((value) => value + 1) }} disabled={refreshing} className="inline-flex w-fit items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-bold text-[var(--ink)] shadow-sm transition hover:bg-[var(--app-bg)] disabled:opacity-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{refreshing ? 'Refreshing…' : 'Refresh overview'}</button></div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">{roleIsAdmin ? 'Dashboard' : 'Billing Operations Dashboard'}</h1><p className="mt-1 text-sm text-[var(--muted)]">Current billing period: <strong className="text-[var(--ink)]">{month(metrics.latestPeriodStart, 'long')}</strong>{metrics.latestPeriodStatus ? ` (${metrics.latestPeriodStatus.toLowerCase()})` : ''}</p></div><button type="button" onClick={() => { setRefreshing(true); setRefreshKey((value) => value + 1) }} disabled={refreshing} className="inline-flex w-fit items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-bold text-[var(--ink)] shadow-sm transition hover:bg-[var(--app-bg)] disabled:opacity-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{refreshing ? 'Refreshing…' : 'Refresh overview'}</button></div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Metric label="Monthly billing" value={money(currentBilled)} detail={`${metrics.currentBills || 0} statement(s) issued`} icon={FileText} accent="blue" />
         <Metric label="Monthly collection" value={money(currentCollected)} detail={collectionRate === null ? 'No current billing to collect' : `${money(collectionGap)} still to collect`} icon={WalletCards} tone="blue" accent="green" />
@@ -228,7 +229,9 @@ export default function OperationalDashboard({ role }) {
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
         <BillingTrendChart monthly={monthly} />
-        <BillStatusChart billStatus={billStatus} />
+        <Panel title="Needs attention" description="Open the right page to continue the work.">
+          <div className="space-y-3">{actions.map((action) => { const Icon = action.icon; return <Link key={action.title} to={action.to} className="flex items-center gap-3 rounded-xl border border-[var(--border)] p-3 transition hover:border-[var(--primary)] hover:bg-[var(--app-bg)]"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--active-bg)] text-[var(--primary)]"><Icon size={18} /></span><span className="min-w-0 flex-1"><span className="capitalize block text-sm font-bold text-[var(--ink)]">{action.title}</span><span className="normal-case block text-xs text-[var(--muted)]">{action.description}</span></span><strong className="text-lg font-black text-[var(--ink)]">{action.value}</strong></Link> })}</div>
+        </Panel>
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
         <Panel title="Financial health" description="Track the current billing period at a glance.">
@@ -239,10 +242,8 @@ export default function OperationalDashboard({ role }) {
         </Panel>
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
-        <WaterTrendChart waterTrend={waterTrend} />
-        <Panel title="Needs attention" description="Open the right page to continue the work.">
-          <div className="space-y-3">{actions.map((action) => { const Icon = action.icon; return <Link key={action.title} to={action.to} className="flex items-center gap-3 rounded-xl border border-[var(--border)] p-3 transition hover:border-[var(--primary)] hover:bg-[var(--app-bg)]"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--active-bg)] text-[var(--primary)]"><Icon size={18} /></span><span className="min-w-0 flex-1"><span className="capitalize block text-sm font-bold text-[var(--ink)]">{action.title}</span><span className="block text-xs text-[var(--muted)]">{action.description}</span></span><strong className="text-lg font-black text-[var(--ink)]">{action.value}</strong></Link> })}</div>
-        </Panel>
+        <WaterTrendChart waterTrend={waterTrend} isAdmin={roleIsAdmin} guidance={data.analytics?.adminWaterGuidance} />
+        <BillStatusChart billStatus={billStatus} />
       </div>
     </>}
   </DashboardLayout>

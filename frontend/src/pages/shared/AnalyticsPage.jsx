@@ -8,8 +8,8 @@ import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayo
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 import { chartNumber as number, connectForecastLine } from '../../utils/forecastChart'
-import { forecastModelLabel } from '../../utils/forecastModelLabel'
 import UnitWaterAnalytics from '../../components/UnitWaterAnalytics'
+import AdminWaterGuidance from '../../components/AdminWaterGuidance'
 
 function valueOrDash(value, suffix = '') {
   return value === null || value === undefined ? '-' : `${Number(value).toFixed(2)}${suffix}`
@@ -228,7 +228,7 @@ export default function AnalyticsPage() {
           </section>
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <ChartCard title="Historical vs Projected Water Consumption" description="Monthly total consumption in cubic meters." filter={<ForecastRangeFilter value={consumptionRange} onChange={setConsumptionRange} />}>
+            <ChartCard title="Historical vs Projected Water Consumption" description="Monthly total consumption in cubic meters." filter={<ForecastRangeFilter value={consumptionRange} onChange={setConsumptionRange} />} footer={user.role === 'ADMIN' && data ? <AdminWaterGuidance guidance={data.adminWaterGuidance} title="Prescriptive insights" description="Suggested actions for projected water use and units needing review." metric="consumption" showAnalyticsLink={false} /> : null}>
               {consumptionChartData.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={consumptionChartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
@@ -244,7 +244,7 @@ export default function AnalyticsPage() {
               ) : <EmptyRow message="No chart data is available yet." />}
             </ChartCard>
 
-            <ChartCard title="Historical vs Projected Water Bill" description="Monthly total water charges from actual readings and forecasts." filter={<ForecastRangeFilter value={waterBillRange} onChange={setWaterBillRange} />}>
+            <ChartCard title="Historical vs Projected Water Bill" description="Monthly total water charges from actual readings and forecasts." filter={<ForecastRangeFilter value={waterBillRange} onChange={setWaterBillRange} />} footer={user.role === 'ADMIN' && data ? <AdminWaterGuidance guidance={data.adminWaterGuidance} title="Prescriptive insights" description="Suggested billing checks for projected charges, peso changes, and the applied water rate." metric="bill" showAnalyticsLink={false} /> : null}>
               {waterBillChartData.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={waterBillChartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
@@ -316,14 +316,13 @@ export default function AnalyticsPage() {
           <Panel title="Predicted versus actual" description={`Visible to ${user.role === 'ADMIN' ? 'Admin' : 'Billing Associate'} staff only. WAPE avoids division problems for units with zero consumption.`}>
             {data?.diagnostics.length ? (
               <div className="max-h-[31rem] overflow-auto overscroll-contain rounded-xl border border-slate-200" aria-label="Predicted versus actual results">
-                <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="sticky top-0 z-10 bg-slate-50 text-xs capitalize text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Model</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead className="sticky top-0 z-10 bg-slate-50 text-xs capitalize text-slate-400"><tr><th className="p-3">Unit</th><th>Forecast month</th><th>Predicted</th><th>Actual</th><th>Absolute error</th><th>Status</th></tr></thead>
                   <tbody className="divide-y divide-slate-300">
                     {data.diagnostics.map((row) => (
                       <tr key={`${row.unitId}-${row.forecastForMonth}`} className={row.status !== 'READY' || row.actualValidationStatus !== 'VALID' ? 'bg-amber-50' : ''}>
                         <td className="p-3 font-bold">Unit {row.unitNumber}</td>
                         <td>{String(row.forecastForMonth).slice(0, 10)}</td>
-                        <td className="py-3 pr-4 text-xs font-semibold text-slate-600">{forecastModelLabel(row.modelName, row.status)}</td>
                         <td>{row.predictedConsumption === null ? '-' : `${Number(row.predictedConsumption).toFixed(3)} m3`}</td>
                         <td>{row.actualConsumption === null ? '-' : `${Number(row.actualConsumption).toFixed(3)} m3`}</td>
                         <td>{row.absoluteError === null ? '-' : `${Number(row.absoluteError).toFixed(3)} m3`}</td>
@@ -452,11 +451,12 @@ function UsageQualityPanel({ review, overallCount, evaluatedMonth }) {
   </Panel>
 }
 
-function ChartCard({ title, description, filter, children }) {
+function ChartCard({ title, description, filter, footer, children }) {
   return (
     <div className="collector-chart-panel min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h3 className="text-base font-black text-[var(--ink)]">{title}</h3><p className="mt-1 text-sm text-[var(--muted)]">{description}</p></div>{filter}</div>
       <div className="mt-5 h-72">{children}</div>
+      {footer}
     </div>
   )
 }

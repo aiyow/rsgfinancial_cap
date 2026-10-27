@@ -27,13 +27,16 @@ export async function apiRequest(path, { token, body, ...options } = {}) {
   return data
 }
 
-export async function apiFile(path, { token } = {}) {
+export async function apiFile(path, { token, signal } = {}) {
   const headers = new Headers()
   if (token) headers.set('Authorization', `Bearer ${token}`)
-  const response = await fetch(`${API_URL}${path}`, { headers })
+  const response = await fetch(`${API_URL}${path}`, { headers, signal })
   if (!response.ok) {
     const data = await response.json().catch(() => ({}))
-    throw new Error(data.message || 'The file could not be loaded.')
+    const error = new Error(data.message || 'The file could not be loaded.')
+    error.data = data
+    error.status = response.status
+    throw error
   }
   return response.blob()
 }

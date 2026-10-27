@@ -1,0 +1,10 @@
+node_modules
+.env
+.env.*
+!.env.example
+.tools
+.protected-soa-check
+uploads
+test
+*.log
+.git

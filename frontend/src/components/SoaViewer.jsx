@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { Expand, Maximize2, X, ZoomIn, ZoomOut } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
+import { Expand, Eye, Maximize2, X, ZoomIn, ZoomOut } from 'lucide-react'
 import SoaDocument from './SoaDocument'
 
 const DOCUMENT_WIDTH = 1040
@@ -11,10 +11,26 @@ export default function SoaViewer({ bill }) {
   const viewerRef = useRef(null)
   const viewportRef = useRef(null)
   const documentRef = useRef(null)
+  const documentId = useId()
+  const scrollPositions = useRef(new Map())
+  const [revealed, setRevealed] = useState(false)
   const [dimensions, setDimensions] = useState({ width: 0, height: 0, availableHeight: 0 })
   // null follows the available width; manual zoom stays fixed when rotating.
   const [manualZoom, setManualZoom] = useState(null)
   const [fullscreen, setFullscreen] = useState(false)
+
+  useEffect(() => {
+    function hideOnVerticalScroll(event) {
+      const target = event.target === document ? document.scrollingElement : event.target
+      const previous = scrollPositions.current.get(target)
+      if (previous === undefined) return
+      const top = target.scrollTop
+      scrollPositions.current.set(target, top)
+      if (top !== previous) setRevealed(false)
+    }
+    window.addEventListener('scroll', hideOnVerticalScroll, { capture: true, passive: true })
+    return () => window.removeEventListener('scroll', hideOnVerticalScroll, true)
+  }, [])
 
   useEffect(() => {
     const viewport = viewportRef.current
@@ -68,6 +84,17 @@ export default function SoaViewer({ bill }) {
     viewportRef.current?.scrollTo({ top: 0, left: 0 })
   }
 
+  function revealStatement() {
+    // Only outer page scrollers conceal the SOA. Keep the statement's own
+    // viewport out of this map so residents can scroll and pan while reading.
+    const positions = new Map()
+    for (let element = viewerRef.current?.parentElement; element; element = element.parentElement) positions.set(element, element.scrollTop)
+    if (document.scrollingElement) positions.set(document.scrollingElement, document.scrollingElement.scrollTop)
+    scrollPositions.current = positions
+    setRevealed(true)
+    viewportRef.current?.focus({ preventScroll: true })
+  }
+
   return (
     <section ref={viewerRef} className={`soa-viewer min-w-0 overflow-hidden rounded-xl border border-emerald-200 bg-white shadow-sm ${fullscreen ? 'soa-viewer-fullscreen' : ''}`} role={fullscreen ? 'dialog' : undefined} aria-modal={fullscreen ? true : undefined} aria-label="Statement of account viewer">
       <div className="print-hidden flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100 px-3 py-2">
@@ -80,13 +107,19 @@ export default function SoaViewer({ bill }) {
           <button type="button" onClick={() => { setManualZoom(null); setFullscreen((current) => !current) }} className={controlClass} aria-label={fullscreen ? 'Close full screen statement' : 'Open full screen statement'} title={fullscreen ? 'Close full screen' : 'Full screen'}>{fullscreen ? <X size={18} aria-hidden="true" /> : <Expand size={17} aria-hidden="true" />}</button>
         </div>
       </div>
-      <div ref={viewportRef} className="soa-viewer-viewport" role="region" aria-label="Scrollable statement. Zoom in for details, then swipe or scroll to move." tabIndex={0}>
-        <div className="soa-viewer-canvas" style={{ width: DOCUMENT_WIDTH * zoom, height: dimensions.height * zoom, visibility: ready ? 'visible' : 'hidden' }}>
+      <div className="soa-viewer-stage">
+      <div ref={viewportRef} className="soa-viewer-viewport" role="region" aria-label="Scrollable statement. Scroll inside to read. Scrolling the page hides the SOA again." tabIndex={0}>
+        <div id={documentId} aria-hidden={!revealed} inert={!revealed} className={`soa-viewer-canvas ${revealed ? '' : 'soa-viewer-concealed'}`} style={{ width: DOCUMENT_WIDTH * zoom, height: dimensions.height * zoom, visibility: ready ? 'visible' : 'hidden' }}>
           <div ref={documentRef} className="soa-viewer-document" style={{ width: DOCUMENT_WIDTH, transform: `scale(${zoom})` }}>
             <SoaDocument bill={bill} />
           </div>
         </div>
       </div>
+      {!revealed && ready && <div className="soa-viewer-privacy-overlay print-hidden pointer-events-none absolute inset-0 z-10 grid place-items-center p-4">
+        <button type="button" onClick={revealStatement} aria-controls={documentId} className="soa-viewer-reveal pointer-events-auto"><span className="grid size-7 place-items-center rounded-full border border-white/60 bg-white/35"><Eye size={17} aria-hidden="true" /></span>View SOA</button>
+      </div>}
+      </div>
+      <p role="status" className="print-hidden sr-only">{revealed ? 'Statement displayed. Scrolling the page will hide it again.' : 'Statement hidden. Select View SOA to reveal it.'}</p>
       <p className="print-hidden border-t border-emerald-100 px-3 py-2 text-[11px] text-slate-500">Fit shows the complete SOA. Zoom in, then swipe to read details.</p>
     </section>
   )

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Activity, ChevronDown, LoaderCircle, RefreshCw, Search, SlidersHorizontal } from 'lucide-react'
+import { Activity, ClipboardList, LoaderCircle, RefreshCw, Search, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
-import { actionLabels, auditChanges, auditLabel, auditSummary, auditTargetLabel, auditTime, auditValue, entityLabels, roleLabels } from '../../utils/auditLogPresentation'
+import { actionLabels, auditChangeSummary, auditLabel, auditSummary, auditTime, entityLabels, roleLabels } from '../../utils/auditLogPresentation'
 
 const inputClass = 'min-h-11 w-full min-w-0 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-700 focus-visible:outline-2 focus-visible:outline-emerald-600'
 const buttonClass = 'min-h-11 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40'
@@ -39,17 +39,20 @@ export default function AdminAuditLogsPage() {
   }, [token, filters, page, pageSize, revision, invalidDates])
   function update(field, value) { setFilters(current => ({ ...current, [field]: value })); setPage(1); setFeedHeight(0) }
   function changePage(nextPage) {
-    const rows = [...(feedRef.current?.querySelectorAll('.audit-entry-toggle') || [])]
-    const height = rows.reduce((sum, row) => sum + row.getBoundingClientRect().height + 2, 0) + Math.max(0, rows.length - 1) * 4
+    const rows = [...(feedRef.current?.querySelectorAll('.audit-entry') || [])]
+    const height = rows.reduce((sum, row) => sum + row.getBoundingClientRect().height, 0) + Math.max(0, rows.length - 1) * 4
     setFeedHeight(current => Math.max(current, height)); setPage(nextPage)
   }
   const activeFilterCount = ['entity', 'action', 'actorRole', 'from', 'to'].filter(key => filters[key]).length
   const summary = result.summary || {}, pagination = result.pagination
   const entities = [...new Set([...(result.filters?.entities || []), filters.entity])].filter(Boolean)
   const actions = [...new Set([...(result.filters?.actions || []), filters.action].map(action => action === 'DELETED' ? 'DELETE' : action))].filter(Boolean)
-  return <DashboardLayout title="Activity log" className="audit-shell" description="Changes made by users. Expand an entry to see exactly what changed."><div className="space-y-4">
-    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" aria-label="Activity totals for selected filters">
-      {Object.entries({ total: 'User changes', admin: 'Admin', collector: 'Billing Associate', resident: 'Resident' }).map(([key, label]) => <div key={key} className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-emerald-100 bg-white px-3 py-2.5"><p className="text-[11px] font-semibold text-slate-500">{label}</p><p className="text-xl font-black tabular-nums text-slate-950">{summary[key] ?? 0}</p></div>)}
+  return <DashboardLayout title="Activity log" className="audit-shell" description="Saved user changes with the affected record, action, and time."><div className="space-y-4">
+    <div className="grid grid-cols-2 gap-2 md:grid-cols-4" aria-label="Activity totals for selected filters">
+      <AuditStatCard label="User changes" value={summary.total ?? 0} icon={Activity} accent="blue" />
+      <AuditStatCard label="Admin" value={summary.admin ?? 0} icon={ShieldCheck} accent="yellow" />
+      <AuditStatCard label="Billing Associate" value={summary.collector ?? 0} icon={ClipboardList} accent="green" />
+      <AuditStatCard label="Resident" value={summary.resident ?? 0} icon={Users} accent="red" />
     </div>
     <section aria-label="Activity controls" className="rounded-xl border border-emerald-100 bg-white p-3">
       <div className="flex flex-wrap gap-2">
@@ -67,10 +70,10 @@ export default function AdminAuditLogsPage() {
       </div>}
       {invalidDates && <p role="alert" className="mt-3 text-sm text-rose-700">To date must be on or after From date.</p>}
     </section>
-    <Panel className="audit-feed-panel" title="Activity feed" description="Select an entry to see record details, before and after values, and affected units.">
+    <Panel className="audit-feed-panel" title="Activity feed" description="Each entry shows who made the change, what happened, and the affected record.">
       {error && <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-800"><span>{error}</span><button type="button" onClick={() => setRevision(value => value + 1)} className={buttonClass}>Try again</button></div>}
       <div ref={feedRef} aria-busy={loading} className="relative" style={feedHeight ? { minHeight: feedHeight } : undefined}>
-        {loading && !result.logs.length ? <p role="status" className="flex items-center gap-2 p-4 text-sm text-slate-500"><LoaderCircle size={18} className="animate-spin" />Loading activity…</p> : <div className="space-y-1">{!error && result.logs.map(log => <AuditEntry key={`${log.id}-${revision}`} log={log} token={token} />)}</div>}
+        {loading && !result.logs.length ? <p role="status" className="flex items-center gap-2 p-4 text-sm text-slate-500"><LoaderCircle size={18} className="animate-spin" />Loading activity…</p> : <div className="space-y-1">{!error && result.logs.map(log => <AuditEntry key={log.id} log={log} />)}</div>}
         {loading && result.logs.length > 0 && <div role="status" aria-label="Loading activity page" className="absolute inset-0 z-10 flex items-start justify-center rounded-lg bg-white/75 pt-4"><LoaderCircle size={18} className="animate-spin text-emerald-700" aria-hidden="true" /></div>}
       </div>
       {!loading && !error && result.logs.length === 0 && <EmptyRow message="No saved changes match these filters." />}
@@ -88,69 +91,24 @@ export default function AdminAuditLogsPage() {
     </Panel>
   </div></DashboardLayout>
 }
+function AuditStatCard({ label, value, icon: Icon, accent }) {
+  return <div className={`collector-metric collector-metric-${accent} min-w-0 rounded-xl border border-[var(--border)] p-3 shadow-sm sm:p-3.5`}>
+    <div className="flex items-center justify-between gap-2 sm:gap-3">
+      <div className="min-w-0">
+        <p className="break-words text-[11px] font-bold text-[var(--muted)] sm:text-xs">{label}</p>
+        <p className="mt-1 text-2xl font-black tabular-nums text-[var(--ink)]">{value}</p>
+      </div>
+      <span className="grid size-9 shrink-0 place-items-center rounded-xl sm:size-11"><Icon size={21} aria-hidden="true" /></span>
+    </div>
+  </div>
+}
 function Filter({ label, value, onChange, options, labels }) {
   return <label className="text-xs font-bold text-slate-600">{label}<select aria-label={label} value={value} onChange={event => onChange(event.target.value)} className={`${inputClass} mt-1.5`}><option value="">Everything</option>{options.map(option => <option key={option} value={option}>{auditLabel(option, labels)}</option>)}</select></label>
 }
-function AuditEntry({ log, token }) {
-  const [open, setOpen] = useState(false)
-  const [details, setDetails] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const requestRef = useRef(null)
-  useEffect(() => () => requestRef.current?.abort(), [])
-  async function load() {
-    requestRef.current?.abort()
-    const controller = new AbortController(); requestRef.current = controller
-    setLoading(true); setError('')
-    try { const data = await apiRequest(`/api/audit-logs/${log.id}`, { token, signal: controller.signal }); if (!controller.signal.aborted) setDetails(data.log) }
-    catch (requestError) { if (!controller.signal.aborted) setError(requestError.message) }
-    finally { if (!controller.signal.aborted) setLoading(false) }
-  }
-  function toggle() { setOpen(!open); if (!open && !details && !loading) void load() }
-  return <article className="min-w-0 overflow-hidden rounded-lg border border-emerald-100 bg-white">
-    <button type="button" aria-expanded={open} aria-controls={`audit-details-${log.id}`} onClick={toggle} className="audit-entry-toggle flex min-h-16 w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-emerald-50/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-emerald-600">
+function AuditEntry({ log }) {
+  const changeSummary = auditChangeSummary(log)
+  return <article className="audit-entry flex min-h-16 min-w-0 items-center gap-2.5 overflow-hidden rounded-lg border border-emerald-100 bg-white px-3 py-2.5">
       <span className="grid size-7 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700"><Activity size={14} aria-hidden="true" /></span>
-      <span className="min-w-0 flex-1"><span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5"><span className="text-xs font-bold text-slate-950">{log.actorName}</span><span className="text-[10px] text-slate-500">{roleLabels[log.actorRole] || 'User'}</span><time dateTime={log.createdAt} className="ml-auto hidden text-[10px] text-slate-500 md:block">{auditTime(log.createdAt)}</time></span><span className="mt-0.5 block break-words text-xs leading-5 text-slate-700">{auditSummary(log)}</span><time dateTime={log.createdAt} className="mt-0.5 block text-[10px] text-slate-500 md:hidden">{auditTime(log.createdAt)}</time></span>
-      <ChevronDown size={16} aria-hidden="true" className={`shrink-0 text-emerald-700 transition ${open ? 'rotate-180' : ''}`} />
-    </button>
-    {open && <div id={`audit-details-${log.id}`} className="min-w-0 border-t border-emerald-100 bg-slate-50/60 p-3 sm:p-4">
-      {loading && <p role="status" className="text-sm text-slate-500">Loading details…</p>}
-      {error && <div role="alert" className="flex flex-wrap items-center gap-3 text-sm text-rose-700"><p>{error}</p><button type="button" onClick={load} className={buttonClass}>Retry details</button></div>}
-      {details && <AuditDetails log={details} />}
-    </div>}
+      <span className="min-w-0 flex-1"><span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5"><span className="text-xs font-bold text-slate-950">{log.actorName}</span><span className="text-[10px] text-slate-500">{roleLabels[log.actorRole] || 'User'}</span><time dateTime={log.createdAt} className="ml-auto hidden text-[10px] text-slate-500 md:block">{auditTime(log.createdAt)}</time></span><span className="mt-0.5 block break-words text-xs leading-5 text-slate-700">{auditSummary(log)}</span>{changeSummary && <span className="mt-0.5 block break-words text-[11px] leading-5 text-slate-500">{changeSummary}</span>}<time dateTime={log.createdAt} className="mt-0.5 block text-[10px] text-slate-500 md:hidden">{auditTime(log.createdAt)}</time></span>
   </article>
-}
-function AuditDetails({ log }) {
-  const changes = auditChanges(log.oldValues, log.newValues)
-  const target = log.context?.target || {}
-  const credentialEvent = /PASSWORD/.test(log.action)
-  return <div className="min-w-0 space-y-4">
-    <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
-      <Fact label="Record" value={auditTargetLabel(log)} /><Fact label="Activity entry" value={`#${log.id}`} />
-      {Object.entries(target).filter(([key]) => !['entityName', 'entityId', 'label'].includes(key)).map(([key, value]) => <Fact key={key} label={auditLabel(key)} value={auditValue(value, key)} />)}
-      {Object.entries(log.context?.counts || {}).map(([key, value]) => <Fact key={key} label={auditLabel(key)} value={auditValue(value, key)} />)}
-    </dl>
-    {log.remarks && <div className="rounded-lg border border-emerald-100 bg-white p-3 text-sm"><p className="font-bold text-slate-800">Reason / notes</p><p className="mt-1 whitespace-pre-wrap break-words leading-6 text-slate-600">{log.remarks}</p></div>}
-    {credentialEvent && <p className="rounded-lg bg-emerald-50 p-3 text-sm font-semibold text-emerald-900">Password changed. Credential values are never recorded.</p>}
-    {changes.length ? <div className="overflow-x-auto rounded-lg border border-emerald-100 bg-white"><table className="w-full min-w-[420px] text-left text-xs"><caption className="sr-only">Changed fields</caption><thead className="bg-emerald-50 text-slate-600"><tr><th className="px-3 py-2">Field</th><th className="px-3 py-2">Before</th><th className="px-3 py-2">After</th></tr></thead><tbody className="divide-y divide-emerald-50">{changes.map(change => <tr key={change.key}><th scope="row" className="max-w-44 break-words px-3 py-2 font-semibold text-slate-700">{change.label}</th><td className="max-w-64 whitespace-pre-wrap break-words px-3 py-2 align-top text-slate-500">{change.before}</td><td className="max-w-64 whitespace-pre-wrap break-words px-3 py-2 align-top font-medium text-emerald-900">{change.after}</td></tr>)}</tbody></table></div> : !credentialEvent && <p className="text-xs text-slate-500">Field-level changes were not recorded for this entry.</p>}
-    <AffectedRecords records={log.context?.affectedRecords || []} />
-    {!log.context?.version && <p className="text-xs leading-5 text-slate-500">Historical entry: details that were not captured at the time are shown as Not recorded.</p>}
-  </div>
-}
-function Fact({ label, value }) { return <div className="min-w-0"><dt className="text-slate-500">{label}</dt><dd className="mt-1 whitespace-pre-wrap break-words font-semibold leading-5 text-slate-800">{value}</dd></div> }
-function AffectedRecords({ records }) {
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  if (!records.length) return null
-  const filtered = records.filter(row => [row.unitNumber, row.fullName, row.entityId, row.periodStart, row.periodEnd, row.periodId].join(' ').toLowerCase().includes(search.toLowerCase()))
-  const pageCount = Math.max(1, Math.ceil(filtered.length / 25)), safePage = Math.min(page, pageCount)
-  return <section aria-label="Affected records" className="min-w-0 rounded-lg border border-emerald-100 bg-white p-3">
-    <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-black text-slate-900">Affected records ({records.length})</h3><input type="search" aria-label="Search affected units" value={search} onChange={event => { setSearch(event.target.value); setPage(1) }} placeholder="Find a unit or record" className="min-h-11 max-w-full rounded-lg border border-emerald-200 px-3 text-xs" /></div>
-    <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[460px] text-left text-xs"><thead className="bg-emerald-50"><tr><th className="p-2">Unit / record</th><th className="p-2">Before</th><th className="p-2">After</th></tr></thead><tbody className="divide-y divide-emerald-50">{filtered.slice((safePage - 1) * 25, safePage * 25).map((row, index) => {
-      const changes = auditChanges(row.before, row.after)
-      return <tr key={`${row.entityId || row.unitId}-${index}`}><th scope="row" className="p-2 align-top font-semibold text-slate-800">{row.unitNumber ? `Unit ${row.unitNumber}` : row.unitId ? `Unit ID ${row.unitId}` : auditLabel(row.entityName, entityLabels)}<span className="mt-1 block font-normal text-slate-500">{auditLabel(row.entityName || 'METER_READING', entityLabels)}{row.entityId ? ` #${row.entityId}` : ''}</span>{row.fullName && <span className="mt-1 block font-normal">{row.fullName}</span>}</th><td className="max-w-64 whitespace-pre-wrap break-words p-2 align-top text-slate-500">{row.before === null ? 'None' : changes.length ? changes.map(change => `${change.label}: ${change.before}`).join('\n') : 'Not recorded'}</td><td className="max-w-64 whitespace-pre-wrap break-words p-2 align-top text-emerald-900">{row.after === null ? 'None' : changes.length ? changes.map(change => `${change.label}: ${change.after}`).join('\n') : 'Not recorded'}</td></tr>
-    })}</tbody></table></div>
-    {!filtered.length && <p className="py-3 text-xs text-slate-500">No affected records match.</p>}
-    <div className="audit-pagination mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500"><span>{filtered.length} matching records · Page {safePage} of {pageCount}</span><div className="flex gap-2"><button type="button" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)} className={buttonClass}>Previous units</button><button type="button" disabled={safePage >= pageCount} onClick={() => setPage(safePage + 1)} className={buttonClass}>Next units</button></div></div>
-  </section>
 }

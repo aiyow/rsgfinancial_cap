@@ -428,7 +428,7 @@ router.post("/resend-verification", validateBody(resendVerificationSchema), asyn
     if (!user) {
       return res.json({ message: "If an account exists for that email, a verification link will be sent." });
     }
-    if (user.approvalStatus === "APPROVED" || user.emailVerified) {
+    if (user.emailVerified) {
       return res.json({ message: user.approvalStatus === "APPROVED" ? "This account is approved. You can sign in." : "Your email is verified. Wait for Admin approval before signing in." });
     }
 
@@ -451,7 +451,9 @@ router.post("/resend-verification", validateBody(resendVerificationSchema), asyn
       [hashVerificationToken(token), verificationExpiryDate(), user.id]
     );
     await sendVerificationEmail({ fullName: user.fullName, email: user.email, token });
-    return res.json({ message: "Verification email sent. Open its link to verify your email. Admin approval is still required." });
+    return res.json({ message: user.approvalStatus === 'APPROVED'
+      ? 'Verification email sent. Open its link to verify your email. Your account remains approved.'
+      : 'Verification email sent. Open its link to verify your email. Admin approval is still required.' });
   } catch (error) {
     if (error.code === "EMAIL_NOT_CONFIGURED") error.status = 503;
     return next(error);
@@ -485,7 +487,9 @@ router.get("/verify-email", async (req, res, next) => {
     await writeAuditLog({ client, actorUserId: result.rows[0].id, entityName: "USER_ACCOUNT", entityId: result.rows[0].id, action: "VERIFY_EMAIL", oldValues: { emailVerified: false }, newValues: { emailVerified: true, fullName: result.rows[0].fullName } });
     await client.query("COMMIT");
     return res.json({
-      message: "Email verified. Admin approval is still required before signing in.",
+      message: result.rows[0].approvalStatus === 'APPROVED'
+        ? 'Email verified. Your account remains approved. Return to your statement to download its protected PDF.'
+        : 'Email verified. Admin approval is still required before signing in.',
       user: result.rows[0],
     });
   } catch (error) {

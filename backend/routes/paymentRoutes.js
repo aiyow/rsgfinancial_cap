@@ -576,7 +576,6 @@ router.delete("/:id", allowRoles("ADMIN"), requireId, async (req, res, next) => 
       return res.status(409).json({ message: "Only rejected payment submissions can be permanently deleted." });
     }
 
-    await client.query("DELETE FROM payment_submissions WHERE id = $1", [req.resourceId]);
     await writeAuditLog({
       client,
       actorUserId: req.user.id,
@@ -591,6 +590,7 @@ router.delete("/:id", allowRoles("ADMIN"), requireId, async (req, res, next) => 
       },
       remarks: "Admin permanently deleted a rejected payment proof.",
     });
+    await client.query("DELETE FROM payment_submissions WHERE id = $1", [req.resourceId]);
     await client.query("COMMIT");
 
     if (locked.rows[0].receipt_storage === "CLOUDINARY" && locked.rows[0].receipt_cloudinary_public_id) {

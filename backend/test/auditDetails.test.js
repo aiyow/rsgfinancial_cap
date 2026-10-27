@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { auditTarget, changedAuditRecords, presentAudit, sameAuditValues, sanitizeAudit } from '../services/auditDetails.js';
+import { auditSummaryChanges, auditTarget, changedAuditRecords, presentAudit, sameAuditValues, sanitizeAudit } from '../services/auditDetails.js';
 import { writeAuditLog } from '../services/auditLog.js';
 import { saveDeliveryOutcomes } from '../services/auditDelivery.js';
 
@@ -36,6 +36,20 @@ test('common writer skips no-ops and sanitizes data before storage', async () =>
   assert.equal(calls.length, 1); assert.match(calls[0].sql, /context/);
   assert.ok(!JSON.stringify(calls[0].values).includes('private'));
   assert.equal(JSON.parse(calls[0].values[7]).target.unitNumber, '233');
+});
+
+test('summary changes allow only safe scalar fields and category invoice changes', () => {
+  const before = { is_active: false, water_rate_per_cubic_m: 0, invoices: [{ chargeType: 'WATER', invoiceNumber: null }], password: 'private', receiptUrl: 'private', rawText: 'private', nested: { secret: 'private' } };
+  const after = { isActive: true, waterRatePerCubicM: 23, invoices: [{ chargeType: 'WATER', invoiceNumber: 'INV-42' }], password: 'new-private', receiptUrl: 'new-private', rawText: 'new-private', nested: { secret: 'new-private' } };
+  const changes = auditSummaryChanges(before, after);
+  assert.equal(changes.length, 3);
+  assert.deepEqual(changes[0], { field: 'isActive', before: false, after: true });
+  assert.deepEqual(changes[2], { field: 'invoiceNumber', category: 'WATER', before: null, after: 'INV-42' });
+  assert.ok(!JSON.stringify(changes).includes('private'));
+  const row = presentAudit({ entityName: 'PAYMENT_SUBMISSION', entityId: 174, oldValues: before, newValues: after });
+  assert.equal(row.context.changeCount, 3); assert.equal(row.oldValues, undefined); assert.equal(row.newValues, undefined);
+  assert.deepEqual(auditSummaryChanges({ invoices: [{ chargeType: 'WATER' }] }, { invoices: [{ chargeType: 'WATER', invoiceNumber: 'INV-42' }] }), [], 'Missing historical invoice values must not be described as unset');
+  assert.deepEqual(auditSummaryChanges({ invoices: [{ chargeType: 'WATER', invoiceNumber: null }] }, { invoices: [{ chargeType: 'WATER', invoiceNumber: { password: 'private' } }] }), [], 'Nested invoice objects must not enter scalar summaries');
 });
 test('automatic changes do not create user activity while delivery states still persist', async () => {
   const calls = [];

@@ -4,7 +4,11 @@ export const roleLabels = { ADMIN: 'Admin', COLLECTOR: 'Billing Associate', RESI
 const fields = { id: 'Record ID', entityId: 'Record ID', unitId: 'Unit ID', unitNumber: 'Unit', fullName: 'Name', email: 'Email', isActive: 'Account active', approvalStatus: 'Account approval', emailVerified: 'Email verified', periodStart: 'Period start', periodEnd: 'Period end', dueDate: 'Due date', waterRatePerCubicM: 'Water rate / m³', associationDuesRatePerSqm: 'Association dues rate / m²', latePenaltyPercent: 'Late penalty (%)', latePenaltyAmount: 'Late penalty', status: 'Status', reviewStatus: 'Review status', previousReading: 'Previous reading (m³)', currentReading: 'Current reading (m³)', readingCount: 'Meter readings', billCount: 'SOAs', periodCount: 'Billing periods', warningCount: 'Warnings', removedBills: 'SOAs removed', officialReceiptNo: 'Transaction reference', ocrReferenceNo: 'Receipt reference (OCR)', verifiedReferenceNo: 'Receipt reference (verified)', verifiedAmount: 'Verified amount', paymentPurpose: 'Payment purpose', paymentMethod: 'Payment method', invoiceNumber: 'Invoice number', publishedAt: 'Published at', publishedBy: 'Published by', credentialChanged: 'Password changed', sessionsInvalidated: 'Previous sessions invalidated', billableAreaSqm: 'Billable area (m²)', relationshipType: 'Relationship', isPrimaryPayer: 'Primary payer', occupancyStatus: 'Occupancy', assetPresent: 'Asset available', mimeType: 'File type', originalFilename: 'Filename', receiptOriginalName: 'Receipt filename', forecastsRefreshed: 'Forecasts refreshed', recommendationsRefreshed: 'Recommendations refreshed', soaReissued: 'SOAs reissued', cancelledEmailDeliveries: 'Cancelled email deliveries', queuedEmails: 'Emails queued', unpublishedCount: 'SOAs unpublished' }
 const hidden = /password|secret|token|otp|hash|raw_?text|ocrRawText|workbook_?data|buffer|cloudinary|public_?id|receipt_?path|(?:asset|receipt|signed|private|delivery).*url/i
 const omitted = /^(createdAt|updatedAt|created_at|updated_at|bills|billIds|readings|periods)$/
-export function auditLabel(value, labels = {}) { return labels[value] || fields[value] || String(value || 'Not recorded').replace(/([a-z])([A-Z])/g, '$1 $2').replaceAll('_', ' ').replace(/^./, c => c.toUpperCase()) }
+export function auditLabel(value, labels = {}) {
+  if (labels[value] || fields[value]) return labels[value] || fields[value]
+  const text = String(value || 'Not recorded')
+  return (/^[A-Z_]+$/.test(text) ? text.toLowerCase() : text).replace(/([a-z])([A-Z])/g, '$1 $2').replaceAll('_', ' ').replace(/^./, c => c.toUpperCase())
+}
 export function auditTime(value) {
   if (!value || Number.isNaN(Date.parse(value))) return 'Not recorded'
   return new Intl.DateTimeFormat('en-PH', { timeZone: 'Asia/Manila', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(value))
@@ -15,18 +19,49 @@ export function auditDate(value) {
 }
 export function auditTargetLabel(log) {
   const target = log.context?.target || { ...log.oldValues, ...log.newValues }
-  let label = target.label || `${auditLabel(log.entityName, entityLabels)}${log.entityId != null ? ` #${log.entityId}` : ''}`
-  if (log.entityName === 'PAYMENT_SUBMISSION' && target.paymentReference) label = `Payment ${target.paymentReference}`
-  if (target.fullName && log.entityName === 'USER_ACCOUNT') label += ` · ${target.fullName}`
-  if (target.unitNumber) label += ` · Unit ${target.unitNumber}`
+  let label = target.label || auditLabel(log.entityName, entityLabels)
+  if (log.entityName === 'UNIT' && target.unitNumber) label = `Unit ${target.unitNumber}`
+  if (target.fullName && ['USER_ACCOUNT', 'PAYMENT_SUBMISSION', 'UNIT_ASSIGNMENT', 'UNIT_BILL', 'SOA_EMAIL_DELIVERY', 'BILLING_ERROR_REPORT'].includes(log.entityName)) label += ` for ${target.fullName}`
+  if (target.unitNumber && log.entityName !== 'UNIT') label += ` · Unit ${target.unitNumber}`
+  if (log.entityName === 'PAYMENT_SUBMISSION') {
+    if (target.paymentReference) label += ` · ${target.paymentReference}`
+    const amount = target.amount ?? target.detectedAmount
+    if (amount !== null && amount !== undefined && String(amount).trim() !== '' && Number.isFinite(Number(amount))) label += ` · ${auditValue(amount, 'amount')}${target.amount == null ? ' detected (unverified)' : ''}`
+    const purpose = { WATER: 'Water', ASSOCIATION_DUES: 'Association dues', COMBINED: 'Water + association dues' }[target.paymentPurpose]
+    if (purpose) label += ` · ${purpose}`
+    const method = { CASH: 'Cash', GCASH: 'GCash', BANK_TRANSFER: 'Bank transfer' }[target.paymentMethod]
+    if (method) label += ` · ${method}`
+  }
+  if (log.entityName === 'USER_ACCOUNT' && target.email) label += ` · ${target.email}`
   if (target.periodStart && target.periodEnd) label += ` · ${auditDate(target.periodStart)} – ${auditDate(target.periodEnd)}`
   else if (target.periodMonth) label += ` · ${target.periodMonth}`
+  if (target.relationshipType) label += ` · ${auditLabel(target.relationshipType)}`
+  if (target.category) label += ` · ${auditLabel(target.category)}`
+  if (target.recommendationType) label += ` · ${auditLabel(target.recommendationType)}`
   if (target.type) label += ` · ${target.type === 'qr' ? 'Payment QR code' : auditLabel(target.type)}`
+  if (!target.label && !target.fullName && !target.unitNumber && !target.paymentReference && !target.periodStart && !target.periodMonth && log.entityId != null) label += ` · Identifying details not recorded (record ${log.entityId})`
   return label
 }
 export function auditSummary(log) {
   const action = log.entityName === 'BILLING_ERROR_REPORT' && log.action === 'CREATE' ? 'SUBMIT' : log.action
-  return `${auditLabel(action, actionLabels)} ${auditTargetLabel(log)}`
+  let target = auditTargetLabel(log)
+  if (log.entityName === 'PAYMENT_SUBMISSION' && ['EDIT_INVOICES', 'PAYMENT_REFERENCES_UPDATED'].includes(action)) target = target.replace(/^Payment for /, '')
+  return `${auditLabel(action, actionLabels)} ${target}`
+}
+export function auditChangeSummary(log) {
+  const changes = (log.context?.changes || []).map(change => {
+    const category = { WATER: 'Water', ASSOCIATION_DUES: 'Association dues' }[change.category]
+    const field = category && change.field === 'invoiceNumber' ? `${category} invoice` : auditLabel(change.field)
+    const value = item => change.field === 'invoiceNumber' && (item === null || item === '') ? 'Not set' : auditValue(item, change.field)
+    return `${field}: ${value(change.before)} → ${value(change.after)}`
+  })
+  const more = (log.context?.changeCount || changes.length) - changes.length
+  if (more > 0) changes.push(`${more} more ${more === 1 ? 'field changed' : 'fields changed'}`)
+  const counts = log.context?.counts || {}
+  for (const [key, label] of [['unpublishedCount', 'SOAs unpublished'], ['billCount', 'SOAs'], ['readingCount', 'meter readings'], ['removedBills', 'SOAs removed']]) {
+    if (counts[key] !== undefined && counts[key] !== null && Number.isFinite(Number(counts[key]))) changes.push(`${Number(counts[key]).toLocaleString('en-PH')} ${label}`)
+  }
+  return changes.join(' · ')
 }
 export function auditValue(value, field = '') {
   if (value === undefined) return 'Not recorded'

@@ -4,6 +4,7 @@ import { allowRoles, requireAuth } from '../middleware/authMiddleware.js';
 import { requireId } from '../middleware/validate.js';
 import { presentAudit } from '../services/auditDetails.js';
 import { isBillingDate } from '../services/billingPeriodPolicy.js';
+import { recoverAuditIdentities } from '../services/auditIdentity.js';
 
 const router = express.Router();
 router.use(requireAuth, allowRoles('ADMIN'));
@@ -11,6 +12,10 @@ const actorRole = "COALESCE(a.actor_role_snapshot, usr.role, CASE WHEN a.context
 const actorName = "COALESCE(a.actor_name_snapshot, usr.full_name, CASE WHEN " + actorRole + "='SYSTEM' THEN 'System' ELSE 'Unknown actor' END)";
 const userActivity = "COALESCE(a.context->>'origin','USER')<>'SYSTEM' AND " + actorRole + " IN ('ADMIN','COLLECTOR','RESIDENT')";
 const select = 'SELECT \'AUDIT_LOG\' AS source, a.id, a.created_at AS "createdAt", a.entity_name AS "entityName", a.entity_id AS "entityId", a.action, a.remarks, a.old_values AS "oldValues", a.new_values AS "newValues", a.context, a.actor_user_id AS "actorUserId", ' + actorName + ' AS "actorName", ' + actorRole + ' AS "actorRole" FROM audit_logs a LEFT JOIN users usr ON usr.id=a.actor_user_id';
+const identitySearch = alias => "concat_ws(' '," + [
+  ...['label', 'unitNumber', 'paymentReference', 'fullName', 'periodStart', 'periodEnd', 'periodMonth', 'email', 'category'].map(key => `${alias}.context->'target'->>'${key}'`),
+  ...['old_values', 'new_values'].flatMap(column => ['periodStart', 'periodEnd', 'period_start_snapshot', 'period_end_snapshot', 'unitNumber', 'unit_number_snapshot', 'fullName', 'payer_name_snapshot', 'email', 'officialReceiptNo', 'official_receipt_no', 'ocrReferenceNo', 'verifiedReferenceNo'].map(key => `${alias}.${column}->>'${key}'`)),
+].join(',') + ')';
 
 router.get('/', async (req, res, next) => {
   try {
@@ -43,8 +48,14 @@ router.get('/', async (req, res, next) => {
     const search = String(req.query.q || '').trim().slice(0, 200);
     if (search) {
       const param = bind('%' + search.replace(/[\\%_]/g, '\\$&') + '%');
-      conditions.push("(concat_ws(' '," + actorName + ",a.entity_name,a.entity_id::text,a.action,a.remarks,a.context->'target'->>'label',a.context->'target'->>'unitNumber',a.context->'target'->>'paymentReference',a.context->'target'->>'fullName',a.context->'target'->>'periodStart',a.context->'target'->>'periodEnd',a.old_values->>'periodStart',a.old_values->>'periodEnd',a.new_values->>'periodStart',a.new_values->>'periodEnd',a.old_values->>'unitNumber',a.new_values->>'unitNumber',a.old_values->>'fullName',a.new_values->>'fullName',a.old_values->>'email',a.new_values->>'email',a.old_values->>'officialReceiptNo',a.new_values->>'officialReceiptNo',a.old_values->>'ocrReferenceNo',a.new_values->>'ocrReferenceNo',a.old_values->>'verifiedReferenceNo',a.new_values->>'verifiedReferenceNo') ILIKE " + param +
-        " OR EXISTS(SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(a.context->'affectedRecords')='array' THEN a.context->'affectedRecords' ELSE '[]'::jsonb END) r WHERE concat_ws(' ',r->>'unitNumber',r->>'fullName',r->>'entityId') ILIKE " + param + "))");
+      conditions.push(`(concat_ws(' ',${actorName},a.entity_name,a.entity_id::text,a.action,a.remarks,${identitySearch('a')}) ILIKE ${param}
+        OR EXISTS(SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(a.context->'affectedRecords')='array' THEN a.context->'affectedRecords' ELSE '[]'::jsonb END) r WHERE concat_ws(' ',r->>'unitNumber',r->>'fullName',r->>'entityId') ILIKE ${param})
+        OR EXISTS(SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(a.new_values->'invoices')='array' THEN a.new_values->'invoices' ELSE '[]'::jsonb END) invoice WHERE invoice->>'invoiceNumber' ILIKE ${param})
+        OR EXISTS(SELECT 1 FROM audit_logs h
+          LEFT JOIN unit_bills b ON b.id::text=COALESCE(h.context->'target'->>'billId',h.new_values->>'targetBillId',h.old_values->>'targetBillId',h.new_values->>'unit_bill_id',h.old_values->>'unit_bill_id',CASE WHEN h.entity_name IN ('UNIT_BILL','SOA_EMAIL_DELIVERY') THEN h.entity_id::text END)
+          WHERE h.entity_name=a.entity_name AND h.entity_id=a.entity_id AND (h.created_at,h.id)<=(a.created_at,a.id)
+            AND (concat_ws(' ',${identitySearch('h')},CASE WHEN h.entity_name='PAYMENT_SUBMISSION' AND h.action='SUBMIT' AND h.actor_role_snapshot='RESIDENT' THEN h.actor_name_snapshot END,b.unit_number_snapshot,b.payer_name_snapshot,b.period_start_snapshot,b.period_end_snapshot) ILIKE ${param}))
+        )`);
     }
     const where = conditions.length ? ' WHERE ' + conditions.join(' AND ') : '';
     const source = ' FROM audit_logs a LEFT JOIN users usr ON usr.id=a.actor_user_id';
@@ -56,7 +67,8 @@ router.get('/', async (req, res, next) => {
     const result = await pool.query(select + where + ' ORDER BY a.created_at DESC,a.id DESC LIMIT $' + (values.length + 1) + ' OFFSET $' + (values.length + 2), [...values, pageSize, (safePage - 1) * pageSize]);
     const facets = (await pool.query('SELECT ARRAY_AGG(DISTINCT a.entity_name ORDER BY a.entity_name) AS entities, ARRAY_AGG(DISTINCT a.action ORDER BY a.action) AS actions' + source + ' WHERE ' + userActivity)).rows[0];
     res.set('Cache-Control', 'no-store');
-    return res.json({ logs: result.rows.map(log => presentAudit(log)), pagination: { page: safePage, pageSize, pageCount, total: summary.total }, summary, filters: { entities: facets.entities || [], actions: facets.actions || [] } });
+    const logs = await recoverAuditIdentities(pool, result.rows);
+    return res.json({ logs: logs.map(log => presentAudit(log)), pagination: { page: safePage, pageSize, pageCount, total: summary.total }, summary, filters: { entities: facets.entities || [], actions: facets.actions || [] } });
   } catch (error) { return next(error); }
 });
 
@@ -65,7 +77,8 @@ router.get('/:id', requireId, async (req, res, next) => {
     const result = await pool.query(select + ' WHERE a.id=$1 AND ' + userActivity, [req.resourceId]);
     if (!result.rows[0]) return res.status(404).json({ message: 'Activity entry not found.' });
     res.set('Cache-Control', 'no-store');
-    return res.json({ log: presentAudit(result.rows[0], { detail: true }) });
+    const [log] = await recoverAuditIdentities(pool, result.rows);
+    return res.json({ log: presentAudit(log, { detail: true }) });
   } catch (error) { return next(error); }
 });
 export default router;
