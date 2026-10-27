@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import { buildAdminWaterGuidance } from '../../../backend/services/adminWaterGuidance.js'
+import { buildAdminWaterGuidance } from "../../../backend/services/analytics.js";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
 const output = fileURLToPath(new URL('../../../artifacts/analytics-chart-insights/', import.meta.url))
 await mkdir(output, { recursive: true })

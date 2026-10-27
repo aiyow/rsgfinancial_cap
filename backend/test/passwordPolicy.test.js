@@ -1,8 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFile } from 'node:fs/promises';
-import { passwordIssues, passwordError, passwordRequirements } from '../services/passwordPolicy.js';
-import { newPasswordSchema } from '../services/passwordValidation.js';
+import {
+  passwordIssues,
+  passwordError,
+  passwordRequirements,
+  newPasswordSchema,
+} from "../services/passwords.js";
+
 import authRoutes from '../routes/authRoutes.js';
 import userRoutes from '../routes/userRoutes.js';
 
@@ -56,8 +61,10 @@ test('confirmation is exact, including spaces and case', () => {
 });
 
 test('browser and API policy stay identical across independent deployment roots', async () => {
-  assert.equal(await readFile(new URL('../services/passwordPolicy.js', import.meta.url), 'utf8'),
-    await readFile(new URL('../../frontend/src/utils/passwordPolicy.js', import.meta.url), 'utf8'));
+  const service = (await readFile(new URL('../services/passwords.js', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const policySection = service.split('// #region Password policy\n\n')[1].split('\n\n// #endregion')[0];
+  assert.equal(policySection.trim(),
+    (await readFile(new URL('../../frontend/src/utils/passwordPolicy.js', import.meta.url), 'utf8')).replace(/\r\n/g, '\n').trim());
 });
 
 // Exercise the actual route validation middleware without opening a DB connection,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ChevronDown, Mail, RotateCcw, TriangleAlert } from 'lucide-react'
+import { ChevronDown, LoaderCircle, Mail, RotateCcw, TriangleAlert } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import UnpublishBatchModal from '../../components/UnpublishBatchModal'
@@ -78,12 +78,14 @@ export default function AdminSoaBatchPage() {
   const [notice, setNotice] = useState({ error: '', message: '' })
   const [publishConfirmation, setPublishConfirmation] = useState(null)
   const [actionConfirmation, setActionConfirmation] = useState(null)
-  const [unpublishAllConfirmation, setUnpublishAllConfirmation] = useState(false)
+  const [unpublishConfirmation, setUnpublishConfirmation] = useState(null)
 
   const publishedCount = useMemo(() => bills.filter((bill) => bill.publishedAt).length, [bills])
   const unpublished = useMemo(() => bills.filter((bill) => !bill.publishedAt), [bills])
   const allPublished = bills.length > 0 && publishedCount === bills.length
-  const publishSelectedDisabled = busy || selectedIds.length === 0
+  const selectedHiddenIds = useMemo(() => bills.filter(bill => !bill.publishedAt && selectedIds.includes(bill.id)).map(bill => bill.id), [bills, selectedIds])
+  const selectedPublishedIds = useMemo(() => bills.filter(bill => bill.publishedAt && selectedIds.includes(bill.id)).map(bill => bill.id), [bills, selectedIds])
+  const publishSelectedDisabled = busy || selectedHiddenIds.length === 0
   const filteredBills = useMemo(() => {
     const term = search.trim().toLowerCase()
     return bills
@@ -97,6 +99,7 @@ export default function AdminSoaBatchPage() {
   const firstBillIndex = (currentPage - 1) * SOAS_PER_PAGE
   const visibleBills = filteredBills.slice(firstBillIndex, firstBillIndex + SOAS_PER_PAGE)
   const lastBillIndex = Math.min(firstBillIndex + SOAS_PER_PAGE, filteredBills.length)
+  const pageSelected = visibleBills.length > 0 && visibleBills.every(bill => selectedIds.includes(bill.id))
 
   useEffect(() => {
     let active = true
@@ -105,7 +108,7 @@ export default function AdminSoaBatchPage() {
         const data = await apiRequest(`/api/bills?billingPeriodId=${periodId}`, { token })
         if (!active) return
         setBills(data.bills)
-        setSelectedIds((current) => current.filter((id) => data.bills.some((bill) => bill.id === id && !bill.publishedAt)))
+        setSelectedIds((current) => current.filter((id) => data.bills.some((bill) => bill.id === id)))
       } catch (requestError) {
         if (active) setNotice({ error: requestError.message, message: '' })
       }
@@ -115,7 +118,14 @@ export default function AdminSoaBatchPage() {
   }, [periodId, token])
 
   function toggleSelection(billId) {
+    if (busy) return
     setSelectedIds((current) => current.includes(billId) ? current.filter((id) => id !== billId) : [...current, billId])
+  }
+
+  function togglePageSelection() {
+    if (busy) return
+    const pageIds = new Set(visibleBills.map(bill => bill.id))
+    setSelectedIds(current => pageSelected ? current.filter(id => !pageIds.has(id)) : [...new Set([...current, ...pageIds])])
   }
 
   async function publish(body, successMessage) {
@@ -148,8 +158,9 @@ export default function AdminSoaBatchPage() {
   }
 
   function requestPublishSelected() {
+    if (busy || !selectedHiddenIds.length) return
     setPublishConfirmation({
-      body: { billIds: selectedIds }, count: selectedIds.length, title: 'Publish selected SOAs?',
+      body: { billIds: selectedHiddenIds }, count: selectedHiddenIds.length, title: 'Publish selected SOAs?',
       message: 'Only the selected residents will receive and be able to view these Statements of Account.',
       successMessage: 'Published the selected SOAs.',
     })
@@ -215,18 +226,23 @@ export default function AdminSoaBatchPage() {
     }
   }
 
-  async function unpublishAll(currentPassword) {
-    if (busy) return
+  async function unpublishBatch(currentPassword) {
+    if (busy || !unpublishConfirmation) return
+    const selected = unpublishConfirmation.mode === 'SELECTED'
+    const billIds = selected ? unpublishConfirmation.billIds : bills.map(bill => bill.id)
+    const affected = new Set(billIds)
     setBusy(true)
     setNotice({ error: '', message: '' })
     try {
-      const data = await apiRequest(`/api/billing-periods/${periodId}/unpublish`, { method: 'POST', token, body: { currentPassword } })
-      setBills(current => current.map(bill => ({ ...bill, publishedAt: null, publishedBy: null, emailDelivery: null })))
-      setSelectedIds([])
-      setPublishFilter('ALL')
-      setDeliveryFilter('ALL')
-      setPage(1)
-      setUnpublishAllConfirmation(false)
+      const data = await apiRequest(`/api/billing-periods/${periodId}/${selected ? 'unpublish-selected' : 'unpublish'}`, { method: 'POST', token, body: { currentPassword, ...(selected ? { billIds } : {}) } })
+      setBills(current => current.map(bill => affected.has(bill.id) ? { ...bill, publishedAt: null, publishedBy: null, emailDelivery: null } : bill))
+      setSelectedIds(current => current.filter(id => !affected.has(id)))
+      if (!selected) {
+        setPublishFilter('ALL')
+        setDeliveryFilter('ALL')
+        setPage(1)
+      }
+      setUnpublishConfirmation(null)
       setNotice({ error: '', message: data.message })
       try {
         const refreshed = await apiRequest(`/api/bills?billingPeriodId=${periodId}`, { token })
@@ -251,18 +267,26 @@ export default function AdminSoaBatchPage() {
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
       <Panel title={`${bills.length} Statements of Account`} description={`${publishedCount} published to Residents | ${unpublished.length} still hidden`}>
         <div className="mb-5 flex flex-wrap gap-3">
-          {allPublished && <button type="button" disabled={busy} onClick={() => setUnpublishAllConfirmation(true)} className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50">Unpublish all</button>}
+          {allPublished && <button type="button" disabled={busy} onClick={() => setUnpublishConfirmation({ mode: 'ALL' })} className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50">Unpublish all</button>}
           <button disabled={busy || unpublished.length === 0} onClick={requestPublishAll} className="rounded-lg border border-[#75ba8e] bg-white px-4 py-2 text-sm font-bold text-[#237a4a] shadow-sm transition hover:border-[#237a4a] hover:bg-[#2f8f5b] hover:text-white hover:shadow-md focus:bg-[#2f8f5b] focus:text-white focus:outline-none focus:ring-2 focus:ring-[#2f8f5b] focus:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-white disabled:text-slate-400 disabled:shadow-none">Publish all remaining</button>
-          <button type="button" disabled={publishSelectedDisabled} aria-disabled={publishSelectedDisabled} title={publishSelectedDisabled ? 'Select at least one hidden SOA to publish.' : 'Publish the selected SOAs.'} onClick={requestPublishSelected} className={`rounded-lg border px-4 py-2 text-sm font-bold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#2f8f5b] focus:ring-offset-2 ${publishSelectedDisabled ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 shadow-none' : 'border-[#75ba8e] bg-white text-[#237a4a] hover:border-[#237a4a] hover:bg-[#2f8f5b] hover:text-white hover:shadow-md focus:bg-[#2f8f5b] focus:text-white active:scale-[0.98]'}`}>Publish selected{selectedIds.length ? ` (${selectedIds.length})` : ''}</button>
+          <button type="button" disabled={publishSelectedDisabled} aria-disabled={publishSelectedDisabled} title={publishSelectedDisabled ? 'Select at least one hidden SOA to publish.' : 'Publish the selected SOAs.'} onClick={requestPublishSelected} className={`rounded-lg border px-4 py-2 text-sm font-bold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#2f8f5b] focus:ring-offset-2 ${publishSelectedDisabled ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 shadow-none' : 'border-[#75ba8e] bg-white text-[#237a4a] hover:border-[#237a4a] hover:bg-[#2f8f5b] hover:text-white hover:shadow-md focus:bg-[#2f8f5b] focus:text-white active:scale-[0.98]'}`}>Publish selected{selectedHiddenIds.length ? ` (${selectedHiddenIds.length})` : ''}</button>
+          <button type="button" disabled={busy || selectedPublishedIds.length === 0} title={selectedPublishedIds.length ? 'Unpublish the selected published SOAs.' : 'Select at least one published SOA to unpublish.'} onClick={() => setUnpublishConfirmation({ mode: 'SELECTED', billIds: [...selectedPublishedIds] })} className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-900 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-50">Unpublish selected{selectedPublishedIds.length ? ` (${selectedPublishedIds.length})` : ''}</button>
         </div>
         <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50 p-4"><p className="mb-3 text-sm font-black text-slate-800">Filter Statements of Account</p><div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_170px_180px]"><label className="text-xs font-bold text-slate-600">Search unit or payer<input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1) }} placeholder="e.g. 401 or owner name" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-normal" /></label><FilterPopover label="Publication" value={publishFilter} open={publishMenuOpen} onToggle={() => { setPublishMenuOpen((current) => !current); setDeliveryMenuOpen(false) }} onSelect={(value) => { setPublishFilter(value); setPage(1); setPublishMenuOpen(false) }} options={[{ value: 'ALL', label: 'All SOAs' }, { value: 'PUBLISHED', label: 'Published' }, { value: 'HIDDEN', label: 'Hidden' }]} /><FilterPopover label="Email delivery" value={deliveryFilter} open={deliveryMenuOpen} onToggle={() => { setDeliveryMenuOpen((current) => !current); setPublishMenuOpen(false) }} onSelect={(value) => { setDeliveryFilter(value); setPage(1); setDeliveryMenuOpen(false) }} options={[{ value: 'ALL', label: 'All statuses' }, { value: 'SENT', label: 'Sent' }, { value: 'FAILED', label: 'Failed' }, { value: 'PENDING', label: 'Pending' }, { value: 'NO_RECIPIENTS', label: 'No recipients' }]} /></div></div>
-        <p className="mb-3 text-sm text-slate-500">Showing {filteredBills.length ? `${firstBillIndex + 1}-${lastBillIndex}` : 0} of {filteredBills.length} matching SOAs ({bills.length} total), sorted by unit number.</p>
-        <div className="overflow-x-auto rounded-xl border border-slate-100"><table className="w-full min-w-[1080px] text-left text-sm"><thead className="bg-slate-50 text-xs capitalize tracking-wide text-slate-500"><tr><th className="px-4 py-3">Select</th><th className="px-4 py-3">Unit</th><th className="px-4 py-3">Payer</th><th className="px-4 py-3">Due date</th><th className="px-4 py-3">Publish status</th><th className="px-4 py-3">Email delivery</th><th className="px-4 py-3">Total</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-300">{visibleBills.map((bill) => <tr key={bill.id} className="hover:bg-slate-50"><td className="px-4 py-3"><input type="checkbox" checked={selectedIds.includes(bill.id)} disabled={Boolean(bill.publishedAt)} onChange={() => toggleSelection(bill.id)} /></td><td className="px-4 py-3 font-black">Unit {bill.unitNumber}</td><td className="px-4 py-3">{bill.payerName || 'Unassigned'}</td><td className="px-4 py-3 whitespace-nowrap">{String(bill.dueDate).slice(0, 10)}</td><td className="px-4 py-3">{bill.publishedAt ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Published</span> : <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">Hidden</span>}</td><td className="px-4 py-3">{bill.publishedAt && <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${Number(bill.emailDelivery?.failed || 0) ? 'bg-rose-50 text-rose-700' : 'bg-sky-50 text-sky-700'}`}>{deliveryLabel(bill.emailDelivery)}</span>}</td><td className="px-4 py-3 font-black whitespace-nowrap">PHP {Number(bill.totalAmount).toFixed(2)}</td><td className="px-4 py-3"><div className="flex justify-end gap-2"><Link className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700" to={`/admin/soa/bills/${bill.id}`}>{bill.publishedAt ? 'Open SOA' : 'Review / Publish'}</Link>{bill.publishedAt && <button type="button" disabled={busy} onClick={() => requestUnpublish(bill)} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50">Unpublish</button>}{bill.publishedAt && Number(bill.emailDelivery?.failed || 0) > 0 && <button type="button" disabled={busy} onClick={() => retryEmail(bill)} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"><RotateCcw size={14} />Retry email</button>}{bill.publishedAt && (Number(bill.emailDelivery?.sent || 0) + Number(bill.emailDelivery?.failed || 0)) > 0 && <button type="button" disabled={busy} onClick={() => requestResendEmail(bill)} className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"><Mail size={14} />Resend SOA</button>}</div></td></tr>)}</tbody></table></div>
+        {busy && <p role="status" className="mb-3 flex items-center gap-2 text-sm text-emerald-800"><LoaderCircle size={17} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />Updating statements of account. Selection will be available when this finishes.</p>}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-500">Showing {filteredBills.length ? `${firstBillIndex + 1}-${lastBillIndex}` : 0} of {filteredBills.length} matching SOAs ({bills.length} total), sorted by unit number.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" disabled={busy || visibleBills.length === 0} onClick={togglePageSelection} className="min-h-11 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50">{pageSelected ? 'Deselect page' : 'Select page'}</button>
+            {selectedIds.length > 0 && <button type="button" disabled={busy} onClick={() => setSelectedIds([])} className="min-h-11 rounded-lg px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50">Clear selection ({selectedIds.length})</button>}
+          </div>
+        </div>
+        <div className="overflow-x-auto rounded-xl border border-slate-100"><table className="w-full min-w-[1080px] text-left text-sm"><thead className="bg-slate-50 text-xs capitalize tracking-wide text-slate-500"><tr><th className="px-4 py-3">Select</th><th className="px-4 py-3">Unit</th><th className="px-4 py-3">Payer</th><th className="px-4 py-3">Due date</th><th className="px-4 py-3">Publish status</th><th className="px-4 py-3">Email delivery</th><th className="px-4 py-3">Total</th><th className="px-4 py-3 text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-300">{visibleBills.map((bill) => <tr key={bill.id} className="hover:bg-slate-50"><td className="px-4 py-3"><label className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-lg hover:bg-emerald-50"><input type="checkbox" className="size-5 cursor-pointer accent-emerald-700 disabled:cursor-not-allowed" checked={selectedIds.includes(bill.id)} disabled={busy} aria-label={`Select SOA for Unit ${bill.unitNumber}`} onChange={() => toggleSelection(bill.id)} /></label></td><td className="px-4 py-3 font-black">Unit {bill.unitNumber}</td><td className="px-4 py-3">{bill.payerName || 'Unassigned'}</td><td className="px-4 py-3 whitespace-nowrap">{String(bill.dueDate).slice(0, 10)}</td><td className="px-4 py-3">{bill.publishedAt ? <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">Published</span> : <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-600">Hidden</span>}</td><td className="px-4 py-3">{bill.publishedAt && <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${Number(bill.emailDelivery?.failed || 0) ? 'bg-rose-50 text-rose-700' : 'bg-sky-50 text-sky-700'}`}>{deliveryLabel(bill.emailDelivery)}</span>}</td><td className="px-4 py-3 font-black whitespace-nowrap">PHP {Number(bill.totalAmount).toFixed(2)}</td><td className="px-4 py-3"><div className="flex justify-end gap-2"><Link className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-700" to={`/admin/soa/bills/${bill.id}`}>{bill.publishedAt ? 'Open SOA' : 'Review / Publish'}</Link>{bill.publishedAt && <button type="button" disabled={busy} onClick={() => requestUnpublish(bill)} className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50">Unpublish</button>}{bill.publishedAt && Number(bill.emailDelivery?.failed || 0) > 0 && <button type="button" disabled={busy} onClick={() => retryEmail(bill)} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 disabled:opacity-50"><RotateCcw size={14} />Retry email</button>}{bill.publishedAt && (Number(bill.emailDelivery?.sent || 0) + Number(bill.emailDelivery?.failed || 0)) > 0 && <button type="button" disabled={busy} onClick={() => requestResendEmail(bill)} className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50"><Mail size={14} />Resend SOA</button>}</div></td></tr>)}</tbody></table></div>
         {filteredBills.length > 0 && <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-slate-500">Page {currentPage} of {totalPages}</p><div className="flex gap-2"><button type="button" disabled={currentPage === 1} onClick={() => setPage((current) => Math.max(1, current - 1))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50">Previous</button><button type="button" disabled={currentPage === totalPages} onClick={() => setPage((current) => Math.min(totalPages, current + 1))} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50">Next</button></div></div>}
         {bills.length === 0 && <EmptyRow message="No forwarded SOAs found for this batch." />}
         {bills.length > 0 && filteredBills.length === 0 && <EmptyRow message="No SOAs match the selected filters." />}
       </Panel>
-      {unpublishAllConfirmation && <UnpublishBatchModal count={bills.length} busy={busy} onCancel={() => setUnpublishAllConfirmation(false)} onConfirm={unpublishAll} />}
+      {unpublishConfirmation && <UnpublishBatchModal selected={unpublishConfirmation.mode === 'SELECTED'} count={unpublishConfirmation.mode === 'SELECTED' ? unpublishConfirmation.billIds.length : bills.length} unitNumbers={unpublishConfirmation.mode === 'SELECTED' ? bills.filter(bill => unpublishConfirmation.billIds.includes(bill.id)).map(bill => bill.unitNumber) : []} busy={busy} onCancel={() => setUnpublishConfirmation(null)} onConfirm={unpublishBatch} />}
       {publishConfirmation && <PublishConfirmationModal confirmation={publishConfirmation} busy={busy} onCancel={() => setPublishConfirmation(null)} onPublishOnly={() => confirmPublish(false)} onPublishAndSend={() => confirmPublish(true)} />}
       {actionConfirmation && <ActionConfirmationModal confirmation={actionConfirmation} busy={busy} onCancel={() => setActionConfirmation(null)} onConfirm={confirmAction} />}
     </DashboardLayout>

@@ -12,6 +12,8 @@ const batch = { id: 1, source: 'AUDIT_LOG', actorName: 'Jerry Crispe', actorRole
 const edit = { id: 2, source: 'AUDIT_LOG', actorName: 'Original Admin', actorRole: 'ADMIN', createdAt: '2026-10-25T16:01:00Z', entityName: 'UNIT', entityId: 10, action: 'UPDATE', oldValues: { unitNumber: '232', billableAreaSqm: 12, passwordHash: 'private-credential' }, newValues: { unitNumber: '232', billableAreaSqm: 14, passwordHash: 'private-credential' }, context: { version: 1, target: { unitNumber: '232' }, changes: [{ field: 'billableAreaSqm', before: 12, after: 14 }], changeCount: 1, affectedRecords: [] } }
 const legacy = { id: 3, source: 'AUDIT_LOG', actorName: 'Former Resident', actorRole: 'RESIDENT', createdAt: '2026-10-25T14:00:00Z', entityName: 'UNIT_BILL', entityId: 99, action: 'UPDATE', oldValues: null, newValues: null, context: { version: 0, target: {}, affectedRecords: [] } }
 const payment = { id: 4, actorName: 'Original Admin', actorRole: 'ADMIN', createdAt: '2026-10-25T13:00:00Z', entityName: 'PAYMENT_SUBMISSION', entityId: 174, action: 'EDIT_INVOICES', context: { version: 1, target: { fullName: 'Juan Dela Cruz', paymentReference: 'REF-0000174', unitNumber: '232', amount: 1500, paymentPurpose: 'COMBINED', periodStart: '2026-10-05', periodEnd: '2026-11-05' }, changes: [{ field: 'invoiceNumber', category: 'ASSOCIATION_DUES', before: '2312', after: '#2312' }], changeCount: 1 } }
+const publication = { id: 5, actorName: 'Original Admin', actorRole: 'ADMIN', createdAt: '2026-10-27T12:53:57Z', entityName: 'BILLING_PERIOD', entityId: 42, action: 'PUBLISHED', context: { target: { periodStart: '2026-10-05', periodEnd: '2026-11-05' }, affectedCount: 1, affectedTargets: [{ entityName: 'UNIT_BILL', entityId: 100, fullName: 'Tanjiro Kamado', unitNumber: '307' }], counts: { publishedCount: 1, queuedEmails: 0 } } }
+const multiPublication = { ...publication, id: 6, context: { ...publication.context, affectedCount: 4, affectedTargets: [...publication.context.affectedTargets, { fullName: 'Juan de la Paz', unitNumber: '437' }, { fullName: 'Maria Santos', unitNumber: '238' }], counts: { publishedCount: 4, queuedEmails: 4 } } }
 
 try {
   for (const mobile of [false, true]) {
@@ -31,7 +33,7 @@ try {
         const page = Number(url.searchParams.get('page') || 1), pageSize = Number(url.searchParams.get('pageSize') || 10)
         const filtered = Boolean(url.searchParams.get('q') || url.searchParams.get('entity') || url.searchParams.get('action') || url.searchParams.get('actorRole'))
         const total = filtered ? 1 : 235
-        const logs = filtered ? [batch] : page > 1 ? [legacy] : [batch, edit, legacy, payment]
+        const logs = filtered ? [batch] : page > 1 ? [legacy] : [batch, edit, legacy, payment, publication, multiPublication]
         data = { logs: logs.map(log => ({ ...log, oldValues: undefined, newValues: undefined, context: { ...log.context, affectedRecords: undefined } })), pagination: { page, pageSize, pageCount: Math.ceil(total / pageSize), total }, summary: { total, admin: filtered ? 0 : 100, collector: filtered ? 1 : 100, resident: filtered ? 0 : 35 }, filters: { entities: ['BILLING_PERIOD', 'UNIT', 'UNIT_BILL'], actions: ['DELETED', 'UPDATE'] } }
       } else if (/\/api\/audit-logs\/\d+$/.test(path)) {
         detailsRequested++
@@ -54,6 +56,9 @@ try {
     assert.match(paymentText, /Updated invoices for Juan Dela Cruz.*Unit 232.*REF-0000174.*₱1,500.00/s)
     assert.match(paymentText, /Association dues invoice: 2312 → #2312/)
     assert.ok(!paymentText.includes('Payment #174'))
+    assert.match(await page.locator('.audit-entry').nth(4).innerText(), /Published SOA for Tanjiro Kamado · Unit 307.*Oct.*Nov/s)
+    assert.match(await page.locator('.audit-entry').nth(4).innerText(), /0 emails queued/)
+    assert.match(await page.locator('.audit-entry').nth(5).innerText(), /Published 4 SOAs.*Tanjiro Kamado · Unit 307.*Juan de la Paz · Unit 437.*1 more SOA.*4 emails queued/s)
     assert.equal(await page.locator('.audit-entry button, .audit-entry [aria-expanded], [id^="audit-details-"]').count(), 0)
     assert.equal(detailsRequested, 0)
     assert.equal(await page.getByLabel('What happened?', { exact: true }).count(), 0, 'Filters start hidden')

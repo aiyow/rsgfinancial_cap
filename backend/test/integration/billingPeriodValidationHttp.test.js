@@ -7,7 +7,7 @@ import pg from 'pg';
 import pool from '../../config/db.js';
 import routes from '../../routes/billingPeriodRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
-import { billingPeriodErrors } from '../../services/billingPeriodPolicy.js';
+import { billingPeriodErrors } from "../../services/billing.js";
 
 // Every write uses a private schema; no real billing period or payment is changed.
 test('draft creation and partial edits enforce rates and calendar date boundaries', async t => {

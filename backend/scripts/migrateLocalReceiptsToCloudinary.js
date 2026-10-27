@@ -2,7 +2,7 @@ import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import pool from "../config/db.js";
-import { destroyReceipt, uploadReceipt } from "../services/cloudinaryReceipts.js";
+import { destroyReceipt, uploadReceipt } from "../services/receipts.js";
 
 const dryRun = process.argv.includes("--dry-run");
 const uploadDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../uploads/payment-proofs");

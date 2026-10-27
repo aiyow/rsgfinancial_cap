@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildSoaEmailMessage, buildSoaReminderEmailMessage, createSoaEmailService } from "../services/soaEmail.js";
+import {
+  buildSoaEmailMessage,
+  buildSoaReminderEmailMessage,
+  createSoaEmailService,
+} from "../services/email.js";
 
 const delivery = {
   billId: 42,
@@ -16,7 +20,7 @@ const delivery = {
 test("SOA email uses a secure dashboard link and escapes rendered fields", () => {
   const message = buildSoaEmailMessage({ delivery, clientUrl: "https://condo.example/" });
   assert.equal(message.url, "https://condo.example/resident/bills/42");
-  assert.match(message.text, /PHP 1234\.50/);
+  assert.match(message.text, /PHP 1,234\.50/);
   assert.match(message.html, /Ava &lt;Owner&gt;/);
   assert.match(message.html, /https:\/\/condo\.example\/resident\/bills\/42/);
 });
@@ -55,7 +59,18 @@ test("SOA reminder emails describe the due status and include the current balanc
   });
 
   assert.match(message.subject, /overdue/i);
-  assert.match(message.text, /PHP 1234\.50/);
+  assert.match(message.text, /PHP 1,234\.50/);
   assert.match(message.text, /Late penalty included: PHP 50\.00/);
   assert.match(message.html, /resident\/bills\/42/);
+});
+
+test('styled SOA emails preserve the tenant/owner balance distinction and escape detail labels', () => {
+  for (const build of [options => buildSoaEmailMessage(options), options => buildSoaReminderEmailMessage({ ...options, reminderType: 'OVERDUE' })]) {
+    const tenant = build({ delivery: { ...delivery, relationshipType: 'TENANT', waterBalance: 120, associationBalance: 999, balanceLabel: '<Water balance>' } });
+    assert.match(tenant.html, /PHP 120\.00/);
+    assert.doesNotMatch(tenant.html, /PHP 999\.00/);
+    assert.match(tenant.html, /&lt;Water balance&gt;/);
+    const owner = build({ delivery: { ...delivery, relationshipType: 'OWNER', waterBalance: 120, associationBalance: 999 } });
+    assert.match(owner.html, /PHP 999\.00/);
+  }
 });

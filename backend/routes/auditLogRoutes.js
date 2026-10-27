@@ -2,9 +2,8 @@ import express from 'express';
 import pool from '../config/db.js';
 import { allowRoles, requireAuth } from '../middleware/authMiddleware.js';
 import { requireId } from '../middleware/validate.js';
-import { presentAudit } from '../services/auditDetails.js';
-import { isBillingDate } from '../services/billingPeriodPolicy.js';
-import { recoverAuditIdentities } from '../services/auditIdentity.js';
+import { presentAudit, recoverAuditIdentities } from '../services/audit.js';
+import { isBillingDate } from "../services/billing.js";
 
 const router = express.Router();
 router.use(requireAuth, allowRoles('ADMIN'));

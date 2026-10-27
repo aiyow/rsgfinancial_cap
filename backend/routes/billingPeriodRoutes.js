@@ -1,22 +1,27 @@
 import express from "express";
-import { verifyPassword } from "../services/passwordHash.js";
+import { verifyPassword } from "../services/passwords.js";
 import ExcelJS from "exceljs";
 import multer from "multer";
 import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
-import { regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.js";
-import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
-import { lockBillingPeriodUnits, applyUnitCreditToOpenBills, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
-import { ensureSoaTemplate } from "../services/soaTemplate.js";
-import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
-import { writeAuditLog } from "../services/auditLog.js";
-import { deliverSoaEmailNotifications } from "../services/soaEmailDeliveries.js";
-import { validateMeterReading } from "../services/meterReadingValidation.js";
+import {
+  regenerateForecastsFromPeriod,
+  regeneratePrescriptiveRecommendations,
+} from "../services/analytics.js";
+
+import {
+  lockBillingPeriodUnits,
+  applyUnitCreditToOpenBills,
+  ensurePaymentLedgerSchema,
+} from "../services/payments.js";
+import { ensureSoaTemplate } from "../services/soa.js";
+import { normalizeSpreadsheetNamespaces } from "../services/spreadsheets.js";
+import { writeAuditLog, auditBatchRecords, auditReadings, changedAuditRecords } from "../services/audit.js";
+import { deliverSoaEmailNotifications } from "../services/email.js";
+import { validateMeterReading, billingPeriodErrors, isBillingDate } from "../services/billing.js";
 import { createUserNotifications } from "../services/notifications.js";
-import { auditBatchRecords, auditReadings, changedAuditRecords } from "../services/auditDetails.js";
-import { billingPeriodErrors, isBillingDate } from "../services/billingPeriodPolicy.js";
 
 const router = express.Router();
 const dateSchema = z.string().refine(isBillingDate, "Choose a valid date in YYYY-MM-DD format.");
@@ -50,6 +55,10 @@ const publishSchema = z.object({
 }).strict();
 const unpublishBatchSchema = z.object({
   currentPassword: z.string().min(1).max(256),
+}).strict();
+const unpublishSelectedSchema = unpublishBatchSchema.extend({
+  billIds: z.array(z.coerce.number().int().positive()).min(1).max(2000)
+    .refine(ids => new Set(ids).size === ids.length, 'Select each SOA only once.'),
 }).strict();
 const deletePeriodSchema = z.object({
   currentPassword: z.string().min(8).max(256),
@@ -657,7 +666,7 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
       entityName: "BILLING_PERIOD",
       entityId: req.resourceId,
       action: "PUBLISHED",
-      context: { affectedRecords: changedAuditRecords(beforePublication, await auditBatchRecords(client, req.resourceId)), counts: { queuedEmails: deliveries.rowCount } },
+      context: { affectedRecords: changedAuditRecords(beforePublication, await auditBatchRecords(client, req.resourceId)), counts: { publishedCount: publishedBillIds.length, queuedEmails: deliveries.rowCount } },
       newValues: { billIds: result.rows.map((row) => row.id), mode: selected ? "SELECTED" : "ALL" },
     });
     await client.query("COMMIT");
@@ -686,9 +695,10 @@ router.post("/:id/publish", allowRoles("ADMIN"), requireId, validateBody(publish
 });
 
 // Bulk visibility changes must be confirmed with the acting Admin's password.
-router.post("/:id/unpublish", allowRoles("ADMIN"), requireId, validateBody(unpublishBatchSchema), async (req, res, next) => {
+async function unpublishBatch(req, res, next) {
   let client;
   try {
+    const selectedIds = req.validatedBody.billIds || null;
     client = await pool.connect();
     await client.query("BEGIN");
     const actor = await client.query(
@@ -709,14 +719,16 @@ router.post("/:id/unpublish", allowRoles("ADMIN"), requireId, validateBody(unpub
       return res.status(409).json({ message: "Only a batch forwarded to Admin can be unpublished." });
     }
     // Use the same period -> ascending unit -> bill order as publication.
-    await lockBillingPeriodUnits(client, req.resourceId);
+    await lockBillingPeriodUnits(client, req.resourceId, selectedIds);
     const bills = await client.query(
       `SELECT id, unit_number_snapshot AS "unitNumber", period_start_snapshot AS "periodStart", period_end_snapshot AS "periodEnd", published_at AS "publishedAt", published_by AS "publishedBy"
-       FROM unit_bills WHERE billing_period_id = $1 ORDER BY id FOR UPDATE`, [req.resourceId],
+       FROM unit_bills WHERE billing_period_id = $1 AND ($2::bigint[] IS NULL OR id = ANY($2::bigint[])) ORDER BY id FOR UPDATE`, [req.resourceId, selectedIds],
     );
-    if (!bills.rows.length || bills.rows.some(bill => !bill.publishedAt)) {
+    if (!bills.rows.length || (selectedIds && bills.rows.length !== selectedIds.length) || bills.rows.some(bill => !bill.publishedAt)) {
       await client.query("ROLLBACK");
-      return res.status(409).json({ message: "Unpublish All requires every SOA in the batch to be published. Refresh the batch and try again." });
+      return res.status(409).json({ message: selectedIds
+        ? 'Every selected SOA must belong to this batch and still be published. Refresh the batch and try again.'
+        : 'Unpublish All requires every SOA in the batch to be published. Refresh the batch and try again.' });
     }
     const billIds = bills.rows.map(bill => bill.id);
     const deliveries = await client.query(
@@ -734,8 +746,8 @@ router.post("/:id/unpublish", allowRoles("ADMIN"), requireId, validateBody(unpub
     await writeAuditLog({
       client, actorUserId: req.user.id, entityName: "BILLING_PERIOD", entityId: req.resourceId, action: "UNPUBLISHED",
       oldValues: { bills:bills.rows },
-      newValues: { billIds, mode:"ALL", unpublishedCount:billIds.length, cancelledEmailDeliveries:deliveries.rowCount },
-      remarks: "Admin confirmed their password and hid every SOA in the batch from resident access.",
+      newValues: { billIds, mode: selectedIds ? 'SELECTED' : 'ALL', unpublishedCount:billIds.length, cancelledEmailDeliveries:deliveries.rowCount },
+      remarks: selectedIds ? 'Admin confirmed their password and hid the selected SOAs from resident access.' : 'Admin confirmed their password and hid every SOA in the batch from resident access.',
     });
     await client.query("COMMIT");
     return res.json({
@@ -746,7 +758,10 @@ router.post("/:id/unpublish", allowRoles("ADMIN"), requireId, validateBody(unpub
     if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);
   } finally { client?.release(); }
-});
+}
+
+router.post('/:id/unpublish', allowRoles('ADMIN'), requireId, validateBody(unpublishBatchSchema), unpublishBatch);
+router.post('/:id/unpublish-selected', allowRoles('ADMIN'), requireId, validateBody(unpublishSelectedSchema), unpublishBatch);
 
 router.post("/:id/bills/:billId/unpublish", allowRoles("ADMIN"), requireId, async (req, res, next) => {
   const billId = Number(req.params.billId);

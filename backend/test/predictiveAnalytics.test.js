@@ -10,7 +10,7 @@ import {
   selectConsecutiveReadings,
   weightedLinearRegression,
   regenerateForecasts,
-} from "../services/predictiveAnalytics.js";
+} from "../services/analytics.js";
 
 function reading(month, consumption, validationStatus = "VALID") {
   return { periodStart: `2026-${String(month).padStart(2, "0")}-01`, consumption, validationStatus };

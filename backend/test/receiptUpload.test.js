@@ -7,7 +7,7 @@ import sharp from 'sharp';
 import { receiptUpload } from '../middleware/receiptUpload.js';
 import errorHandler from '../middleware/errorHandler.js';
 import paymentRoutes from '../routes/paymentRoutes.js';
-import { MAX_RECEIPT_BYTES, receiptExtension, receiptFileError } from '../services/receiptFilePolicy.js';
+import { MAX_RECEIPT_BYTES, receiptExtension, receiptFileError } from "../services/receipts.js";
 
 test('receipt metadata allows only the four requested extensions and enforces size', () => {
   for (const name of ['receipt.jpg', 'receipt.jpeg', 'receipt.jfif', 'receipt.png', 'RECEIPT.JPG', 'receipt.JFIF']) {
@@ -24,8 +24,10 @@ test('receipt metadata allows only the four requested extensions and enforces si
 });
 
 test('browser and API receipt policies stay identical', async () => {
-  assert.equal(await readFile(new URL('../services/receiptFilePolicy.js', import.meta.url), 'utf8'),
-    await readFile(new URL('../../frontend/src/utils/receiptFilePolicy.js', import.meta.url), 'utf8'));
+  const service = (await readFile(new URL('../services/receipts.js', import.meta.url), 'utf8')).replace(/\r\n/g, '\n');
+  const policySection = service.split('// #region Receipt file policy\n\n')[1].split('\n\n// #endregion')[0];
+  assert.equal(policySection.trim(),
+    (await readFile(new URL('../../frontend/src/utils/receiptFilePolicy.js', import.meta.url), 'utf8')).replace(/\r\n/g, '\n').trim());
 });
 
 test('both resident upload endpoints validate images before their payment handlers', () => {

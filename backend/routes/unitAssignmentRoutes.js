@@ -3,8 +3,8 @@ import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
-import { writeAuditLog } from "../services/auditLog.js";
-import { lockAccountRows } from "../services/accountActionEligibility.js";
+import { writeAuditLog } from "../services/audit.js";
+import { lockAccountRows } from "../services/accounts.js";
 
 const router = express.Router();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.");

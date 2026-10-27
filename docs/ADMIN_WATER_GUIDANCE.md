@@ -24,7 +24,7 @@ Water-charge insights calculate the peso difference from the rounded comparable 
 
 The section is rendered inside the water chart card for Admin only. The heading and source/forecast months remain visible; comparable totals, evidence, actions, and the link to `/admin/analytics` start collapsed. An accessible Show details / Hide details button expands or collapses them, with Enter/Space support and `aria-expanded`/`aria-controls`. The chart's historical range selector does not change the recommendation period. Existing dashboard refresh/cache behavior applies; no new notifications, stored recommendation rows, audit entries, or schema migration are introduced.
 
-Manual edits: calculations and data loading are in `backend/services/adminWaterGuidance.js`; presentation is in `frontend/src/components/AdminWaterGuidance.jsx`, composed by `OperationalDashboard.jsx`.
+Manual edits: calculations and data loading are in `backend/services/analytics.js`; presentation is in `frontend/src/components/AdminWaterGuidance.jsx`, composed by `OperationalDashboard.jsx`.
 
 ## Verification
 

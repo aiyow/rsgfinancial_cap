@@ -3,9 +3,9 @@ import { z } from 'zod';
 import pool from '../config/db.js';
 import { allowRoles, requireAuth } from '../middleware/authMiddleware.js';
 import { requireId, validateBody } from '../middleware/validate.js';
-import { ensureBillingErrorSchema } from '../services/billingErrors.js';
+import { ensureBillingErrorSchema } from "../services/billing.js";
 import { createUserNotifications } from '../services/notifications.js';
-import { writeAuditLog } from '../services/auditLog.js';
+import { writeAuditLog } from '../services/audit.js';
 
 const router = express.Router();
 const MAX_REPORTS_PER_SOA = 3;

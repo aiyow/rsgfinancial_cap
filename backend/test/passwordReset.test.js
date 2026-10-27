@@ -7,7 +7,7 @@ import {
   hashPasswordResetOtp,
   passwordResetOtpMatches,
   passwordResetExpiryDate,
-} from "../services/passwordReset.js";
+} from "../services/passwords.js";
 
 test("password-reset email contains a six-digit OTP and no reset link", () => {
   const message = buildPasswordResetEmailMessage({ fullName: "Ava <Resident>", otp: "012345" });

@@ -10,11 +10,15 @@ import pg from 'pg';
 import nodemailer from 'nodemailer';
 import pool from '../../config/db.js';
 import { createSoaExportRouter } from '../../routes/soaExportRoutes.js';
-import { createProtectedSoaExportService } from '../../services/protectedSoaExports.js';
+import {
+  createProtectedSoaExportService,
+  encryptSoaPdf,
+  runQpdf,
+  renderSoaPdf,
+  loadSoaLogo,
+} from "../../services/soa.js";
 import authRoutes from '../../routes/authRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
-import { encryptSoaPdf, runQpdf } from '../../services/soaEncryption.js';
-import { renderSoaPdf, loadSoaLogo } from '../../services/soaPdf.js';
 
 // All writes use a disposable private schema and synthetic accounts. SMTP is
 // intercepted. Never reads a resident statement or sends a real email.
@@ -42,7 +46,7 @@ test('protected SOA exports: real PostgreSQL transactions, HTTP access, lifecycl
     }
     await setup.query(await readFile(new URL('../../database/migrations/043_protected_soa_exports.sql', import.meta.url), 'utf8'));
     await setup.query(`INSERT INTO users(id,full_name,email,password_hash,role,is_active,approval_status,email_verified,auth_version) VALUES
-      (1,'Approved Resident','resident@example.invalid','unused','RESIDENT',TRUE,'APPROVED',TRUE,0),
+      (1,'Tanjiro Kamado','resident@example.invalid','unused','RESIDENT',TRUE,'APPROVED',TRUE,0),
       (2,'Other Resident','other@example.invalid','unused','RESIDENT',TRUE,'APPROVED',TRUE,0),
       (3,'Admin Fixture','admin@example.invalid','unused','ADMIN',TRUE,'APPROVED',TRUE,0),
       (4,'Associate Fixture','associate@example.invalid','unused','COLLECTOR',TRUE,'APPROVED',TRUE,0);
@@ -65,8 +69,8 @@ test('protected SOA exports: real PostgreSQL transactions, HTTP access, lifecycl
     const service = createProtectedSoaExportService({ db: scoped, environment, checkDependencies: async () => {},
       logo: async () => process.env.QPDF_PATH ? loadSoaLogo(null) : Buffer.from('fixture-logo'),
       render: process.env.QPDF_PATH ? renderSoaPdf : async bill => Buffer.from(`%PDF plaintext fixture ${bill.totalAmount}`),
-      encrypt: async (pdf, password) => { assert.equal(password.length, 24); return process.env.QPDF_PATH ? encryptSoaPdf(pdf, password) : Buffer.from('%PDF encrypted synthetic artifact'); },
-      mailer: { async send(delivery) { deliveries.push(delivery); if (pauseEmail) { pauseEmail(); await new Promise(resolve => { releaseEmail = resolve; }); } if (mailFailure) throw new Error('SMTP raw response with secret'); } },
+      encrypt: async (pdf, password) => { assert.match(password, /^kamado\d{4}$/); return process.env.QPDF_PATH ? encryptSoaPdf(pdf, password) : Buffer.from('%PDF encrypted synthetic artifact'); },
+      mailer: { async send(delivery) { deliveries.push({ ...delivery, pdf: Buffer.from(delivery.pdf) }); if (pauseEmail) { pauseEmail(); await new Promise(resolve => { releaseEmail = resolve; }); } if (mailFailure) throw new Error('SMTP raw response with secret'); } },
     });
     const app = express(); app.use(express.json()); app.use('/api', createSoaExportRouter(service)); app.use('/api/auth', authRoutes); app.get('/api/health', (req, res) => res.json({ ok: true })); app.use((req, res) => res.status(404).json({ message: 'Not found' })); app.use(errorHandler);
     server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
@@ -77,32 +81,58 @@ test('protected SOA exports: real PostgreSQL transactions, HTTP access, lifecycl
       return { status: response.status, data, headers: response.headers };
     }
     const create = (key = randomUUID(), options = {}) => request('/bills/100/protected-exports', { method: 'POST', key, ...options });
-    const clearQuota = () => setup.query('DELETE FROM soa_export_rate_events');
+    const clearQuota = async () => {
+      await setup.query('DELETE FROM soa_export_rate_events');
+      await setup.query("UPDATE soa_exports SET ready_at=NOW()-INTERVAL '31 minutes' WHERE ready_at IS NOT NULL");
+    };
     let first, firstKey;
-    await t.test('no file until SMTP acceptance; duplicate clicks share preparation and one password email', async () => {
+    await t.test('email attachment only; duplicate clicks share preparation and one SOA email, never a portal download', async () => {
       let entered; const pending = new Promise(resolve => { entered = resolve; }); pauseEmail = entered;
       firstKey = randomUUID(); const creation = create(firstKey); await pending;
       const duplicate = await create(firstKey); assert.equal(duplicate.status, 202); assert.equal(duplicate.data.status, 'EMAIL_PENDING');
-      assert.equal((await request(`/soa-exports/${duplicate.data.exportId}/file`)).status, 409);
+      const concurrentKey = await create();
+      assert.equal(concurrentKey.status, 202); assert.equal(concurrentKey.data.exportId, duplicate.data.exportId);
+      assert.equal((await request(`/soa-exports/${duplicate.data.exportId}/file`)).status, 410);
       pauseEmail = null; releaseEmail(); first = await creation;
       assert.equal(first.status, 200, JSON.stringify(first.data)); assert.equal(first.data.status, 'READY');
       assert.equal(deliveries.length, 1); assert.equal(deliveries[0].email, 'resident@example.invalid', 'Current verified account, not payer snapshot');
+      assert.equal(deliveries[0].residentName, 'Tanjiro Kamado', 'Use requesting resident, not payer snapshot');
+      assert.equal(deliveries[0].dueDate, '2026-11-10'); assert.equal(first.data.expiresAt, null);
       assert.match(first.data.maskedEmail, /^r\*\*\*@/); assert.ok(!JSON.stringify(first.data).includes(deliveries[0].password));
       assert.equal((await create(firstKey)).data.exportId, first.data.exportId); assert.equal(deliveries.length, 1);
-      const file = await request(`/soa-exports/${first.data.exportId}/file`), repeat = await request(`/soa-exports/${first.data.exportId}/file`);
-      assert.equal(file.status, 200); assert.deepEqual(file.data, repeat.data); assert.equal(deliveries.length, 1);
+      const file = await request(`/soa-exports/${first.data.exportId}/file`);
+      assert.equal(file.status, 410); assert.equal(file.data.code, 'SOA_EMAIL_ONLY'); assert.equal(deliveries.length, 1);
+      assert.equal(file.headers.get('content-type').includes('pdf'), false);
       if (process.env.QPDF_PATH) {
         const directory = await mkdtemp(join(tmpdir(), 'soa-http-test-')), path = join(directory, 'protected.pdf');
         try {
-          await writeFile(path, file.data);
+          await writeFile(path, deliveries[0].pdf);
           await runQpdf([`--password=${deliveries[0].password}`, '--check', path]);
           await assert.rejects(runQpdf(['--check', path]));
         } finally { await rm(directory, { recursive: true, force: true }); }
       }
-      assert.equal(file.headers.get('cache-control'), 'private, no-store'); assert.equal(file.headers.get('x-content-type-options'), 'nosniff'); assert.match(file.headers.get('content-disposition'), new RegExp(first.data.reference));
+      assert.equal(file.headers.get('cache-control'), 'private, no-store'); assert.equal(file.headers.get('x-content-type-options'), 'nosniff');
       const stored = (await setup.query('SELECT * FROM soa_exports WHERE id=$1', [first.data.exportId])).rows[0];
-      assert.ok(!JSON.stringify(stored).includes(deliveries[0].password)); assert.equal(stored.encrypted_pdf.includes(Buffer.from('plaintext')), false);
+      assert.ok(!JSON.stringify(stored).includes(deliveries[0].password)); assert.equal(stored.encrypted_pdf, null);
       assert.equal((await setup.query('SELECT COUNT(*)::int AS n FROM audit_logs')).rows[0].n, 0);
+    });
+    await t.test('successful email enforces a 30-minute per-SOA cooldown across new keys, refreshes and service restarts', async () => {
+      const count = deliveries.length;
+      const blocked = await create();
+      assert.equal(blocked.status, 429); assert.equal(blocked.data.code, 'SOA_EMAIL_COOLDOWN');
+      assert.ok(Number(blocked.headers.get('retry-after')) > 1700);
+      assert.equal(blocked.data.nextRequestAt, first.data.nextRequestAt);
+      const status = await request('/bills/100/protected-exports');
+      assert.equal(status.data.status, 'READY'); assert.equal(status.data.nextRequestAt, first.data.nextRequestAt);
+      assert.equal(deliveries.length, count);
+      const recreated = createProtectedSoaExportService({ db: scoped, environment, checkDependencies: async () => {} });
+      await assert.rejects(recreated.create(100, 1, randomUUID(), '127.0.0.1'), error => error.code === 'SOA_EMAIL_COOLDOWN');
+      await setup.query("UPDATE soa_exports SET ready_at=NOW()-INTERVAL '29 minutes 50 seconds' WHERE id=$1", [first.data.exportId]);
+      assert.equal((await create()).status, 429, 'Cooldown remains active just before 30 minutes');
+      await setup.query("UPDATE soa_exports SET ready_at=NOW()-INTERVAL '30 minutes 1 second' WHERE id=$1", [first.data.exportId]);
+      await setup.query("UPDATE soa_export_rate_events SET created_at=NOW()-INTERVAL '2 minutes'");
+      assert.equal((await request('/bills/100/protected-exports')).data.status, 'AVAILABLE');
+      assert.equal((await create()).data.status, 'READY'); assert.equal(deliveries.length, count + 1);
     });
     await t.test('all endpoints enforce session/role/ownership; unrelated routes and malformed/body-supplied data are safe', async () => {
       const paths = [`/soa-exports/${first.data.exportId}`, `/soa-exports/${first.data.exportId}/file`];
@@ -118,6 +148,9 @@ test('protected SOA exports: real PostgreSQL transactions, HTTP access, lifecycl
       assert.equal((await request('/health', { actor: null })).status, 200);
       assert.equal((await create('invalid')).status, 400);
       assert.equal((await create(undefined, { body: { email: 'attacker@example.invalid', total: 1 } })).status, 400);
+      assert.equal((await request('/bills/100/protected-exports', { actor: null })).status, 401);
+      assert.equal((await request('/bills/100/protected-exports', { actor: 3 })).status, 403);
+      assert.equal((await request('/bills/100/protected-exports', { actor: 2 })).status, 404);
     });
     await t.test('ended/future assignments, inactive/pending/unverified accounts, unpublished or corrected SOAs cannot release files', async () => {
       for (const [update, restore] of [
@@ -142,14 +175,14 @@ test('protected SOA exports: real PostgreSQL transactions, HTTP access, lifecycl
       assert.equal((await request(`/soa-exports/${changedEmail.data.exportId}/file`)).status, 409);
       await setup.query("UPDATE users SET email='resident@example.invalid' WHERE id=1");
     });
-    await t.test('SMTP uncertainty fails closed; idempotent retry sends nothing; a fresh export gets a different password', async () => {
+    await t.test('SMTP uncertainty fails closed; idempotent retry sends nothing; a fresh request generates a surname password', async () => {
       await clearQuota(); mailFailure = true;
       const key = randomUUID(), failed = await create(key), count = deliveries.length;
-      assert.equal(failed.data.status, 'FAILED'); assert.equal((await request(`/soa-exports/${failed.data.exportId}/file`)).status, 409);
+      assert.equal(failed.data.status, 'FAILED'); assert.equal((await request(`/soa-exports/${failed.data.exportId}/file`)).status, 410);
       assert.equal((await create(key)).data.exportId, failed.data.exportId); assert.equal(deliveries.length, count);
       assert.equal((await setup.query('SELECT encrypted_pdf FROM soa_exports WHERE id=$1', [failed.data.exportId])).rows[0].encrypted_pdf, null);
       mailFailure = false; await clearQuota(); const fresh = await create(); assert.equal(fresh.data.status, 'READY');
-      assert.notEqual(deliveries.at(-1).password, deliveries.at(-2).password);
+      assert.match(deliveries.at(-1).password, /^kamado\d{4}$/);
     });
     await t.test('database reservations roll back atomically and cooldown/hourly user/IP limits survive service recreation', async () => {
       await clearQuota(); const before = (await setup.query('SELECT COUNT(*)::int AS n FROM soa_exports')).rows[0].n;
@@ -168,6 +201,12 @@ test('protected SOA exports: real PostgreSQL transactions, HTTP access, lifecycl
     });
     await t.test('expiration purges bytes, interrupted exports fail, metadata retention and deleted SOAs fail closed', async () => {
       await clearQuota(); const ready = await create();
+      await service.cleanup();
+      assert.equal((await request(`/soa-exports/${ready.data.exportId}`)).data.status, 'READY', 'New email receipts have no retrieval deadline');
+      await setup.query("UPDATE soa_exports SET encrypted_pdf=$2,expires_at=NOW()+INTERVAL '15 minutes' WHERE id=$1", [ready.data.exportId, Buffer.from('legacy encrypted artifact')]);
+      await service.cleanup();
+      const legacy = (await setup.query('SELECT status,encrypted_pdf FROM soa_exports WHERE id=$1', [ready.data.exportId])).rows[0];
+      assert.equal(legacy.status, 'EXPIRED'); assert.equal(legacy.encrypted_pdf, null, 'Legacy portal artifacts must be removed even before the old download deadline');
       await setup.query("UPDATE soa_exports SET expires_at=NOW()-INTERVAL '1 second' WHERE id=$1", [ready.data.exportId]);
       assert.equal((await request(`/soa-exports/${ready.data.exportId}`)).data.status, 'EXPIRED');
       assert.equal((await request(`/soa-exports/${ready.data.exportId}/file`)).status, 410);

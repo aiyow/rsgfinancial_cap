@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Download, FileSpreadsheet, RotateCcw, Trash2, Upload } from 'lucide-react'
+import { AlertTriangle, Download, FileSpreadsheet, LoaderCircle, RotateCcw, Trash2, Upload } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
@@ -12,10 +12,6 @@ const dangerClass = 'inline-flex items-center justify-center gap-2 rounded-lg bo
 
 function monthLabel(value) {
   return value ? new Date(`${String(value).slice(0, 7)}-01T00:00:00Z`).toLocaleDateString('en-PH', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : 'No month'
-}
-
-function money(value) {
-  return `PHP ${Number(value || 0).toFixed(2)}`
 }
 
 function number(value, digits = 3) {
@@ -33,6 +29,7 @@ export default function CollectorHistoryImportPage() {
   const [preview, setPreview] = useState(null)
   const [imports, setImports] = useState([])
   const [busy, setBusy] = useState(false)
+  const [importStage, setImportStage] = useState('')
   const [downloadingMonth, setDownloadingMonth] = useState('')
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [clearAllOpen, setClearAllOpen] = useState(false)
@@ -79,21 +76,23 @@ export default function CollectorHistoryImportPage() {
   }
 
   async function importPreview() {
-    if (!preview?.valid || !file) return
+    if (busy || !preview?.valid || !file) return
     setBusy(true)
+    setImportStage('IMPORTING')
     setNotice({ error: '', message: '' })
     try {
       const formData = new FormData()
       formData.append('periodMonth', preview.periodMonth)
       formData.append('file', file)
       const data = await apiRequest('/api/analytics/imports', { method: 'POST', token, body: formData })
+      setImportStage('REFRESHING')
       await loadImports()
       setPreview(null)
       setFile(null)
       setNotice({ error: '', message: data.message })
     } catch (error) {
       setNotice({ error: error.message, message: '' })
-    } finally { setBusy(false) }
+    } finally { setImportStage(''); setBusy(false) }
   }
 
   async function downloadWorkbook(item) {
@@ -150,10 +149,10 @@ export default function CollectorHistoryImportPage() {
       <Panel accent="blue" title="Upload monthly history" description="Select the billing month, upload the cleaned Excel workbook, preview the readings, then confirm the import.">
         <form onSubmit={previewFile} className="grid gap-3 rounded-xl bg-slate-50 p-4 md:grid-cols-[220px_1fr_auto]">
           <Field label="Billing month">
-            <input required type="month" value={periodMonth} onChange={(event) => { setPeriodMonth(event.target.value); setPreview(null) }} className={inputClass} />
+            <input required disabled={busy} type="month" value={periodMonth} onChange={(event) => { setPeriodMonth(event.target.value); setPreview(null) }} className={inputClass} />
           </Field>
           <Field label="Excel file">
-            <input required accept=".xlsx" type="file" onChange={(event) => { setFile(event.target.files[0] || null); setPreview(null) }} className={inputClass} />
+            <input required disabled={busy} accept=".xlsx" type="file" onChange={(event) => { setFile(event.target.files[0] || null); setPreview(null) }} className={inputClass} />
           </Field>
           <button disabled={busy || !periodMonth || !file} className={`${primaryClass} self-end`}>
             <FileSpreadsheet size={16} /> Preview
@@ -161,7 +160,7 @@ export default function CollectorHistoryImportPage() {
         </form>
       </Panel>
 
-      <Panel accent="red" title="Preview readings" description="Required columns: UNIT, PREVIOUS, PRESENT, CONSUMPTION, WRATE, and WATER BILLED.">
+      <Panel accent="red" title="Preview readings" description="Required columns: UNIT, PREVIOUS, and CURRENT (or PRESENT). Consumption is calculated automatically.">
         {!preview ? <EmptyRow message="No workbook preview yet." /> : (
           <div>
             <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -174,15 +173,18 @@ export default function CollectorHistoryImportPage() {
             {preview.errors.map((error) => <p key={error} className="mb-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>)}
             {preview.warnings.map((warning) => <p key={warning} className="mb-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{warning}</p>)}
             {preview.usesExistingLiveBilling && <p className="mb-4 rounded-lg bg-sky-50 p-3 text-sm text-sky-800">A live billing batch already exists for this month. Confirming will verify this workbook and refresh forecasts without changing saved billing readings.</p>}
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-slate-500">Water rate: <strong className="text-slate-900">{money(preview.waterRate)}</strong></p>
-              <button type="button" disabled={busy || !preview.valid} onClick={importPreview} className={primaryClass}>
-                <Upload size={16} /> {preview.usesExistingLiveBilling ? 'Verify and refresh' : 'Confirm import'}
+            <div className="mb-4 flex flex-wrap justify-end gap-3">
+              <button type="button" disabled={busy || !preview.valid} aria-busy={Boolean(importStage)} onClick={importPreview} className={`${primaryClass} min-w-[170px] justify-center`} style={importStage ? { backgroundColor: 'var(--primary)', cursor: 'wait' } : undefined}>
+                {importStage ? <LoaderCircle size={17} className="animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Upload size={16} aria-hidden="true" />} {importStage ? (importStage === 'REFRESHING' ? 'Refreshing history…' : preview.usesExistingLiveBilling ? 'Verifying readings…' : 'Importing readings…') : preview.usesExistingLiveBilling ? 'Verify and refresh' : 'Confirm import'}
               </button>
             </div>
+            {importStage && <div role="status" aria-live="polite" aria-atomic="true" className="mb-4 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">
+              <LoaderCircle size={22} className="shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              <div><p className="text-sm font-bold">{importStage === 'REFRESHING' ? 'Refreshing imported history…' : `Processing ${preview.summary.rowCount} readings for ${monthLabel(preview.periodMonth)}…`}</p><p className="mt-0.5 text-xs leading-5">{importStage === 'REFRESHING' ? 'Loading the updated list of imported months.' : 'Validating readings and updating forecasts and recommendations. Please keep this page open.'}</p></div>
+            </div>}
             <div className="max-h-[520px] overflow-auto rounded-xl border border-slate-200">
-              <table className="w-full min-w-[920px] text-left text-sm">
-                <thead className="sticky top-0 bg-white text-xs capitalize text-slate-400"><tr><th className="p-3">Row</th><th>Unit</th><th>Previous</th><th>Present</th><th>Consumption</th><th>Water charge</th><th>Validation</th></tr></thead>
+              <table className="w-full min-w-[680px] text-left text-sm">
+                <thead className="sticky top-0 bg-white text-xs capitalize text-slate-400"><tr><th className="p-3">Row</th><th>Unit</th><th>Previous</th><th>Current</th><th>Consumption (m³)</th><th>Validation</th></tr></thead>
                 <tbody className="divide-y divide-slate-100">
                   {preview.rows.map((row) => (
                     <tr key={row.rowNumber} className={row.errors.length ? 'bg-red-50' : row.warnings.length ? 'bg-amber-50' : ''}>
@@ -191,7 +193,6 @@ export default function CollectorHistoryImportPage() {
                       <td>{number(row.previousReading)}</td>
                       <td>{number(row.currentReading)}</td>
                       <td>{number(row.consumption)}</td>
-                      <td>{money(row.waterCharge)}</td>
                       <td>{row.errors.length ? <span className="text-red-700">{row.errors.join(' ')}</span> : row.warnings.length ? <span className="text-amber-700">{row.warnings.join(' ')}</span> : <span className="text-emerald-700">Ready</span>}</td>
                     </tr>
                   ))}

@@ -35,6 +35,7 @@ export default function CollectorBillingPage() {
   const [readingCount, setReadingCount] = useState(0)
   const [busy, setBusy] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
   const [generateConfirmOpen, setGenerateConfirmOpen] = useState(false)
   const selectedPeriod = useMemo(() => periods.find((period) => String(period.id) === String(selectedId)), [periods, selectedId])
@@ -164,8 +165,10 @@ export default function CollectorBillingPage() {
   }
 
   async function generateBills() {
+    if (busy || !selectedId) return
     setGenerateConfirmOpen(false)
     setBusy(true)
+    setGenerating(true)
     setNotice({ error: '', message: '' })
     try {
       const data = await apiRequest(`/api/billing-periods/${selectedId}/generate`, { method: 'POST', token })
@@ -174,7 +177,7 @@ export default function CollectorBillingPage() {
       navigate(`/collector/bills?billingPeriodId=${selectedId}`)
     } catch (error) {
       setNotice({ error: error.message, message: '' })
-    } finally { setBusy(false) }
+    } finally { setGenerating(false); setBusy(false) }
   }
 
   return (
@@ -218,7 +221,13 @@ export default function CollectorBillingPage() {
       </Panel>
 
       <Panel accent="green" title="Generate bills" description="Creates one bill with water and association-dues charge lines for every unit.">
-        {!selectedPeriod ? <EmptyRow message="Select a billing period first." /> : <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-bold">{selectedPeriod.periodStart} to {selectedPeriod.periodEnd}</p><p className="text-sm text-slate-500">Status: {selectedPeriod.status} | Saved readings: {readingCount}</p></div><button disabled={busy || selectedPeriod.status !== 'DRAFT' || readingCount === 0} onClick={() => setGenerateConfirmOpen(true)} className={primaryClass}>Generate bills</button></div>}
+        {!selectedPeriod ? <EmptyRow message="Select a billing period first." /> : <>
+          <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-bold">{selectedPeriod.periodStart} to {selectedPeriod.periodEnd}</p><p className="text-sm text-slate-500">Status: {selectedPeriod.status} | Saved readings: {readingCount}</p></div><button type="button" disabled={busy || selectedPeriod.status !== 'DRAFT' || readingCount === 0} aria-busy={generating} onClick={() => setGenerateConfirmOpen(true)} className={`${primaryClass} inline-flex min-w-[170px] items-center justify-center gap-2`} style={generating ? { backgroundColor: 'var(--primary)', cursor: 'wait' } : undefined}>{generating && <LoaderCircle size={17} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}{generating ? 'Generating bills…' : 'Generate bills'}</button></div>
+          {generating && <div role="status" aria-live="polite" aria-atomic="true" className="mt-4 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-900">
+            <LoaderCircle size={22} className="shrink-0 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+            <div><p className="text-sm font-bold">Generating statements of account…</p><p className="mt-0.5 text-xs leading-5">Creating bills from {readingCount} saved readings and calculating water and association-dues charges. Please keep this page open.</p></div>
+          </div>}
+        </>}
       </Panel>
       {generateConfirmOpen && selectedPeriod && <GenerateBillsModal period={selectedPeriod} readingCount={readingCount} busy={busy} onCancel={() => setGenerateConfirmOpen(false)} onConfirm={generateBills} />}
     </DashboardLayout>

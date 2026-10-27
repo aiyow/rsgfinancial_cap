@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import pool from '../../config/db.js';
-import { paymentResidentNameSql } from '../../services/paymentIdentity.js';
+import { paymentResidentNameSql } from "../../services/payments.js";
 
 test('manual and advance payments resolve the resident without changing the staff recorder', async () => {
   const client = await pool.connect();

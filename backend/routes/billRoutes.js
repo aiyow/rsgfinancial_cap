@@ -1,18 +1,28 @@
-import { billSelect, groupBy } from "../services/billRead.js";
+import {
+  billSelect,
+  groupBy,
+  decorateResidentBills,
+  validateMeterReading,
+  ensureBillingErrorSchema,
+} from "../services/billing.js";
 import express from "express";
 import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
-import { applyDueLatePenalties, reconcileBillPayments, lockUnit, ensurePaymentLedgerSchema } from "../services/paymentLedger.js";
-import { decorateResidentBills } from '../services/billPaymentDetails.js';
-import { defaultSoaTemplate, ensureSoaTemplate, normalizeSoaTemplate } from "../services/soaTemplate.js";
-import { writeAuditLog } from "../services/auditLog.js";
+import {
+  applyDueLatePenalties,
+  reconcileBillPayments,
+  lockUnit,
+  ensurePaymentLedgerSchema,
+} from "../services/payments.js";
+
+import { defaultSoaTemplate, ensureSoaTemplate, normalizeSoaTemplate } from "../services/soa.js";
+import { writeAuditLog } from "../services/audit.js";
 import { createUserNotifications } from "../services/notifications.js";
-import { deliverSoaEmailNotifications } from "../services/soaEmailDeliveries.js";
-import { validateMeterReading } from "../services/meterReadingValidation.js";
-import { ensureBillingErrorSchema } from "../services/billingErrors.js";
-import { regeneratePrescriptiveRecommendations } from '../services/prescriptiveAnalytics.js';
+import { deliverSoaEmailNotifications } from "../services/email.js";
+
+import { regeneratePrescriptiveRecommendations } from "../services/analytics.js";
 
 const router = express.Router();
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD format.").refine(value => {

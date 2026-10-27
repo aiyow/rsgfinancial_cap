@@ -9,7 +9,7 @@ import pool from '../../config/db.js';
 import userRoutes from '../../routes/userRoutes.js';
 import assignmentRoutes from '../../routes/unitAssignmentRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
-import { lockBillingPeriodUnits } from '../../services/paymentLedger.js';
+import { lockBillingPeriodUnits } from "../../services/payments.js";
 
 // A uniquely named disposable schema permits real multi-connection lock tests.
 // Its search_path excludes public. No real account, unit, bill, or payment is changed.

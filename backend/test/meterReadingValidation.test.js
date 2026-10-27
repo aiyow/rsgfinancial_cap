@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { validateMeterReading } from '../services/meterReadingValidation.js'
+import { validateMeterReading } from "../services/billing.js";
 
 test('recognizes a zero-start replacement meter as a valid reset', () => {
   const result = validateMeterReading(0, 27.5, { currentReading: 18993.937 })

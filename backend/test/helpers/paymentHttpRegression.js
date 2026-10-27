@@ -5,7 +5,7 @@ import pool from '../../config/db.js';
 import paymentRoutes from '../../routes/paymentRoutes.js';
 import billRoutes from '../../routes/billRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
-import { validateResidentPurpose } from '../../services/paymentPermissions.js';
+import { validateResidentPurpose } from "../../services/payments.js";
 
 // Run the real Express routes inside the caller's rollback-only transaction.
 // Inner BEGIN/COMMIT become savepoints; the outer transaction is never committed.

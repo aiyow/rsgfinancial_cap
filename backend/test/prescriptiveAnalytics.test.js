@@ -4,7 +4,7 @@ import {
   buildPrescriptiveRecommendations,
   isResidentVisibleRecommendation,
   RECOMMENDATION_TYPES,
-} from '../services/prescriptiveAnalytics.js';
+} from "../services/analytics.js";
 
 function reading(month, consumption, validationStatus = 'VALID') {
   return {

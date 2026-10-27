@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { registrationHash, registrationOtpMatches, createRegistrationOtp, createRegistrationToken } from '../services/registrationVerification.js';
-import { createEmailVerificationService } from '../services/emailVerification.js';
+import {
+  registrationHash,
+  registrationOtpMatches,
+  createRegistrationOtp,
+  createRegistrationToken,
+} from "../services/accounts.js";
+import { createEmailVerificationService } from "../services/email.js";
 
 test('registration codes and grants are random, purpose-bound, email-bound and stored as keyed hashes',()=>{
  const before=process.env.JWT_SECRET;process.env.JWT_SECRET='registration-unit-test';

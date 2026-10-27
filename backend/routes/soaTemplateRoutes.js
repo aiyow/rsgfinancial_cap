@@ -6,9 +6,15 @@ import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { validateBody } from "../middleware/validate.js";
-import { writeAuditLog } from "../services/auditLog.js";
-import { defaultSoaTemplate, ensureSoaTemplate, normalizeSoaTemplate } from "../services/soaTemplate.js";
-import { destroySoaAsset, soaAssetDeliveryUrl, uploadSoaAsset } from "../services/soaAssets.js";
+import { writeAuditLog } from "../services/audit.js";
+import {
+  defaultSoaTemplate,
+  ensureSoaTemplate,
+  normalizeSoaTemplate,
+  destroySoaAsset,
+  soaAssetDeliveryUrl,
+  uploadSoaAsset,
+} from "../services/soa.js";
 
 const router = express.Router();
 const templateSchema = z.object({

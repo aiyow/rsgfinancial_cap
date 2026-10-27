@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import crypto from 'node:crypto';
 import pool from '../config/db.js';
-import { createPaymentAllocations, applyDueLatePenalties, applyUnitCreditToBill, reconcileBillPayments, chargePaymentsSql, lockUnit } from '../services/paymentLedger.js';
+import {
+  createPaymentAllocations,
+  applyDueLatePenalties,
+  applyUnitCreditToBill,
+  reconcileBillPayments,
+  chargePaymentsSql,
+  lockUnit,
+} from "../services/payments.js";
 import { getFinancialReport,parseFinancialReportFilters } from '../services/financialReports.js';
 import { runPaymentHttpRegression } from '../test/helpers/paymentHttpRegression.js';
 

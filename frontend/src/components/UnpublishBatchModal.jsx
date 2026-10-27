@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { TriangleAlert } from 'lucide-react'
+import { LoaderCircle, TriangleAlert } from 'lucide-react'
 import PasswordInput from './PasswordInput'
 
-export default function UnpublishBatchModal({ count, busy, onCancel, onConfirm }) {
+export default function UnpublishBatchModal({ count, busy, onCancel, onConfirm, selected = false, unitNumbers = [] }) {
   const id = useId()
   const dialog = useRef(null)
   const cancelButton = useRef(null)
@@ -53,15 +53,16 @@ export default function UnpublishBatchModal({ count, busy, onCancel, onConfirm }
   return <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4 backdrop-blur-[1px]" role="presentation" onMouseDown={() => { if (!busy) onCancel() }}>
     <section ref={dialog} role="dialog" aria-modal="true" aria-labelledby={id} className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={event => event.stopPropagation()}>
       <span className="grid size-11 place-items-center rounded-xl bg-amber-100 text-amber-800"><TriangleAlert size={22} aria-hidden="true" /></span>
-      <h2 id={id} className="mt-4 text-xl font-black text-slate-900">Unpublish all SOAs?</h2>
-      <p className="mt-2 text-sm leading-6 text-slate-600">All <strong>{count}</strong> Statements of Account in this batch will be hidden from residents. You can publish them again later.</p>
+      <h2 id={id} className="mt-4 text-xl font-black text-slate-900">{selected ? 'Unpublish selected SOAs?' : 'Unpublish all SOAs?'}</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{selected ? 'The selected' : 'All'} <strong>{count}</strong> Statements of Account in this batch will be hidden from residents. You can publish them again later.</p>
+      {selected && unitNumbers.length > 0 && <p className="mt-3 max-h-24 overflow-y-auto rounded-lg bg-slate-50 p-3 text-sm text-slate-700">Units: {unitNumbers.join(', ')}</p>}
       <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">Emails already sent cannot be recalled.</p>
       <form onSubmit={submit} className="mt-5 space-y-4">
         <PasswordInput current label="Your current Admin password" value={password} onChange={event => setPassword(event.target.value)} disabled={busy} />
         {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button ref={cancelButton} type="button" disabled={busy} onClick={onCancel} className="min-h-11 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Cancel</button>
-          <button disabled={busy || !password} aria-busy={busy} className="min-h-11 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50">{busy ? 'Unpublishing...' : 'Confirm unpublish all'}</button>
+          <button disabled={busy || !password} aria-busy={busy} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50">{busy && <LoaderCircle size={17} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />}{busy ? 'Unpublishing...' : selected ? 'Confirm unpublish selected' : 'Confirm unpublish all'}</button>
         </div>
       </form>
     </section>

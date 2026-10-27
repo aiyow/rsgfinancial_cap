@@ -14,7 +14,7 @@ Old entries prefer their own original target snapshots. Missing identity is reco
 
 ## Coverage and atomicity
 
-`backend/services/auditCoverage.js` declares every mutation endpoint as recorded or excluded. Its test fails when a new mutation route is introduced without declaring coverage. Declaring a route is not sufficient: new business writes must use the shared writer and add an integration test for its snapshot and rollback behavior.
+`backend/services/audit.js` contains the audit implementation in numbered, foldable comment sections: sanitization, record identity/context, feed summaries, batch snapshots, historical identity recovery, the shared writer, email delivery outcomes, and route coverage. The route coverage registry declares every mutation endpoint as recorded or excluded. Its test fails when a new mutation route is introduced without declaring coverage. Declaring a route is not sufficient: new business writes must use the shared writer and add an integration test for its snapshot and rollback behavior.
 
 Recorded operations include accounts/approvals, registration and actual email verification, profile/email/password changes, units/assignments, drafts and draft edits, reading imports/corrections, SOA generation/reopening/forwarding/publication/deletion, payment submission/review/manual entry/invoices/deletion, analytics imports/replacements/deletion/clearing, explicit forecast refreshes, recommendation state/deletion, and template/logo/QR changes. Assignment-driven occupancy changes are grouped in the assignment entry. Reading/import entries identify regenerated forecasts/recommendations. User-requested email retries/resends are recorded when queued. Automatic delivery/reminder outcomes are not Activity Log events.
 

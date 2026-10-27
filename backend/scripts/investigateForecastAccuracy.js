@@ -1,6 +1,12 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { benchmarkDataset } from '../services/forecastEvaluation.js';
-import { buildForecast, calculateAccuracy, forecastCandidates, selectConsecutiveReadings, selectForecastModel } from '../services/predictiveAnalytics.js';
+import {
+  benchmarkDataset,
+  buildForecast,
+  calculateAccuracy,
+  forecastCandidates,
+  selectConsecutiveReadings,
+  selectForecastModel,
+} from "../services/analytics.js";
 
 // Reads only a previously captured local dataset; never updates live forecasts.
 const artifact = (name) => new URL(`../../artifacts/${name}`, import.meta.url);

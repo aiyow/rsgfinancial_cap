@@ -1,13 +1,17 @@
 import express from "express";
-import { hashPassword, verifyPassword } from "../services/passwordHash.js";
+import { hashPassword, verifyPassword, newPasswordSchema } from "../services/passwords.js";
 import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
-import { writeAuditLog } from "../services/auditLog.js";
+import { writeAuditLog } from "../services/audit.js";
 
-import { newPasswordSchema } from "../services/passwordValidation.js";
-import { accountActionEligibility, openAccountAssignments, ASSIGNMENT_BLOCK, BALANCE_BLOCK } from "../services/accountActionEligibility.js";
+import {
+  accountActionEligibility,
+  openAccountAssignments,
+  ASSIGNMENT_BLOCK,
+  BALANCE_BLOCK,
+} from "../services/accounts.js";
 
 const router = express.Router();
 const roleSchema = z.enum(["ADMIN", "COLLECTOR", "RESIDENT"]);

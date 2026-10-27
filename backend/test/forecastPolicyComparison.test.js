@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { compareForecastPolicies } from '../services/forecastPolicyComparison.js';
+import { compareForecastPolicies } from "../services/analytics.js";
 
 const dataset = () => ({ capturedAt:'test', units:[{unitId:1},{unitId:2}],
   periods:Array.from({length:10},(_,i)=>({id:i+1,periodStart:`2025-${String(i+1).padStart(2,'0')}-05`})),

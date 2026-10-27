@@ -6,12 +6,12 @@ import ExcelJS from 'exceljs';
 import pool from '../../config/db.js';
 import importRoutes from '../../routes/analyticsImportRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
-import { workbookFilename, workbookMimeType } from '../../services/analyticsWorkbook.js';
+import { workbookFilename, workbookMimeType } from "../../services/spreadsheets.js";
 
 test('history downloads export legacy readings and retain confirmed original workbooks atomically', async () => {
   const client = await pool.connect(), query = client.query.bind(client);
   const originalQuery = pool.query, originalConnect = pool.connect, originalSecret = process.env.JWT_SECRET;
-  let server, failArchive = false, sequence = 0;
+  let server, failArchive = false, sequence = 0, readingInserts = 0, historyUpdates = 0;
   const savepoints = [];
   try {
     await query('BEGIN');
@@ -41,6 +41,8 @@ test('history downloads export legacy readings and retain confirmed original wor
         VALUES(1,100,100,110,'VALID'),(2,100,200,200,'VALID'),(1,200,110,120,'VALID'),(2,200,200,205,'VALID');
     `);
     async function routeQuery(sql, values) {
+      if (sql.includes('INSERT INTO meter_readings')) readingInserts++;
+      if (sql.includes('UPDATE meter_readings')) historyUpdates++;
       if(sql==='BEGIN') {const name=`history_${++sequence}`;savepoints.push(name);return query(`SAVEPOINT ${name}`);}
       if(sql==='COMMIT') return query(`RELEASE SAVEPOINT ${savepoints.pop()}`);
       if(sql==='ROLLBACK') {const name=savepoints.pop();await query(`ROLLBACK TO SAVEPOINT ${name}`);return query(`RELEASE SAVEPOINT ${name}`);}
@@ -86,6 +88,41 @@ test('history downloads export legacy readings and retain confirmed original wor
     assert.equal(liveVerified.status,200);
     assert.equal((await liveVerified.json()).reusedLiveBilling,true);
     assert.equal((await query("SELECT COUNT(*)::int AS count FROM billing_periods WHERE DATE_TRUNC('month',period_start)='2026-10-01'")).rows[0].count,1,'Verifying a live month must not duplicate its analytics');
+    // Three raw columns are sufficient; optional spreadsheet financial/formula
+    // columns cannot override the server's consumption or saved billing rate.
+    const rawWorkbook = async (headers, rows) => {
+      const wb = new ExcelJS.Workbook(); wb.addWorksheet('Readings').addRows([headers, ...rows]);
+      return Buffer.from(await wb.xlsx.writeBuffer());
+    };
+    const previewRaw = async buffer => {
+      const form = new FormData(); form.append('periodMonth','2026-03'); form.append('file',new Blob([buffer],{type:workbookMimeType}),'readings.xlsx');
+      const response = await request('/preview',{method:'POST',body:form}); assert.equal(response.status,200); return response.json();
+    };
+    const raw = await rawWorkbook(['UNIT','PREVIOUS','CURRENT'],[['101',120,130],['102',205,210]]);
+    const rawPreview = await previewRaw(raw);
+    assert.equal(rawPreview.valid,true); assert.equal(rawPreview.rows[0].consumption,10);
+    assert.equal(rawPreview.rows[0].waterCharge,undefined); assert.equal(rawPreview.waterRate,undefined);
+    const present = await previewRaw(await rawWorkbook([' units ','previous','present'],[['101',120,130],['102',205,210]]));
+    assert.equal(present.valid,true,'Existing PRESENT and plural UNITS headers remain accepted');
+    const ignored = await previewRaw(await rawWorkbook(['UNIT','PREVIOUS','CURRENT','CONSUMPTION','WRATE','WATER BILLED'],[['101',120,130,999,'not a rate',999],['102',205,210,999,-1,999]]));
+    assert.equal(ignored.valid,true); assert.equal(ignored.rows[0].consumption,10); assert.equal(ignored.summary.warningCount,0);
+    for (const rows of [[['101',120,130],['101',205,210]], [['101',120,130]], [['101',-1,130],['102',205,210]], [['101',120,''],['102',205,210]]]) {
+      assert.equal((await previewRaw(await rawWorkbook(['UNIT','PREVIOUS','CURRENT'],rows))).valid,false,'Duplicate, missing or invalid raw readings remain blocked');
+    }
+    const flagged = await previewRaw(await rawWorkbook(['UNIT','PREVIOUS','CURRENT'],[['101',120,119],['102',205,210]]));
+    assert.equal(flagged.valid,true); assert.equal(flagged.summary.flaggedCount,1);
+    const insertsBefore = readingInserts, updatesBefore = historyUpdates;
+    const rawImport = await upload(raw,'2026-03'); assert.equal(rawImport.status,201,await rawImport.text());
+    assert.equal(readingInserts-insertsBefore,1,'All uploaded readings are saved in one database insert');
+    assert.equal(historyUpdates-updatesBefore,1,'Changed historical validations are updated together');
+    const quality = (await query("SELECT m.previous_reading,m.current_reading,m.validation_status,m.validation_notes FROM meter_readings m JOIN billing_periods p ON p.id=m.billing_period_id WHERE p.period_start='2026-03-01' AND m.unit_id=1")).rows[0];
+    assert.equal(Number(quality.previous_reading),120); assert.equal(Number(quality.current_reading),130);
+    assert.equal(quality.validation_status,'FLAGGED'); assert.match(quality.validation_notes,/110/,'Continuity checks still compare the prior saved reading');
+    assert.equal(Number((await query("SELECT water_rate_per_cubic_m AS rate FROM billing_periods WHERE period_start='2026-03-01'")).rows[0].rate),23);
+    await query("UPDATE billing_periods SET water_rate_per_cubic_m=25 WHERE period_start='2026-03-01'");
+    assert.equal((await upload(raw,'2026-03')).status,201);
+    assert.equal(Number((await query("SELECT water_rate_per_cubic_m AS rate FROM billing_periods WHERE period_start='2026-03-01'")).rows[0].rate),25,'Replacements retain the selected month rate');
+    assert.equal((await request('/2026-03',{method:'DELETE'})).status,200);
     failArchive=true;
     assert.equal((await upload()).status,503);
     failArchive=false;

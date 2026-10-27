@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import bcrypt from 'bcrypt';
-import { hashPassword, verifyPassword } from '../services/passwordHash.js';
+import { hashPassword, verifyPassword } from "../services/passwords.js";
 
 test('new hashes verify the complete 128-character password without a 72-byte cutoff', async () => {
   const password = 'Maple7!xyZab'.padEnd(128, 'x');

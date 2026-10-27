@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { ACTIVE_FORECAST_POLICY, buildForecast, linearRegression, regenerateForecasts } from '../services/predictiveAnalytics.js';
-import { classifyUsageChange } from '../services/usageAnomalies.js';
+import {
+  ACTIVE_FORECAST_POLICY,
+  buildForecast,
+  linearRegression,
+  regenerateForecasts,
+  classifyUsageChange,
+} from "../services/analytics.js";
 
 const history = (values) => values.map((consumption, index) => ({
   periodStart: new Date(Date.UTC(2025, index, 5)).toISOString().slice(0, 10), consumption, validationStatus: 'VALID',

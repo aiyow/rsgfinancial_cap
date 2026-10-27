@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { refreshAnalyticsForecasts } from '../services/refreshAnalyticsForecasts.js';
+import { refreshAnalyticsForecasts } from "../services/analytics.js";
 
 function fixture(ids) {
   const calls = [];

@@ -1,20 +1,8 @@
 import express from "express";
 import { randomUUID } from "node:crypto";
-import { hashPassword, verifyPassword } from "../services/passwordHash.js";
-import jwt from "jsonwebtoken";
-import { z } from "zod";
-import pool from "../config/db.js";
-import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
-import { validateBody } from "../middleware/validate.js";
-import { createUserNotifications } from "../services/notifications.js";
-import { writeAuditLog } from "../services/auditLog.js";
 import {
-  createVerificationToken,
-  hashVerificationToken,
-  sendVerificationEmail,
-  verificationExpiryDate,
-} from "../services/emailVerification.js";
-import {
+  hashPassword,
+  verifyPassword,
   createPasswordResetOtp,
   createPasswordResetToken,
   hashPasswordResetToken,
@@ -25,13 +13,25 @@ import {
   userIdentityOrderSql,
   passwordResetExpiryDate,
   sendPasswordResetEmail,
-} from "../services/passwordReset.js";
-import { normalizeEmailIdentity } from "../services/emailIdentity.js";
+  newPasswordSchema,
+} from "../services/passwords.js";
+import jwt from "jsonwebtoken";
+import { z } from "zod";
+import pool from "../config/db.js";
+import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
+import { validateBody } from "../middleware/validate.js";
+import { createUserNotifications } from "../services/notifications.js";
+import { writeAuditLog } from "../services/audit.js";
+import {
+  createVerificationToken,
+  hashVerificationToken,
+  sendVerificationEmail,
+  verificationExpiryDate,
+} from "../services/email.js";
 
-import { newPasswordSchema } from "../services/passwordValidation.js";
+import { normalizeEmailIdentity, consumeRegistrationGrant, registrationQuota } from "../services/accounts.js";
 
 import registrationRoutes from './registrationRoutes.js';
-import { consumeRegistrationGrant, registrationQuota } from '../services/registrationVerification.js';
 
 const router = express.Router();
 router.use(registrationRoutes);

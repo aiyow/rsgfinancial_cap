@@ -1,18 +1,24 @@
 import express from "express";
-import { writeAuditLog } from "../services/auditLog.js";
-import { auditReadings, changedAuditRecords } from "../services/auditDetails.js";
-import { verifyPassword } from "../services/passwordHash.js";
+import { writeAuditLog, auditReadings, changedAuditRecords } from "../services/audit.js";
+import { verifyPassword } from "../services/passwords.js";
 import ExcelJS from "exceljs";
 import multer from "multer";
 import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { validateBody } from "../middleware/validate.js";
-import { regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.js";
-import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
-import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
-import { validateMeterReading } from "../services/meterReadingValidation.js";
-import { exportAnalyticsWorkbook, workbookFilename, workbookMimeType } from "../services/analyticsWorkbook.js";
+import {
+  regenerateForecastsFromPeriod,
+  regeneratePrescriptiveRecommendations,
+} from "../services/analytics.js";
+
+import {
+  normalizeSpreadsheetNamespaces,
+  exportAnalyticsWorkbook,
+  workbookFilename,
+  workbookMimeType,
+} from "../services/spreadsheets.js";
+import { validateMeterReading } from "../services/billing.js";
 
 const router = express.Router();
 
@@ -34,7 +40,7 @@ const readingSchema = z.object({
 }).strict();
 const importSchema = z.object({
   periodMonth: monthSchema,
-  waterRatePerCubicM: z.coerce.number().min(0),
+  waterRatePerCubicM: z.coerce.number().min(0).optional(),
   readings: z.array(readingSchema).min(1).max(2000),
 }).strict();
 const clearImportsSchema = z.object({
@@ -78,8 +84,11 @@ async function parseWorkbook(buffer, units) {
   if (!sheet) return { valid: false, rows: [], errors: ["The workbook has no worksheet."], warnings: [], waterRate: null };
 
   const headers = new Map();
-  sheet.getRow(1).eachCell((cell, column) => headers.set(String(cellValue(cell) ?? "").trim().toUpperCase(), column));
-  const required = ["UNIT", "PREVIOUS", "PRESENT", "CONSUMPTION", "WRATE", "WATER BILLED"];
+  sheet.getRow(1).eachCell((cell, column) => {
+    const name = String(cellValue(cell) ?? '').trim().toUpperCase();
+    headers.set(name === 'CURRENT' ? 'PRESENT' : name === 'UNITS' ? 'UNIT' : name, column);
+  });
+  const required = ["UNIT", "PREVIOUS", "PRESENT"];
   const missingHeaders = required.filter((header) => !headers.has(header));
   if (missingHeaders.length) {
     return { valid: false, rows: [], errors: [`Missing required columns: ${missingHeaders.join(", ")}.`], warnings: [], waterRate: null };
@@ -90,17 +99,13 @@ async function parseWorkbook(buffer, units) {
   const rows = [];
   const errors = [];
   const warnings = [];
-  let waterRate = null;
 
   for (let rowNumber = 2; rowNumber <= sheet.actualRowCount; rowNumber += 1) {
     const row = sheet.getRow(rowNumber);
     const unitNumber = normalizeUnit(cellValue(row.getCell(headers.get("UNIT"))));
     const previousReading = numberValue(cellValue(row.getCell(headers.get("PREVIOUS"))));
     const currentReading = numberValue(cellValue(row.getCell(headers.get("PRESENT"))));
-    const fileConsumption = numberValue(cellValue(row.getCell(headers.get("CONSUMPTION"))));
-    const fileRate = numberValue(cellValue(row.getCell(headers.get("WRATE"))));
-    const fileCharge = numberValue(cellValue(row.getCell(headers.get("WATER BILLED"))));
-    if (!unitNumber && previousReading === null && currentReading === null && fileRate === null) continue;
+    if (!unitNumber && previousReading === null && currentReading === null) continue;
 
     const rowErrors = [];
     const rowWarnings = [];
@@ -110,19 +115,9 @@ async function parseWorkbook(buffer, units) {
     seen.add(unitNumber.toLowerCase());
     if (previousReading === null || previousReading < 0) rowErrors.push("Previous reading must be a non-negative number.");
     if (currentReading === null || currentReading < 0) rowErrors.push("Present reading must be a non-negative number.");
-    if (fileRate === null || fileRate < 0) rowErrors.push("Water rate must be a non-negative number.");
-    if (waterRate !== null && fileRate !== null && Math.abs(waterRate - fileRate) > 0.001) rowErrors.push("Workbook contains multiple water rates.");
-    if (waterRate === null && fileRate !== null) waterRate = fileRate;
 
     const consumption = previousReading !== null && currentReading !== null ? currentReading - previousReading : null;
-    const waterCharge = consumption !== null && fileRate !== null ? consumption * fileRate : null;
     if (consumption !== null && consumption < 0) rowWarnings.push("Present reading is lower than the previous reading and will be flagged.");
-    if (fileConsumption !== null && consumption !== null && Math.abs(fileConsumption - consumption) > 0.001) {
-      rowWarnings.push("Spreadsheet consumption differs from the server calculation.");
-    }
-    if (fileCharge !== null && waterCharge !== null && Math.abs(fileCharge - waterCharge) > 0.011) {
-      rowWarnings.push("Spreadsheet water charge differs from the server calculation.");
-    }
 
     rows.push({
       rowNumber,
@@ -131,7 +126,6 @@ async function parseWorkbook(buffer, units) {
       previousReading,
       currentReading,
       consumption,
-      waterCharge,
       errors: rowErrors,
       warnings: rowWarnings,
     });
@@ -149,7 +143,6 @@ async function parseWorkbook(buffer, units) {
     rows,
     errors,
     warnings,
-    waterRate,
     summary: {
       rowCount: rows.length,
       unitCount: units.length,
@@ -160,23 +153,43 @@ async function parseWorkbook(buffer, units) {
   };
 }
 
+// The spreadsheet supplies readings only. Replacements preserve their saved rate;
+// new history uses the latest preceding saved rate, or the first available later
+// rate when importing older history. Never manufacture zero financial estimates.
+async function historyWaterRate(client, periodStart, existing) {
+  if (existing && Number(existing.waterRate) > 0) return Number(existing.waterRate);
+  const result = await client.query(`SELECT water_rate_per_cubic_m AS rate FROM billing_periods
+    WHERE water_rate_per_cubic_m > 0
+    ORDER BY CASE WHEN period_start <= $1::date THEN 0 ELSE 1 END,
+      CASE WHEN period_start <= $1::date THEN period_start END DESC,
+      CASE WHEN period_start > $1::date THEN period_start END ASC, id DESC LIMIT 1`, [periodStart]);
+  if (result.rows[0]) return Number(result.rows[0].rate);
+  throw Object.assign(new Error('Set a water rate in Create Billing before importing analytics history.'), { status: 409 });
+}
+
 async function revalidateAnalyticsReadings(client) {
   const result = await client.query(
     `SELECT m.id, m.unit_id AS "unitId", m.previous_reading AS "previousReading",
-      m.current_reading AS "currentReading"
+      m.current_reading AS "currentReading", m.validation_status AS "validationStatus", m.validation_notes AS "validationNotes"
      FROM meter_readings m
      JOIN billing_periods p ON p.id = m.billing_period_id
      WHERE p.period_type = 'HISTORICAL_ANALYTICS'
      ORDER BY m.unit_id, p.period_start`,
   );
   const priorByUnit = new Map();
+  const updates = [];
   for (const row of result.rows) {
     const quality = validateMeterReading(Number(row.previousReading), Number(row.currentReading), priorByUnit.get(Number(row.unitId)));
-    await client.query(
-      "UPDATE meter_readings SET validation_status = $2, validation_notes = $3 WHERE id = $1",
-      [row.id, quality.status, quality.notes.join(" ") || null],
-    );
+    const notes = quality.notes.join(' ') || null;
+    if (row.validationStatus !== quality.status || (row.validationNotes || null) !== notes) {
+      updates.push({ id: row.id, status: quality.status, notes });
+    }
     priorByUnit.set(Number(row.unitId), Number(row.currentReading));
+  }
+  for (let offset = 0; offset < updates.length; offset += 500) {
+    await client.query(`UPDATE meter_readings m SET validation_status=v.status,validation_notes=v.notes
+      FROM jsonb_to_recordset($1::jsonb) AS v(id bigint,status varchar,notes text) WHERE m.id=v.id`,
+    [JSON.stringify(updates.slice(offset, offset + 500))]);
   }
 }
 
@@ -307,11 +320,13 @@ router.post("/", upload.single("file"), async (req, res, next) => {
   try {
     let payload = req.body;
     if (req.file) {
+      const selectedMonth = monthSchema.safeParse(req.body.periodMonth);
+      if (!selectedMonth.success) return res.status(400).json({ message: 'Select a valid month.' });
       const units = await pool.query("SELECT id, unit_number FROM units ORDER BY unit_number");
       const preview = await parseWorkbook(req.file.buffer, units.rows);
       if (!preview.valid) return res.status(400).json({ message: preview.errors[0] || preview.rows.flatMap(row => row.errors)[0] || "The workbook contains invalid readings." });
       // Re-parse the confirmed file so the retained original always matches the imported readings.
-      payload = { periodMonth: req.body.periodMonth, waterRatePerCubicM: preview.waterRate,
+      payload = { periodMonth: selectedMonth.data,
         readings: preview.rows.map(({ unitId, previousReading, currentReading }) => ({ unitId, previousReading, currentReading })) };
     }
     const parsed = importSchema.safeParse(payload);
@@ -327,6 +342,8 @@ router.post("/", upload.single("file"), async (req, res, next) => {
        ORDER BY CASE WHEN period_type = 'LIVE_BILLING' THEN 0 ELSE 1 END, period_start DESC LIMIT 1 FOR UPDATE`,
       [periodStart],
     );
+
+    if (body.waterRatePerCubicM === undefined) body.waterRatePerCubicM = await historyWaterRate(client, periodStart, existing.rows[0]);
 
     const unitsResult = await client.query("SELECT id FROM units ORDER BY id");
     const expected = new Set(unitsResult.rows.map((unit) => Number(unit.id)));
@@ -383,16 +400,16 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       periodId = inserted.rows[0].id;
     }
 
-    for (const row of body.readings) {
+    const importedReadings = body.readings.map(row => {
       const localQuality = validateMeterReading(row.previousReading, row.currentReading);
-      await client.query(
-        `INSERT INTO meter_readings
-          (unit_id, billing_period_id, recorded_by, previous_reading, current_reading, validation_status, validation_notes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [row.unitId, periodId, req.user.id, row.previousReading, row.currentReading,
-          localQuality.status, localQuality.notes.join(" ") || null],
-      );
-    }
+      return { unit_id: row.unitId, previous_reading: row.previousReading, current_reading: row.currentReading,
+        validation_status: localQuality.status, validation_notes: localQuality.notes.join(' ') || null };
+    });
+    await client.query(`INSERT INTO meter_readings
+      (unit_id,billing_period_id,recorded_by,previous_reading,current_reading,validation_status,validation_notes)
+      SELECT r.unit_id,$1,$2,r.previous_reading,r.current_reading,r.validation_status,r.validation_notes
+      FROM jsonb_to_recordset($3::jsonb) AS r(unit_id bigint,previous_reading numeric,current_reading numeric,validation_status varchar,validation_notes text)`,
+    [periodId, req.user.id, JSON.stringify(importedReadings)]);
 
     if (req.file) {
       await client.query(

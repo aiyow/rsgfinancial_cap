@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { allocateCredit, applyDueLatePenalties, calculateLatePenalty, manualReference } from "../services/paymentLedger.js";
+import {
+  allocateCredit,
+  applyDueLatePenalties,
+  calculateLatePenalty,
+  manualReference,
+} from "../services/payments.js";
 
 test("allocates one payment across a bill and leaves advance balance", () => {
   const result = allocateCredit({

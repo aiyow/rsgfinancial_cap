@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { validateResidentPurpose } from '../services/paymentPermissions.js';
+import { validateResidentPurpose } from "../services/payments.js";
 
 const bill={unitId:32,total:1667.74,approved:0,chargePayments:{WATER:{remainingBalance:58.9},ASSOCIATION_DUES:{remainingBalance:1608.84}}};
 function assignment(relationships,expectedUnit=32) { return { async query(sql,params) {

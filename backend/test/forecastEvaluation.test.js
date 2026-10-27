@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { benchmarkDataset, summarizeEvaluationHistory, evaluationBaselines, validEvaluationPair } from '../services/forecastEvaluation.js';
+import {
+  benchmarkDataset,
+  summarizeEvaluationHistory,
+  evaluationBaselines,
+  validEvaluationPair,
+} from "../services/analytics.js";
 
 const history = Array.from({ length: 9 }, (_, i) => ({ unitId: 1, unitNumber: '101',
   periodStart: `2026-${String(i + 1).padStart(2, '0')}-01`, consumption: 10, validationStatus: 'VALID' }));

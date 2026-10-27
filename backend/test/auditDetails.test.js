@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { auditSummaryChanges, auditTarget, changedAuditRecords, presentAudit, sameAuditValues, sanitizeAudit } from '../services/auditDetails.js';
-import { writeAuditLog } from '../services/auditLog.js';
-import { saveDeliveryOutcomes } from '../services/auditDelivery.js';
+import { auditSummaryChanges, auditTarget, changedAuditRecords, presentAudit, sameAuditValues, sanitizeAudit, writeAuditLog, saveDeliveryOutcomes } from '../services/audit.js';
 
 test('audit snapshots recursively exclude credentials, storage identifiers, file data and OCR text', () => {
   const dirty = { unitNumber: '232', password: 'private', password_hash: 'private', otp: 'private', accessToken: 'private', nested: [{ verifiedReferenceNo: 'GCASH-42', receiptCloudinaryPublicId: 'private', rawText: 'private', workbook_data: Buffer.from('private'), credentialChanged: true }], receiptPath: 'private', receiptUrl: 'private' };
@@ -61,4 +59,20 @@ test('automatic changes do not create user activity while delivery states still 
   assert.deepEqual(result, { sent: 1, failed: 1 }); assert.equal(calls.at(-1).sql, 'COMMIT');
   assert.equal(calls.filter(row => row.sql.includes('INSERT INTO audit_logs')).length, 0);
   assert.ok(!JSON.stringify(calls).includes('private SMTP credentials'));
+});
+
+test('publication summaries include a bounded safe preview from saved SOAs and accurate affected counts', () => {
+  const record = { entityName: 'UNIT_BILL', entityId: 100, fullName: 'Tanjiro Kamado', unitNumber: '307', periodStart: '2026-10-05', periodEnd: '2026-11-05', email: 'private@example.invalid', before: { publishedAt: null }, after: { publishedAt: '2026-10-27', charges: [{ amount: 123 }] } };
+  const log = { entityName: 'BILLING_PERIOD', action: 'PUBLISHED', context: { affectedRecords: [record], counts: { queuedEmails: 0 } }, newValues: { billIds: [100], mode: 'SELECTED' } };
+  const summary = presentAudit(log);
+  assert.equal(summary.context.affectedTargets[0].fullName, 'Tanjiro Kamado');
+  assert.equal(summary.context.affectedTargets[0].unitNumber, '307');
+  assert.equal(summary.context.counts.publishedCount, 1);
+  assert.equal(summary.context.affectedRecords, undefined);
+  assert.doesNotMatch(JSON.stringify(summary), /private@example|charges|publishedAt/);
+  assert.deepEqual(presentAudit(log, { detail: true }).context.affectedRecords, [record]);
+  const batch = presentAudit({ ...log, context: { affectedRecords: Array.from({ length: 10 }, (_, id) => ({ ...record, entityId: id })) } });
+  assert.equal(batch.context.affectedCount, 10); assert.equal(batch.context.affectedTargets.length, 3);
+  const legacy = presentAudit({ entityName: 'BILLING_PERIOD', action: 'PUBLISHED', newValues: { billIds: [1, 2] } });
+  assert.equal(legacy.context.counts.publishedCount, 2); assert.deepEqual(legacy.context.affectedTargets, []);
 });

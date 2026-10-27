@@ -11,7 +11,7 @@ import unitAssignmentRoutes from "./routes/unitAssignmentRoutes.js";
 import billingPeriodRoutes from "./routes/billingPeriodRoutes.js";
 import billRoutes from "./routes/billRoutes.js";
 import soaExportRoutes, { protectedSoaExports } from './routes/soaExportRoutes.js';
-import { startProtectedSoaMaintenance } from './services/protectedSoaExports.js';
+import { startProtectedSoaMaintenance } from "./services/soa.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import auditLogRoutes from "./routes/auditLogRoutes.js";
 import analyticsImportRoutes from "./routes/analyticsImportRoutes.js";
@@ -22,12 +22,12 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import financialReportRoutes from "./routes/financialReportRoutes.js";
 import billingErrorRoutes from "./routes/billingErrorRoutes.js";
-import { startSoaReminderScheduler } from "./services/soaReminderScheduler.js";
+import { startSoaReminderScheduler } from "./services/email.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 dotenv.config({ path: new URL("./.env", import.meta.url) });
 
-import { startRegistrationCleanup } from './services/registrationVerification.js';
+import { startRegistrationCleanup } from "./services/accounts.js";
 const app = express();
 // Set only when deployed behind a known reverse proxy. Never trust arbitrary forwarded IP headers.
 const proxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { normalizeEmailIdentity } from "../services/emailIdentity.js";
+import { normalizeEmailIdentity } from "../services/accounts.js";
 
 test("email identity ignores casing and accidental surrounding spaces", () => {
   assert.equal(normalizeEmailIdentity("  Airon.Magpayo@Example.COM  "), "airon.magpayo@example.com");

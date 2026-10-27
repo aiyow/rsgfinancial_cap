@@ -1,8 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import pool from '../config/db.js';
-import { analyticsPeriodCondition } from '../services/analyticsPeriods.js';
-import { buildForecast } from '../services/predictiveAnalytics.js';
-import { benchmarkDataset } from '../services/forecastEvaluation.js';
+import { analyticsPeriodCondition, buildForecast, benchmarkDataset } from "../services/analytics.js";
 
 // Only SELECT queries run against the database. Generated JSON is local evidence.
 async function capture() {

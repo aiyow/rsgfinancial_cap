@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildAdminWaterGuidance, loadAdminWaterGuidance } from '../services/adminWaterGuidance.js';
+import { buildAdminWaterGuidance, loadAdminWaterGuidance } from "../services/analytics.js";
 
 const source = { id: 5, periodStart: '2026-10-05', periodEnd: '2026-11-05', periodType: 'HISTORICAL_ANALYTICS', waterRate: 23 };
 function fixture(values = [10], predictions = [12]) {

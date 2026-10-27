@@ -130,7 +130,7 @@ Approval applies to the selected SOA. It does not sweep unrelated old bills or e
 
 ## 7. Water analytics
 
-Read [predictiveAnalytics.js](../backend/services/predictiveAnalytics.js) for calculations and [analyticsPeriods.js](../backend/services/analyticsPeriods.js) for training-data visibility.
+Read [predictiveAnalytics.js](../backend/services/analytics.js) for calculations and [analyticsPeriods.js](../backend/services/analytics.js) for training-data visibility.
 
 - Eligibility requires at least five consecutive valid months; the training window uses up to 12.
 - A flagged newest reading or gap interrupts the valid segment. A real zero reading remains valid and visible on charts.

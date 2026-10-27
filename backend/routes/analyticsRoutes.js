@@ -2,11 +2,14 @@ import express from "express";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId } from "../middleware/validate.js";
-import { calculateAccuracy } from "../services/predictiveAnalytics.js";
-import { analyticsPeriodCondition } from "../services/analyticsPeriods.js";
-import { summarizeEvaluationHistory, validEvaluationPair } from "../services/forecastEvaluation.js";
-import { refreshAnalyticsForecasts } from "../services/refreshAnalyticsForecasts.js";
-import { loadAdminWaterGuidance } from "../services/adminWaterGuidance.js";
+import {
+  calculateAccuracy,
+  analyticsPeriodCondition,
+  summarizeEvaluationHistory,
+  validEvaluationPair,
+  refreshAnalyticsForecasts,
+  loadAdminWaterGuidance,
+} from "../services/analytics.js";
 
 const router = express.Router();
 

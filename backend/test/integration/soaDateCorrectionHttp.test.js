@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 import pool from '../../config/db.js';
 import billRoutes from '../../routes/billRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
-import { createPaymentAllocations } from '../../services/paymentLedger.js';
+import { createPaymentAllocations } from "../../services/payments.js";
 
 // Only this disposable namespace is writable. Empty email-delivery fixtures
 // prevent the published-SOA correction workflow from sending any email.

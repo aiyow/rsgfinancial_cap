@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import * as server from '../services/billingPeriodPolicy.js';
+import * as server from "../services/billing.js";
 import * as browser from '../../frontend/src/utils/billingPeriodPolicy.js';
 
 const valid = { periodStart: '2026-01-31', periodEnd: '2026-02-28', dueDate: '2026-03-28', waterRatePerCubicM: 23, associationDuesRatePerSqm: 134.07, latePenaltyPercent: 0 };

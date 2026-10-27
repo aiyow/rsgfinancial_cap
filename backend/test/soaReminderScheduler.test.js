@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { REMINDER_TYPES, dateInTimezone, reminderTypeForDueDate, runSoaReminderJob } from "../services/soaReminderScheduler.js";
+import {
+  REMINDER_TYPES,
+  dateInTimezone,
+  reminderTypeForDueDate,
+  runSoaReminderJob,
+} from "../services/email.js";
 
 test("classifies three-day, due-today, and overdue reminder states", () => {
   assert.equal(reminderTypeForDueDate("2026-10-04", "2026-10-01"), REMINDER_TYPES.DUE_SOON);

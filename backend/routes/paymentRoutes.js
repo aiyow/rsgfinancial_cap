@@ -10,10 +10,10 @@ import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
 import { receiptUpload } from "../middleware/receiptUpload.js";
-import { analyzeReceipt } from "../services/receiptOcr.js";
-import { writeAuditLog } from "../services/auditLog.js";
-import { destroyReceipt, receiptDeliveryUrl, uploadReceipt } from "../services/cloudinaryReceipts.js";
-import { regeneratePrescriptiveRecommendations } from "../services/prescriptiveAnalytics.js";
+import { analyzeReceipt, destroyReceipt, receiptDeliveryUrl, uploadReceipt } from "../services/receipts.js";
+import { writeAuditLog } from "../services/audit.js";
+
+import { regeneratePrescriptiveRecommendations } from "../services/analytics.js";
 import { createUserNotifications } from "../services/notifications.js";
 import {
   createPaymentAllocations,
@@ -26,10 +26,10 @@ import {
   ensurePaymentLedgerSchema,
   getUnitCreditBalance,
   manualReference,
-} from "../services/paymentLedger.js";
-import { cents } from '../services/paymentAllocation.js';
-import { validateResidentPurpose } from '../services/paymentPermissions.js';
-import { paymentResidentNameSql } from '../services/paymentIdentity.js';
+  cents,
+  validateResidentPurpose,
+  paymentResidentNameSql,
+} from "../services/payments.js";
 
 const router = express.Router();
 const uploadDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../uploads/payment-proofs");

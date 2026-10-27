@@ -3,7 +3,7 @@ import ExcelJS from 'exceljs';
 import pool from '../config/db.js';
 import { allowRoles, requireAuth } from '../middleware/authMiddleware.js';
 import { getFinancialReport, parseFinancialReportFilters } from '../services/financialReports.js';
-import { applyDueLatePenalties } from '../services/paymentLedger.js';
+import { applyDueLatePenalties } from "../services/payments.js";
 
 const router = express.Router();
 const tabLabels = { overview:'Overview', combined:'Overall Billing', dues:'Association Dues', water:'Water Billing', paidDues:'Paid Monthly Dues', receivables:'Accounts Receivable', occupancy:'Unit Occupancy' };

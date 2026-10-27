@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
-import { benchmarkDataset } from '../services/forecastEvaluation.js';
-import { buildForecast, nextMonthStart } from '../services/predictiveAnalytics.js';
-import { validateMeterReading } from '../services/meterReadingValidation.js';
+import { benchmarkDataset, buildForecast, nextMonthStart } from "../services/analytics.js";
+
+import { validateMeterReading } from "../services/billing.js";
 
 const outputDir = new URL('../../artifacts/', import.meta.url);
 const source = JSON.parse(await readFile(new URL('workbook-source.json', outputDir), 'utf8'));

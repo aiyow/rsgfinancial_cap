@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdir, readFile } from 'node:fs/promises';
-import { auditCoverage } from '../services/auditCoverage.js';
+import { auditCoverage } from '../services/audit.js';
 
 test('all application mutation endpoints declare audited or excluded coverage', async () => {
   const root = new URL('../routes/', import.meta.url);

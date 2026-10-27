@@ -1,4 +1,4 @@
-import { cents, money } from './paymentAllocation.js';
+import { cents, money } from "./payments.js";
 
 const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;

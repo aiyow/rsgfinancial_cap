@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildVerificationEmailMessage,
+  buildRegistrationEmailMessage,
   createEmailVerificationService,
   hashVerificationToken,
   verificationExpiryDate,
-} from "../services/emailVerification.js";
+} from "../services/email.js";
 
 test("verification email uses a frontend verification link and escapes the recipient", () => {
   const message = buildVerificationEmailMessage({
@@ -38,4 +39,20 @@ test("tokens are stored as stable SHA-256 hashes and expire in 24 hours", () => 
   assert.equal(hashVerificationToken("test-token").length, 64);
   const now = new Date("2026-08-28T00:00:00.000Z");
   assert.equal(verificationExpiryDate(now).toISOString(), "2026-08-29T00:00:00.000Z");
+});
+
+test('registration email keeps leading-zero codes, escapes markup and sends to the intended address', async () => {
+  const message = buildRegistrationEmailMessage({ otp: '012345' });
+  assert.match(message.text, /012345/);
+  assert.match(message.html, />012345</);
+  assert.match(message.text, /10 minutes and can only be used once/);
+  assert.doesNotMatch(buildRegistrationEmailMessage({ otp: '<script>bad</script>' }).html, /<script>/);
+  const deliveries = [];
+  const service = createEmailVerificationService({
+    environment: { SMTP_HOST: 'smtp.example.invalid', SMTP_USER: 'fixture', SMTP_PASSWORD: 'fixture', SMTP_FROM: 'fixture@example.invalid' },
+    createTransport: () => ({ async sendMail(delivery) { deliveries.push(delivery); } }),
+  });
+  await service.sendRegistrationCode({ email: 'resident@example.invalid', otp: '012345' });
+  assert.equal(deliveries[0].to, 'resident@example.invalid');
+  assert.equal(deliveries[0].html, message.html);
 });

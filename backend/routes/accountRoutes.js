@@ -1,15 +1,21 @@
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import { verifyPassword } from '../services/passwordHash.js';
+import { verifyPassword } from "../services/passwords.js";
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import pool from '../config/db.js';
 import { requireAuth, allowRoles } from '../middleware/authMiddleware.js';
 import { validateBody } from '../middleware/validate.js';
-import { writeAuditLog } from '../services/auditLog.js';
-import { sendEmailChangeCode } from '../services/emailVerification.js';
-import { createEmailChangeCode, emailChangeExpiry, hashEmailChangeCode, emailChangeCodeMatches,
-  EMAIL_CHANGE_COOLDOWN_SECONDS, EMAIL_CHANGE_MAX_ATTEMPTS } from '../services/emailChange.js';
+import { writeAuditLog } from '../services/audit.js';
+import { sendEmailChangeCode } from "../services/email.js";
+import {
+  createEmailChangeCode,
+  emailChangeExpiry,
+  hashEmailChangeCode,
+  emailChangeCodeMatches,
+  EMAIL_CHANGE_COOLDOWN_SECONDS,
+  EMAIL_CHANGE_MAX_ATTEMPTS,
+} from "../services/accounts.js";
 
 const router = express.Router();
 const userColumns = `id, full_name AS "fullName", email, role, is_active AS "isActive",

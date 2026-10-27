@@ -1,7 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import pool from '../config/db.js';
-import { analyticsPeriodCondition } from '../services/analyticsPeriods.js';
-import { compareForecastPolicies } from '../services/forecastPolicyComparison.js';
+import { analyticsPeriodCondition, compareForecastPolicies } from "../services/analytics.js";
 
 // Connected-history capture is strictly read-only; only the report is written locally.
 const client = await pool.connect();

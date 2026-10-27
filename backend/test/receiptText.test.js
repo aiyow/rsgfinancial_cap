@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizeReceiptText, parseReceiptText, reconcileReceiptFields } from '../services/receiptText.js';
+import { normalizeReceiptText, parseReceiptText, reconcileReceiptFields } from "../services/receipts.js";
 
 for (const [token, expected] of [
   ['₱1,220.00', 1220], ['£1,030.00', 1030], ['$1,600.00', 1600],

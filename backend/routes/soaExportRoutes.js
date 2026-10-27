@@ -2,7 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import pool from '../config/db.js';
 import { requireAuth, allowRoles } from '../middleware/authMiddleware.js';
-import { createProtectedSoaExportService } from '../services/protectedSoaExports.js';
+import { createProtectedSoaExportService } from "../services/soa.js";
 
 export const protectedSoaExports = createProtectedSoaExportService({ db: pool });
 export function createSoaExportRouter(service = protectedSoaExports) {
@@ -19,10 +19,17 @@ export function createSoaExportRouter(service = protectedSoaExports) {
     const status = error.status || 503;
     if (error.retryAfterSeconds) res.set('Retry-After', String(error.retryAfterSeconds));
     return res.status(status).json({ code: error.status ? error.code : 'PROTECTED_EXPORT_UNAVAILABLE',
-      message: error.status ? error.message : 'Protected SOA downloads are temporarily unavailable. Please try again later.',
+      message: error.status ? error.message : 'SOA email requests are temporarily unavailable. Please try again later.',
       ...(error.retryAfterSeconds ? { retryAfterSeconds: error.retryAfterSeconds } : {}),
+      ...(error.nextRequestAt ? { nextRequestAt: error.nextRequestAt } : {}),
     });
   }
+  router.get('/bills/:id/protected-exports', async (req, res) => {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) return res.status(400).json({ message: 'A valid statement ID is required.' });
+    try { return res.json(await service.status(id, req.user.id)); }
+    catch (error) { return failure(error, res); }
+  });
   router.post('/bills/:id/protected-exports', async (req, res) => {
     const id = Number(req.params.id), key = req.get('Idempotency-Key');
     if (!Number.isSafeInteger(id) || id <= 0 || !uuid.safeParse(key).success || Object.keys(req.body || {}).length) return res.status(400).json({ message: 'A statement ID and UUID Idempotency-Key are required. Do not send document or email data.' });
@@ -39,9 +46,8 @@ export function createSoaExportRouter(service = protectedSoaExports) {
   router.get('/soa-exports/:exportId/file', async (req, res) => {
     if (!uuid.safeParse(req.params.exportId).success) return res.status(404).json({ message: 'Protected export not found.' });
     try {
-      const data = await service.read(req.params.exportId, req.user.id, true);
-      res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${data.filename}"` });
-      return res.send(data.bytes);
+      await service.read(req.params.exportId, req.user.id, true);
+      return res.status(410).json({ code: 'SOA_EMAIL_ONLY', message: 'Please download your SOA from the attachment in your email.' });
     } catch (error) { return failure(error, res); }
   });
   return router;

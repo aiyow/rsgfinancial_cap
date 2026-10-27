@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { detectUsageChange } from '../services/usageChangeReview.js';
-import { summarizeEvaluationHistory } from '../services/forecastEvaluation.js';
+import { detectUsageChange, summarizeEvaluationHistory } from "../services/analytics.js";
 
 const sourceMonth = '2026-08-01';
 const makeHistory = (values, unitId = 1) => values.map((consumption, index) => ({

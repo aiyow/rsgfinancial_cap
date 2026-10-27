@@ -1,10 +1,10 @@
 import express from "express";
-import { verifyPassword } from "../services/passwordHash.js";
+import { verifyPassword } from "../services/passwords.js";
 import { z } from "zod";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
-import { writeAuditLog } from "../services/auditLog.js";
+import { writeAuditLog } from "../services/audit.js";
 
 const router = express.Router();
 const occupancySchema = z.enum(["OCCUPIED", "VACANT"]);

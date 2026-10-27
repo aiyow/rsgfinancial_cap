@@ -2,9 +2,9 @@ import express from "express";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId } from "../middleware/validate.js";
-import { writeAuditLog } from "../services/auditLog.js";
-import { ensurePrescriptiveAnalyticsSchema } from "../services/prescriptiveAnalytics.js";
-import { applyDueLatePenalties, chargePaymentsSql } from '../services/paymentLedger.js';
+import { writeAuditLog } from "../services/audit.js";
+import { ensurePrescriptiveAnalyticsSchema } from "../services/analytics.js";
+import { applyDueLatePenalties, chargePaymentsSql } from "../services/payments.js";
 
 const router = express.Router();
 const statuses = new Set(["ACTIVE", "ALL", "OPEN", "VIEWED", "SUPERSEDED"]);

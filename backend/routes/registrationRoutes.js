@@ -3,9 +3,18 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import pool from '../config/db.js';
 import { validateBody } from '../middleware/validate.js';
-import { sendRegistrationCode } from '../services/emailVerification.js';
-import { createRegistrationOtp, createRegistrationToken, registrationHash, registrationOtpMatches, registrationExpiry,
-  lockRegistrationEmail, registrationQuota, REGISTRATION_MAX_ATTEMPTS, REGISTRATION_COOLDOWN_SECONDS } from '../services/registrationVerification.js';
+import { sendRegistrationCode } from "../services/email.js";
+import {
+  createRegistrationOtp,
+  createRegistrationToken,
+  registrationHash,
+  registrationOtpMatches,
+  registrationExpiry,
+  lockRegistrationEmail,
+  registrationQuota,
+  REGISTRATION_MAX_ATTEMPTS,
+  REGISTRATION_COOLDOWN_SECONDS,
+} from "../services/accounts.js";
 
 const router = express.Router();
 const email = z.string().trim().toLowerCase().email().max(255);

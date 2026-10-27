@@ -1,7 +1,7 @@
 import express from "express";
 import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
-import { applyDueLatePenalties, billAppliedSql, billTotalSql } from "../services/paymentLedger.js";
+import { applyDueLatePenalties, billAppliedSql, billTotalSql } from "../services/payments.js";
 
 const router = express.Router();
 

@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt';
 import pg from 'pg';
 import pool from '../../config/db.js';
 import routes from '../../routes/billingPeriodRoutes.js';
-import { hashPassword } from '../../services/passwordHash.js';
+import { hashPassword } from "../../services/passwords.js";
 import errorHandler from '../../middleware/errorHandler.js';
 
 // Direct connections and a private startup search_path keep all mutations in a
@@ -69,9 +69,9 @@ test('password-protected bulk SOA unpublishing is authorized, atomic and seriali
     process.env.JWT_SECRET='private-bulk-unpublish-test';
     const app=express();app.use(express.json());app.use('/api/billing-periods',routes);app.use(errorHandler);
     server=app.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));
-    async function request(id=42,body={currentPassword:passwords[0]},actor=1) {
+    async function request(id=42,body={currentPassword:passwords[0]},actor=1,selected=false) {
       const token=actor?jwt.sign({id:actor,authVersion:0},process.env.JWT_SECRET):null;
-      const response=await fetch(`http://127.0.0.1:${server.address().port}/api/billing-periods/${id}/unpublish`,{
+      const response=await fetch(`http://127.0.0.1:${server.address().port}/api/billing-periods/${id}/${selected?'unpublish-selected':'unpublish'}`,{
         method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body) });
       return{status:response.status,data:await response.json()};
     }
@@ -103,6 +103,38 @@ test('password-protected bulk SOA unpublishing is authorized, atomic and seriali
     await t.test('audit failure rolls back every visibility, notification and delivery change',async()=>{
       failAudit=true;try {assert.equal((await request()).status,503);}finally{failAudit=false;}
       assert.equal(await published(),143);assert.equal(await count('soa_email_deliveries'),144);assert.equal(await count('user_notifications'),145);assert.equal(await count('audit_logs'),0);
+    });
+    await t.test('selected unpublishing validates scope, password and permissions without partial changes',async()=>{
+      const valid={currentPassword:passwords[0],billIds:[1001,1002]};
+      for(const [actor,status] of [[null,401],[3,403],[4,403]])assert.equal((await request(42,valid,actor,true)).status,status);
+      for(const billIds of [[],[1001,1001],[0],['bad'],Array.from({length:2001},(_,i)=>i+1)]) {
+        assert.equal((await request(42,{...valid,billIds},1,true)).status,400);
+      }
+      assert.equal((await request(42,{currentPassword:passwords[0]},1,true)).status,400);
+      assert.equal((await request(42,{...valid,currentPassword:'wrong-password'},1,true)).status,403);
+      for(const billIds of [[1001,2011],[1001,999999]])assert.equal((await request(42,{...valid,billIds},1,true)).status,409);
+      await setup.query('UPDATE unit_bills SET published_at=NULL,published_by=NULL WHERE id=1002');
+      assert.equal((await request(42,valid,1,true)).status,409);
+      assert.ok((await setup.query('SELECT published_at FROM unit_bills WHERE id=1001')).rows[0].published_at);
+      await setup.query('UPDATE unit_bills SET published_at=NOW(),published_by=1 WHERE id=1002');
+      failAudit=true;try{assert.equal((await request(42,valid,1,true)).status,503);}finally{failAudit=false;}
+      assert.equal(await published(),143);assert.equal(await count('soa_email_deliveries'),144);assert.equal(await count('audit_logs'),0);
+    });
+    await t.test('a selected subset in a partially published batch changes only its visibility and associated deliveries',async()=>{
+      await setup.query('UPDATE unit_bills SET published_at=NULL,published_by=NULL WHERE id=1003');
+      const result=await request(42,{currentPassword:passwords[0],billIds:[1001,1002]},1,true);
+      assert.equal(result.status,200,JSON.stringify(result.data));assert.equal(result.data.unpublishedCount,2);assert.equal(result.data.cancelledEmailDeliveries,2);
+      assert.equal(await published(),140);assert.equal(await count('soa_email_deliveries'),142);assert.equal(await count('user_notifications'),143);
+      assert.ok((await setup.query('SELECT published_at FROM unit_bills WHERE id=1004')).rows[0].published_at);
+      assert.ok((await setup.query('SELECT published_at FROM unit_bills WHERE id=2011')).rows[0].published_at);
+      const audit=(await setup.query('SELECT * FROM audit_logs')).rows[0];
+      assert.equal(audit.new_values.mode,'SELECTED');assert.deepEqual(audit.new_values.billIds,['1001','1002']);assert.equal(audit.old_values.bills.length,2);
+      assert.ok(!JSON.stringify(audit).includes(passwords[0]));assert.equal(await fingerprint(),financialBefore);
+      // Restore only disposable fixture publication rows for the all-batch regression checks.
+      await setup.query(`UPDATE unit_bills SET published_at=NOW(),published_by=1 WHERE billing_period_id=42;
+        INSERT INTO soa_email_deliveries VALUES(1,1001,'SENT','fixture@example.invalid'),(2,1002,'PENDING','fixture@example.invalid');
+        INSERT INTO user_notifications VALUES(1,'SOA_PUBLISHED','/resident/bills/1001','soa-published:1001'),(2,'SOA_PUBLISHED','/resident/bills/1002','soa-published:1002');
+        DELETE FROM audit_logs;`);
     });
     await t.test('stale dialogs recheck publication after waiting for the batch transaction',async()=>{
       await setup.query('BEGIN');await setup.query('SELECT id FROM billing_periods WHERE id=42 FOR UPDATE');

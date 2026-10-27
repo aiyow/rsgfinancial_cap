@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildEmailChangeMessage, createEmailVerificationService } from '../services/emailVerification.js';
-import { createEmailChangeCode, emailChangeExpiry, hashEmailChangeCode } from '../services/emailChange.js';
+import { buildEmailChangeMessage, createEmailVerificationService } from "../services/email.js";
+import { createEmailChangeCode, emailChangeExpiry, hashEmailChangeCode } from "../services/accounts.js";
 
 test('email change codes are bound to their challenge, recipient and secret', () => {
   const hash = hashEmailChangeCode('request-a', 'new@example.com', '012345', 'test-secret');

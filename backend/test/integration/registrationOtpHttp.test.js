@@ -11,8 +11,8 @@ import pool from '../../config/db.js';
 import authRoutes from '../../routes/authRoutes.js';
 import userRoutes from '../../routes/userRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
-import { registrationHash, cleanupRegistrationData } from '../../services/registrationVerification.js';
-import { hashVerificationToken } from '../../services/emailVerification.js';
+import { registrationHash, cleanupRegistrationData } from "../../services/accounts.js";
+import { hashVerificationToken } from "../../services/email.js";
 
 test('email-first signup, durable limits, one-time verification and separate approval',async t=>{
  const schema='codex_registration_'+randomUUID().replaceAll('-','');

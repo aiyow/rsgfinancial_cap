@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import pool from '../../config/db.js';
 import paymentRoutes from '../../routes/paymentRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
-import { createPaymentAllocations } from '../../services/paymentLedger.js';
+import { createPaymentAllocations } from "../../services/payments.js";
 
 test('one unique REF per approved transaction across uploads, manual payments and existing records',async t=>{
  const schema='codex_payment_or_'+randomUUID().replaceAll('-','');assert.match(schema,/^codex_payment_or_[a-f0-9]{32}$/);

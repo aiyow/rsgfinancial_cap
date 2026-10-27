@@ -1,6 +1,6 @@
 import "dotenv/config";
 import pool from "../config/db.js";
-import { runSoaReminderJob } from "../services/soaReminderScheduler.js";
+import { runSoaReminderJob } from "../services/email.js";
 
 try {
   const summary = await runSoaReminderJob({ timeZone: process.env.SOA_REMINDER_TIMEZONE || "Asia/Manila" });

@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { cents, allocatePaymentPurpose, allocateCategoryCredit, allowedPaymentPurposes } from '../services/paymentAllocation.js';
-import { recipientPaymentDetails } from '../services/paymentRecipients.js';
+import {
+  cents,
+  allocatePaymentPurpose,
+  allocateCategoryCredit,
+  allowedPaymentPurposes,
+  recipientPaymentDetails,
+} from "../services/payments.js";
 
 test('tenant purpose is specific to the unit relationship; owner can choose all purposes',()=>{
   assert.deepEqual(allowedPaymentPurposes(['TENANT']),['WATER']);

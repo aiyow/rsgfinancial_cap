@@ -39,3 +39,20 @@ test('times explicitly use Manila rather than host timezone', () => {
   assert.match(auditTime('2026-10-25T16:01:00Z'), /26/)
   assert.match(auditTime('2026-10-25T16:01:00Z'), /12:01:00|00:01:00/)
 })
+
+test('publishing one SOA identifies the resident and unit instead of the billing batch', () => {
+  const log = { entityName: 'BILLING_PERIOD', action: 'PUBLISHED', context: { target: { periodStart: '2026-10-05', periodEnd: '2026-11-05' }, affectedCount: 1, affectedTargets: [{ entityId: 100, fullName: 'Tanjiro Kamado', unitNumber: '307' }], counts: { queuedEmails: 0 } } }
+  assert.match(auditSummary(log), /^Published SOA for Tanjiro Kamado · Unit 307 · Oct.*Nov/)
+  assert.doesNotMatch(auditSummary(log), /Billing batch/)
+  assert.equal(auditChangeSummary(log), '0 emails queued')
+  assert.match(auditSummary({ ...log, action: 'UNPUBLISHED' }), /^Unpublished SOA for Tanjiro Kamado/)
+})
+
+test('publishing several SOAs displays the actual count, resident/unit previews and remainder', () => {
+  const log = { entityName: 'BILLING_PERIOD', action: 'PUBLISHED', context: { target: { periodStart: '2026-10-05', periodEnd: '2026-11-05' }, affectedCount: 4, affectedTargets: [{ fullName: 'Tanjiro Kamado', unitNumber: '307' }, { fullName: 'Juan de la Paz', unitNumber: '437' }, { unitNumber: '238' }], counts: { queuedEmails: 2 } } }
+  assert.match(auditSummary(log), /^Published 4 SOAs/)
+  assert.match(auditChangeSummary(log), /Tanjiro Kamado · Unit 307.*Juan de la Paz · Unit 437.*Unit 238.*1 more SOA.*2 emails queued/)
+  const legacy = { ...log, context: { affectedCount: 1, affectedTargets: [] } }
+  assert.equal(auditSummary(legacy), 'Published 1 SOA')
+  assert.doesNotMatch(auditSummary(legacy), /Tanjiro/)
+})

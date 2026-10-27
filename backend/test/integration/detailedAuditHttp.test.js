@@ -9,7 +9,7 @@ import auditRoutes from '../../routes/auditLogRoutes.js';
 import unitRoutes from '../../routes/unitRoutes.js';
 import periodRoutes from '../../routes/billingPeriodRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
-import { writeAuditLog } from '../../services/auditLog.js';
+import { writeAuditLog } from '../../services/audit.js';
 
 // Only disposable private-schema rows are read or changed by this test.
 test('audit API preserves snapshots, redacts secrets, pages all history and commits with mutations', async t => {
@@ -117,6 +117,18 @@ test('audit API preserves snapshots, redacts secrets, pages all history and comm
       assert.equal(latest.context.affectedCount, 1); assert.equal(latest.context.affectedRecords, undefined);
       const detail = (await request('/api/audit-logs/' + latest.id)).data.log;
       assert.equal(detail.context.affectedRecords[0].before.currentReading, 15); assert.equal(detail.context.affectedRecords[0].after, null);
+    });
+    await t.test('existing publication history exposes saved resident and unit in compact list rows without rewrites', async () => {
+      await writeAuditLog({ client: setup, actorUserId: 2, entityName: 'BILLING_PERIOD', entityId: 42, action: 'PUBLISHED', newValues: { billIds: [900], mode: 'SELECTED' }, context: { target: { periodStart: '2026-10-05', periodEnd: '2026-11-05' }, affectedRecords: [{ entityName: 'UNIT_BILL', entityId: 900, fullName: 'Tanjiro Kamado', unitNumber: '307', before: { publishedAt: null }, after: { publishedAt: '2026-10-27' } }], counts: { queuedEmails: 0 } } });
+      const stored = (await setup.query("SELECT id,context FROM audit_logs WHERE action='PUBLISHED'")).rows[0];
+      const response = await request('/api/audit-logs?action=PUBLISHED&q=Tanjiro');
+      assert.equal(response.status, 200); assert.equal(response.data.pagination.total, 1);
+      const row = response.data.logs[0];
+      assert.equal(row.context.affectedTargets[0].fullName, 'Tanjiro Kamado');
+      assert.equal(row.context.affectedTargets[0].unitNumber, '307');
+      assert.equal(row.context.counts.publishedCount, 1); assert.equal(row.context.counts.queuedEmails, 0);
+      assert.equal(row.context.affectedRecords, undefined); assert.equal(row.newValues, undefined);
+      assert.deepEqual((await setup.query('SELECT id,context FROM audit_logs WHERE id=$1', [stored.id])).rows[0], stored);
     });
     await t.test('legacy invoice summaries recover saved payment identity without future data or history rewrites', async () => {
       await setup.query(`INSERT INTO unit_bills VALUES(501,'232','Original Resident','2026-10-05','2026-11-05');

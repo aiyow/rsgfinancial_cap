@@ -3,10 +3,10 @@ import ExcelJS from "exceljs";
 import { homedir } from "node:os";
 import path from "node:path";
 import pool from "../config/db.js";
-import { writeAuditLog } from "../services/auditLog.js";
-import { regenerateForecastsFromPeriod } from "../services/predictiveAnalytics.js";
-import { validateMeterReading } from "../services/meterReadingValidation.js";
-import { normalizeSpreadsheetNamespaces } from "../services/workbookCompatibility.js";
+import { writeAuditLog } from "../services/audit.js";
+import { regenerateForecastsFromPeriod } from "../services/analytics.js";
+import { validateMeterReading } from "../services/billing.js";
+import { normalizeSpreadsheetNamespaces } from "../services/spreadsheets.js";
 
 const monthNumbers = new Map([
   ["january", 1], ["february", 2], ["march", 3],

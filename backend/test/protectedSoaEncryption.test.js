@@ -1,18 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { randomBytes } from 'node:crypto';
+import {
+  createSoaPassword,
+  encryptSoaPdf,
+  runQpdf,
+  cleanupSoaTemporaryFiles,
+  renderSoaPdf,
+  loadSoaLogo,
+  defaultSoaTemplate,
+} from "../services/soa.js";
 import { mkdtemp, writeFile, rm, readdir, utimes } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { encryptSoaPdf, runQpdf, cleanupSoaTemporaryFiles } from '../services/soaEncryption.js';
-import { renderSoaPdf, loadSoaLogo } from '../services/soaPdf.js';
-import { defaultSoaTemplate } from '../services/soaTemplate.js';
 
 test('actual qpdf rejects missing/wrong passwords, accepts emailed password, R6 AES-256, allows printing and cleans plaintext', { skip: !process.env.QPDF_PATH }, async () => {
   const directory = await mkdtemp(join(tmpdir(), 'soa-encryption-test-'));
   const root = join(tmpdir(), 'residens-protected-soa');
-  let password = randomBytes(18).toString('base64url');
-  assert.equal(password.length, 24);
+  let password = createSoaPassword('José Niño de la Peña');
+  assert.match(password, /^delapeña\d{4}$/);
   try {
     const charges = [{ chargeType: 'WATER', amount: 85.38, rateApplied: 23 }, { chargeType: 'ASSOCIATION_DUES', description: 'Association dues', amount: 1608.84 }];
     const bill = { soaTemplate: defaultSoaTemplate, charges, unitNumber: '234', floor: '2', payerName: 'José Niño de la Peña', periodStart: '2026-10-05', periodEnd: '2026-11-05', statementDate: '2026-10-27', dueDate: '2026-11-10', totalAmount: 1694.22, remainingBalance: 1494.22, approvedAmount: 200, chargePayments: { WATER: { billedAmount: 85.38, remainingBalance: 85.38 }, ASSOCIATION_DUES: { billedAmount: 1608.84, remainingBalance: 1408.84, approvedAmount: 200, invoiceReferences: ['INV-0123'] } } };

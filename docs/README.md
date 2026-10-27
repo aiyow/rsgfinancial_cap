@@ -1,6 +1,6 @@
 # Learn the RSG Condo System
 
-These guides explain the source code checked on October 13, 2026. Start with the overview, then trace a feature from its browser page to its API route and database tables.
+The backend and frontend guides were refreshed against source on October 27, 2026, including the consolidated service files and current account/SOA workflows. Each guide records its own checked date. Start with the overview, then trace a feature from its browser page to its API route and database tables.
 
 ## Reading order
 
@@ -17,10 +17,10 @@ For installation, use the project [README](../README.md) and [local setup guide]
 | --- | --- | --- |
 | 1. Structure | Overview; `main.jsx`; `App.jsx`; `server.js` | Explain what runs in the browser, Node, PostgreSQL, and external services. |
 | 2. Accounts | `AuthContext.jsx`; `Login.jsx`; `authRoutes.js`; `authMiddleware.js` | Explain saved-token validation and how password reset invalidates old sessions. |
-| 3. Billing | `CollectorBillingPage.jsx`; `billingPeriodRoutes.js`; `meterReadingValidation.js` | Calculate charges; distinguish generation, forwarding, and publication. |
-| 4. Payments | `ResidentBillPage.jsx`; `AdminPaymentPage.jsx`; `paymentAllocation.js`; `paymentLedger.js` | Explain submission, allocation, application, credit, and tenant permissions. |
-| 5. Analytics | `AnalyticsPage.jsx`; `analyticsRoutes.js`; `predictiveAnalytics.js`; `prescriptiveAnalytics.js` | Explain eligibility, model policy, accuracy, and recommendations. |
-| 6. Corrections | `BillingErrorsPage.jsx`; `billRoutes.js`; email services | Explain open reports, payment reconciliation, and delivery recovery. |
+| 3. Billing | `CollectorBillingPage.jsx`; `billingPeriodRoutes.js`; `services/billing.js` | Calculate charges; distinguish generation, forwarding, and publication. |
+| 4. Payments | `ResidentBillPage.jsx`; `AdminPaymentPage.jsx`; `services/payments.js` | Explain submission, allocation, application, credit, and tenant permissions. |
+| 5. Analytics | `AnalyticsPage.jsx`; `analyticsRoutes.js`; `services/analytics.js` | Explain eligibility, model policy, accuracy, and recommendations. |
+| 6. Corrections and SOA email | `BillingErrorsPage.jsx`; `billRoutes.js`; `ProtectedSoaDownload.jsx`; `services/soa.js` and `services/email.js` | Explain open reports, payment reconciliation, protected email delivery, and the 30-minute request cooldown. |
 
 The detailed guides link these filenames to their exact source locations.
 

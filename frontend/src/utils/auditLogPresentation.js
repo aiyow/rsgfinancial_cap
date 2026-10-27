@@ -19,7 +19,14 @@ export function auditDate(value) {
 }
 export function auditTargetLabel(log) {
   const target = log.context?.target || { ...log.oldValues, ...log.newValues }
+  const publication = log.entityName === 'BILLING_PERIOD' && ['PUBLISHED', 'UNPUBLISHED'].includes(log.action)
+  const affected = log.context?.affectedTargets || []
+  const count = Number(log.context?.affectedCount || log.context?.counts?.[log.action === 'PUBLISHED' ? 'publishedCount' : 'unpublishedCount'] || 0)
+  if (publication && count === 1 && affected.length === 1) {
+    return auditTargetLabel({ ...log, entityName: 'UNIT_BILL', entityId: affected[0].entityId, context: { target: { ...target, ...affected[0] } } })
+  }
   let label = target.label || auditLabel(log.entityName, entityLabels)
+  if (publication && count > 0) label = `${count.toLocaleString('en-PH')} ${count === 1 ? 'SOA' : 'SOAs'}`
   if (log.entityName === 'UNIT' && target.unitNumber) label = `Unit ${target.unitNumber}`
   if (target.fullName && ['USER_ACCOUNT', 'PAYMENT_SUBMISSION', 'UNIT_ASSIGNMENT', 'UNIT_BILL', 'SOA_EMAIL_DELIVERY', 'BILLING_ERROR_REPORT'].includes(log.entityName)) label += ` for ${target.fullName}`
   if (target.unitNumber && log.entityName !== 'UNIT') label += ` · Unit ${target.unitNumber}`
@@ -58,7 +65,15 @@ export function auditChangeSummary(log) {
   const more = (log.context?.changeCount || changes.length) - changes.length
   if (more > 0) changes.push(`${more} more ${more === 1 ? 'field changed' : 'fields changed'}`)
   const counts = log.context?.counts || {}
-  for (const [key, label] of [['unpublishedCount', 'SOAs unpublished'], ['billCount', 'SOAs'], ['readingCount', 'meter readings'], ['removedBills', 'SOAs removed']]) {
+  const publication = log.entityName === 'BILLING_PERIOD' && ['PUBLISHED', 'UNPUBLISHED'].includes(log.action)
+  const affected = log.context?.affectedTargets || []
+  if (publication && Number(log.context?.affectedCount) > 1) {
+    for (const target of affected) changes.push([target.fullName, target.unitNumber ? `Unit ${target.unitNumber}` : null].filter(Boolean).join(' · ') || 'Identifying details not recorded')
+    const remaining = Number(log.context.affectedCount) - affected.length
+    if (remaining > 0) changes.push(`${remaining} more ${remaining === 1 ? 'SOA' : 'SOAs'}`)
+  }
+  for (const [key, label] of [['unpublishedCount', 'SOAs unpublished'], ['billCount', 'SOAs'], ['readingCount', 'meter readings'], ['removedBills', 'SOAs removed'], ['queuedEmails', 'emails queued']]) {
+    if (publication && key === 'unpublishedCount') continue
     if (counts[key] !== undefined && counts[key] !== null && Number.isFinite(Number(counts[key]))) changes.push(`${Number(counts[key]).toLocaleString('en-PH')} ${label}`)
   }
   return changes.join(' · ')

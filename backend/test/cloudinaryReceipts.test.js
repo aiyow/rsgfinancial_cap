@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { Writable } from "node:stream";
 import test from "node:test";
-import { createReceiptService } from "../services/cloudinaryReceipts.js";
+import { createReceiptService } from "../services/receipts.js";
 
 const environment = {
   CLOUDINARY_CLOUD_NAME: "test-cloud",

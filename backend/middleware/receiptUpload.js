@@ -1,6 +1,11 @@
 import multer from 'multer';
 import sharp from 'sharp';
-import { MAX_RECEIPT_BYTES, RECEIPT_TYPE_MESSAGE, receiptExtension, receiptFileError } from '../services/receiptFilePolicy.js';
+import {
+  MAX_RECEIPT_BYTES,
+  RECEIPT_TYPE_MESSAGE,
+  receiptExtension,
+  receiptFileError,
+} from "../services/receipts.js";
 
 function invalidReceipt(message) {
   return Object.assign(new Error(message), { status: 400 });
