@@ -30,6 +30,25 @@ Do not put database, JWT, SMTP, or Cloudinary secrets in this file: every `VITE_
 
 Residents can switch between their current unit assignments in the analytics panel. Eligible insights appear after bill generation, before SOA publication, and residents can mark their own insights as viewed.
 
+## Install on a phone
+
+The production site includes a web app manifest requesting `standalone` display.
+Its root scope covers login, registration, and every role's pages, so normal
+navigation stays inside the installed app. Launching from the installed app icon
+should omit the browser address toolbar on browsers supporting this mode. Opening
+the same URL in a normal tab still shows browser controls. The phone's status bar
+and navigation controls remain managed by the operating system.
+
+After deploying a version that adds or changes the manifest, remove an old home
+screen shortcut, open the HTTPS site in the desired browser, reload it, and use
+the browser's **Install app** option (the wording varies by browser). Launch the
+newly installed app from its icon. An existing browser shortcut may retain its
+previous launch behavior. If a browser offers only a shortcut that retains its
+toolbar, try installation in Chrome for Android.
+
+Installation does not provide offline access to bills or payment records; an
+internet connection is still required.
+
 ## Commands
 
 ```powershell
