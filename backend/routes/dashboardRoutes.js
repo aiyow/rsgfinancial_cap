@@ -38,6 +38,7 @@ router.get("/overview", async (req, res, next) => {
            (SELECT COUNT(*)::int FROM units) AS "totalUnits",
            (SELECT COUNT(*)::int FROM units WHERE occupancy_status = 'OCCUPIED') AS "occupiedUnits",
            (SELECT COUNT(*)::int FROM units WHERE occupancy_status = 'VACANT') AS "vacantUnits",
+           (SELECT COUNT(*)::int FROM users WHERE role = 'RESIDENT' AND is_active = true) AS "activeResidentAccounts",
            (SELECT COUNT(*)::int FROM payment_submissions WHERE review_status = 'PENDING') AS "pendingPayments",
            (SELECT COUNT(*)::int FROM payment_submissions WHERE review_status = 'APPROVED') AS "approvedPayments",
            (SELECT COUNT(*)::int FROM users WHERE approval_status = 'PENDING') AS "pendingAccountVerifications",

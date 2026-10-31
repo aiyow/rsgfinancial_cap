@@ -8,12 +8,12 @@ import unitRoutes from '../../routes/unitRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
 
 // All writes use temporary tables and an outer transaction that is rolled back.
-test('resident assignment persists occupied status atomically and stale unit edits cannot undo it', async () => {
+test('unit assignments preserve manual occupancy and audit failures roll back changes', async () => {
   const client = await pool.connect();
   const query = client.query.bind(client);
   const originalQuery = pool.query, originalConnect = pool.connect;
   const originalSecret = process.env.JWT_SECRET;
-  let server, failOccupancy = false, failAudit = false, sequence = 0;
+  let server, failAudit = false, sequence = 0;
   const savepoints = [];
   try {
     await query('BEGIN');
@@ -47,8 +47,7 @@ test('resident assignment persists occupied status atomically and stale unit edi
         await query(`ROLLBACK TO SAVEPOINT ${name}`);
         return query(`RELEASE SAVEPOINT ${name}`);
       }
-      if ((failOccupancy && sql.startsWith('UPDATE units SET occupancy_status')) ||
-          (failAudit && sql.includes('INSERT INTO audit_logs'))) {
+      if (failAudit && sql.includes('INSERT INTO audit_logs')) {
         throw Object.assign(new Error('Simulated write failure'), { status: 503 });
       }
       return query(sql, values);
@@ -76,55 +75,58 @@ test('resident assignment persists occupied status atomically and stale unit edi
 
     const owner = await assign(10);
     assert.equal(owner.status, 201, JSON.stringify(owner.data));
-    assert.equal(await occupancy(10), 'OCCUPIED');
-    const listed = await request('/api/units/10', undefined, 'GET');
-    assert.equal(listed.data.unit.occupancyStatus, 'OCCUPIED');
-    const staleSave = await request('/api/units/10', { occupancyStatus: 'VACANT', floor: 'Updated floor' }, 'PATCH');
-    assert.equal(staleSave.status, 200, JSON.stringify(staleSave.data));
-    assert.equal(staleSave.data.unit.occupancyStatus, 'OCCUPIED');
-    assert.equal(staleSave.data.unit.floor, 'Updated floor');
-
+    assert.equal(await occupancy(10), 'VACANT');
+    assert.equal((await request('/api/units/10', undefined, 'GET')).data.unit.occupancyStatus, 'VACANT');
     const tenant = await assign(10, 3, { relationshipType: 'TENANT' });
     assert.equal(tenant.status, 201);
-    assert.equal(await occupancy(10), 'OCCUPIED');
+    assert.equal(await occupancy(10), 'VACANT');
     assert.equal((await assign(10)).status, 409);
-    assert.equal(await occupancy(10), 'OCCUPIED');
     assert.equal((await assign(20, 4)).status, 409);
     assert.equal(await occupancy(20), 'VACANT');
+
+    for (const occupancyStatus of ['OCCUPIED', 'VACANT']) {
+      const saved = await request('/api/units/10', { occupancyStatus, floor: 'Updated floor' }, 'PATCH');
+      assert.equal(saved.status, 200, JSON.stringify(saved.data));
+      assert.equal(saved.data.unit.occupancyStatus, occupancyStatus);
+      assert.equal(saved.data.unit.floor, 'Updated floor');
+    }
+    const changed = await request(`/api/unit-assignments/${owner.data.assignment.id}`, { relationshipType: 'TENANT', isPrimaryPayer: true }, 'PATCH');
+    assert.equal(changed.status, 200);
+    assert.equal(changed.data.assignment.isPrimaryPayer, true);
+    assert.equal(await occupancy(10), 'VACANT');
+    await request('/api/units/10', { occupancyStatus: 'OCCUPIED' }, 'PATCH');
+    assert.equal((await request(`/api/unit-assignments/${owner.data.assignment.id}`, undefined, 'DELETE')).status, 200);
+    assert.equal((await request(`/api/unit-assignments/${tenant.data.assignment.id}`, undefined, 'DELETE')).status, 200);
+    assert.equal(await occupancy(10), 'OCCUPIED', 'Ending the last assignment must preserve occupancy');
 
     const historical = await assign(20, 2, { startDate: '2026-01-01', endDate: '2026-01-31' });
     assert.equal(historical.status, 201);
     assert.equal(await occupancy(20), 'VACANT');
-    const reactivated = await request(`/api/unit-assignments/${historical.data.assignment.id}`, { endDate: null }, 'PATCH');
-    assert.equal(reactivated.status, 200);
-    assert.equal(await occupancy(20), 'OCCUPIED');
+    assert.equal((await request(`/api/unit-assignments/${historical.data.assignment.id}`, { endDate: null }, 'PATCH')).status, 200);
+    assert.equal(await occupancy(20), 'VACANT');
+    await request('/api/units/30', { occupancyStatus: 'OCCUPIED' }, 'PATCH');
     const moved = await request(`/api/unit-assignments/${historical.data.assignment.id}`, { unitId: 30 }, 'PATCH');
     assert.equal(moved.status, 200);
+    assert.equal(await occupancy(20), 'VACANT');
+    assert.equal(await occupancy(30), 'OCCUPIED');
+    const anotherOwner = await assign(30, 3);
+    assert.equal(anotherOwner.status, 201);
     assert.equal(await occupancy(30), 'OCCUPIED');
 
-    failOccupancy = true;
-    assert.equal((await assign(40)).status, 503);
-    failOccupancy = false;
-    assert.equal(await occupancy(40), 'VACANT');
-    assert.equal((await query('SELECT COUNT(*)::int AS count FROM unit_assignments WHERE unit_id=40')).rows[0].count, 0);
     failAudit = true;
     assert.equal((await assign(40)).status, 503);
-    failAudit = false;
-    assert.equal(await occupancy(40), 'VACANT');
     assert.equal((await query('SELECT COUNT(*)::int AS count FROM unit_assignments WHERE unit_id=40')).rows[0].count, 0);
-    const failedMove = await (async () => {
-      failOccupancy = true;
-      const result = await request(`/api/unit-assignments/${historical.data.assignment.id}`, { unitId: 40 }, 'PATCH');
-      failOccupancy = false;
-      return result;
-    })();
-    assert.equal(failedMove.status, 503);
+    assert.equal((await request(`/api/unit-assignments/${historical.data.assignment.id}`, { unitId: 40 }, 'PATCH')).status, 503);
     assert.equal((await query('SELECT unit_id FROM unit_assignments WHERE id=$1', [historical.data.assignment.id])).rows[0].unit_id, '30');
+    assert.equal((await request(`/api/unit-assignments/${historical.data.assignment.id}`, undefined, 'DELETE')).status, 503);
+    assert.equal((await query('SELECT end_date FROM unit_assignments WHERE id=$1', [historical.data.assignment.id])).rows[0].end_date, null);
+    assert.equal((await request('/api/units/40', { occupancyStatus: 'OCCUPIED' }, 'PATCH')).status, 503);
     assert.equal(await occupancy(40), 'VACANT');
-    const manual = await request('/api/units/40', { occupancyStatus: 'OCCUPIED' }, 'PATCH');
-    assert.equal(manual.status, 200);
-    const vacant = await request('/api/units/40', { occupancyStatus: 'VACANT' }, 'PATCH');
-    assert.equal(vacant.data.unit.occupancyStatus, 'VACANT');
+    failAudit = false;
+    const assignmentAudit = await query("SELECT context FROM audit_logs WHERE entity_name='UNIT_ASSIGNMENT'");
+    assert.ok(assignmentAudit.rows.length > 0);
+    assert.ok(assignmentAudit.rows.every(row => !(row.context?.affectedRecords || []).some(record => record.entityName === 'UNIT')));
+
   } finally {
     if (server) await new Promise(resolve => server.close(resolve));
     pool.query = originalQuery;

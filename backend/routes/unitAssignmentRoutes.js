@@ -45,17 +45,6 @@ async function findAssignment(id, client = pool) {
   return result.rows[0];
 }
 
-// Historical assignments do not indicate current occupancy.
-async function markAssignedUnitOccupied(client, assignment) {
-  if (assignment.endDate) return [];
-  const before = (await client.query('SELECT occupancy_status FROM units WHERE id=$1 FOR UPDATE', [assignment.unitId])).rows[0];
-  await client.query(
-    "UPDATE units SET occupancy_status = 'OCCUPIED' WHERE id = $1 AND occupancy_status <> 'OCCUPIED'",
-    [assignment.unitId]
-  );
-  return before && before.occupancy_status !== 'OCCUPIED' ? [{ entityName: 'UNIT', entityId: assignment.unitId, unitNumber: assignment.unitNumber, before: { occupancyStatus: before.occupancy_status }, after: { occupancyStatus: 'OCCUPIED' } }] : [];
-}
-
 async function ensureAssignableResident(client, userId) {
   const result = await client.query('SELECT role,is_active FROM users WHERE id=$1 FOR NO KEY UPDATE', [userId]);
   const user = result.rows[0];
@@ -129,7 +118,6 @@ router.post("/", allowRoles("ADMIN"), validateBody(createAssignmentSchema), asyn
       [unitId, userId, relationshipType, isPrimaryPayer, startDate || null, endDate]
     );
     const assignment = await findAssignment(result.rows[0].id, client);
-    const occupancyChanges = await markAssignedUnitOccupied(client, assignment);
     await writeAuditLog({
       client,
       actorUserId: req.user.id,
@@ -137,7 +125,6 @@ router.post("/", allowRoles("ADMIN"), validateBody(createAssignmentSchema), asyn
       entityId: assignment.id,
       action: "CREATE",
       newValues: assignment,
-      context: { affectedRecords: occupancyChanges },
     });
     await client.query("COMMIT");
     return res.status(201).json({ message: "Unit assignment created.", assignment });
@@ -185,7 +172,6 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateAssignme
       values
     );
     const assignment = await findAssignment(result.rows[0].id, client);
-    const occupancyChanges = await markAssignedUnitOccupied(client, assignment);
     await writeAuditLog({
       client,
       actorUserId: req.user.id,
@@ -194,7 +180,6 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateAssignme
       action: "UPDATE",
       oldValues: before,
       newValues: assignment,
-      context: { affectedRecords: occupancyChanges },
     });
     await client.query("COMMIT");
     return res.json({ message: "Unit assignment updated.", assignment });

@@ -135,7 +135,7 @@ export default function AdminPaymentsPage() {
   }
 
   return (
-    <DashboardLayout title="Resident payment proofs" className="admin-payments-shell" description="Review receipt uploads and record face-to-face payments.">
+    <DashboardLayout title="Payment Management" className="admin-payments-shell" description="Review receipt uploads and record face-to-face payments.">
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />
 
       <div className="grid grid-cols-2 gap-2 md:grid-cols-4">

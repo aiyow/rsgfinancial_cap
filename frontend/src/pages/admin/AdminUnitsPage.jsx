@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Building2, ChevronDown, Plus, Search, Users, X } from 'lucide-react'
 import DashboardLayout, { EmptyRow } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
+import UnitDetailsModal from '../../components/UnitDetailsModal'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -49,6 +50,7 @@ export default function AdminUnitsPage() {
   const [balanceMenuOpen, setBalanceMenuOpen] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [viewingId, setViewingId] = useState(null)
 
   const loadData = useCallback(async () => {
     const [unitData, assignmentData, billData, paymentData, userData] = await Promise.all([
@@ -131,12 +133,11 @@ export default function AdminUnitsPage() {
   }, [balance, floor, rows, search, status])
 
   const occupiedCount = units.filter((unit) => unit.occupancyStatus === 'OCCUPIED').length
-  const activeAssignmentCount = assignments.filter((assignment) => !assignment.endDate).length
+  const activeResidentAccountCount = users.filter((user) => user.role === 'RESIDENT' && user.isActive).length
   const activeAssignments = useMemo(
     () => assignments.filter((assignment) => assignment.unitId === editingId && !assignment.endDate),
     [assignments, editingId],
   )
-  const selectedUnit = useMemo(() => rows.find((unit) => unit.id === editingId) || null, [editingId, rows])
   const residents = useMemo(() => users.filter((user) => user.role === 'RESIDENT' && user.isActive), [users])
 
   async function runAction(action, message) {
@@ -169,10 +170,7 @@ export default function AdminUnitsPage() {
   }
 
   function openView(unit) {
-    setEditingId(unit.id)
-    setForm({ unitNumber: unit.unitNumber, floor: unit.floor, billableAreaSqm: unit.billableAreaSqm ?? '', occupancyStatus: unit.occupancyStatus })
-    setModalMode('view')
-    setFormOpen(true)
+    setViewingId(unit.id)
   }
 
   function closeForm() {
@@ -197,10 +195,9 @@ export default function AdminUnitsPage() {
     setAssignmentBusy(true)
     const created = await runAction(
       () => apiRequest('/api/unit-assignments', { method: 'POST', token, body: { ...assignmentForm, unitId: editingId } }),
-      'Resident assigned. Unit marked as occupied.',
+      'Account assigned.',
     )
     if (created) {
-      setForm((current) => ({ ...current, occupancyStatus: 'OCCUPIED' }))
       setAssignmentForm(blankAssignment)
     }
     setAssignmentBusy(false)
@@ -230,7 +227,6 @@ export default function AdminUnitsPage() {
       form={form}
       mode={modalMode}
       residents={residents}
-      selectedUnit={selectedUnit}
       onAssignmentChange={(field, value) => setAssignmentForm((current) => ({ ...current, [field]: value }))}
       onClose={closeForm}
       onCreateAssignment={createAssignment}
@@ -238,13 +234,14 @@ export default function AdminUnitsPage() {
       onFormChange={(field, value) => setForm((current) => ({ ...current, [field]: value }))}
       onSave={saveUnit}
     />}
+    {viewingId !== null && <UnitDetailsModal key={viewingId} unitId={viewingId} onClose={() => setViewingId(null)} />}
     {deleteTarget && <DeleteUnitModal unit={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={deleteUnit} />}
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <SummaryCard label="Total units" value={units.length} icon={Building2} accent="blue" />
       <SummaryCard label="Occupied" value={occupiedCount} icon={Users} accent="green" />
       <SummaryCard label="Vacant" value={units.length - occupiedCount} icon={Building2} accent="red" />
-      <SummaryCard label="Active residents" value={activeAssignmentCount} icon={Users} accent="blue" />
+      <SummaryCard label="Active Resident Accounts" value={activeResidentAccountCount} icon={Users} accent="blue" />
     </div>
 
     <section className="overflow-visible rounded-2xl border border-[var(--border)] bg-white shadow-sm">
@@ -255,8 +252,8 @@ export default function AdminUnitsPage() {
         <FilterPopover value={balance} open={balanceMenuOpen} onToggle={() => { setBalanceMenuOpen((current) => !current); setFloorMenuOpen(false); setStatusMenuOpen(false) }} onSelect={(value) => { setBalance(value); setBalanceMenuOpen(false) }} options={[{ value: 'ALL', label: 'Balance: any' }, { value: 'OPEN', label: 'With balance' }, { value: 'CLEAR', label: 'Clear balance' }]} />
         <p className="whitespace-nowrap text-right text-xs font-bold text-[var(--muted)]">{filteredRows.length} of {units.length}</p>
       </div>
-      <div className="max-h-[690px] overflow-auto"><table className="w-full min-w-[1050px] text-left text-sm"><thead className="sticky top-0 z-10 bg-[var(--app-bg)] text-[11px] capitalize tracking-[0.08em] text-[var(--muted)] shadow-sm"><tr><th className="px-4 py-3 font-bold">Unit</th><th className="px-4 py-3 font-bold">Resident</th><th className="px-4 py-3 font-bold">Floor / area</th><th className="px-4 py-3 font-bold">Open balance</th><th className="px-4 py-3 font-bold">Occupancy</th><th className="px-4 py-3 font-bold">Last payment</th><th className="px-4 py-3 text-right font-bold">Actions</th></tr></thead><tbody className="divide-y divide-slate-300">
-        {filteredRows.map((unit) => <tr key={unit.id} className="transition hover:bg-[var(--app-bg)]"><td className="px-4 py-3.5 font-black text-[var(--primary)]">{unit.unitNumber}</td><td className="px-4 py-3.5 text-[var(--ink)]">{unit.residents.length ? unit.residents.join(', ') : '-'}</td><td className="px-4 py-3.5 text-[var(--muted)]">Floor {unit.floor || '-'} · {unit.billableAreaSqm ? `${unit.billableAreaSqm} sqm` : 'Area not set'}</td><td className={`px-4 py-3.5 font-mono text-xs ${unit.outstandingBalance > 0 ? 'font-bold text-red-600' : 'text-[var(--muted)]'}`}>{money(unit.outstandingBalance)}</td><td className="px-4 py-3.5"><OccupancyBadge status={unit.occupancyStatus} /></td><td className="px-4 py-3.5 text-[var(--muted)]">{date(unit.lastPayment)}</td><td className="px-4 py-3.5"><div className="flex justify-end gap-2"><button type="button" onClick={() => openView(unit)} className={actionClass}>View</button><button type="button" onClick={() => startEdit(unit)} className={actionClass}>Edit</button><button type="button" onClick={() => setDeleteTarget(unit)} className={`${actionClass} text-red-600`}>Delete</button></div></td></tr>)}
+      <div className="max-h-[690px] overflow-auto"><table className="w-full min-w-[1050px] text-left text-sm"><thead className="sticky top-0 z-10 bg-[var(--app-bg)] text-[11px] capitalize tracking-[0.08em] text-[var(--muted)] shadow-sm"><tr><th className="px-4 py-3 font-bold">Unit</th><th className="px-4 py-3 font-bold">Assigned accounts</th><th className="px-4 py-3 font-bold">Floor / area</th><th className="px-4 py-3 font-bold">Open balance</th><th className="px-4 py-3 font-bold">Occupancy</th><th className="px-4 py-3 font-bold">Last payment</th><th className="px-4 py-3 text-right font-bold">Actions</th></tr></thead><tbody className="divide-y divide-slate-300">
+        {filteredRows.map((unit) => <tr key={unit.id} className="transition hover:bg-[var(--app-bg)]"><td className="px-4 py-3.5 font-black text-[var(--primary)]"><button type="button" aria-label={`View Unit ${unit.unitNumber}`} onClick={() => openView(unit)} className="rounded-sm underline decoration-transparent underline-offset-4 hover:decoration-current focus-visible:ring-2 focus-visible:ring-[var(--primary)]">{unit.unitNumber}</button></td><td className="px-4 py-3.5 text-[var(--ink)]">{unit.residents.length ? unit.residents.join(', ') : '-'}</td><td className="px-4 py-3.5 text-[var(--muted)]">Floor {unit.floor || '-'} · {unit.billableAreaSqm ? `${unit.billableAreaSqm} sqm` : 'Area not set'}</td><td className={`px-4 py-3.5 font-mono text-xs ${unit.outstandingBalance > 0 ? 'font-bold text-red-600' : 'text-[var(--muted)]'}`}>{money(unit.outstandingBalance)}</td><td className="px-4 py-3.5"><OccupancyBadge status={unit.occupancyStatus} /></td><td className="px-4 py-3.5 text-[var(--muted)]">{date(unit.lastPayment)}</td><td className="px-4 py-3.5"><div className="flex justify-end gap-2"><button type="button" onClick={() => openView(unit)} className={actionClass}>View</button><button type="button" onClick={() => startEdit(unit)} className={actionClass}>Edit</button><button type="button" onClick={() => setDeleteTarget(unit)} className={`${actionClass} text-red-600`}>Delete</button></div></td></tr>)}
       </tbody></table></div>
       {filteredRows.length === 0 ? <div className="p-4"><EmptyRow message={units.length ? 'No units match the selected filters.' : 'No units have been added yet.'} /></div> : null}
     </section>
@@ -372,58 +369,42 @@ function ResidentSearchPicker({ onChange, residents, value }) {
   </div>
 }
 
-function UnitModal({ assignments, assignmentBusy, assignmentForm, form, mode, residents, selectedUnit, onAssignmentChange, onClose, onCreateAssignment, onEndAssignment, onFormChange, onSave }) {
-  const readOnly = mode === 'view'
+function UnitModal({ assignments, assignmentBusy, assignmentForm, form, mode, residents, onAssignmentChange, onClose, onCreateAssignment, onEndAssignment, onFormChange, onSave }) {
   const editing = mode === 'edit'
-  const title = readOnly ? `Unit ${form.unitNumber}` : editing ? `Edit unit ${form.unitNumber}` : 'Add unit'
+  const title = editing ? `Edit unit ${form.unitNumber}` : 'Add unit'
   const [occupancyMenuOpen, setOccupancyMenuOpen] = useState(false)
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/35 p-4" role="presentation" onMouseDown={onClose}>
-      <section role="dialog" aria-modal="true" aria-labelledby="unit-modal-title" className={`max-h-[90vh] w-full max-w-3xl rounded-2xl bg-white p-5 shadow-xl sm:p-6 ${readOnly || editing ? 'overflow-y-auto' : 'overflow-visible'}`} onMouseDown={(event) => event.stopPropagation()}>
+      <section role="dialog" aria-modal="true" aria-labelledby="unit-modal-title" className={`max-h-[90vh] w-full max-w-3xl rounded-2xl bg-white p-5 shadow-xl sm:p-6 ${editing ? 'overflow-y-auto' : 'overflow-visible'}`} onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="unit-modal-title" className="text-xl font-black text-[var(--ink)]">{title}</h2>
-            <p className="mt-1 text-sm text-[var(--muted)]">{readOnly ? 'Read-only unit, billing, and resident information.' : editing ? 'Update unit details, occupancy, and resident assignments in one place.' : 'Create the unit before assigning a resident.'}</p>
+            <p className="mt-1 text-sm text-[var(--muted)]">{editing ? 'Update unit details, occupancy, and account assignments in one place.' : 'Create the unit before assigning an account.'}</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close unit modal" className="rounded-lg p-2 text-[var(--muted)] hover:bg-[var(--app-bg)]"><X size={18} /></button>
         </div>
 
-        {readOnly ? (
-          <div className="mt-6 space-y-5">
-            <dl className="grid gap-3 sm:grid-cols-2">
-              <ReadOnlyField label="Unit number" value={form.unitNumber} />
-              <ReadOnlyField label="Occupancy" value={<OccupancyBadge status={form.occupancyStatus} />} />
-              <ReadOnlyField label="Floor" value={form.floor || '-'} />
-              <ReadOnlyField label="Billable area" value={form.billableAreaSqm ? `${form.billableAreaSqm} sqm` : '-'} />
-              <ReadOnlyField label="Open balance" value={money(selectedUnit?.outstandingBalance)} />
-              <ReadOnlyField label="Last payment" value={date(selectedUnit?.lastPayment)} />
-            </dl>
-            <AssignmentSummary assignments={assignments} />
-            <div className="flex justify-end"><button type="button" onClick={onClose} className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white">Close</button></div>
-          </div>
-        ) : (
-          <div className="mt-6 space-y-6">
-            <form onSubmit={onSave} className="grid gap-4 sm:grid-cols-2">
-              <Field label="Unit number"><input required value={form.unitNumber} onChange={(event) => onFormChange('unitNumber', event.target.value)} className={inputClass} /></Field>
-              <Field label="Floor"><input required value={form.floor} onChange={(event) => onFormChange('floor', event.target.value)} className={inputClass} /></Field>
-              <Field label="Billable area (sqm)"><input required min="0.01" step="0.01" type="number" value={form.billableAreaSqm} onChange={(event) => onFormChange('billableAreaSqm', event.target.value)} className={inputClass} /></Field>
-              <Field label="Occupancy"><div className="mt-1.5">{assignments.length ? <><div className="flex min-h-11 items-center rounded-lg border border-[var(--border)] bg-[var(--app-bg)] px-3"><OccupancyBadge status="OCCUPIED" /></div><p className="mt-1.5 text-xs font-normal text-[var(--muted)]">Set automatically when a resident is assigned.</p></> : <FilterPopover label="Occupancy" value={form.occupancyStatus} open={occupancyMenuOpen} onToggle={() => setOccupancyMenuOpen((current) => !current)} onSelect={(value) => { onFormChange('occupancyStatus', value); setOccupancyMenuOpen(false) }} options={[{ value: 'VACANT', label: 'Vacant' }, { value: 'OCCUPIED', label: 'Occupied' }]} />}</div></Field>
-              <div className="flex justify-end gap-3 sm:col-span-2"><button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-bold text-[var(--ink)]">Cancel</button><button className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white">{editing ? 'Save unit changes' : 'Add unit'}</button></div>
-            </form>
+        <div className="mt-6 space-y-6">
+          <form onSubmit={onSave} className="grid gap-4 sm:grid-cols-2">
+            <Field label="Unit number"><input required value={form.unitNumber} onChange={(event) => onFormChange('unitNumber', event.target.value)} className={inputClass} /></Field>
+            <Field label="Floor"><input required value={form.floor} onChange={(event) => onFormChange('floor', event.target.value)} className={inputClass} /></Field>
+            <Field label="Billable area (sqm)"><input required min="0.01" step="0.01" type="number" value={form.billableAreaSqm} onChange={(event) => onFormChange('billableAreaSqm', event.target.value)} className={inputClass} /></Field>
+            <Field label="Occupancy"><div className="mt-1.5"><FilterPopover label="Occupancy" value={form.occupancyStatus} open={occupancyMenuOpen} onToggle={() => setOccupancyMenuOpen((current) => !current)} onSelect={(value) => { onFormChange('occupancyStatus', value); setOccupancyMenuOpen(false) }} options={[{ value: 'VACANT', label: 'Vacant' }, { value: 'OCCUPIED', label: 'Occupied' }]} /></div><p className="mt-1.5 text-xs font-normal text-[var(--muted)]">Set occupancy manually. An account assignment does not confirm that the person lives in this unit.</p></Field>
+            <div className="flex justify-end gap-3 sm:col-span-2"><button type="button" onClick={onClose} className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-bold text-[var(--ink)]">Cancel</button><button className="rounded-lg bg-[var(--primary)] px-5 py-2.5 text-sm font-bold text-white">{editing ? 'Save unit changes' : 'Add unit'}</button></div>
+          </form>
 
-            {editing && <section className="border-t border-[var(--border)] pt-6">
-              <div><h3 className="text-base font-black text-[var(--ink)]">Resident assignments</h3><p className="mt-1 text-sm text-[var(--muted)]">Add or end the active residents assigned to this unit.</p></div>
-              <AssignmentSummary assignments={assignments} onEnd={onEndAssignment} />
-              <form onSubmit={onCreateAssignment} className="mt-4 grid gap-3 rounded-xl bg-[var(--app-bg)] p-4 sm:grid-cols-2">
-                <Field label="Resident"><ResidentSearchPicker residents={residents} value={assignmentForm.userId} onChange={(value) => onAssignmentChange('userId', value)} /></Field>
-                <Field label="Relationship"><select value={assignmentForm.relationshipType} onChange={(event) => onAssignmentChange('relationshipType', event.target.value)} className={inputClass}><option value="OWNER">Owner</option><option value="TENANT">Tenant</option></select></Field>
-                <label className="flex items-center gap-2 text-sm font-bold text-[var(--ink)] sm:col-span-2"><input type="checkbox" checked={assignmentForm.isPrimaryPayer} onChange={(event) => onAssignmentChange('isPrimaryPayer', event.target.checked)} /> Primary payer for this unit</label>
-                <div className="sm:col-span-2"><button disabled={assignmentBusy || !assignmentForm.userId} className="rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white disabled:bg-slate-300">{assignmentBusy ? 'Assigning...' : 'Add resident assignment'}</button></div>
-              </form>
-            </section>}
-          </div>
-        )}
+          {editing && <section className="border-t border-[var(--border)] pt-6">
+            <div><h3 className="text-base font-black text-[var(--ink)]">Account assignments</h3><p className="mt-1 text-sm text-[var(--muted)]">Add or end account assignments independently of occupancy.</p></div>
+            <AssignmentSummary assignments={assignments} onEnd={onEndAssignment} />
+            <form onSubmit={onCreateAssignment} className="mt-4 grid gap-3 rounded-xl bg-[var(--app-bg)] p-4 sm:grid-cols-2">
+              <Field label="Resident"><ResidentSearchPicker residents={residents} value={assignmentForm.userId} onChange={(value) => onAssignmentChange('userId', value)} /></Field>
+              <Field label="Relationship"><select value={assignmentForm.relationshipType} onChange={(event) => onAssignmentChange('relationshipType', event.target.value)} className={inputClass}><option value="OWNER">Owner</option><option value="TENANT">Tenant</option></select></Field>
+              <label className="flex items-center gap-2 text-sm font-bold text-[var(--ink)] sm:col-span-2"><input type="checkbox" checked={assignmentForm.isPrimaryPayer} onChange={(event) => onAssignmentChange('isPrimaryPayer', event.target.checked)} /> Primary payer for this unit</label>
+              <div className="sm:col-span-2"><button disabled={assignmentBusy || !assignmentForm.userId} className="rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white disabled:bg-slate-300">{assignmentBusy ? 'Assigning...' : 'Add account assignment'}</button></div>
+            </form>
+          </section>}
+        </div>
       </section>
     </div>
   )
@@ -432,12 +413,8 @@ function UnitModal({ assignments, assignmentBusy, assignmentForm, form, mode, re
 function AssignmentSummary({ assignments, onEnd }) {
   return (
     <section className="mt-5 rounded-xl border border-[var(--border)] bg-white">
-      <div className="border-b border-[var(--border)] px-4 py-3 text-xs font-bold capitalize tracking-wide text-[var(--muted)]">Active residents</div>
-      {assignments.length ? assignments.map((assignment) => <div key={assignment.id} className="flex flex-col gap-2 border-b border-[var(--border)] px-4 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold text-[var(--ink)]">{assignment.residentName}</p><p className="text-xs text-[var(--muted)]">{assignment.relationshipType}{assignment.isPrimaryPayer ? ' · Primary payer' : ''}</p></div>{onEnd && <button type="button" onClick={() => onEnd(assignment)} className="w-fit rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50">End assignment</button>}</div>) : <p className="px-4 py-4 text-sm text-[var(--muted)]">No active residents assigned.</p>}
+      <div className="border-b border-[var(--border)] px-4 py-3 text-xs font-bold capitalize tracking-wide text-[var(--muted)]">Assigned accounts</div>
+      {assignments.length ? assignments.map((assignment) => <div key={assignment.id} className="flex flex-col gap-2 border-b border-[var(--border)] px-4 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-bold text-[var(--ink)]">{assignment.residentName}</p><p className="text-xs text-[var(--muted)]">{assignment.relationshipType}{assignment.isPrimaryPayer ? ' · Primary payer' : ''}</p></div>{onEnd && <button type="button" onClick={() => onEnd(assignment)} className="w-fit rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50">End assignment</button>}</div>) : <p className="px-4 py-4 text-sm text-[var(--muted)]">No active unit assignments.</p>}
     </section>
   )
-}
-
-function ReadOnlyField({ label, value }) {
-  return <div className="rounded-xl bg-[var(--app-bg)] p-4"><dt className="text-xs font-bold capitalize tracking-wide text-[var(--muted)]">{label}</dt><dd className="mt-2 text-sm font-semibold text-[var(--ink)]">{value}</dd></div>
 }

@@ -38,11 +38,11 @@ function percent(value) {
 
 function Metric({ label, value, detail, subdetail, icon: Icon, tone = 'green', accent }) {
   const tones = { green: 'border-l-[var(--primary)] bg-emerald-50/40', amber: 'border-l-amber-500 bg-amber-50/40', red: 'border-l-red-500 bg-red-50/40', blue: 'border-l-sky-600 bg-sky-50/40' }
-  return <article className={`min-w-0 rounded-2xl border border-[var(--border)] border-l-[3px] p-5 shadow-sm ${tones[tone]} ${accent ? `collector-metric collector-metric-${accent}` : ''}`}>
-    <div className="flex items-start justify-between gap-3"><p className="capitalize text-[11px] font-black tracking-[0.12em] text-[var(--muted)]">{label}</p><span className="grid size-9 place-items-center rounded-lg bg-white text-[var(--primary)] shadow-sm"><Icon size={18} /></span></div>
-    <p className="mt-4 truncate text-2xl font-black tracking-tight text-[var(--ink)]">{value}</p>
-    <p className="mt-1 min-h-5 text-xs text-[var(--muted)]">{detail}</p>
-    {subdetail && <p className="mt-1 min-h-4 text-xs font-semibold text-[var(--primary)]">{subdetail}</p>}
+  return <article className={`min-w-0 rounded-xl border border-[var(--border)] border-l-[3px] p-3 shadow-sm sm:p-4 ${tones[tone]} ${accent ? `collector-metric collector-metric-${accent}` : ''}`}>
+    <div className="flex items-start justify-between gap-2"><p className="capitalize text-[11px] font-black leading-snug tracking-wide text-[var(--muted)]">{label}</p><span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-[var(--primary)] shadow-sm"><Icon size={16} /></span></div>
+    <p className="mt-2 truncate text-2xl font-black leading-tight tracking-tight text-[var(--ink)]">{value}</p>
+    <p className="mt-1 text-xs leading-snug text-[var(--muted)]">{detail}</p>
+    {subdetail && <p className="mt-0.5 text-xs font-semibold leading-snug text-[var(--primary)]">{subdetail}</p>}
   </article>
 }
 
@@ -215,17 +215,18 @@ export default function OperationalDashboard({ role }) {
   return <DashboardLayout title={roleIsAdmin ? 'Dashboard' : 'Billing Associate Dashboard'} description="Live operational overview of billing, payments, occupancy, and water use.">
     {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {!data ? <Panel title="Loading dashboard"><EmptyRow message="Loading your latest billing summary..." /></Panel> : <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">{roleIsAdmin ? 'Dashboard' : 'Billing Operations Dashboard'}</h1><p className="mt-1 text-sm text-[var(--muted)]">Current billing period: <strong className="text-[var(--ink)]">{month(metrics.latestPeriodStart, 'long')}</strong>{metrics.latestPeriodStatus ? ` (${metrics.latestPeriodStatus.toLowerCase()})` : ''}</p></div><button type="button" onClick={() => { setRefreshing(true); setRefreshKey((value) => value + 1) }} disabled={refreshing} className="inline-flex w-fit items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-bold text-[var(--ink)] shadow-sm transition hover:bg-[var(--app-bg)] disabled:opacity-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{refreshing ? 'Refreshing…' : 'Refresh overview'}</button></div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Metric label="Monthly billing" value={money(currentBilled)} detail={`${metrics.currentBills || 0} statement(s) issued`} icon={FileText} accent="blue" />
-        <Metric label="Monthly collection" value={money(currentCollected)} detail={collectionRate === null ? 'No current billing to collect' : `${money(collectionGap)} still to collect`} icon={WalletCards} tone="blue" accent="green" />
-        <Metric label="Collection efficiency" value={percent(collectionRate)} detail={collectionComparison} icon={TrendingUp} tone={collectionRate !== null && collectionRate < 70 ? 'amber' : 'green'} accent="blue" />
-        <Metric label="Outstanding bills" value={metrics.overdueBills || 0} detail={`${money(metrics.overdueAmount)} overdue balance`} icon={CircleDollarSign} tone={metrics.overdueBills ? 'red' : 'green'} accent="red" />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Metric label="Occupied units" value={`${metrics.occupiedUnits || 0} / ${metrics.totalUnits || 0}`} detail={`${metrics.vacantUnits || 0} vacant units`} icon={Building2} tone="blue" accent="blue" />
-        <Metric label="Pending payments" value={metrics.pendingPayments || 0} detail={roleIsAdmin ? 'proofs waiting for verification' : 'waiting for Admin verification'} subdetail={`${metrics.approvedPayments || 0} approved payment(s)`} icon={ReceiptText} tone={metrics.pendingPayments ? 'amber' : 'green'} accent="green" />
-        <Metric label="High-priority water alerts" value={metrics.highPriorityRecommendations || 0} detail={`${metrics.openRecommendations || 0} recommendations open`} icon={Gauge} tone={metrics.highPriorityRecommendations ? 'red' : 'green'} accent="red" />
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h1 className="text-2xl font-black tracking-tight text-[var(--ink)]">{roleIsAdmin ? 'Dashboard' : 'Billing Operations Dashboard'}</h1><p className="mt-1 text-sm text-[var(--muted)]">Current billing period: <strong className="text-[var(--ink)]">{month(metrics.latestPeriodStart, 'long')}</strong>{metrics.latestPeriodStatus ? ` (${metrics.latestPeriodStatus.toLowerCase()})` : ''}</p></div><button type="button" onClick={() => { setRefreshing(true); setRefreshKey((value) => value + 1) }} disabled={refreshing} className="inline-flex w-fit items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm font-bold text-[var(--ink)] shadow-sm transition hover:bg-[var(--app-bg)] disabled:opacity-50"><RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />{refreshing ? 'Refreshing…' : 'Refresh overview'}</button></div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Metric label="Monthly billing" value={money(currentBilled)} detail={`${metrics.currentBills || 0} statement(s) issued`} icon={FileText} accent="blue" />
+          <Metric label="Monthly collection" value={money(currentCollected)} detail={collectionRate === null ? 'No current billing to collect' : `${money(collectionGap)} still to collect`} icon={WalletCards} tone="blue" accent="green" />
+          <Metric label="Collection efficiency" value={percent(collectionRate)} detail={collectionComparison} icon={TrendingUp} tone={collectionRate !== null && collectionRate < 70 ? 'amber' : 'green'} accent="blue" />
+          <Metric label="Outstanding bills" value={metrics.overdueBills || 0} detail={`${money(metrics.overdueAmount)} overdue balance`} icon={CircleDollarSign} tone={metrics.overdueBills ? 'red' : 'green'} accent="red" />
+          <Metric label="Occupied units" value={`${metrics.occupiedUnits || 0} / ${metrics.totalUnits || 0}`} detail={`${metrics.vacantUnits || 0} vacant units`} icon={Building2} tone="blue" accent="blue" />
+          <Metric label="Active Resident Accounts" value={metrics.activeResidentAccounts || 0} detail="Enabled Resident accounts" icon={UserRoundCheck} accent="blue" />
+          <Metric label="Pending payments" value={metrics.pendingPayments || 0} detail={roleIsAdmin ? 'proofs waiting for verification' : 'waiting for Admin verification'} subdetail={`${metrics.approvedPayments || 0} approved payment(s)`} icon={ReceiptText} tone={metrics.pendingPayments ? 'amber' : 'green'} accent="green" />
+          <Metric label="High-priority water alerts" value={metrics.highPriorityRecommendations || 0} detail={`${metrics.openRecommendations || 0} recommendations open`} icon={Gauge} tone={metrics.highPriorityRecommendations ? 'red' : 'green'} accent="red" />
+        </div>
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
         <BillingTrendChart monthly={monthly} />

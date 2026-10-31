@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Building2, ChevronDown, Users } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
+import UnitDetailsModal from '../../components/UnitDetailsModal'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 import { formatLabel } from '../../utils/formatText'
@@ -58,6 +59,7 @@ export default function AdminUnitsViewPage() {
   const [statusMenuOpen, setStatusMenuOpen] = useState(false)
   const [page, setPage] = useState(1)
   const [error, setError] = useState('')
+  const [viewingId, setViewingId] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -82,7 +84,13 @@ export default function AdminUnitsViewPage() {
         assignmentsByUnit.set(assignment.unitId, current)
       })
     return units
-      .map((unit) => ({ ...unit, activeAssignments: assignmentsByUnit.get(unit.id) || [] }))
+      .map((unit) => {
+        const activeAssignments = assignmentsByUnit.get(unit.id) || []
+        const owners = activeAssignments.filter((assignment) => assignment.relationshipType === 'OWNER')
+        const tenants = activeAssignments.filter((assignment) => assignment.relationshipType === 'TENANT')
+        const currentResidents = unit.occupancyStatus === 'OCCUPIED' ? (tenants.length ? tenants : owners) : []
+        return { ...unit, activeAssignments, owners, currentResidents }
+      })
       .sort((a, b) => String(a.unitNumber).localeCompare(String(b.unitNumber), undefined, { numeric: true }))
   }, [assignments, units])
 
@@ -112,13 +120,14 @@ export default function AdminUnitsViewPage() {
   function updateStatus(value) { setStatus(value); setPage(1) }
 
   return (
-    <DashboardLayout title="Unit directory" description="View condominium units, occupancy, sizes, and active residents.">
+    <DashboardLayout title="Unit directory" description="View condominium units, owners, current residents, and occupancy.">
+      {viewingId !== null && <UnitDetailsModal key={viewingId} unitId={viewingId} onClose={() => setViewingId(null)} />}
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Total units" value={units.length} icon={Building2} accent="blue" />
         <SummaryCard label="Occupied" value={occupiedCount} icon={Users} accent="green" />
         <SummaryCard label="Vacant" value={units.length - occupiedCount} icon={Building2} accent="red" />
-        <SummaryCard label="With active residents" value={assignedCount} icon={Users} accent="blue" />
+        <SummaryCard label="Active Resident Accounts" value={assignedCount} icon={Users} accent="blue" />
       </div>
 
       <Panel title="All units" description={`Search and filter all ${units.length} condominium units.`}>
@@ -132,16 +141,15 @@ export default function AdminUnitsViewPage() {
         <div className="mt-6 overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="border-b border-slate-200 text-xs capitalize tracking-wide text-slate-400">
-              <tr><th className="px-3 py-3">Unit</th><th className="px-3 py-3">Floor</th><th className="px-3 py-3">Size</th><th className="px-3 py-3">Resident</th><th className="px-3 py-3">Relationship</th><th className="px-3 py-3">Status</th></tr>
+              <tr><th className="px-3 py-3">Unit</th><th className="px-3 py-3">Floor</th><th className="px-3 py-3">Owner</th><th className="px-3 py-3">Current Resident(s)</th><th className="px-3 py-3">Occupancy</th></tr>
             </thead>
             <tbody className="divide-y divide-slate-300">
               {visibleUnits.map((unit) => (
                 <tr key={unit.id} className="hover:bg-slate-50">
-                  <td className="px-3 py-4 font-black text-slate-900">Unit {unit.unitNumber}</td>
+                  <td className="px-3 py-4 font-black text-slate-900"><button type="button" onClick={() => setViewingId(unit.id)} aria-label={`View Unit ${unit.unitNumber}`} className="rounded-sm text-[var(--primary)] underline decoration-transparent underline-offset-4 hover:decoration-current focus-visible:ring-2 focus-visible:ring-[var(--primary)]">Unit {unit.unitNumber}</button></td>
                   <td className="px-3 py-4 text-slate-600">{formatLabel(unit.floor)}</td>
-                  <td className="px-3 py-4 text-slate-600">{unit.billableAreaSqm ? `${unit.billableAreaSqm} sqm` : 'Not set'}</td>
-                  <td className="px-3 py-4 text-slate-700">{unit.activeAssignments.length ? unit.activeAssignments.map((assignment) => assignment.residentName).join(', ') : '—'}</td>
-                  <td className="px-3 py-4 text-slate-600">{unit.activeAssignments.length ? unit.activeAssignments.map((assignment) => formatLabel(assignment.relationshipType)).join(', ') : '—'}</td>
+                  <td className="px-3 py-4 text-slate-700">{unit.owners.map((assignment) => assignment.residentName).join(', ') || '—'}</td>
+                  <td className="px-3 py-4 text-slate-700">{unit.currentResidents.map((assignment) => assignment.residentName).join(', ') || '—'}</td>
                   <td className="px-3 py-4"><StatusBadge status={unit.occupancyStatus} /></td>
                 </tr>
               ))}
