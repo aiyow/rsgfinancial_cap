@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Bell, BellOff } from 'lucide-react'
 import { apiRequest } from '../services/api'
 import { disableDevicePush, supportsDevicePush } from '../services/devicePush'
-
-const actionClass = 'font-bold text-[var(--primary)] hover:underline disabled:opacity-50'
 
 export default function PushNotificationSettings({ token }) {
   const [settings, setSettings] = useState(null)
@@ -74,11 +73,21 @@ export default function PushNotificationSettings({ token }) {
   else if (!settings) content = error ? null : 'Checking push notifications…'
   else if (!settings.enabled && !settings.publicKey) content = 'Push notifications are unavailable right now.'
   else if (!settings.enabled && window.Notification.permission === 'denied') content = 'Push alerts are blocked. Allow notifications in your device or browser settings.'
-  else content = <button type="button" disabled={busy} onClick={toggle} className={actionClass}>
-    {busy ? 'Updating…' : settings.enabled ? 'Disable push notifications on this device' : 'Enable push notifications on this device'}
-  </button>
+  else {
+    const Icon = settings.enabled ? BellOff : Bell
+    content = <button
+      type="button"
+      disabled={busy}
+      aria-busy={busy}
+      onClick={toggle}
+      className={`mx-auto flex min-h-8 w-fit items-center justify-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-bold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:opacity-50 sm:min-h-11 sm:w-full sm:gap-2 sm:px-3 sm:py-2 sm:text-sm ${settings.enabled ? 'border-emerald-300 bg-white text-emerald-800 hover:bg-emerald-100' : 'border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800'}`}
+    >
+      <Icon className="size-3.5 sm:size-4" aria-hidden="true" />
+      {busy ? 'Updating…' : settings.enabled ? 'Disable Notification' : 'Enable Notification'}
+    </button>
+  }
 
-  return <div className="border-t border-[var(--border)] px-2.5 py-2 text-[11px] text-[var(--muted)] sm:px-4 sm:py-3 sm:text-xs">
+  return <div className="border-b border-[var(--border)] bg-emerald-50/60 px-2.5 py-1 text-[11px] text-[var(--muted)] sm:px-4 sm:py-3 sm:text-xs">
     {content}
     {error && <p role="alert" className="text-rose-700">{error}</p>}
   </div>

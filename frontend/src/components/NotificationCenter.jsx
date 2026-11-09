@@ -121,6 +121,7 @@ export default function NotificationCenter({ token }) {
               <div><p className="text-sm font-bold text-[var(--ink)] sm:text-base">Notifications</p><p className="text-[11px] text-[var(--muted)] sm:text-xs">{unreadCount ? `${unreadCount} unread` : 'You are all caught up'}</p></div>
               {unreadCount > 0 && <button type="button" onClick={markAllRead} className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline sm:text-xs"><CheckCheck size={14} /> Mark all read</button>}
             </div>
+            <PushNotificationSettings token={token} />
             <div className="max-h-48 overflow-y-auto overscroll-contain sm:max-h-80">
               {notifications.length ? notifications.map((notification) => (
                 <button
@@ -136,7 +137,6 @@ export default function NotificationCenter({ token }) {
               )) : <p className="px-3 py-6 text-center text-xs text-[var(--muted)] sm:px-4 sm:py-8 sm:text-sm">No notifications yet.</p>}
             </div>
             <button type="button" onClick={() => { setOpen(false); navigate('/notifications') }} className="w-full border-t border-[var(--border)] px-2.5 py-2 text-center text-[11px] font-bold text-[var(--primary)] hover:bg-[var(--app-bg)] sm:px-4 sm:py-3 sm:text-xs">View all notifications</button>
-            <PushNotificationSettings token={token} />
           </div>
         )}
       </div>

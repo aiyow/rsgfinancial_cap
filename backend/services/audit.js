@@ -315,8 +315,8 @@ export async function saveDeliveryOutcomes(database, outcomes, { reminder = fals
     const affected = [];
     for (const { delivery, error } of outcomes) {
       const status = error ? 'FAILED' : 'SENT';
-      const result = await client.query(`UPDATE ${table} SET status = $2,
-        sent_at=CASE WHEN $2='SENT' THEN NOW() ELSE sent_at END,
+      const result = await client.query(`UPDATE ${table} SET status = $2::varchar,
+        sent_at=CASE WHEN $2::varchar='SENT' THEN NOW() ELSE sent_at END,
         last_error=$3${reminder ? '' : ', attempt_count=attempt_count+1,last_attempted_at=NOW()'}
         WHERE id=$1 AND status=$4 RETURNING id`, [delivery.id, status, error ? 'Email delivery failed.' : null, expected]);
       if (!result.rows.length) continue;
