@@ -23,6 +23,7 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import financialReportRoutes from "./routes/financialReportRoutes.js";
 import billingErrorRoutes from "./routes/billingErrorRoutes.js";
 import { startSoaReminderScheduler } from "./services/email.js";
+import { startWebPushDelivery } from "./services/webPush.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 dotenv.config({ path: new URL("./.env", import.meta.url) });
@@ -93,4 +94,5 @@ app.listen(port, () => {
   startSoaReminderScheduler();
   startRegistrationCleanup();
   startProtectedSoaMaintenance(protectedSoaExports);
+  startWebPushDelivery();
 });

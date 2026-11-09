@@ -352,7 +352,8 @@ export const auditCoverage = {
   // Protected exports are downloads, not saved business changes. Their temporary
   // operational state must never enter Activity Log (especially email/PDF data).
   soaExportRoutes: { excluded: ['POST /bills/:id/protected-exports', 'GET /bills/:id/protected-exports', 'GET /soa-exports/:exportId', 'GET /soa-exports/:exportId/file'] },
-  notificationRoutes: { excluded: ['PATCH /read-all', 'PATCH /:id/read'] },
+  // Read state and device subscriptions are personal notification settings.
+  notificationRoutes: { excluded: ['PATCH /read-all', 'PATCH /:id/read', 'POST /push/settings', 'PUT /push/subscription', 'DELETE /push/subscription'] },
   paymentRoutes: { recorded: ['POST /bills/:id', 'POST /manual', 'PATCH /:id/invoice-references', 'POST /:id/review', 'DELETE /:id'], excluded: ['POST /bills/:id/preview', 'POST /allocation-preview'] },
   prescriptiveRecommendationRoutes: { recorded: ['PATCH /:id/view', 'DELETE /:id'] },
   soaTemplateRoutes: { recorded: ['PATCH /', 'POST /assets/:type'] },

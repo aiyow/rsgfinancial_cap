@@ -11,6 +11,15 @@ For a Windows-focused local installation walkthrough with step-by-step error sol
 - **Resident:** view published SOAs for assigned units; upload payment receipts; review payment history; and view their unit's automatically generated prescriptive insights.
 - **Analytics:** five-month linear-regression forecasts, forecast accuracy, historical versus projected charts, reading-quality checks, and explainable recommendations for each unit.
 
+## Enable Web Push on Render
+
+Web Push sends a device alert for new in-app notifications after a user opts in. The alert opens the Notifications page, where the signed-in user can read the details.
+
+1. Deploy the backend and frontend changes. Open the backend service's Render Shell and run `npm run notifications:migrate` from the backend directory. For a fresh database, `npm run db:init` also includes the migration.
+2. From the backend directory on a trusted machine, run `npx web-push generate-vapid-keys` once. In the Render backend service's environment, set `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY`, and `WEB_PUSH_SUBJECT`. Use a contact such as `mailto:admin@example.com` with your own address. Keep the private key in the backend environment and keep the same key pair across deployments.
+3. Redeploy the backend with those values. Open the HTTPS app, sign in, open the notification bell, and choose **Enable push notifications on this device**. On iPhone and iPad, open the app from its Home Screen icon before enabling it.
+4. For an end-to-end check, use a test account and device. Close the installed app, then trigger an in-app notification for that account, such as publishing a test SOA. Confirm the device alert arrives and opens Notifications.
+
 ## Technology
 
 - Frontend: React 19, Vite, Tailwind CSS, Recharts, and Lucide icons

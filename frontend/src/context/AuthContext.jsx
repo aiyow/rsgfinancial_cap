@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiRequest } from '../services/api'
+import { disableDevicePush } from '../services/devicePush'
 import AuthContext from './auth-context'
 
 function readStoredUser() {
@@ -61,8 +62,13 @@ export function AuthProvider({ children }) {
     setUser(nextUser)
   }
 
+  function logout() {
+    clearSession()
+    if (token) void disableDevicePush(token).catch(() => {})
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, initializing, login, replaceToken, updateUser, logout: clearSession }}>
+    <AuthContext.Provider value={{ user, token, initializing, login, replaceToken, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   )

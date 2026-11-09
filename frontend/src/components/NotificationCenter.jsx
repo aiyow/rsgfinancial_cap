@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { Bell, BellRing, CheckCheck } from 'lucide-react'
 import { apiRequest } from '../services/api'
+import PushNotificationSettings from './PushNotificationSettings'
 
 const POLL_INTERVAL_MS = 10_000
 
@@ -19,9 +20,6 @@ export default function NotificationCenter({ token }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [open, setOpen] = useState(false)
   const [toast, setToast] = useState(null)
-  const [browserPermission, setBrowserPermission] = useState(() => (
-    'Notification' in window ? window.Notification.permission : 'unsupported'
-  ))
   const menuRef = useRef(null)
   const knownNotificationIds = useRef(new Set())
   const hasLoaded = useRef(false)
@@ -49,9 +47,6 @@ export default function NotificationCenter({ token }) {
           setToast(newest)
           window.clearTimeout(toastTimer.current)
           toastTimer.current = window.setTimeout(() => setToast(null), 7000)
-          if (browserPermission === 'granted' && document.visibilityState !== 'visible') {
-            new window.Notification(newest.title, { body: newest.message, tag: `rsg-notification-${newest.id}` })
-          }
         }
       } catch {
         // Notifications should never prevent use of the portal if the service is temporarily unavailable.
@@ -68,7 +63,7 @@ export default function NotificationCenter({ token }) {
       window.clearTimeout(toastTimer.current)
       document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
-  }, [browserPermission, token])
+  }, [token])
 
   useEffect(() => {
     if (!open) return undefined
@@ -106,12 +101,6 @@ export default function NotificationCenter({ token }) {
     }
   }
 
-  async function enableBrowserAlerts() {
-    if (!('Notification' in window)) return
-    const permission = await window.Notification.requestPermission()
-    setBrowserPermission(permission)
-  }
-
   return (
     <>
       <div ref={menuRef} className="relative shrink-0">
@@ -147,8 +136,7 @@ export default function NotificationCenter({ token }) {
               )) : <p className="px-3 py-6 text-center text-xs text-[var(--muted)] sm:px-4 sm:py-8 sm:text-sm">No notifications yet.</p>}
             </div>
             <button type="button" onClick={() => { setOpen(false); navigate('/notifications') }} className="w-full border-t border-[var(--border)] px-2.5 py-2 text-center text-[11px] font-bold text-[var(--primary)] hover:bg-[var(--app-bg)] sm:px-4 sm:py-3 sm:text-xs">View all notifications</button>
-            {browserPermission === 'default' && <button type="button" onClick={enableBrowserAlerts} className="w-full border-t border-[var(--border)] px-2.5 py-2 text-left text-[11px] font-bold text-[var(--primary)] hover:bg-[var(--app-bg)] sm:px-4 sm:py-3 sm:text-xs">Enable browser alerts on this device</button>}
-            {browserPermission === 'denied' && <p className="border-t border-[var(--border)] px-2.5 py-2 text-[11px] text-[var(--muted)] sm:px-4 sm:py-3 sm:text-xs">Browser alerts are blocked. Enable them in your browser settings.</p>}
+            <PushNotificationSettings token={token} />
           </div>
         )}
       </div>
