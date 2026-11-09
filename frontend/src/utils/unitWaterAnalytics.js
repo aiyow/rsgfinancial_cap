@@ -29,26 +29,37 @@ export function buildUnitWaterAnalytics(history = [], forecasts = [], range = '1
     const valid = reading.validationStatus === 'VALID'
     byMonth.set(key, {
       month: key, label: label(key),
+      billingPeriodId: reading.billingPeriodId,
       actualConsumption: valid ? nonnegative(reading.consumption) : null,
       actualWaterBill: valid ? nonnegative(reading.waterCharge) : null,
-      estimatedConsumption: null, estimatedWaterBill: null,
+      actualMeterReading: valid ? nonnegative(reading.currentReading) : null,
+      estimatedConsumption: null, estimatedWaterBill: null, estimatedMeterReading: null,
     })
   }
   const actualMonths = [...byMonth.keys()]
   const latestMonth = actualMonths.at(-1)
   const latestReading = [...byMonth.values()].filter(row => row.actualConsumption !== null).at(-1) || null
+  const latestMeterReading = [...byMonth.values()].findLast(row => row.actualMeterReading !== null) || null
   const latestForecast = [...forecasts].filter(row => monthKey(row.forecastForMonth)).sort((a, b) =>
     String(a.forecastForMonth).localeCompare(String(b.forecastForMonth))
       || String(a.generatedAt || '').localeCompare(String(b.generatedAt || ''))).at(-1) || null
   const forecastMonth = monthKey(latestForecast?.forecastForMonth)
+  const predictedConsumption = nonnegative(latestForecast?.predictedConsumption)
+  const hasMeterBaseline = latestMeterReading && latestMeterReading.month === latestMonth
+    && (latestForecast?.basedOnPeriodId == null || String(latestForecast.basedOnPeriodId) === String(latestMeterReading.billingPeriodId))
   const forecast = latestForecast?.status === 'READY' && (!latestMonth || forecastMonth > latestMonth)
-    ? { ...latestForecast, label: label(forecastMonth), consumption: nonnegative(latestForecast.predictedConsumption), waterBill: nonnegative(latestForecast.estimatedWaterCharge) }
+    ? {
+      ...latestForecast, label: label(forecastMonth), consumption: predictedConsumption,
+      waterBill: nonnegative(latestForecast.estimatedWaterCharge),
+      meterReading: hasMeterBaseline && predictedConsumption !== null
+        ? latestMeterReading.actualMeterReading + predictedConsumption : null,
+    }
     : null
   if (forecast && (forecast.consumption !== null || forecast.waterBill !== null)) {
     byMonth.set(forecastMonth, {
       month: forecastMonth, label: `${label(forecastMonth)} estimate`,
-      actualConsumption: null, actualWaterBill: null,
-      estimatedConsumption: forecast.consumption, estimatedWaterBill: forecast.waterBill,
+      actualConsumption: null, actualWaterBill: null, actualMeterReading: null,
+      estimatedConsumption: forecast.consumption, estimatedWaterBill: forecast.waterBill, estimatedMeterReading: forecast.meterReading,
     })
   }
   const months = [...byMonth.keys()].sort()
@@ -59,9 +70,12 @@ export function buildUnitWaterAnalytics(history = [], forecasts = [], range = '1
     if (range !== 'ALL') start = Math.max(start, monthIndex(latestMonth || months.at(-1)) - Number(range) + 1)
     for (let index = start; index <= end; index++) {
       const key = `${Math.floor(index / 12)}-${String(index % 12 + 1).padStart(2, '0')}`
-      rows.push(byMonth.get(key) || { month: key, label: label(key), actualConsumption: null, actualWaterBill: null, estimatedConsumption: null, estimatedWaterBill: null })
+      rows.push(byMonth.get(key) || {
+        month: key, label: label(key), actualConsumption: null, actualWaterBill: null, actualMeterReading: null,
+        estimatedConsumption: null, estimatedWaterBill: null, estimatedMeterReading: null,
+      })
     }
   }
-  return { rows, latestReading, forecast, latestForecast,
+  return { rows, latestReading, latestMeterReading, forecast, latestForecast,
     flaggedCount: history.filter(row => row.validationStatus === 'FLAGGED').length }
 }

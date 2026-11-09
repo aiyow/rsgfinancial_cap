@@ -23,9 +23,8 @@ function monthLabel(value) {
   return new Date(value).toLocaleDateString('en-PH', { month: 'short', year: 'numeric', timeZone: 'UTC' })
 }
 
-function money(value) {
-  return `PHP ${Number(value || 0).toFixed(2)}`
-}
+const waterBillAmount = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' })
+const waterBillAxis = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', maximumFractionDigits: 0 })
 
 function consumptionTooltip(value, name) {
   const label = name === 'forecastConsumption' ? 'Projected forecast' : 'Historical actual'
@@ -33,8 +32,7 @@ function consumptionTooltip(value, name) {
 }
 
 function billTooltip(value, name) {
-  const label = name === 'forecastWaterBill' ? 'Projected forecast' : 'Historical actual'
-  return [money(value), label]
+  return [waterBillAmount.format(value), name]
 }
 
 const forecastRanges = [
@@ -250,7 +248,7 @@ export default function AnalyticsPage() {
                   <AreaChart data={waterBillChartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="label" angle={-25} textAnchor="end" height={70} interval={0} tickMargin={8} tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
+                    <YAxis width="auto" tick={{ fontSize: 12 }} tickFormatter={waterBillAxis.format} />
                     <Tooltip formatter={billTooltip} />
                     <Legend />
                     <Area type="monotone" dataKey="actualWaterBill" name="Historical actual" stroke="#059669" fill="#86efac" fillOpacity={0.24} strokeWidth={3} dot={{ r: 3, fill: '#fff', strokeWidth: 2 }} activeDot={{ r: 6 }} animationBegin={0} animationDuration={1200} animationEasing="ease-out" />

@@ -36,7 +36,7 @@ test('combined financial report, exports and consistent payment-cutoff snapshots
    INSERT INTO units(id,unit_number,floor) SELECT id,(230+id)::text,'2' FROM generate_series(1,143) id;
    UPDATE units SET unit_number=CASE id WHEN 1 THEN '2' WHEN 2 THEN '10' WHEN 3 THEN '11' WHEN 4 THEN '12' WHEN 5 THEN '13' WHEN 6 THEN '14' END WHERE id<=6;
    INSERT INTO unit_assignments VALUES(1,1,2,NULL);
-   INSERT INTO billing_periods VALUES(1,'LIVE_BILLING','GENERATED'),(2,'LIVE_BILLING','FORWARDED'),(3,'LIVE_BILLING','CLOSED'),(4,'LIVE_BILLING','DRAFT'),(5,'ANALYTICS_HISTORY','CLOSED');`);
+   INSERT INTO billing_periods VALUES(1,'LIVE_BILLING','FORWARDED'),(2,'LIVE_BILLING','FORWARDED'),(3,'LIVE_BILLING','CLOSED'),(4,'LIVE_BILLING','DRAFT'),(5,'ANALYTICS_HISTORY','CLOSED'),(6,'LIVE_BILLING','GENERATED');`);
   async function bill(id,unit,period,start,dues,water,{payer='Saved Payer',penalty=0}={}) {
    await setup.query(`INSERT INTO unit_bills(id,unit_id,billing_period_id,unit_number_snapshot,payer_name_snapshot,period_start_snapshot,period_end_snapshot,due_date_snapshot,late_penalty_amount,late_penalty_percent_snapshot,late_penalty_applied_at)
     SELECT $1,$2,$3,unit_number,$4,$5::date,($5::date+INTERVAL '1 month')::date,CASE WHEN $6>0 THEN '2000-01-15'::date ELSE '2099-01-15'::date END,$6,CASE WHEN $6>0 THEN 10 ELSE 0 END,CASE WHEN $6>0 THEN '2026-10-10'::timestamptz ELSE NULL END FROM units WHERE id=$2`,[id,unit,period,payer,start,penalty]);
@@ -48,6 +48,7 @@ test('combined financial report, exports and consistent payment-cutoff snapshots
   await bill(105,6,1,'2026-09-01',90,10);await bill(106,1,4,'2026-10-01',999,999);
   await bill(107,2,1,'2026-10-20',7.01,0.02,{payer:'Second Snapshot'});
   await bill(108,3,5,'2026-10-01',999,999);await bill(109,3,1,'2026-11-01',3,2);
+  await bill(110,5,6,'2026-10-01',500,50);
   async function payment(id,unit,amount,date,status='APPROVED') {await setup.query(`INSERT INTO payment_submissions(id,unit_id,review_status,payment_method,verified_reference_no,verified_payment_date,verified_amount,payment_purpose)
    VALUES($1::bigint,$2,$3,'CASH',($1::bigint)::text,$4,$5,'COMBINED')`,[id,unit,status,date,amount]);}
   async function apply(id,bill,type,amount){const allocation=(await setup.query('INSERT INTO payment_charge_allocations(payment_submission_id,charge_type,allocated_amount) VALUES($1,$2,$3) RETURNING id',[id,type,amount])).rows[0].id;
@@ -75,7 +76,7 @@ test('combined financial report, exports and consistent payment-cutoff snapshots
   async function request(path='/financial?month=2026-10',actor=1){const response=await fetch(`http://127.0.0.1:${server.address().port}/api/reports${path}`,{headers:actor?{Authorization:`Bearer ${token(actor)}`}:{}});
    if(path.includes('/export')&&response.ok)return{status:response.status,buffer:Buffer.from(await response.arrayBuffer())};return{status:response.status,data:await response.json()};}
   let initial;
-  await t.test('all units, statuses, snapshots, unpublished generated bills and cutoff-specific approved applications',async()=>{
+  await t.test('all units, forwarded and closed batches, snapshots and cutoff-specific approved applications',async()=>{
    assert.equal((await request('/financial?month=2026-10',null)).status,401);assert.equal((await request('/financial?month=2026-10',2)).status,403);
    const result=await request();assert.equal(result.status,200,JSON.stringify(result.data));initial=result.data;const combined=initial.combined;
    assert.equal(combined.rows.length,143);assert.equal(combined.asOfDate,'2026-10-31');

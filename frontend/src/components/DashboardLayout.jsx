@@ -33,7 +33,7 @@ const navigationByRole = {
     view: [
       { label: 'Dashboard', to: '/admin', end: true, icon: LayoutDashboard },
       { label: 'Unit Directory', to: '/admin/units', end: true, icon: Building2 },
-      { label: 'Forward Billings', to: '/admin/soa', icon: FileText },
+      { label: 'SOA Batches', to: '/admin/soa', icon: FileText },
       { label: 'Payment Records', to: '/admin/payments', icon: CreditCard },
       { label: 'Water Analytics', to: '/admin/analytics', icon: BarChart3 },
       { label: 'Financial Reports', to: '/admin/reports', icon: FolderKanban },

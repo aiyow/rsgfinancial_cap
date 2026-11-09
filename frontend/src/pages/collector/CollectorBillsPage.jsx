@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AlertTriangle, LoaderCircle, X } from 'lucide-react'
 import DashboardLayout, { EmptyRow } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
+import PasswordInput from '../../components/PasswordInput'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 
@@ -24,6 +25,7 @@ export default function CollectorBillsPage() {
   const [loadAttempt, setLoadAttempt] = useState(0)
   const [busyId, setBusyId] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleteError, setDeleteError] = useState('')
   const [reopenTarget, setReopenTarget] = useState(null)
   const [forwardTarget, setForwardTarget] = useState(null)
   const [notice, setNotice] = useState({ error: '', message: '' })
@@ -47,7 +49,7 @@ export default function CollectorBillsPage() {
     return () => { active = false }
   }, [token, loadAttempt])
 
-  async function run(period, path, method, body, successPrompt) {
+  async function run(period, path, method, body, successPrompt, onError = (error) => setNotice({ error, message: '' })) {
     setBusyId(period.id)
     setNotice({ error: '', message: '' })
     try {
@@ -56,7 +58,7 @@ export default function CollectorBillsPage() {
       setNotice({ error: '', message: data.message || successPrompt })
       return true
     } catch (error) {
-      setNotice({ error: error.message, message: '' })
+      onError(error.message)
       return false
     } finally { setBusyId(null) }
   }
@@ -73,12 +75,14 @@ export default function CollectorBillsPage() {
   }
 
   function remove(period) {
+    setDeleteError('')
     setDeleteTarget(period)
   }
 
   async function confirmDelete(currentPassword, reason) {
     if (!deleteTarget) return false
-    const deleted = await run(deleteTarget, `/api/billing-periods/${deleteTarget.id}`, 'DELETE', { currentPassword, reason: reason || 'Billing Associate deleted an incorrect billing batch.' }, 'Billing batch deleted.')
+    setDeleteError('')
+    const deleted = await run(deleteTarget, `/api/billing-periods/${deleteTarget.id}`, 'DELETE', { currentPassword, reason: reason || 'Billing Associate deleted an incorrect billing batch.' }, 'Billing batch deleted.', setDeleteError)
     if (deleted) setDeleteTarget(null)
     return deleted
   }
@@ -120,7 +124,7 @@ export default function CollectorBillsPage() {
       </div>
       {reopenTarget && <ReopenBatchModal period={reopenTarget} busy={busyId === reopenTarget.id} onCancel={() => setReopenTarget(null)} onConfirm={confirmReopen} />}
       {forwardTarget && <ForwardBatchModal period={forwardTarget} busy={busyId === forwardTarget.id} onCancel={() => setForwardTarget(null)} onConfirm={confirmForward} />}
-      {deleteTarget && <DeleteBatchModal period={deleteTarget} busy={busyId === deleteTarget.id} onCancel={() => setDeleteTarget(null)} onConfirm={confirmDelete} />}
+      {deleteTarget && <DeleteBatchModal period={deleteTarget} busy={busyId === deleteTarget.id} error={deleteError} onCancel={() => setDeleteTarget(null)} onConfirm={confirmDelete} />}
     </DashboardLayout>
   )
 }
@@ -170,7 +174,7 @@ function ForwardBatchModal({ busy, onCancel, onConfirm, period }) {
   </div>
 }
 
-function DeleteBatchModal({ busy, onCancel, onConfirm, period }) {
+function DeleteBatchModal({ busy, error, onCancel, onConfirm, period }) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [reason, setReason] = useState('')
 
@@ -182,10 +186,23 @@ function DeleteBatchModal({ busy, onCancel, onConfirm, period }) {
   const forwarded = period.status === 'FORWARDED'
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4 backdrop-blur-[1px]" role="presentation" onMouseDown={() => { if (!busy) onCancel() }}>
-      <section role="dialog" aria-modal="true" aria-labelledby="delete-batch-title" className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
+      <section role="dialog" aria-modal="true" aria-labelledby="delete-batch-title" className="max-h-full w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl sm:p-6" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-full bg-rose-100 text-rose-700"><AlertTriangle size={21} aria-hidden="true" /></span><div><h2 id="delete-batch-title" className="text-xl font-black text-slate-900">Delete billing batch?</h2><p className="mt-1 text-sm text-slate-600">This action cannot be undone.</p></div></div><button type="button" disabled={busy} onClick={onCancel} aria-label="Close delete confirmation" className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 disabled:opacity-50"><X size={19} /></button></div>
         <div className="mt-5 rounded-xl border border-rose-100 bg-rose-50 p-4 text-sm text-slate-700"><p>Permanently delete the <strong className="text-slate-900">{displayDate(period.periodStart)} to {displayDate(period.periodEnd)}</strong> batch, including its readings and generated statements.</p>{forwarded && <p className="mt-2 font-bold text-rose-800">Admin will immediately lose access to every statement in this forwarded batch.</p>}</div>
-        <form onSubmit={submit} className="mt-5 space-y-4"><label className="block text-sm font-bold text-slate-700">Your current password<input required minLength="8" autoComplete="current-password" type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100" /></label><label className="block text-sm font-bold text-slate-700">Reason for deletion <span className="font-normal text-slate-500">(optional)</span><textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength="500" placeholder="Example: Batch was generated with an incorrect water rate." className="mt-1.5 min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100" /></label><div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" disabled={busy} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Keep batch</button><button disabled={busy} className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-50">{busy ? 'Deleting…' : 'Delete permanently'}</button></div></form>
+        <form onSubmit={submit} className="mt-5 space-y-4">
+          <PasswordInput
+            current
+            disabled={busy}
+            minLength={8}
+            label="Your current password"
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+            labelClassName="block text-sm font-bold text-slate-700"
+            inputClassName="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100"
+          />
+          {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
+          <label className="block text-sm font-bold text-slate-700">Reason for deletion <span className="font-normal text-slate-500">(optional)</span><textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength="500" placeholder="Example: Batch was generated with an incorrect water rate." className="mt-1.5 min-h-24 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100" /></label><div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" disabled={busy} onClick={onCancel} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-50">Keep batch</button><button disabled={busy} className="rounded-lg bg-rose-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-rose-700 disabled:opacity-50">{busy ? 'Deleting…' : 'Delete permanently'}</button></div>
+        </form>
       </section>
     </div>
   )

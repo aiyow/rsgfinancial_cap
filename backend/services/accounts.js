@@ -8,7 +8,7 @@ import {
   money,
 } from './payments.js';
 
-// Accounts service. Fold the region sections to navigate related code.
+// Accounts service. 
 // 1. Email identity normalization
 // 2. Email change verification
 // 3. Registration challenges and quotas

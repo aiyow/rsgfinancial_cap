@@ -17,11 +17,23 @@ test('unit charts show monthly consumption rather than cumulative readings and p
 })
 
 test('missing and flagged months stay gaps instead of false zero-use readings', () => {
-  const result = buildUnitWaterAnalytics([reading('2026-01-01', 3, 69), reading('2026-03-01', 99, 2277, { validationStatus: 'FLAGGED' }), reading('2026-04-01', '', null)], [])
+  const result = buildUnitWaterAnalytics([reading('2026-01-01', 3, 69), reading('2026-03-01', 99, 2277, { validationStatus: 'FLAGGED' }), reading('2026-04-01', '', null, { currentReading: '' })], [])
   assert.deepEqual(result.rows.map(row => row.actualConsumption), [3, null, null, null])
   assert.deepEqual(result.rows.map(row => row.actualWaterBill), [69, null, null, null])
+  assert.deepEqual(result.rows.map(row => row.actualMeterReading), [103, null, null, null])
   assert.equal(result.flaggedCount, 1)
   assert.equal(result.latestReading.month, '2026-01')
+})
+
+test('meter forecast adds predicted use to the latest valid cumulative reading', () => {
+  const history = [reading('2026-10-01', '2', '46', { billingPeriodId: 7, currentReading: '651.125' })]
+  const result = buildUnitWaterAnalytics(history, [forecast('2026-11-01', { basedOnPeriodId: '7' })])
+  assert.equal(result.latestMeterReading.actualMeterReading, 651.125)
+  assert.deepEqual(result.rows.map(row => [row.actualMeterReading, row.estimatedMeterReading]), [[651.125, null], [null, 656.125]])
+
+  const stale = buildUnitWaterAnalytics(history, [forecast('2026-11-01', { basedOnPeriodId: '6' })])
+  assert.equal(stale.forecast.meterReading, null)
+  assert.equal(stale.forecast.consumption, 5)
 })
 
 test('only the latest future forecast is shown, without falling back to an older ready forecast', () => {

@@ -141,7 +141,7 @@ export default function AdminUnitsViewPage() {
         <div className="mt-6 overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="border-b border-slate-200 text-xs capitalize tracking-wide text-slate-400">
-              <tr><th className="px-3 py-3">Unit</th><th className="px-3 py-3">Floor</th><th className="px-3 py-3">Owner</th><th className="px-3 py-3">Current Resident(s)</th><th className="px-3 py-3">Occupancy</th></tr>
+              <tr><th className="px-3 py-3">Unit</th><th className="px-3 py-3">Floor</th><th className="px-3 py-3">Owner</th><th className="px-3 py-3 normal-case">Current Resident(s)</th><th className="px-3 py-3">Occupancy</th></tr>
             </thead>
             <tbody className="divide-y divide-slate-300">
               {visibleUnits.map((unit) => (

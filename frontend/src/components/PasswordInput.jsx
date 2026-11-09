@@ -4,7 +4,7 @@ import { passwordError, passwordRequirements } from '../utils/passwordPolicy'
 
 export default function PasswordInput({
   label, value, onChange, current = false, confirmationFor,
-  required = true, disabled = false,
+  required = true, disabled = false, minLength,
   inputClassName = 'mt-1.5 w-full rounded-lg border border-[var(--border)] bg-white px-3 py-2.5 font-normal outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--active-bg)]',
   labelClassName = 'block text-sm font-semibold text-[var(--ink)]',
 }) {
@@ -31,7 +31,7 @@ export default function PasswordInput({
     <div className="relative">
       <input ref={input} id={id} required={required} disabled={disabled}
         type={visible ? 'text' : 'password'} autoComplete={current ? 'current-password' : 'new-password'}
-        maxLength={current ? 256 : undefined} value={value}
+        minLength={minLength} maxLength={current ? 256 : undefined} value={value}
         onChange={event => { setHasTyped(true); onChange(event) }}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         aria-invalid={Boolean(value && issue)} aria-describedby={!current && showFeedback ? `${id}-help` : undefined}

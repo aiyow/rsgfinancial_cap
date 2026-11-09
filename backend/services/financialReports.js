@@ -76,7 +76,7 @@ const billDetailSql = `
   JOIN billing_periods p ON p.id = b.billing_period_id
   LEFT JOIN bill_charges c ON c.unit_bill_id = b.id
   WHERE p.period_type = 'LIVE_BILLING'
-    AND p.status IN ('GENERATED', 'FORWARDED', 'CLOSED')`;
+    AND p.status IN ('FORWARDED', 'CLOSED')`;
 
 function normalizeBill(row) {
   const waterBilled = number(row.waterBilled);
@@ -189,7 +189,7 @@ export async function getFinancialReport(pool, filters) {
        JOIN billing_periods p ON p.id = b.billing_period_id
        LEFT JOIN bill_charges c ON c.unit_bill_id = b.id
        WHERE p.period_type = 'LIVE_BILLING'
-         AND p.status IN ('GENERATED', 'FORWARDED', 'CLOSED')
+         AND p.status IN ('FORWARDED', 'CLOSED')
          AND ps.review_status = 'APPROVED'
          AND ps.verified_payment_date >= $2::date
          AND ps.verified_payment_date <= $3::date

@@ -9,6 +9,7 @@ import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayo
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 import { isWaterOnly, payableBalance, payablePaid } from '../../utils/chargePayments'
+import { paddedDomain } from '../../utils/forecastChart'
 import ChargePaymentSummary from '../../components/ChargePaymentSummary'
 
 function number(value) {
@@ -23,10 +24,10 @@ function money(value) {
   return value === null || value === undefined ? 'Unavailable' : `₱${Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
-function shortDate(value) {
-  if (!value) return 'Unavailable'
+function shortDate(value, fallback = 'Unavailable') {
+  if (!value) return fallback
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? 'Unavailable' : date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
+  return Number.isNaN(date.getTime()) ? fallback : date.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 }
 
 function waterBillMoney(value) {
@@ -35,16 +36,6 @@ function waterBillMoney(value) {
 
 function displayName(value) {
   return String(value || '').split(/\s+/).filter(Boolean).map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1).toLowerCase()}`).join(' ')
-}
-
-function paddedDomain(values) {
-  const numericValues = values.filter((value) => Number.isFinite(value))
-  if (!numericValues.length) return ['auto', 'auto']
-  const min = Math.min(...numericValues)
-  const max = Math.max(...numericValues)
-  const spread = Math.max(max - min, 1)
-  const padding = spread * 0.2
-  return [Math.max(0, Math.floor((min - padding) * 1000) / 1000), Math.ceil((max + padding) * 1000) / 1000]
 }
 
 function latestMeterResetIndex(history) {
@@ -105,7 +96,6 @@ export default function ResidentDashboard() {
     () => recommendations.filter((recommendation) => String(recommendation.unitId) === String(selectedUnit?.id)),
     [recommendations, selectedUnit],
   )
-  const allInsightsPositive = selectedRecommendations.length > 0 && selectedRecommendations.every(isPositiveInsight)
   const history = useMemo(() => selectedUnit?.history || [], [selectedUnit?.history])
   const resetIndex = useMemo(() => latestMeterResetIndex(history), [history])
   const historySinceReset = useMemo(() => (resetIndex >= 0 ? history.slice(resetIndex) : history), [history, resetIndex])
@@ -273,26 +263,7 @@ export default function ResidentDashboard() {
               <p className="rounded-xl bg-amber-50 p-3 text-sm text-amber-800">Some readings require staff review and are excluded from the forecast.</p>
             )}
 
-            <section className={`resident-insights rounded-2xl border p-4 ${allInsightsPositive ? 'border-emerald-200 bg-emerald-50/50' : 'border-amber-200 bg-amber-50/40'}`}>
-              <div className="mb-4">
-                <h3 className="flex items-center gap-2 font-black text-slate-950"><Lightbulb size={18} className="text-[var(--primary)]" />Prescriptive Insights</h3>
-                <p className="mt-1 text-sm text-slate-500">Recommendations for Unit {selectedUnit?.unitNumber}, based on its water use and current billing status.</p>
-              </div>
-              {selectedRecommendations.length > 0 ? (
-                <div className="space-y-3">
-                  {selectedRecommendations.map((recommendation) => {
-                    const positive = isPositiveInsight(recommendation)
-                    return <article key={recommendation.id} className={`rounded-xl border p-4 ${positive ? 'border-emerald-200 bg-emerald-50 text-emerald-950' : 'border-amber-200 bg-amber-50 text-amber-950'}`}>
-                      <p className={`text-xs font-bold capitalize tracking-wide ${positive ? 'text-emerald-700' : 'text-amber-700'}`}>{positive ? 'Everything looks normal' : 'Condition detected'}</p>
-                      <p className={`mt-1 text-sm ${positive ? 'text-emerald-900' : 'text-amber-900'}`}>{recommendation.evidence?.condition}</p>
-                      <p className={`mt-3 text-xs font-bold capitalize tracking-wide ${positive ? 'text-emerald-700' : 'text-amber-700'}`}>{positive ? 'Next step' : 'Recommended action'}</p>
-                      <p className="mt-1 text-sm font-bold text-slate-950">{recommendation.message}</p>
-                      <p className={`mt-2 text-xs ${positive ? 'text-emerald-800' : 'text-amber-800'}`}>{residentInsightEvidence(recommendation)}</p>
-                    </article>
-                  })}
-                </div>
-              ) : <EmptyRow message="No prescriptive insights are available for this unit yet." />}
-            </section>
+            <ResidentInsights unitNumber={selectedUnit?.unitNumber} recommendations={selectedRecommendations} />
           </div>
         )}
       </Panel>
@@ -371,16 +342,103 @@ function ChartCard({ title, description, children }) {
   return <div className="resident-chart-card min-w-0 rounded-2xl border p-3 sm:p-4"><h3 className="text-sm font-black text-slate-900 sm:text-base">{title}</h3><p className="mt-1 text-xs text-slate-500 sm:text-sm">{description}</p><div className="resident-dashboard-chart mt-3 sm:mt-4">{children}</div></div>
 }
 
-function isPositiveInsight(recommendation) {
-  return recommendation.recommendationType === 'MONITOR_USAGE'
+function ResidentInsights({ unitNumber, recommendations }) {
+  const insights = recommendations.map(residentInsight)
+  const steps = [...new Set(insights.flatMap((insight) => insight.steps))]
+  const needsAttention = recommendations.some(({ recommendationType }) => recommendationType !== 'MONITOR_USAGE')
+
+  return (
+    <section aria-labelledby="resident-insights-title" className={`resident-insights rounded-2xl border p-4 ${needsAttention ? 'border-amber-200 bg-amber-50/40' : 'border-emerald-200 bg-emerald-50/50'}`}>
+      <h3 id="resident-insights-title" className="flex items-center gap-2 font-black text-slate-950">
+        <Lightbulb size={18} aria-hidden="true" className="text-[var(--primary)]" />
+        Water Use and Bill Tips
+      </h3>
+      <p className="mt-1 text-sm text-slate-600">A quick look at water use and bill reminders for Unit {unitNumber}.</p>
+      {insights.length > 0 ? (
+        <article className="mt-4 grid gap-4 rounded-xl border border-[var(--border)] bg-white p-4 text-sm leading-6 text-slate-700 sm:grid-cols-2 sm:gap-6">
+          <div>
+            <h4 className="font-bold text-slate-950">What we noticed</h4>
+            <ul className="mt-1 list-disc space-y-2 pl-5">
+              {insights.map(({ id, finding }) => <li key={id}>{finding}</li>)}
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-950">What you can do</h4>
+            <ul className="mt-1 list-disc space-y-2 pl-5">
+              {steps.map((step) => <li key={step}>{step}</li>)}
+            </ul>
+          </div>
+        </article>
+      ) : <EmptyRow message="There are no tips for this unit yet." />}
+    </section>
+  )
 }
 
-function residentInsightEvidence(recommendation) {
-  const evidence = recommendation.evidence || {}
-  if (recommendation.recommendationType === 'CHECK_HIGH_USAGE') return `Projected increase: ${Number(evidence.increasePercent || 0).toFixed(2)}% above the recent average.`
-  if (recommendation.recommendationType === 'PAYMENT_REMINDER') return `Due ${String(evidence.dueDate || '').slice(0, 10)}; PHP ${Number(evidence.remainingBalance || 0).toFixed(2)} remains unpaid.`
-  if (recommendation.recommendationType === 'RISING_CONSUMPTION') return `Recent readings: ${(evidence.values || []).map((value) => `${Number(value).toFixed(3)} m³`).join(', ')}.`
-  if (recommendation.recommendationType === 'MONITOR_HIGH_USAGE') return `Projected use: ${Number(evidence.predictedConsumption || 0).toFixed(3)} m³.`
-  if (recommendation.recommendationType === 'MONITOR_USAGE') return `Positive baseline readings: ${Number(evidence.positiveBaselineCount || 0)}; zero readings: ${Number(evidence.zeroReadingCount || 0)}; forecast: ${evidence.predictedConsumption === null || evidence.predictedConsumption === undefined ? 'not available' : `${Number(evidence.predictedConsumption).toFixed(3)} m³`}.`
-  return 'Review this insight before the next meter reading.'
+const cubicMeters = (value) => `${value.toFixed(3)} m³`
+const checkForLeaks = 'Check for dripping faucets, leaking showerheads, or toilets that keep running.'
+const saveWater = 'Turn off the tap while brushing your teeth and try taking shorter showers.'
+const checkNextReading = 'Check how much water you used when your next bill arrives.'
+
+function residentInsight(recommendation) {
+  const { id, recommendationType } = recommendation
+  const evidence = recommendation.evidence ?? {}
+  switch (recommendationType) {
+    case 'RISING_CONSUMPTION': {
+      const readings = (evidence.values ?? []).map(number).filter(Number.isFinite)
+      const amounts = readings.map(cubicMeters).join(' to ')
+      return {
+        id,
+        finding: 'Your water use went up each month for three months in a row.'
+          + (readings.length === 3 ? ` It rose from ${amounts}.` : ''),
+        steps: [saveWater, checkNextReading],
+      }
+    }
+    case 'CHECK_HIGH_USAGE': {
+      const increase = number(evidence.increasePercent)
+      return {
+        id,
+        finding: Number.isFinite(increase)
+          ? `Based on recent months when you used water, your water use could be about ${Math.round(increase)}% higher than usual.`
+          : 'Your estimated water use is higher than usual.',
+        steps: [checkForLeaks, saveWater, checkNextReading],
+      }
+    }
+    case 'MONITOR_HIGH_USAGE': {
+      const estimate = number(evidence.predictedConsumption)
+      return {
+        id,
+        finding: 'Your estimated water use is close to the most you’ve used in a recent month.'
+          + (Number.isFinite(estimate) ? ` The estimate is ${cubicMeters(estimate)}.` : ''),
+        steps: [saveWater, checkNextReading],
+      }
+    }
+    case 'PAYMENT_REMINDER': {
+      const balance = number(evidence.remainingBalance)
+      const dueDate = shortDate(evidence.dueDate, '')
+      return {
+        id,
+        finding: (Number.isFinite(balance) ? `You have ${money(balance)} left to pay.` : 'You still have a balance to pay.')
+          + (dueDate ? ` The due date is ${dueDate}.` : ''),
+        steps: ['Open My Bills to check your balance and payment options.'],
+      }
+    }
+    case 'MONITOR_USAGE': {
+      const monthsWithWaterUse = number(evidence.positiveBaselineCount)
+      const hasLimitedHistory = evidence.forecastStatus === 'INSUFFICIENT_DATA'
+        || (Number.isFinite(monthsWithWaterUse) && monthsWithWaterUse < 2)
+      return {
+        id,
+        finding: hasLimitedHistory
+          ? 'We need more monthly readings that show water use before we can compare your usage.'
+          : 'There are no unusual water use or payment alerts for this unit right now.',
+        steps: [checkNextReading],
+      }
+    }
+    default:
+      return {
+        id,
+        finding: 'There is an update about your water use or bill.',
+        steps: ['Ask building staff if you have questions about your water use or bill.'],
+      }
+  }
 }

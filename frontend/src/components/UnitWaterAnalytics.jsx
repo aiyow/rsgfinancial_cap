@@ -1,15 +1,17 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Check, ChevronDown, Search } from 'lucide-react'
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { EmptyRow } from './DashboardLayout'
 import { apiRequest } from '../services/api'
 import { buildUnitWaterAnalytics } from '../utils/unitWaterAnalytics'
+import { connectForecastLine, paddedDomain } from '../utils/forecastChart'
 import { currency } from '../utils/chargePayments'
 
 const selectClass = 'min-h-10 w-full min-w-0 rounded-lg border border-[var(--border)] bg-white px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--primary)] focus:ring-2 focus:ring-emerald-100'
 const retryClass = 'mt-3 min-h-11 rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-50'
 const consumption = value => value === null || value === undefined ? 'Unavailable' : `${Number(value).toLocaleString('en-PH', { maximumFractionDigits: 3 })} m³`
 const amount = value => value === null || value === undefined ? 'Unavailable' : currency(value)
+const waterMetrics = [['bill', 'Water bill'], ['consumption', 'Consumption'], ['meter', 'Meter reading']]
 
 export default function UnitWaterAnalytics({ token, refreshKey = 0 }) {
   const [units, setUnits] = useState([])
@@ -39,7 +41,7 @@ export default function UnitWaterAnalytics({ token, refreshKey = 0 }) {
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h2 id="unit-water-title" className="text-base font-bold text-[var(--ink)]">Per-unit water analytics</h2>
-        <p className="mt-0.5 text-xs text-[var(--muted)]">Water charges and usage by unit.</p>
+        <p className="mt-0.5 text-xs text-[var(--muted)]">Water charges, usage, and meter readings by unit.</p>
       </div>
       {!loading && !error && units.length > 0 && <div className="grid w-full grid-cols-[minmax(0,1fr)_140px] gap-2 sm:w-auto sm:grid-cols-[190px_150px]">
         <UnitPicker units={units} selectedUnit={selectedUnit} onChange={setSelectedUnitId} />
@@ -177,29 +179,62 @@ function UnitWaterHistory({ unit, token, range, metric, onMetricChange }) {
 
   if (error) return <div role="alert" className="rounded-xl border border-red-100 bg-red-50 p-4"><p className="text-sm text-red-700">Could not load Unit {unit.unitNumber}: {error}</p><button type="button" onClick={() => { setError(''); setAttempt(current => current + 1) }} className={retryClass}>Retry unit analytics</button></div>
   if (!data) return <p role="status" className="text-sm text-[var(--muted)]">Loading water history for Unit {unit.unitNumber}...</p>
-  const { rows, latestReading, forecast, latestForecast, flaggedCount } = buildUnitWaterAnalytics(data.history, data.forecasts, range)
+  const { rows, latestReading, latestMeterReading, forecast, latestForecast, flaggedCount } = buildUnitWaterAnalytics(data.history, data.forecasts, range)
 
   const bill = metric === 'bill'
-  const latest = bill ? amount(latestReading?.actualWaterBill) : consumption(latestReading?.actualConsumption)
-  const estimate = bill ? amount(forecast?.waterBill) : consumption(forecast?.consumption)
+  const meter = metric === 'meter'
+  const latestRow = meter ? latestMeterReading : latestReading
+  const latest = bill ? amount(latestRow?.actualWaterBill) : consumption(meter ? latestRow?.actualMeterReading : latestRow?.actualConsumption)
+  const estimate = bill ? amount(forecast?.waterBill) : consumption(meter ? forecast?.meterReading : forecast?.consumption)
+
+  function navigateMetric(event, index) {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+    event.preventDefault()
+    const direction = event.key === 'ArrowRight' ? 1 : -1
+    const [next] = waterMetrics[(index + direction + waterMetrics.length) % waterMetrics.length]
+    onMetricChange(next)
+    document.getElementById(`unit-water-tab-${next}`)?.focus()
+  }
+
   return <section aria-label={`Water analytics for Unit ${unit.unitNumber}`} className="min-w-0">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div role="tablist" aria-label="Unit water metric" className="inline-flex rounded-lg bg-[var(--app-bg)] p-1">
-        {[['bill', 'Water bill'], ['consumption', 'Consumption']].map(([value, label]) => <button key={value} id={`unit-water-tab-${value}`} role="tab" type="button" aria-selected={metric === value} tabIndex={metric === value ? 0 : -1} aria-controls="unit-water-chart" onClick={() => onMetricChange(value)} onKeyDown={event => { if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') { event.preventDefault(); const next = bill ? 'consumption' : 'bill'; onMetricChange(next); document.getElementById(`unit-water-tab-${next}`)?.focus() } }} className={`min-h-9 rounded-md px-3 text-xs font-semibold transition ${metric === value ? 'bg-white text-[var(--primary)] shadow-sm' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}>{label}</button>)}
+      <div role="tablist" aria-label="Unit water metric" className="inline-flex flex-wrap rounded-lg bg-[var(--app-bg)] p-1">
+        {waterMetrics.map(([value, label], index) => <button key={value} id={`unit-water-tab-${value}`} role="tab" type="button" aria-selected={metric === value} tabIndex={metric === value ? 0 : -1} aria-controls="unit-water-chart" onClick={() => onMetricChange(value)} onKeyDown={event => navigateMetric(event, index)} className={`min-h-9 rounded-md px-3 text-xs font-semibold transition ${metric === value ? 'bg-white text-[var(--primary)] shadow-sm' : 'text-[var(--muted)] hover:text-[var(--ink)]'}`}>{label}</button>)}
       </div>
       <dl className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
-        <div><dt className="inline text-[var(--muted)]">Latest{latestReading?.label ? ` (${latestReading.label})` : ''}: </dt><dd className="inline font-bold tabular-nums text-[var(--ink)]">{latest}</dd></div>
+        <div><dt className="inline text-[var(--muted)]">Latest{latestRow?.label ? ` (${latestRow.label})` : ''}: </dt><dd className="inline font-bold tabular-nums text-[var(--ink)]">{latest}</dd></div>
         <div><dt className="inline text-[var(--muted)]">Estimate{forecast?.label ? ` (${forecast.label})` : ''}: </dt><dd className="inline font-bold tabular-nums text-amber-700">{estimate}</dd></div>
       </dl>
     </div>
     <div id="unit-water-chart" role="tabpanel" aria-labelledby={`unit-water-tab-${metric}`} className="mt-3 min-w-0">
-      <WaterChart key={metric} title={bill ? 'Monthly water bill' : 'Monthly water consumption'} unitNumber={unit.unitNumber} rows={rows} actualKey={bill ? 'actualWaterBill' : 'actualConsumption'} estimateKey={bill ? 'estimatedWaterBill' : 'estimatedConsumption'} actualName={bill ? 'Actual water bill' : 'Actual consumption'} estimatedName={bill ? 'Estimated water bill' : 'Estimated consumption'} color={bill ? '#2563eb' : '#059669'} money={bill} />
+      {meter ? <MeterReadingChart rows={rows} unitNumber={unit.unitNumber} />
+        : <WaterChart key={metric} title={bill ? 'Monthly water bill' : 'Monthly water consumption'} unitNumber={unit.unitNumber} rows={rows} actualKey={bill ? 'actualWaterBill' : 'actualConsumption'} estimateKey={bill ? 'estimatedWaterBill' : 'estimatedConsumption'} actualName={bill ? 'Actual water bill' : 'Actual consumption'} estimatedName={bill ? 'Estimated water bill' : 'Estimated consumption'} color={bill ? '#2563eb' : '#059669'} money={bill} />}
     </div>
     <div className="mt-2 space-y-1 text-[11px] leading-5 text-[var(--muted)]">
-      <p>Consumption in m³ · Bills in PHP · Estimates are not finalized bills.</p>
-      {!forecast && <p className="text-amber-800">{latestForecast?.status !== 'READY' && latestForecast?.reason ? latestForecast.reason : 'No next-month estimate is available yet.'}</p>}
+      <p>{meter ? 'Recorded monthly meter readings and the predicted next reading in m³.' : 'Consumption in m³ · Bills in PHP · Estimates are not finalized bills.'}</p>
+      {(!forecast || (meter && forecast.meterReading === null)) && <p className="text-amber-800">{latestForecast?.status !== 'READY' && latestForecast?.reason ? latestForecast.reason : 'No next-month estimate is available yet.'}</p>}
       {flaggedCount > 0 && <p className="text-amber-800">{flaggedCount} flagged reading{flaggedCount === 1 ? '' : 's'} excluded. Missing readings appear as gaps.</p>}
     </div>
+  </section>
+}
+
+function MeterReadingChart({ rows, unitNumber }) {
+  const chartRows = connectForecastLine(rows, 'actualMeterReading', 'estimatedMeterReading', 'predicted')
+  const hasActual = chartRows.some(row => row.actualMeterReading !== null)
+  const hasEstimate = chartRows.some(row => row.estimatedMeterReading !== null)
+  const domain = paddedDomain(chartRows.flatMap(row => [row.actualMeterReading, row.estimatedMeterReading]))
+  return <section aria-label={`Meter-reading forecast for Unit ${unitNumber}`} className="h-52 min-w-0 overflow-hidden sm:h-56">
+    {hasActual ? <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+      <LineChart data={chartRows} margin={{ top: 8, right: 12, left: 0, bottom: 0 }} accessibilityLayer>
+        <CartesianGrid strokeDasharray="3 3" stroke="#dceee2" />
+        <XAxis dataKey="label" angle={-20} textAnchor="end" height={55} minTickGap={20} tick={{ fontSize: 10 }} />
+        <YAxis width="auto" domain={domain} tick={{ fontSize: 10 }} tickFormatter={value => Number(value).toLocaleString('en-PH', { maximumFractionDigits: 3 })} />
+        <Tooltip formatter={consumption} />
+        <Legend wrapperStyle={{ fontSize: 11 }} iconSize={9} />
+        <Line type="monotone" dataKey="actualMeterReading" name="Monthly meter reading" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#fff' }} isAnimationActive={false} />
+        {hasEstimate && <Line type="monotone" dataKey="predicted" name="Predicted reading" stroke="#f59e0b" strokeWidth={3} strokeDasharray="7 5" dot={{ r: 4, fill: '#fff' }} connectNulls isAnimationActive={false} />}
+      </LineChart>
+    </ResponsiveContainer> : <EmptyRow message="No valid meter readings are available for this unit in the selected range." />}
   </section>
 }
 

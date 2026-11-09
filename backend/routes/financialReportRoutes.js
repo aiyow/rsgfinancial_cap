@@ -117,7 +117,7 @@ function addCombinedReport(sheet,report) {
   sheet.columns=[{width:12},{width:34},{width:19},{width:17},{width:16},{width:19},{width:19},{width:21},{width:20}];
   sheet.getCell('A1').value='ResiDens Overall Billing Report';
   sheet.addRow([`Payment cutoff: ${asOfDate}`]);
-  sheet.addRow(['All generated SOAs starting in the selected period, including unpublished SOAs. Earlier bills are excluded.']);
+  sheet.addRow(['SOAs from batches forwarded to Admin with billing periods starting in the selected dates, including batches already published.']);
   sheet.addRow(['Paid means approved amounts applied to these SOAs, dated through the cutoff. Unapplied advance credits are excluded.']);
   for(let row=1;row<=5;row++){sheet.mergeCells(row,1,row,9);sheet.getRow(row).alignment={wrapText:true,vertical:'middle'};sheet.getRow(row).height=row===1?26:24;}
   sheet.addRow([]);

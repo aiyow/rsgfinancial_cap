@@ -1,7 +1,7 @@
 import { billAppliedSql, billTotalSql, chargePaymentsSql } from './payments.js';
 import { writeAuditLog } from './audit.js';
 
-// Analytics service. Fold the region sections to navigate related code.
+// Analytics service.
 // 1. Eligible analytics periods
 // 2. Usage anomaly rules
 // 3. Predictive models and forecasts

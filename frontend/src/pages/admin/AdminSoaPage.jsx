@@ -38,10 +38,26 @@ export default function AdminSoaPage() {
   }, [loadPeriods])
 
   return (
-    <DashboardLayout title="Forwarded SOAs" description="Read-only billing batches forwarded by the Billing Associate.">
+    <DashboardLayout title="Billing Batches" description="Statements of account forwarded by the Billing Associate.">
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-      <Panel title="Forwarded billing batches">
-        <div className="space-y-3">{periods.map((period) => <article key={period.id} className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center"><div><div className="flex items-center gap-2"><p className="font-black">{displayDate(period.periodStart)} to {displayDate(period.periodEnd)}</p><span className="rounded-full bg-indigo-50 px-2 py-1 text-xs font-bold text-indigo-700">{period.status}</span></div><p className="mt-1 text-xs text-slate-500">Due {displayDate(period.dueDate)} | Forwarded {displayDate(period.forwardedAt)}</p></div><Link to={`/admin/soa/batches/${period.id}`} className="w-fit rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold !text-white">Open batch</Link></article>)}</div>
+      <Panel title="Billing Batches">
+        <div className="space-y-3">
+          {periods.map((period) => {
+            const { soaCount, unpublishedSoaCount } = period
+            const allPublished = soaCount > 0 && unpublishedSoaCount === 0
+            const status = allPublished ? 'All Published' : `${unpublishedSoaCount} Unpublished SOA${unpublishedSoaCount === 1 ? '' : 's'}`
+            return <article key={period.id} className="flex flex-col justify-between gap-3 rounded-xl border border-slate-200 p-4 sm:flex-row sm:items-center">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-black">{displayDate(period.periodStart)} to {displayDate(period.periodEnd)}</p>
+                  <span className={`rounded-full px-2 py-1 text-xs font-bold ${allPublished ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>{status}</span>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">Due {displayDate(period.dueDate)} | Forwarded {displayDate(period.forwardedAt)}</p>
+              </div>
+              <Link to={`/admin/soa/batches/${period.id}`} className="w-fit rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold !text-white">Open batch</Link>
+            </article>
+          })}
+        </div>
         {periods.length === 0 && <EmptyRow message="No billing batches have been forwarded." />}
       </Panel>
     </DashboardLayout>

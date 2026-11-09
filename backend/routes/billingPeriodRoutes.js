@@ -121,10 +121,20 @@ router.use(requireAuth);
 
 router.get("/", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next) => {
   try {
-    const where = req.user.role === "ADMIN"
-      ? "WHERE period_type = 'LIVE_BILLING' AND status IN ('FORWARDED', 'CLOSED')"
-      : "WHERE period_type = 'LIVE_BILLING'";
-    const result = await pool.query(`SELECT ${periodColumns} FROM billing_periods ${where} ORDER BY period_start DESC`);
+    const result = req.user.role === "ADMIN"
+      ? await pool.query(
+        `SELECT ${periodColumns}, counts."soaCount", counts."unpublishedSoaCount"
+         FROM billing_periods
+         CROSS JOIN LATERAL (
+           SELECT COUNT(*)::int AS "soaCount",
+             (COUNT(*) FILTER (WHERE published_at IS NULL))::int AS "unpublishedSoaCount"
+           FROM unit_bills
+           WHERE billing_period_id = billing_periods.id
+         ) counts
+         WHERE period_type = 'LIVE_BILLING' AND status IN ('FORWARDED', 'CLOSED')
+         ORDER BY period_start DESC`,
+      )
+      : await pool.query(`SELECT ${periodColumns} FROM billing_periods WHERE period_type = 'LIVE_BILLING' ORDER BY period_start DESC`);
     return res.json({ periods: result.rows });
   } catch (error) { return next(error); }
 });

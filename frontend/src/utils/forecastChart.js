@@ -5,6 +5,15 @@ export function chartNumber(value) {
   return Number.isFinite(numeric) ? numeric : null
 }
 
+export function paddedDomain(values) {
+  const numericValues = values.filter(Number.isFinite)
+  if (!numericValues.length) return ['auto', 'auto']
+  const min = Math.min(...numericValues)
+  const max = Math.max(...numericValues)
+  const padding = Math.max(max - min, 1) * 0.2
+  return [Math.max(0, Math.floor((min - padding) * 1000) / 1000), Math.ceil((max + padding) * 1000) / 1000]
+}
+
 // Rows are chronological. Retrospective forecasts remain available in the data,
 // but the plotted dashed line starts at the latest actual and continues forward.
 export function connectForecastLine(rows, actualKey, projectedKey, forecastKey) {
