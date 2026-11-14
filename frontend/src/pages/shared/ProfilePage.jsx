@@ -10,7 +10,7 @@ import { passwordError } from '../../utils/passwordPolicy'
 const roleLabel = (role) => ({ ADMIN: 'Admin', COLLECTOR: 'Billing Associate', RESIDENT: 'Resident' }[role] || role)
 
 export default function ProfilePage() {
-  const { user, token, replaceToken } = useAuth()
+  const { user, token, replaceToken, offline } = useAuth()
   const isResident = user.role === 'RESIDENT'
   const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmation: '' })
   const [notice, setNotice] = useState({ error: '', message: '' })
@@ -84,7 +84,7 @@ export default function ProfilePage() {
               <PasswordField label="Current password" value={form.currentPassword} onChange={(event) => updateField('currentPassword', event.target.value)} current />
               <PasswordField label="New password" value={form.newPassword} onChange={(event) => updateField('newPassword', event.target.value)} />
               <PasswordField confirmationFor={form.newPassword} label="Confirm new password" value={form.confirmation} onChange={(event) => updateField('confirmation', event.target.value)} />
-              <div className="flex justify-end"><button disabled={submitting} className="inline-flex items-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"><KeyRound size={17} />{submitting ? 'Changing password...' : 'Change password'}</button></div>
+              <div className="flex justify-end"><button disabled={submitting || offline} className="inline-flex items-center gap-2 rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"><KeyRound size={17} />{submitting ? 'Changing password...' : 'Change password'}</button></div>
             </form>
           </Panel>
         </div>

@@ -17,6 +17,7 @@ async function fileExists(filePath) {
 }
 
 async function migrateReceipts() {
+  const imagesTable = (await pool.query("SELECT to_regclass('public.payment_receipt_images') AS name")).rows[0].name;
   const result = await pool.query(
     `SELECT id, receipt_path AS "receiptPath", receipt_mime_type AS "receiptMimeType"
      FROM payment_submissions
@@ -42,26 +43,37 @@ async function migrateReceipts() {
     }
 
     let uploaded;
+    let client;
     try {
       uploaded = await uploadReceipt(await readFile(filePath));
-      const updated = await pool.query(
+      client = await pool.connect();
+      await client.query('BEGIN');
+      const updated = await client.query(
         `UPDATE payment_submissions
-         SET receipt_storage = 'CLOUDINARY', receipt_cloudinary_public_id = $2
+         SET receipt_storage = 'CLOUDINARY', receipt_cloudinary_public_id = $2, receipt_path = $2
          WHERE id = $1 AND entry_type = 'RECEIPT_UPLOAD' AND receipt_storage = 'LOCAL'
          RETURNING id`,
         [receipt.id, uploaded.publicId],
       );
       if (!updated.rows[0]) {
+        await client.query('ROLLBACK');
         await destroyReceipt(uploaded.publicId);
         console.warn(`Payment ${receipt.id}: skipped because it was changed while migrating.`);
         continue;
       }
+      if (imagesTable) await client.query(`UPDATE payment_receipt_images
+        SET storage = 'CLOUDINARY', cloudinary_public_id = $2, path = $2
+        WHERE payment_submission_id = $1 AND position = 1`, [receipt.id, uploaded.publicId]);
+      await client.query('COMMIT');
       migrated += 1;
       console.log(`Payment ${receipt.id}: migrated to Cloudinary.`);
     } catch (error) {
+      if (client) await client.query('ROLLBACK').catch(() => {});
       failed += 1;
       if (uploaded?.publicId) await destroyReceipt(uploaded.publicId).catch(() => {});
       console.error(`Payment ${receipt.id}: migration failed: ${error.message}`);
+    } finally {
+      client?.release();
     }
   }
 

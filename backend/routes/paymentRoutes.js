@@ -1,4 +1,3 @@
-import crypto from "node:crypto";
 import { unlink } from "node:fs/promises";
 import path from "node:path";
 import { Readable } from "node:stream";
@@ -10,7 +9,8 @@ import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
 import { receiptUpload } from "../middleware/receiptUpload.js";
-import { analyzeReceipt, destroyReceipt, receiptDeliveryUrl, uploadReceipt } from "../services/receipts.js";
+import { receiptDeliveryUrl } from "../services/receipts.js";
+import { analyzeReceiptImages, cleanupReceiptImages, ensureReceiptImagesSchema, insertReceiptImages, receiptHash, receiptImagesSelectSql, receiptTypeFromRequest, uploadReceiptImages } from '../services/receiptBatches.js';
 import { writeAuditLog } from "../services/audit.js";
 
 import { regeneratePrescriptiveRecommendations } from "../services/analytics.js";
@@ -78,6 +78,7 @@ const paymentSelect = `SELECT ps.id, ps.official_receipt_no AS "officialReceiptN
     FROM payment_charge_allocations a WHERE a.payment_submission_id=ps.id),'[]'::jsonb) AS allocations,
   ps.unit_id AS "unitId", ps.entry_type AS "entryType", ps.payment_method AS "paymentMethod",
   ps.receipt_original_name AS "receiptOriginalName", ps.receipt_mime_type AS "receiptMimeType",
+  ps.receipt_type AS "receiptType", ps.ocr_details AS "ocrDetails", ${receiptImagesSelectSql} AS "receiptImages",
   ps.ocr_raw_text AS "ocrRawText", ps.ocr_confidence AS "ocrConfidence",
   ps.ocr_quality_status AS "ocrQualityStatus", ps.ocr_amount AS "ocrAmount",
   ps.ocr_reference_no AS "ocrReferenceNo", ps.ocr_payment_date AS "ocrPaymentDate",
@@ -127,9 +128,14 @@ async function residentBill(id, userId, client = pool) {
 }
 
 async function processReceipt(req, res) {
-  if (!req.file) { res.status(400).json({ message: "Select a JPEG/JPG (.jpg, .jpeg, .jfif) or PNG (.png) receipt image." }); return null; }
+  const receiptType = receiptTypeFromRequest(req.body.receiptType);
+  if (!req.files?.length) { res.status(400).json({ message: "Choose one or two receipt images." }); return null; }
+  if (new Set(req.files.map(file => receiptHash(file.buffer))).size !== req.files.length) {
+    res.status(400).json({ message: 'The same image was selected twice. Choose different screenshots of the same payment.' });
+    return null;
+  }
   try {
-    return await analyzeReceipt(req.file.buffer);
+    return await analyzeReceiptImages(req.files, receiptType);
   } catch {
     res.status(400).json({ message: "The uploaded file is not a readable JPEG/JPG or PNG image." });
     return null;
@@ -140,6 +146,7 @@ router.use(requireAuth, allowRoles("ADMIN", "COLLECTOR", "RESIDENT"));
 router.use(async (req, res, next) => {
   try {
     await ensurePaymentLedgerSchema(pool);
+    await ensureReceiptImagesSchema(pool);
     await applyDueLatePenalties(pool);
     return next();
   } catch (error) {
@@ -156,7 +163,7 @@ router.post("/bills/:id/preview", allowRoles("RESIDENT"), requireId, receiptUplo
     if (!analysis) return undefined;
     if (analysis.quality.status !== "GOOD") {
       return res.status(422).json({
-        message: "The receipt image is blurred. Please upload a clearer image and try again.",
+        message: `Image ${analysis.quality.imagePosition} is blurred or too small. Please replace it with a clearer image and try again.`,
         analysis,
       });
     }
@@ -168,7 +175,7 @@ router.post("/bills/:id/preview", allowRoles("RESIDENT"), requireId, receiptUplo
 });
 
 router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload, async (req, res, next) => {
-  let uploadedReceipt;
+  let uploadedReceipts = [];
   let client;
   try {
     const bill = await residentBill(req.resourceId, req.user.id);
@@ -177,35 +184,42 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload, asyn
     if (Number(bill.approved) >= Number(bill.total) && Number(bill.total) > 0) {
       return res.status(409).json({ message: "This SOA is already fully paid." });
     }
-    const digest = crypto.createHash("sha256").update(req.file?.buffer || Buffer.alloc(0)).digest("hex");
-    const duplicate = await pool.query("SELECT id FROM payment_submissions WHERE receipt_sha256 = $1", [digest]);
+    receiptTypeFromRequest(req.body.receiptType);
+    const hashes = req.files.map(file => receiptHash(file.buffer));
+    const digest = hashes[0];
+    const duplicate = await pool.query(`SELECT id FROM payment_submissions WHERE receipt_sha256 = ANY($1::text[])
+      UNION ALL SELECT payment_submission_id AS id FROM payment_receipt_images WHERE sha256 = ANY($1::text[]) LIMIT 1`, [hashes]);
     if (duplicate.rows[0]) return res.status(409).json({ message: "This receipt image was already submitted." });
     const analysis = await processReceipt(req, res);
     if (!analysis) return undefined;
     if (analysis.quality.status !== "GOOD") {
       return res.status(422).json({
-        message: "The receipt image is blurred. Please upload a clearer image and try again.",
+        message: `Image ${analysis.quality.imagePosition} is blurred or too small. Please replace it with a clearer image and try again.`,
         analysis,
       });
     }
 
-    uploadedReceipt = await uploadReceipt(req.file.buffer);
+    uploadedReceipts = await uploadReceiptImages(req.files);
+    const uploadedReceipt = uploadedReceipts[0];
     client = await pool.connect();
     await client.query("BEGIN");
     await lockUnit(client, bill.unitId);
     const currentBill = await residentBill(req.resourceId, req.user.id, client);
+    if (!currentBill) throw Object.assign(new Error('Published SOA not found.'), { status: 404 });
     await validateResidentPurpose(client, currentBill, req.user.id, req.body.paymentPurpose);
     const result = await client.query(
       `INSERT INTO payment_submissions
         (unit_id, submitted_by, target_unit_bill_id, receipt_path, receipt_storage, receipt_cloudinary_public_id,
          receipt_original_name, receipt_mime_type, receipt_sha256,
-         ocr_raw_text, ocr_confidence, ocr_quality_status, ocr_amount, ocr_reference_no, ocr_payment_date, payment_purpose)
-       VALUES ($1, $2, $3, $4, 'CLOUDINARY', $5, $6, $7, $8, $9, $10, 'GOOD', $11, $12, $13, $14)
+         ocr_raw_text, ocr_confidence, ocr_quality_status, ocr_amount, ocr_reference_no, ocr_payment_date, payment_purpose, receipt_type, ocr_details)
+       VALUES ($1, $2, $3, $4, 'CLOUDINARY', $5, $6, $7, $8, $9, $10, 'GOOD', $11, $12, $13, $14, $15, $16::jsonb)
        RETURNING id`,
       [bill.unitId, req.user.id, req.resourceId, uploadedReceipt.publicId, uploadedReceipt.publicId,
         req.file.originalname.slice(0, 255), req.file.mimetype, digest,
-        analysis.rawText, analysis.confidence, analysis.amount, analysis.referenceNo, analysis.paymentDate, req.body.paymentPurpose],
+        analysis.rawText, analysis.confidence, analysis.amount, analysis.referenceNo, analysis.paymentDate, req.body.paymentPurpose,
+        analysis.receiptType, JSON.stringify({ detectedReceiptType: analysis.detectedReceiptType, warnings: analysis.warnings, additionalReferences: analysis.additionalReferences })],
     );
+    await insertReceiptImages(client, result.rows[0].id, req.files, uploadedReceipts, analysis);
     await writeAuditLog({
       client,
       actorUserId: req.user.id,
@@ -216,6 +230,8 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload, asyn
         targetBillId: req.resourceId,
         paymentPurpose: req.body.paymentPurpose,
         receiptOriginalName: req.file.originalname.slice(0, 255),
+        receiptType: analysis.receiptType,
+        receiptImages: req.files.map((file, index) => ({ position: index + 1, originalFilename: file.originalname.slice(0, 255) })),
         receiptStorage: "CLOUDINARY",
         ocrAmount: analysis.amount,
         ocrReferenceNo: analysis.referenceNo,
@@ -239,7 +255,7 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload, asyn
     return res.status(201).json({ message: "Payment proof submitted for Admin verification.", paymentId: result.rows[0].id, analysis });
   } catch (error) {
     if (client) await client.query("ROLLBACK").catch(() => {});
-    if (uploadedReceipt?.publicId) await destroyReceipt(uploadedReceipt.publicId).catch(() => {});
+    await cleanupReceiptImages(uploadedReceipts);
     return next(error);
   } finally {
     client?.release();
@@ -416,19 +432,31 @@ router.patch('/:id/invoice-references', allowRoles('ADMIN', 'COLLECTOR'), requir
   finally { client?.release(); }
 });
 
-router.get("/:id/receipt", requireId, async (req, res, next) => {
+async function deliverReceipt(req, res, next) {
   try {
     const params = [req.resourceId];
     const conditions = ["ps.id = $1"];
     paymentAccess(req, params, conditions);
     conditions.push("ps.entry_type = 'RECEIPT_UPLOAD'");
+    const imageId = req.params.imageId;
+    if (imageId && !/^[1-9]\d{0,17}$/.test(imageId)) return res.status(404).json({ message: 'Receipt not found.' });
+    if (imageId) {
+      params.push(imageId);
+      conditions.push(`image.id = $${params.length}`);
+    }
     const result = await pool.query(
-      `SELECT ps.receipt_path, ps.receipt_storage, ps.receipt_cloudinary_public_id, ps.receipt_mime_type
-       FROM payment_submissions ps WHERE ${conditions.join(" AND ")}`,
+      imageId
+        ? `SELECT image.path AS receipt_path, image.storage AS receipt_storage,
+            image.cloudinary_public_id AS receipt_cloudinary_public_id, image.mime_type AS receipt_mime_type
+           FROM payment_submissions ps JOIN payment_receipt_images image ON image.payment_submission_id = ps.id
+           WHERE ${conditions.join(' AND ')}`
+        : `SELECT ps.receipt_path, ps.receipt_storage, ps.receipt_cloudinary_public_id, ps.receipt_mime_type
+           FROM payment_submissions ps WHERE ${conditions.join(" AND ")}`,
       params,
     );
     if (!result.rows[0]) return res.status(404).json({ message: "Receipt not found." });
     const receipt = result.rows[0];
+    res.set("Cache-Control", "private, no-store");
     if (receipt.receipt_storage === "CLOUDINARY") {
       const response = await fetch(receiptDeliveryUrl(receipt.receipt_cloudinary_public_id));
       if (!response.ok || !response.body) {
@@ -436,7 +464,6 @@ router.get("/:id/receipt", requireId, async (req, res, next) => {
         return res.status(404).json({ message: "Receipt not found." });
       }
       res.type(receipt.receipt_mime_type);
-      res.set("Cache-Control", "private, no-store");
       await pipeline(Readable.fromWeb(response.body), res);
       return undefined;
     }
@@ -444,7 +471,10 @@ router.get("/:id/receipt", requireId, async (req, res, next) => {
     res.type(receipt.receipt_mime_type);
     return res.sendFile(filePath);
   } catch (error) { return next(error); }
-});
+}
+
+router.get('/:id/receipts/:imageId', requireId, deliverReceipt);
+router.get('/:id/receipt', requireId, deliverReceipt);
 
 router.get("/:id", requireId, async (req, res, next) => {
   try {
@@ -575,6 +605,10 @@ router.delete("/:id", allowRoles("ADMIN"), requireId, async (req, res, next) => 
       await client.query("ROLLBACK");
       return res.status(409).json({ message: "Only rejected payment submissions can be permanently deleted." });
     }
+    const images = await client.query(`SELECT path, storage, cloudinary_public_id AS "publicId"
+      FROM payment_receipt_images WHERE payment_submission_id = $1 ORDER BY position`, [req.resourceId]);
+    const storedImages = images.rows.length ? images.rows : [{ path: locked.rows[0].receipt_path,
+      storage: locked.rows[0].receipt_storage, publicId: locked.rows[0].receipt_cloudinary_public_id }];
 
     await writeAuditLog({
       client,
@@ -587,20 +621,16 @@ router.delete("/:id", allowRoles("ADMIN"), requireId, async (req, res, next) => 
         receiptPath: locked.rows[0].receipt_path,
         receiptStorage: locked.rows[0].receipt_storage,
         receiptCloudinaryPublicId: locked.rows[0].receipt_cloudinary_public_id,
+        receiptImageCount: storedImages.length,
       },
       remarks: "Admin permanently deleted a rejected payment proof.",
     });
     await client.query("DELETE FROM payment_submissions WHERE id = $1", [req.resourceId]);
     await client.query("COMMIT");
 
-    if (locked.rows[0].receipt_storage === "CLOUDINARY" && locked.rows[0].receipt_cloudinary_public_id) {
-      await destroyReceipt(locked.rows[0].receipt_cloudinary_public_id).catch((error) => {
-        console.error(`Cloudinary cleanup failed for receipt ${locked.rows[0].receipt_cloudinary_public_id}:`, error);
-      });
-    } else if (locked.rows[0].receipt_path) {
-      const filePath = path.join(uploadDirectory, path.basename(locked.rows[0].receipt_path));
-      await unlink(filePath).catch(() => {});
-    }
+    await cleanupReceiptImages(storedImages.filter(image => image.storage === 'CLOUDINARY' && image.publicId));
+    await Promise.allSettled(storedImages.filter(image => image.storage === 'LOCAL' && image.path)
+      .map(image => unlink(path.join(uploadDirectory, path.basename(image.path)))));
 
     return res.json({ message: "Rejected payment submission permanently deleted." });
   } catch (error) {

@@ -19,7 +19,7 @@ test('one unique REF per approved transaction across uploads, manual payments an
  try{
   await setup.query(`CREATE SCHEMA "${schema}"`);created=true;
   assert.equal((await setup.query('SELECT current_schema() AS schema')).rows[0].schema,schema);
-  const tables=['users','units','unit_assignments','billing_periods','unit_bills','bill_charges','payment_submissions','payment_charge_allocations','payment_applications','payment_ledger_policy','audit_logs','user_notifications','billing_forecasts','prescriptive_recommendations'];
+  const tables=['users','units','unit_assignments','billing_periods','unit_bills','bill_charges','payment_submissions','payment_receipt_images','payment_charge_allocations','payment_applications','payment_ledger_policy','audit_logs','user_notifications','billing_forecasts','prescriptive_recommendations'];
   for(const table of tables){
    await setup.query(`CREATE TABLE ${table}(LIKE public.${table} INCLUDING DEFAULTS INCLUDING IDENTITY INCLUDING GENERATED)`);
    const columns=(await setup.query('SELECT column_name,is_identity FROM information_schema.columns WHERE table_schema=$1 AND table_name=$2',[schema,table])).rows;

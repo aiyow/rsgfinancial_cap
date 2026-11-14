@@ -19,7 +19,7 @@ test('SOA statement-date correction accepts advance-billed coverage and preserve
  let created=false,server,failAudit=false;
  try {
   await setup.query(`CREATE SCHEMA "${schema}"`);created=true;assert.equal((await setup.query('SELECT current_schema() AS schema')).rows[0].schema,schema);
-  const tables=['users','units','unit_assignments','billing_periods','unit_bills','bill_charges','meter_readings','payment_submissions','payment_charge_allocations','payment_applications','payment_ledger_policy','soa_templates','soa_email_deliveries','billing_error_reports','audit_logs','user_notifications','billing_forecasts','prescriptive_recommendations'];
+  const tables=['users','units','unit_assignments','billing_periods','unit_bills','bill_charges','meter_readings','payment_submissions','payment_receipt_images','payment_charge_allocations','payment_applications','payment_ledger_policy','soa_templates','soa_email_deliveries','billing_error_reports','audit_logs','user_notifications','billing_forecasts','prescriptive_recommendations'];
   for(const table of tables){
    await setup.query(`CREATE TABLE ${table}(LIKE public.${table} INCLUDING DEFAULTS INCLUDING IDENTITY INCLUDING GENERATED)`);
    const columns=(await setup.query('SELECT column_name,is_identity FROM information_schema.columns WHERE table_schema=$1 AND table_name=$2',[schema,table])).rows;

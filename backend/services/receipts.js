@@ -15,6 +15,8 @@ import { v2 as cloudinary } from 'cloudinary';
 export const RECEIPT_EXTENSIONS = ['.jpg', '.jpeg', '.jfif', '.png'];
 export const RECEIPT_ACCEPT = RECEIPT_EXTENSIONS.join(',');
 export const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
+export const MAX_RECEIPT_IMAGES = 2;
+export const RECEIPT_TYPES = { GCASH: 'GCash', GOTYME: 'GoTyme', MARIBANK: 'MariBank', BDO: 'BDO', BPI: 'BPI', MAYA: 'Maya', OTHER: 'Other' };
 export const RECEIPT_TYPE_MESSAGE = 'Only JPEG/JPG (.jpg, .jpeg, .jfif) or PNG (.png) receipt images are accepted.';
 
 export function receiptExtension(name) {
@@ -42,7 +44,7 @@ export function normalizeReceiptText(text = '') {
     .join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-function parseAmount(text) {
+function parseAmount(text, receiptType) {
   // OCR may replace a thousands comma with a space. Consume the entire money
   // token so "1 500.00" cannot silently become 1 (or a malformed 1,50 become 50).
   const value = String.raw`([0-9]{1,3}(?:(?:,[ \t]*|[ \t])[0-9]{3})+(?:\.[0-9]{1,2})?|[0-9]+(?:\.[0-9]{1,2})?)(?![0-9.,]|[ \t]+[0-9])`;
@@ -53,35 +55,37 @@ function parseAmount(text) {
     const amount = Number(match[2].replace(/[, \t]/g, ''));
     return { amount, currency: match[1], token: match[2] };
   };
-  // A separate Amount row supplies corroboration, without mistaking the words
-  // "Total Amount" for a second observation of the same printed number.
-  const separateAmount = labeledAmount('amount', String.raw`(?:^|\n)[ \t]*`);
-  for (const label of [String.raw`total\s+amount\s+sent`, String.raw`total\s+amount(?:\s+paid)?`, String.raw`amount\s+(?:sent|paid)`, 'amount', 'total']) {
+  // GCash shows an outgoing payment as a negative debit in transaction details.
+  if (receiptType === 'GCASH') {
+    const debit = text.match(new RegExp(String.raw`(?:^|\n)amount[ \t]*[:=]?[ \t]*-\s*${value}`, 'i'));
+    if (debit) return Number(debit[1].replace(/[, \t]/g, '')) || null;
+  }
+  // The recipient receives the principal, not the sender's bank fee.
+  for (const label of [String.raw`transfer\s+amount`, String.raw`amount\s+(?:sent|paid)`, 'amount']) {
+    const match = labeledAmount(label, String.raw`(?:^|\n)[ \t]*`);
+    if (match) return Number.isFinite(match.amount) && match.amount > 0 ? match.amount : null;
+  }
+  const sent = text.match(new RegExp(String.raw`\b(?:you\s+have\s+sent|you\s+sent)\s+(?:PHP|₱)\s*${value}`, 'i'));
+  if (sent) return Number(sent[1].replace(/[, \t]/g, '')) || null;
+  for (const label of [String.raw`total\s+amount\s+sent`, String.raw`total\s+amount(?:\s+paid)?`, 'total']) {
     const match = labeledAmount(label);
     if (!match) continue;
     if (!Number.isFinite(match.amount) || match.amount <= 0) return null;
-    // A peso glyph is sometimes read as a leading 7: e.g. ₱1,220.00 becomes
-    // 71,220.00. If a distinct Amount row contradicts that bare total and
-    // exactly matches the remaining digits, this pass is ambiguous. Withhold
-    // it; another pass must actually read the correct amount. Never strip a
-    // leading digit from a legitimate total or resolve genuine disagreements.
-    if (label.startsWith('total') && !match.currency && separateAmount
-      && match.amount !== separateAmount.amount && match.token.startsWith('7')
-      && Number(match.token.slice(1).replace(/[, \t]/g, '')) === separateAmount.amount) {
-      return null;
-    }
-    return match.amount;
+    const fee = labeledAmount(String.raw`(?:(?:service|transfer)\s+)?fee`);
+    const amount = Math.round((match.amount - (fee?.amount || 0)) * 100) / 100;
+    return amount > 0 ? amount : null;
   }
-  const match = text.match(new RegExp(String.raw`(?:PHP|₱)\s*${value}`, 'i'));
+  const header = text.split('\n').filter(line => !/\b(?:fee|balance|referral|up to|reference|acct|account)\b/i.test(line)).join('\n');
+  const match = header.match(new RegExp(String.raw`(?:PHP|₱)\s*${value}`, 'i'));
   const amount = match ? Number(match[1].replace(/[, \t]/g, '')) : null;
   return Number.isFinite(amount) && amount > 0 ? amount : null;
 }
 
 function parseReference(text) {
-  const match = text.match(/\b(?:ref(?:erence)?(?:\s*(?:number|no\.?|#))?|transaction\s*(?:id|number|no\.?))\s*[:#\-]?\s*([^\n]+)/i);
+  const match = text.match(/\b(?:(?:transaction\s+)?ref(?:erence)?\b\.?\s*(?:number|no\.?|#)?|transaction\s*(?:id|number|no\.?))\s*[:#]?\s*([^\n]+)/i);
   if (!match) return null;
   // Stop at a neighboring date/label, including dates on the same printed row.
-  const candidate = match[1].split(/\s+(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b|20\d{2}[-/]\d|\d{1,2}[-/]\d{1,2}[-/]20\d{2}|(?:date|time|amount|sent|paid|total)\b)/i)[0].trim();
+  const candidate = match[1].split(/\s+(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b|20\d{2}[-/]\d|\d{1,2}[-/]\d{1,2}[-/]20\d{2}|(?:date|time|amount|sent|paid|total)\b)/i)[0].trim().replace(/[.,;:]+$/, '');
   if (/^\d[\d -]*$/.test(candidate)) {
     const digits = candidate.replace(/[ -]/g, '');
     return digits.length >= 6 && digits.length <= 40 ? digits : null;
@@ -108,9 +112,22 @@ function parseDate(text) {
   return match ? validDate(+match[3], months.indexOf(match[2].toLowerCase()) + 1, +match[1]) : null;
 }
 
-export function parseReceiptText(text) {
+export function detectReceiptType(text) {
+  // Source-bank anchors take precedence over recipient names such as GCash.
+  const header = text.split(/\b(?:from|to)\b/i)[0];
+  const sender = text.match(/\bfrom\b([\s\S]*?)(?=\b(?:to|amount|total|notes)\b|$)/i)?.[1] || '';
+  if (/\bMari\s*Bank\b/i.test(header + '\n' + sender) || /receipt generated from MariBank app/i.test(text)) return 'MARIBANK';
+  if (/\bGo\s*Tyme(?:\s+Bank)?\b/i.test(header + '\n' + sender)) return 'GOTYME';
+  if (/\bsent\s+via\s+BPI\b/i.test(text)) return 'BPI';
+  if (/\bBDO\b|\bBN-20\d{6}-\d+\b/i.test(text)) return 'BDO';
+  if (/\b(?:Express\s+Send|GCash)\b/i.test(header) || /\bGCash\b/i.test(sender)) return 'GCASH';
+  if (/receipt generated from.*Maya|sent (?:via|with) Maya/i.test(text)) return 'MAYA';
+  return null;
+}
+
+export function parseReceiptText(text, receiptType = 'OTHER') {
   const normalized = normalizeReceiptText(text);
-  return { amount: parseAmount(normalized), referenceNo: parseReference(normalized), paymentDate: parseDate(normalized) };
+  return { amount: parseAmount(normalized, receiptType === 'OTHER' ? detectReceiptType(normalized) : receiptType), referenceNo: parseReference(normalized), paymentDate: parseDate(normalized) };
 }
 
 // A disagreement between OCR passes needs human review, not a guessed payment value.
@@ -171,7 +188,7 @@ function readRows(data) {
   return rows.map((row) => {
     const parts = row.parts.sort((a, b) => a.bbox.x0 - b.bbox.x0);
     const count = parts.reduce((sum, part) => sum + part.text.trim().length, 0);
-    return { bbox: row.bbox, text: parts.map((part) => part.text.trim()).join(' '),
+    return { bbox: row.bbox, text: parts.map((part) => part.text.trim()).join(' '), words: parts.flatMap(part => part.words || []),
       confidence: parts.reduce((sum, part) => sum + part.confidence * part.text.trim().length, 0) / Math.max(count, 1) };
   });
 }
@@ -238,7 +255,54 @@ async function restoreMask(worker, image, row, dots) {
   return pieces.join('');
 }
 
-export async function analyzeReceipt(buffer) {
+export function referenceValueWords(words) {
+  const numeric = words.filter(word => /\d/.test(word.text));
+  if (!numeric.length) return [];
+  const first = numeric.find(word => /[a-z0-9-]{6,}/i.test(word.text)) || numeric[0];
+  const height = first.bbox.y1 - first.bbox.y0;
+  const center = (first.bbox.y0 + first.bbox.y1) / 2;
+  return numeric.filter(word => {
+    if (word.bbox.x0 < first.bbox.x0) return false;
+    if (word === first || word.text.replace(/\D/g, '').length >= 3) return true;
+    // Keep real one/two-digit fragments at the same text size and baseline.
+    // A copy icon is taller and extends above/below the printed reference.
+    const h = word.bbox.y1 - word.bbox.y0;
+    return h >= height * 0.65 && h <= height * 1.4
+      && Math.abs((word.bbox.y0 + word.bbox.y1) / 2 - center) <= height * 0.3;
+  });
+}
+
+// Reread just the printed ID. A neighboring copy icon can otherwise become a
+// trailing zero, and whole-page thresholding can confuse an initial I with 1.
+async function rereadReference(worker, oriented, rows, scale) {
+  for (let i = 0; i < rows.length; i++) {
+    if (!/\b(?:ref(?:erence)?\.?\s*(?:no\.?|number)?|transaction\s+id)\b/i.test(rows[i].text)) continue;
+    let row = rows[i];
+    let words = (row.words || []).filter(word => /\d/.test(word.text));
+    if (!words.length && rows[i + 1] && rows[i + 1].bbox.y0 - row.bbox.y1 < (row.bbox.y1 - row.bbox.y0) * 4) {
+      row = rows[i + 1];
+      words = (row.words || []).filter(word => /\d/.test(word.text));
+    }
+    if (!words.length) continue;
+    const selected = referenceValueWords(words);
+    const first = selected[0];
+    const box = { x0: first.bbox.x0, y0: Math.min(...selected.map(w => w.bbox.y0)),
+      x1: Math.max(...selected.map(w => w.bbox.x1)), y1: Math.max(...selected.map(w => w.bbox.y1)) };
+    const meta = await sharp(oriented).metadata();
+    const left = Math.max(0, Math.floor(box.x0 / scale) - 2), top = Math.max(0, Math.floor(box.y0 / scale) - 2);
+    const width = Math.min(meta.width - left, Math.ceil((box.x1 - box.x0) / scale) + 4);
+    const height = Math.min(meta.height - top, Math.ceil((box.y1 - box.y0) / scale) + 4);
+    const crop = await sharp(oriented).extract({ left, top, width, height }).resize({ height: Math.max(80, height * 2) })
+      .extend({ top: 16, bottom: 16, left: 16, right: 16, background: 'white' }).png().toBuffer();
+    await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE });
+    const { data } = await worker.recognize(crop);
+    const referenceNo = parseReference(`Reference No. ${normalizeReceiptText(data.text)}`);
+    if (referenceNo && data.confidence >= 60) return referenceNo;
+  }
+  return null;
+}
+
+export async function analyzeReceipt(buffer, receiptType = 'OTHER') {
   // Honor EXIF orientation before quality assessment, preprocessing, and coordinates.
   const oriented = await sharp(buffer).rotate().flatten({ background: '#ffffff' }).png().toBuffer();
   const quality = await imageQuality(oriented);
@@ -276,15 +340,34 @@ export async function analyzeReceipt(buffer) {
       }
     }
     const rawText = normalizeReceiptText(rows.length ? rows.map((row) => row.text).join('\n') : first.text);
-    const fields = reconcileReceiptFields([
-      parseReceiptText(firstRows.map((row) => row.text).join('\n') || first.text),
-      parseReceiptText(secondRows.map((row) => row.text).join('\n') || second.text),
-    ]);
+    const candidates = [
+      parseReceiptText(firstRows.map((row) => row.text).join('\n') || first.text, receiptType),
+      parseReceiptText(secondRows.map((row) => row.text).join('\n') || second.text, receiptType),
+    ];
+    const fields = reconcileReceiptFields(candidates);
+    let focusedReference = await rereadReference(worker, oriented, rows, scale);
+    // GoTyme's IT reference has a numeric body. Correct an O in that body only
+    // when another full-page pass independently printed the exact numeric ID.
+    if ((receiptType === 'GOTYME' || detectReceiptType(rawText) === 'GOTYME') && /^IT[0-9O]{6,38}$/i.test(focusedReference || '')) {
+      const numericBody = 'IT' + focusedReference.slice(2).replace(/o/gi, '0');
+      if (candidates.some(candidate => candidate.referenceNo === numericBody)) focusedReference = numericBody;
+    }
+    // A focused, spatially bounded reading must agree with at least one page
+    // pass (or its printed value before a separate icon) before resolving it.
+    if (focusedReference && candidates.some(c => c.referenceNo === focusedReference
+      || (c.referenceNo === focusedReference + '0' && /\bReference Number\b/i.test(rawText)))) {
+      fields.referenceNo = focusedReference;
+    }
     const characters = rows.reduce((sum, row) => sum + row.text.length, 0);
     const confidence = characters
       ? rows.reduce((sum, row) => sum + row.confidence * row.text.length, 0) / characters
       : first.confidence;
-    return { quality, rawText, confidence: Number(confidence.toFixed(2)), ...fields,
+    const confirmationNo = rawText.match(/\bconfirmation\s+no\.?\s*[:#]?\s*(\d{6,40})/i)?.[1];
+    const warnings = ['amount', 'referenceNo', 'paymentDate'].filter(key => new Set(candidates.map(c => c[key]).filter(v => v != null)).size > 1 && fields[key] == null)
+      .map(key => `The ${({ amount: 'amount', referenceNo: 'reference number', paymentDate: 'payment date' })[key]} could not be read consistently. Admin will check the receipt.`);
+    const detectedReceiptType = detectReceiptType(rawText);
+    return { quality, rawText, confidence: Number(confidence.toFixed(2)), ...fields, detectedReceiptType, warnings,
+      additionalReferences: confirmationNo ? { confirmationNo } : {},
       complete: Boolean(fields.amount && fields.referenceNo && fields.paymentDate) };
   } finally {
     await worker.terminate();

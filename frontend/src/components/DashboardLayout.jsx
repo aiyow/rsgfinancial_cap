@@ -27,6 +27,7 @@ import {
 import useAuth from '../hooks/useAuth'
 import BrandMark from './BrandMark'
 import NotificationCenter from './NotificationCenter'
+import OfflineNotice from './OfflineNotice'
 
 const navigationByRole = {
   ADMIN: {
@@ -327,7 +328,7 @@ export default function DashboardLayout({ title, description, className = '', ch
           {description && <div className="dashboard-description mb-6 sm:hidden">
             <p className="text-xs text-[var(--muted)]">{description}</p>
           </div>}
-          <div className="space-y-8">{children}</div>
+          <div className="space-y-8"><OfflineNotice />{children}</div>
         </div>
       </main>
       {usesResidentMobileNavigation && <ResidentMobileNavigation />}

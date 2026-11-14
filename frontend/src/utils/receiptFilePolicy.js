@@ -2,6 +2,8 @@
 export const RECEIPT_EXTENSIONS = ['.jpg', '.jpeg', '.jfif', '.png'];
 export const RECEIPT_ACCEPT = RECEIPT_EXTENSIONS.join(',');
 export const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
+export const MAX_RECEIPT_IMAGES = 2;
+export const RECEIPT_TYPES = { GCASH: 'GCash', GOTYME: 'GoTyme', MARIBANK: 'MariBank', BDO: 'BDO', BPI: 'BPI', MAYA: 'Maya', OTHER: 'Other' };
 export const RECEIPT_TYPE_MESSAGE = 'Only JPEG/JPG (.jpg, .jpeg, .jfif) or PNG (.png) receipt images are accepted.';
 
 export function receiptExtension(name) {

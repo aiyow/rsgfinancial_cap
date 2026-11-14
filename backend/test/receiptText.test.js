@@ -13,8 +13,8 @@ for (const [token, expected] of [
   });
 }
 
-test('the total takes precedence over the transfer amount or fee', () => {
-  assert.equal(parseReceiptText('Amount 1,000.00\nFee 15.00\nTotal Amount Sent ₱1,015.00').amount, 1015);
+test('only the transferred amount is credited, excluding the bank fee', () => {
+  assert.equal(parseReceiptText('Amount 1,000.00\nFee 15.00\nTotal Amount Sent ₱1,015.00').amount, 1000);
 });
 
 test('reads an amount on the line following its label', () => {
@@ -31,18 +31,11 @@ test('ignores phone numbers, reference numbers and environmental footer numbers'
   assert.equal(parseReceiptText('+63 921 208 2987\nRef No. 8045 103 259255\n279g (gCO2e)').amount, null);
 });
 
-for (const amount of ['1,220.00', '1,030.00', '1,600.00']) {
-  test(`requires a clear OCR pass to resolve the peso-as-7 ambiguity for ${amount}`, () => {
-    const ambiguous = parseReceiptText(`Amount ${amount}\nTotal Amount Sent 7${amount}`);
-    assert.equal(ambiguous.amount, null);
-    assert.equal(reconcileReceiptFields([ambiguous, parseReceiptText(`Amount ${amount}\nTotal Amount Sent £${amount}`)]).amount, Number(amount.replace(',', '')));
-    assert.equal(reconcileReceiptFields([ambiguous, ambiguous]).amount, null);
-  });
-}
-
-test('keeps a genuine total starting with 7 when the currency or repeated amount confirms it', () => {
-  assert.equal(parseReceiptText('Amount 1,220.00\nTotal Amount Sent ₱71,220.00').amount, 71220);
+test('prefers the separately labelled principal and never strips a genuine leading digit', () => {
+  assert.equal(parseReceiptText('Amount 1,220.00\nTotal Amount Sent 71,220.00').amount, 1220);
   assert.equal(parseReceiptText('Amount 71,220.00\nTotal Amount Sent 71,220.00').amount, 71220);
+  assert.equal(parseReceiptText('Total Amount Sent ₱71,220.00').amount, 71220);
+  assert.equal(parseReceiptText('Service Fee PHP 15.00\nTotal Amount PHP 515.00').amount, 500);
 });
 
 test('does not choose between genuine conflicting OCR amounts, dates or references', () => {

@@ -85,8 +85,8 @@ export default function ReceiptImageViewer({ src, onDownload, onShare }) {
       <output aria-label="Receipt zoom" aria-live="polite" className="min-w-10 text-center text-xs font-semibold tabular-nums text-slate-600">{Math.round(zoom * 100)}%</output>
       <button type="button" onClick={() => changeZoom(zoom + 0.25)} disabled={!ready || zoom >= MAX_ZOOM} aria-label="Zoom in receipt" title="Zoom in" className={controlClass}><ZoomIn size={18} aria-hidden="true" /></button>
       {zoom !== 1 && <button type="button" onClick={() => changeZoom(1, true)} aria-label="Reset receipt zoom" title="Reset zoom" className={controlClass}><RotateCcw size={17} aria-hidden="true" /></button>}
-      <button type="button" onClick={onDownload} aria-label="Download receipt image" title="Download receipt image" className={controlClass}><Download size={18} aria-hidden="true" /></button>
-      <button type="button" onClick={onShare} aria-label="Share receipt image" title="Share receipt image" className={controlClass}><Share2 size={18} aria-hidden="true" /></button>
+      {onDownload && <button type="button" onClick={onDownload} aria-label="Download receipt image" title="Download receipt image" className={controlClass}><Download size={18} aria-hidden="true" /></button>}
+      {onShare && <button type="button" onClick={onShare} aria-label="Share receipt image" title="Share receipt image" className={controlClass}><Share2 size={18} aria-hidden="true" /></button>}
     </div>
     <div ref={viewportRef} role="region" aria-label="Scrollable receipt image. Drag, scroll or swipe to move." tabIndex={0}
       className="h-[min(65dvh,440px)] min-h-56 w-full overflow-auto overscroll-contain outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600"

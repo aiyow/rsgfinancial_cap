@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
@@ -6,7 +6,8 @@ import useAuth from '../../hooks/useAuth'
 import { apiFile, apiRequest } from '../../services/api'
 import PaymentAllocationDetails from '../../components/PaymentAllocationDetails'
 import PaymentAllocationPreview from '../../components/PaymentAllocationPreview'
-import ReceiptImageViewer from '../../components/ReceiptImageViewer'
+import ReceiptGallery from '../../components/ReceiptGallery'
+import { RECEIPT_TYPES } from '../../utils/receiptFilePolicy'
 import { purposeLabels } from '../../utils/chargePayments'
 import { paymentDateLabel, paymentDateTime, paymentResidentName } from '../../utils/paymentHistory'
 
@@ -29,7 +30,7 @@ function reviewFormFrom(payment) {
   return {
     status: 'APPROVED',
     verifiedAmount: payment.ocrAmount || '',
-    paymentMethod: payment.paymentMethod || 'GCASH',
+    paymentMethod: payment.paymentMethod || (payment.receiptType && !['GCASH', 'OTHER'].includes(payment.receiptType) ? 'BANK_TRANSFER' : 'GCASH'),
     verifiedReferenceNo: payment.ocrReferenceNo || '',
     verifiedPaymentDate: payment.ocrPaymentDate ? String(payment.ocrPaymentDate).slice(0, 10) : '',
     remarks: '',
@@ -43,25 +44,31 @@ export default function AdminPaymentPage() {
   const [payment, setPayment] = useState(null)
   const [form, setForm] = useState(null)
   const [previewKey, setPreviewKey] = useState('')
-  const [receiptUrl, setReceiptUrl] = useState('')
+  const [receiptImages, setReceiptImages] = useState([])
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
-  const urlRef = useRef('')
 
   useEffect(() => {
     let active = true
+    const objectUrls = []
     async function load() {
       try {
         const paymentData = await apiRequest(`/api/payments/${id}`, { token })
         if (!active) return
+        setReceiptImages([])
         setPayment(paymentData.payment)
         setForm(reviewFormFrom(paymentData.payment))
         if (paymentData.payment.entryType === 'RECEIPT_UPLOAD') {
-          const receiptBlob = await apiFile(`/api/payments/${id}/receipt`, { token })
+          const metadata = paymentData.payment.receiptImages?.length ? paymentData.payment.receiptImages
+            : [{ position: 1, mimeType: paymentData.payment.receiptMimeType }]
+          const results = await Promise.allSettled(metadata.map(image => apiFile(image.id
+            ? `/api/payments/${id}/receipts/${image.id}` : `/api/payments/${id}/receipt`, { token })))
           if (!active) return
-          const objectUrl = URL.createObjectURL(receiptBlob)
-          urlRef.current = objectUrl
-          setReceiptUrl(objectUrl)
+          setReceiptImages(results.map((result, index) => {
+            const src = result.status === 'fulfilled' ? URL.createObjectURL(result.value) : ''
+            if (src) objectUrls.push(src)
+            return { ...metadata[index], src }
+          }))
         }
       } catch (error) {
         if (active) setNotice({ error: error.message, message: '' })
@@ -70,7 +77,7 @@ export default function AdminPaymentPage() {
     load()
     return () => {
       active = false
-      if (urlRef.current) URL.revokeObjectURL(urlRef.current)
+      objectUrls.forEach(url => URL.revokeObjectURL(url))
     }
   }, [id, token])
 
@@ -124,26 +131,26 @@ export default function AdminPaymentPage() {
     }
   }
 
-  function downloadReceipt() {
-    if (!receiptUrl) return
+  function downloadReceipt(image) {
+    if (!image?.src) return
     const link = document.createElement('a')
-    link.href = receiptUrl
-    link.download = `payment-receipt-${id}.${payment?.receiptMimeType === 'image/png' ? 'png' : 'jpg'}`
+    link.href = image.src
+    link.download = `payment-receipt-${id}${receiptImages.length > 1 ? '-' + image.position : ''}.${image.mimeType === 'image/png' ? 'png' : 'jpg'}`
     document.body.appendChild(link)
     link.click()
     link.remove()
   }
 
-  async function shareReceipt() {
-    if (!receiptUrl) return
+  async function shareReceipt(image) {
+    if (!image?.src) return
     try {
-      const blob = await fetch(receiptUrl).then((response) => response.blob())
-      const file = new File([blob], `payment-receipt-${id}.${payment?.receiptMimeType === 'image/png' ? 'png' : 'jpg'}`, { type: blob.type || payment?.receiptMimeType || 'image/jpeg' })
+      const blob = await fetch(image.src).then((response) => response.blob())
+      const file = new File([blob], `payment-receipt-${id}${receiptImages.length > 1 ? '-' + image.position : ''}.${image.mimeType === 'image/png' ? 'png' : 'jpg'}`, { type: blob.type || image.mimeType || 'image/jpeg' })
       if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
         await navigator.share({ title: 'Resident payment receipt', text: `Payment receipt for Unit ${payment?.unitNumber || ''}`, files: [file] })
         return
       }
-      downloadReceipt()
+      downloadReceipt(image)
       setNotice({ error: '', message: 'Sharing is not supported in this browser, so the receipt was downloaded instead.' })
     } catch (error) {
       if (error?.name !== 'AbortError') setNotice({ error: 'The receipt could not be shared. Try downloading it instead.', message: '' })
@@ -164,12 +171,16 @@ export default function AdminPaymentPage() {
       {payment && (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
           <Panel className="min-w-0" title={`${payment.entryType === 'MANUAL' ? 'Manual payment' : 'Receipt'} for Unit ${payment.unitNumber}`} description={payment.entryType === 'MANUAL' ? `${paymentResidentName(payment)} · Recorded by ${payment.submittedByName} on ${dateTime(payment.submittedAt)}.` : `Submitted by ${payment.submittedByName} on ${dateTime(payment.submittedAt)}.`}>
-            {receiptUrl && <ReceiptImageViewer key={receiptUrl} src={receiptUrl} onDownload={downloadReceipt} onShare={shareReceipt} />}
+            {receiptImages.length > 0 && <ReceiptGallery images={receiptImages} onDownload={downloadReceipt} onShare={shareReceipt} />}
             {payment.entryType === 'MANUAL' && <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">This payment was recorded by Admin and does not have an uploaded receipt image.</p>}
+            {payment.ocrDetails?.warnings?.length > 0 && <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"><p className="font-bold">Please check these receipt details</p><ul className="mt-2 list-disc space-y-1 pl-5">{payment.ocrDetails.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul></div>}
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
               <Fact label="Reference number" value={payment.officialReceiptNo || 'Not issued'} />
               <Fact label="Declared purpose" value={purposeLabels[payment.paymentPurpose]} />
               <Fact label="Review status" value={payment.reviewStatus} />
+              {payment.entryType === 'RECEIPT_UPLOAD' && <Fact label="Receipt type" value={RECEIPT_TYPES[payment.receiptType] || 'Other'} />}
+              {payment.ocrDetails?.detectedReceiptType && <Fact label="Detected bank or app" value={RECEIPT_TYPES[payment.ocrDetails.detectedReceiptType]} />}
+              {payment.ocrDetails?.additionalReferences?.confirmationNo && <Fact label="Bank confirmation number" value={payment.ocrDetails.additionalReferences.confirmationNo} />}
               <Fact label="Source" value={payment.entryType === 'MANUAL' ? 'Manual entry' : 'Receipt upload'} />
               <Fact label="Payment method" value={methodLabel(payment.paymentMethod)} />
               <Fact label="Bill total" value={money(payment.billTotal)} />

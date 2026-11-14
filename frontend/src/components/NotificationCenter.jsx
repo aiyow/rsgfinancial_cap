@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, BellRing, CheckCheck } from 'lucide-react'
 import { apiRequest } from '../services/api'
 import PushNotificationSettings from './PushNotificationSettings'
+import useAuth from '../hooks/useAuth'
 
 const POLL_INTERVAL_MS = 10_000
 
@@ -15,6 +16,7 @@ function notificationTime(value) {
 }
 
 export default function NotificationCenter({ token }) {
+  const { offline } = useAuth()
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -75,7 +77,7 @@ export default function NotificationCenter({ token }) {
   }, [open])
 
   async function markRead(notification) {
-    if (!notification.readAt) {
+    if (!notification.readAt && !offline) {
       try {
         await apiRequest(`/api/notifications/${notification.id}/read`, { method: 'PATCH', token })
         setNotifications((current) => current.map((item) => (
@@ -92,6 +94,7 @@ export default function NotificationCenter({ token }) {
   }
 
   async function markAllRead() {
+    if (offline) return
     try {
       await apiRequest('/api/notifications/read-all', { method: 'PATCH', token })
       setNotifications((current) => current.map((notification) => ({ ...notification, readAt: notification.readAt || new Date().toISOString() })))
@@ -121,7 +124,7 @@ export default function NotificationCenter({ token }) {
               <div><p className="text-sm font-bold text-[var(--ink)] sm:text-base">Notifications</p><p className="text-[11px] text-[var(--muted)] sm:text-xs">{unreadCount ? `${unreadCount} unread` : 'You are all caught up'}</p></div>
               {unreadCount > 0 && <button type="button" onClick={markAllRead} className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline sm:text-xs"><CheckCheck size={14} /> Mark all read</button>}
             </div>
-            <PushNotificationSettings token={token} />
+            {!offline && <PushNotificationSettings token={token} />}
             <div className="max-h-48 overflow-y-auto overscroll-contain sm:max-h-80">
               {notifications.length ? notifications.map((notification) => (
                 <button

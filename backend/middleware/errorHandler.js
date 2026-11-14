@@ -8,6 +8,7 @@ const CONFLICT_MESSAGES = {
   meter_readings_unit_period_unique: "That unit already has a reading for this billing period.",
   unit_bills_unit_period_unique: "That unit already has a bill for this billing period.",
   payment_submissions_receipt_hash_unique: "That receipt image was already submitted.",
+  payment_receipt_images_sha256_unique: "That receipt image was already submitted.",
   payment_submissions_approved_reference_unique: "That payment reference number was already approved.",
   category_payment_reference_unique: "That payment reference number was already approved.",
 };

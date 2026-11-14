@@ -389,6 +389,33 @@ body:has(.resident-bills-shell), body:has(.resident-payments-shell) { min-width:
 
 .payment-proof-backdrop { animation: payment-proof-backdrop-in 160ms ease-out both; }
 .payment-proof-dialog { animation: payment-proof-dialog-in 220ms ease-out both; }
+.payment-submitted-card { animation: payment-proof-dialog-in 220ms ease-out both; }
+.payment-submitted-icon { animation: payment-submitted-pop 400ms ease-out both; }
+.payment-submitted-check {
+  stroke-dasharray: 40;
+  animation: payment-submitted-draw 380ms 180ms ease-out both;
+}
+.payment-submitted-confetti {
+  position: absolute;
+  top: -12px;
+  width: 5px;
+  height: 10px;
+  border-radius: 2px;
+  animation: payment-submitted-fall 1200ms ease-out both;
+}
+@keyframes payment-submitted-pop {
+  from { opacity: 0; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes payment-submitted-draw {
+  from { stroke-dashoffset: 40; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes payment-submitted-fall {
+  0% { opacity: 0; transform: translateY(0) rotate(0); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(230px) rotate(220deg); }
+}
 @keyframes payment-proof-backdrop-in {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -399,6 +426,8 @@ body:has(.resident-bills-shell), body:has(.resident-payments-shell) { min-width:
 }
 @media (prefers-reduced-motion: reduce) {
   .payment-proof-backdrop, .payment-proof-dialog { animation: none; }
+  .payment-submitted-card, .payment-submitted-icon, .payment-submitted-check { animation: none; }
+  .payment-submitted-confetti { display: none; }
 }
 
 .soa-sheet {

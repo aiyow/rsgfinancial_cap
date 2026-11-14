@@ -12,7 +12,7 @@ function notificationTime(value) {
 }
 
 export default function NotificationsPage() {
-  const { token } = useAuth()
+  const { token, offline } = useAuth()
   const navigate = useNavigate()
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -33,21 +33,27 @@ export default function NotificationsPage() {
       setTotalCount(response.totalCount || 0)
       setError('')
     } catch (requestError) {
+      setNotifications([])
       setError(requestError.message)
     } finally {
       setLoading(false)
     }
   }, [filter, page, token])
 
-  useEffect(() => { loadNotifications() }, [loadNotifications])
+  useEffect(() => {
+    let active = true
+    queueMicrotask(() => { if (active) void loadNotifications() })
+    return () => { active = false }
+  }, [loadNotifications])
 
   async function markRead(notification) {
-    if (!notification.readAt) await apiRequest(`/api/notifications/${notification.id}/read`, { method: 'PATCH', token })
+    if (!notification.readAt && !offline) await apiRequest(`/api/notifications/${notification.id}/read`, { method: 'PATCH', token })
     if (notification.href) navigate(notification.href)
     else loadNotifications()
   }
 
   async function markAllRead() {
+    if (offline) return
     await apiRequest('/api/notifications/read-all', { method: 'PATCH', token })
     if (filter === 'unread' && page > 0) setPage(0)
     else loadNotifications()

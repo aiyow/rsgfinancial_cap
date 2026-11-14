@@ -38,12 +38,12 @@ test('both resident upload endpoints validate images before their payment handle
   }
 });
 
-test('multipart preview and submission reject spoofed files and accept genuine JPEG/JFIF/PNG', async t => {
+test('multipart preview and submission accept readable JPEG/PNG with mislabeled extensions and reject invalid images', async t => {
   // Exercise the production upload middleware with real multipart requests. No DB,
   // OCR, Cloudinary upload, email, or payment handler is called.
   const app = express();
   for (const path of ['/preview', '/submit']) {
-    app.post(path, receiptUpload, (req, res) => res.json({ name: req.file.originalname, type: req.file.mimetype }));
+    app.post(path, receiptUpload, (req, res) => res.json({ name: req.file.originalname, type: req.file.mimetype, count: req.files.length }));
   }
   app.use(errorHandler);
   const server = app.listen(0, '127.0.0.1');
@@ -61,26 +61,31 @@ test('multipart preview and submission reject spoofed files and accept genuine J
   async function send(path, file, second) {
     const body = new FormData();
     if (file) body.append('receipt', new Blob([file.buffer], { type: file.type || 'application/octet-stream' }), file.name);
-    if (second) body.append('receipt', new Blob([png], { type: 'image/png' }), 'second.png');
+    for (let i = 0; i < Number(second || 0); i++) body.append('receipt', new Blob([png], { type: 'image/png' }), `extra-${i}.png`);
     const response = await fetch(url + path, { method: 'POST', body });
     return { status: response.status, body: await response.json() };
   }
   for (const path of ['/preview', '/submit']) {
-    for (const [name, buffer, type] of [
+    for (const [name, buffer, type, savedName = name] of [
       ['receipt.jpg', jpeg, 'image/jpeg'], ['receipt.jpeg', jpeg, 'image/jpeg'],
       ['receipt.jfif', jpeg, 'application/octet-stream'], ['receipt.JFIF', jpeg, 'image/pjpeg'],
       ['receipt.JPG', jpeg, 'image/png'], ['receipt.png', png, 'image/png'], ['receipt.PNG', png, 'application/octet-stream'],
+      ['messenger.png', jpeg, 'image/png', 'messenger.jpg'],
+      ['receipt.jpg', png, 'image/jpeg', 'receipt.png'],
+      ['receipt.jfif', png, 'application/octet-stream', 'receipt.png'],
+      ['receipt.PNG', jpeg, 'application/octet-stream', 'receipt.jpg'],
     ]) {
       const response = await send(path, { name, buffer, type });
       assert.equal(response.status, 200, `${path} ${name}: ${response.body.message}`);
       assert.equal(response.body.type, buffer === png ? 'image/png' : 'image/jpeg');
+      assert.equal(response.body.name, savedName);
     }
     for (const name of ['receipt.pdf', 'receipt.gif', 'receipt.webp', 'receipt.svg', 'receipt.txt', 'receipt.xlsx', 'receipt.png.exe', 'receipt']) {
       assert.equal((await send(path, { name, buffer: png, type: 'image/png' })).status, 400);
     }
     for (const [name, buffer] of [
       ['receipt.jpg', Buffer.from('%PDF-1.7 fake image')], ['receipt.png', Buffer.from('plain text')],
-      ['receipt.png', gif], ['receipt.jpg', webp], ['receipt.png', jpeg], ['receipt.jfif', png],
+      ['receipt.png', gif], ['receipt.jpg', webp],
       ['receipt.png', Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"></svg>')],
       ['receipt.png', png.subarray(0, Math.floor(png.length / 2))], ['receipt.jpg', Buffer.alloc(0)],
     ]) {
@@ -90,6 +95,9 @@ test('multipart preview and submission reject spoofed files and accept genuine J
     const tooLarge = await send(path, { name: 'large.png', buffer: Buffer.alloc(MAX_RECEIPT_BYTES + 1), type: 'image/png' });
     assert.equal(tooLarge.status, 400);
     assert.match(tooLarge.body.message, /5 MB/);
-    assert.equal((await send(path, { name: 'one.png', buffer: png, type: 'image/png' }, true)).status, 400);
+    const pair = await send(path, { name: 'one.png', buffer: jpeg, type: 'image/jpeg' }, 1);
+    assert.equal(pair.status, 200);
+    assert.equal(pair.body.count, 2);
+    assert.equal((await send(path, { name: 'one.png', buffer: png, type: 'image/png' }, 2)).status, 400);
   }
 });

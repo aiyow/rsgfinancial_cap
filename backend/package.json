@@ -37,6 +37,8 @@
     "soa-reminders:run": "node scripts/runSoaReminders.js",
     "data:import-history": "node scripts/importHistoricalAnalytics.js",
     "receipts:migrate-cloudinary": "node scripts/migrateLocalReceiptsToCloudinary.js",
+    "receipts:migrate-images": "node scripts/migrateReceiptImages.js",
+    "test:receipt-images": "node --test test/receiptText.test.js test/receiptUpload.test.js test/receiptBatches.test.js test/integration/receiptImagesHttp.test.js",
     "forecasts:compare-policies": "node scripts/compareForecastPolicies.js"
   },
   "keywords": [],
@@ -64,6 +66,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
     "nodemon": "^3.1.14"
   }
 }

@@ -38,7 +38,7 @@ test('protected SOA exports: real PostgreSQL transactions, HTTP access, lifecycl
   try {
     await setup.query(`CREATE SCHEMA "${schema}"`); created = true;
     assert.equal((await setup.query('SELECT current_schema() AS schema')).rows[0].schema, schema);
-    for (const table of ['users', 'units', 'unit_assignments', 'billing_periods', 'unit_bills', 'bill_charges', 'payment_submissions', 'payment_charge_allocations', 'payment_applications', 'payment_ledger_policy', 'soa_templates', 'soa_email_deliveries', 'audit_logs']) {
+    for (const table of ['users', 'units', 'unit_assignments', 'billing_periods', 'unit_bills', 'bill_charges', 'payment_submissions', 'payment_receipt_images', 'payment_charge_allocations', 'payment_applications', 'payment_ledger_policy', 'soa_templates', 'soa_email_deliveries', 'audit_logs']) {
       await setup.query(`CREATE TABLE ${table}(LIKE public.${table} INCLUDING DEFAULTS INCLUDING IDENTITY INCLUDING GENERATED)`);
       const cols = (await setup.query('SELECT column_name FROM information_schema.columns WHERE table_schema=$1 AND table_name=$2', [schema, table])).rows;
       for (const c of cols) if (c.column_name !== 'id') await setup.query(`ALTER TABLE ${table} ALTER COLUMN "${c.column_name}" DROP NOT NULL`);

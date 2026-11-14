@@ -26,6 +26,7 @@ try {
     await context.route('**/api/**', async route => {
       const request = route.request()
       const path = new URL(request.url()).pathname
+      if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization,content-type', 'access-control-allow-methods': 'GET,POST,OPTIONS' } })
       if (request.method() === 'POST') {
         assert.ok(['/api/payments/bills/171/preview', '/api/payments/bills/171'].includes(path), path)
         if (path === '/api/payments/bills/171') submitCount++
@@ -38,15 +39,20 @@ try {
           : path === '/api/notifications' ? { notifications: [], unreadCount: 0 }
             : path === '/api/soa-template' ? { template: {} }
               : path === '/api/payments' ? { payments: [] } : null
-      assert.ok(data, path)
-      return route.fulfill({ json: data })
+      const residentData = path === '/api/bills' ? { bills: [bill] }
+        : path === '/api/analytics/resident' ? { units: [] }
+          : path === '/api/prescriptive-recommendations/resident' ? { recommendations: [] }
+            : path === '/api/bills/171/protected-exports' ? { status: 'AVAILABLE' } : null
+      assert.ok(data || residentData, path)
+      return route.fulfill({ json: data || residentData })
     })
     const page = await context.newPage()
     page.on('pageerror', error => runtimeErrors.push(error.message))
-    await page.goto('http://127.0.0.1:5173/resident/bills/171')
+    await page.goto(`${process.env.TEST_BASE_URL || 'http://127.0.0.1:5173'}/resident/bills/171`)
     await page.getByRole('button', { name: 'Upload receipt', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Submit your receipt' })
-    const input = dialog.getByLabel('Receipt image', { exact: true })
+    await dialog.getByLabel('Select Receipt Type', { exact: true }).selectOption('GCASH')
+    const input = dialog.getByLabel('Receipt images', { exact: true })
     const image = Buffer.from(await page.evaluate(() => {
       const canvas = document.createElement('canvas'); canvas.width = 600; canvas.height = 1000
       return canvas.toDataURL('image/png').split(',')[1]
@@ -101,22 +107,30 @@ try {
     response = { status: 201, body: { message: 'Payment proof submitted for Admin verification.' } }
     const countBefore = submitCount
     await dialog.getByRole('button', { name: 'Submit payment proof', exact: true }).click()
-    await dialog.getByRole('status').filter({ hasText: 'Opening Payments…' }).waitFor()
-    const redirectStarted = Date.now()
+    const success = page.getByRole('dialog', { name: 'Payment Submitted', exact: true })
+    await success.waitFor()
+    assert.equal(await dialog.count(), 0)
     assert.equal(submitCount, countBefore + 1)
-    assert.equal(await dialog.getByText('Payment proof submitted', { exact: true }).count(), 0)
-    assert.equal(await dialog.locator('#receipt-form-feedback').count(), 0)
-    assert.equal(await dialog.getByRole('button', { name: 'Submit payment proof', exact: true }).count(), 0)
+    assert.match(await success.innerText(), /Your receipt for Unit 237 has been sent for Admin review/)
+    const historyButton = success.getByRole('button', { name: 'View Payment History', exact: true })
+    assert.equal(await historyButton.evaluate(el => el === document.activeElement), true)
+    await historyButton.press('Tab')
+    assert.equal(await historyButton.evaluate(el => el === document.activeElement), true)
+    const successBox = await success.boundingBox()
+    assert.ok(successBox.x >= 0 && successBox.y >= 0 && successBox.x + successBox.width <= page.viewportSize().width)
+    await page.waitForTimeout(3200)
     assert.equal(new URL(page.url()).pathname, '/resident/bills/171')
     await page.screenshot({ path: `${output}/${mobile ? 'mobile' : 'desktop'}-success.png` })
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    assert.equal(await success.evaluate(el => getComputedStyle(el).animationName), 'none')
+    assert.equal(await success.locator('.payment-submitted-confetti').first().isVisible(), false)
+    await historyButton.click()
     await page.waitForURL('**/resident/payments', { timeout: 6000 })
-    const redirectDelay = Date.now() - redirectStarted
-    assert.ok(redirectDelay >= 2500 && redirectDelay < 6000, `Expected a 3-second redirect, got ${redirectDelay}ms`)
     assert.equal(await page.getByText('Payment proof submitted', { exact: true }).count(), 0)
-    assert.equal(submitCount, countBefore + 1, 'Redirect must not submit again')
+    assert.equal(submitCount, countBefore + 1, 'Continuing must not submit again')
     assert.equal(await page.getByRole('button', { name: 'pending', exact: true }).getAttribute('aria-pressed'), 'true')
     await context.close()
-    console.log(`PASS ${mobile ? 'mobile' : 'desktop'}: error notifications, no success notifications, and automatic 3-second redirect to pending payments`)
+    console.log(`PASS ${mobile ? 'mobile' : 'desktop'}: errors, success modal, keyboard focus, reduced motion and explicit navigation to pending payments`)
   }
   assert.deepEqual(runtimeErrors, [])
 } finally {
