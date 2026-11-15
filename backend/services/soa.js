@@ -1,4 +1,4 @@
-import crypto, { randomInt, randomBytes, createHash, createHmac, randomUUID } from 'node:crypto';
+import crypto, { randomBytes, createHash, createHmac, randomUUID } from 'node:crypto';
 import { v2 as cloudinary } from 'cloudinary';
 import PDFDocument from 'pdfkit';
 import { readFile, mkdtemp, mkdir, writeFile, rm, readdir, lstat } from 'node:fs/promises';
@@ -152,7 +152,7 @@ export function soaPasswordLastName(fullName) {
 }
 
 export function createSoaPassword(fullName) {
-  return soaPasswordLastName(fullName) + String(randomInt(0, 10000)).padStart(4, '0');
+  return soaPasswordLastName(fullName);
 }
 
 // #endregion

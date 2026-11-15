@@ -69,7 +69,7 @@ test('protected SOA exports: real PostgreSQL transactions, HTTP access, lifecycl
     const service = createProtectedSoaExportService({ db: scoped, environment, checkDependencies: async () => {},
       logo: async () => process.env.QPDF_PATH ? loadSoaLogo(null) : Buffer.from('fixture-logo'),
       render: process.env.QPDF_PATH ? renderSoaPdf : async bill => Buffer.from(`%PDF plaintext fixture ${bill.totalAmount}`),
-      encrypt: async (pdf, password) => { assert.match(password, /^kamado\d{4}$/); return process.env.QPDF_PATH ? encryptSoaPdf(pdf, password) : Buffer.from('%PDF encrypted synthetic artifact'); },
+      encrypt: async (pdf, password) => { assert.match(password, /^kamado$/); return process.env.QPDF_PATH ? encryptSoaPdf(pdf, password) : Buffer.from('%PDF encrypted synthetic artifact'); },
       mailer: { async send(delivery) { deliveries.push({ ...delivery, pdf: Buffer.from(delivery.pdf) }); if (pauseEmail) { pauseEmail(); await new Promise(resolve => { releaseEmail = resolve; }); } if (mailFailure) throw new Error('SMTP raw response with secret'); } },
     });
     const app = express(); app.use(express.json()); app.use('/api', createSoaExportRouter(service)); app.use('/api/auth', authRoutes); app.get('/api/health', (req, res) => res.json({ ok: true })); app.use((req, res) => res.status(404).json({ message: 'Not found' })); app.use(errorHandler);
@@ -182,7 +182,7 @@ test('protected SOA exports: real PostgreSQL transactions, HTTP access, lifecycl
       assert.equal((await create(key)).data.exportId, failed.data.exportId); assert.equal(deliveries.length, count);
       assert.equal((await setup.query('SELECT encrypted_pdf FROM soa_exports WHERE id=$1', [failed.data.exportId])).rows[0].encrypted_pdf, null);
       mailFailure = false; await clearQuota(); const fresh = await create(); assert.equal(fresh.data.status, 'READY');
-      assert.match(deliveries.at(-1).password, /^kamado\d{4}$/);
+      assert.match(deliveries.at(-1).password, /^kamado$/);
     });
     await t.test('database reservations roll back atomically and cooldown/hourly user/IP limits survive service recreation', async () => {
       await clearQuota(); const before = (await setup.query('SELECT COUNT(*)::int AS n FROM soa_exports')).rows[0].n;

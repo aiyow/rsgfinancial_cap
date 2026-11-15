@@ -324,7 +324,7 @@ export async function sendSoaReminder(delivery, reminderType) {
 
 // #region Protected SOA attachment emails
 
-export function buildProtectedSoaEmailMessage({ reference, password, residentName, unitNumber, periodStart, periodEnd, dueDate, companyName }) {
+export function buildProtectedSoaEmailMessage({ reference, residentName, unitNumber, periodStart, periodEnd, dueDate, companyName }) {
   const company = companyName || EMAIL_COMPANY_NAME;
   const filename = `SOA-${reference}.pdf`;
   const details = [
@@ -334,10 +334,9 @@ export function buildProtectedSoaEmailMessage({ reference, password, residentNam
   const instructions = [
     '1. Download the PDF attached to this email.',
     '2. Open the PDF and enter the document password when prompted.',
-    'Your password is your last name in lowercase, without spaces, followed by the four random numbers assigned to this request. Keep accents, apostrophes and hyphens as shown in the password below.',
-    `Your four numbers: ${password.slice(-4)}`,
-    `Document password: ${password}`,
-    'The password is case-sensitive. Use the exact password above, with no spaces. Each new SOA request has its own password; use the password from the same email as the attachment.',
+    'To open your SOA, enter your last name registered in your resident account, using lowercase letters and no spaces. Keep any accents, apostrophes and hyphens. Do not include suffixes such as Jr. or III.',
+    'For a last name with multiple words, join the words together. No numbers are needed.',
+    'Examples: If your last name is Santos, enter santos. If your last name is De la Cruz, enter delacruz.',
   ];
   const text = [
     `Dear ${residentName},`, '',
@@ -355,9 +354,9 @@ export function buildProtectedSoaEmailMessage({ reference, password, residentNam
 ${emailHeading('Statement details')}${emailDetails(details)}
 ${emailHeading('How to open your protected SOA')}
 <ol style="padding-left:22px"><li>Download the PDF attached to this email.</li><li>Open the PDF and enter the document password when prompted.</li></ol>
-<p>Your password is your <strong>last name in lowercase, without spaces, followed by four random numbers</strong> assigned to this request. Keep accents, apostrophes and hyphens as shown below.</p>
-<div style="padding:16px;background:#edf6f0;border:1px solid #cfe4d6;border-radius:8px"><div>Your four numbers: <strong>${escapeHtml(password.slice(-4))}</strong></div><div style="margin-top:8px">Document password</div><div style="margin-top:4px;font-family:Consolas,monospace;font-size:18px;font-weight:bold;overflow-wrap:anywhere;word-break:break-all">${escapeHtml(password)}</div></div>
-<p style="font-size:13px">The password is case-sensitive. Use the exact password above, with no spaces. Each new SOA request has its own password; use the password from the same email as the attachment.</p>
+<p>To open your SOA, enter your <strong>last name registered in your resident account, using lowercase letters and no spaces</strong>. Keep any accents, apostrophes and hyphens. Do not include suffixes such as Jr. or III.</p>
+<p>For a last name with multiple words, join the words together. No numbers are needed.</p>
+<p><strong>Examples:</strong> If your last name is Santos, enter <strong>santos</strong>. If your last name is De la Cruz, enter <strong>delacruz</strong>.</p>
 <p style="margin-top:24px">For assistance with your statement or attachment, please contact property management.</p>` });
   return { subject: `Your requested SOA — Unit ${unitNumber} · ${reference}`, text, html, filename };
 }

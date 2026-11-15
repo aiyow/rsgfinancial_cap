@@ -24,8 +24,10 @@ test('SOA email requires authenticated verified TLS and attaches the protected P
   assert.deepEqual(sent.attachments[0].content, delivery.pdf); assert.equal(sent.attachments[0].contentType, 'application/pdf');
   assert.equal(sent.attachments[0].contentDisposition, 'attachment');
   for (const content of [sent.text, sent.html]) {
-    for (const detail of ['Tanjiro Kamado', '234', 'October 5, 2026', 'November 5, 2026', 'November 10, 2026', 'SX-ABC', 'kamado0042', '0042']) assert.ok(content.includes(detail));
-    assert.match(content, /Download the PDF attached to this email/); assert.match(content, /last name in lowercase/);
+    for (const detail of ['Tanjiro Kamado', '234', 'October 5, 2026', 'November 5, 2026', 'November 10, 2026', 'SX-ABC']) assert.ok(content.includes(detail));
+    assert.match(content, /Download the PDF attached to this email/); assert.match(content, /lowercase letters and no spaces/);
+    assert.ok(!/kamado0042|0042|Document password:|Your four numbers|four random numbers/i.test(content));
+    assert.match(content, /No numbers are needed/);
     assert.match(content, /Confidentiality notice/); assert.ok(!/signed-in resident portal|15 minutes|balance|₱/.test(content));
   }
   assert.equal(sent.disableFileAccess, true); assert.equal(sent.disableUrlAccess, true);
@@ -49,12 +51,12 @@ test('missing PDF cannot send an email claiming an attachment, and resident fiel
   assert.ok(!message.html.includes('<Owner>'));
 });
 
-test('document passwords use the resident surname plus exactly four cryptographically random decimal digits', () => {
+test('document passwords use only the normalized resident surname', () => {
   for (const [name, expected] of [['Tanjiro Kamado', 'kamado'], ['José Niño de la Peña', 'delapeña'], ['Jane Marie AB. De la Cruz Jr.', 'delacruz'], ["Ava O’Neil-Santos", 'o’neil-santos'], ['Maria Dela Rosa', 'delarosa']]) {
     assert.equal(soaPasswordLastName(name), expected);
     for (let n = 0; n < 20; n++) {
       const password = createSoaPassword(name);
-      assert.equal(password.slice(0, -4), expected); assert.match(password.slice(-4), /^\d{4}$/);
+      assert.equal(password, expected);
     }
   }
   assert.throws(() => createSoaPassword(''), /SOA_RESIDENT_NAME_REQUIRED/);

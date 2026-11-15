@@ -239,7 +239,7 @@ Historical reading uploads use `CollectorHistoryImportPage` and a separate API. 
 2. Clicking Request SOA posts an empty body with a UUID `Idempotency-Key`. Network retries keep the same key, and in-progress responses are polled through `/api/soa-exports/:exportId` with abortable waits.
 3. On `READY`, the UI removes all success details and shows only the disabled **SOA already sent in email** button. The tooltip briefly suggests checking Inbox/Spam and explains the wait. `nextRequestAt` controls the local unlock timer.
 4. The backend enforces the 30-minute cooldown even with a new key or another tab. A `SOA_EMAIL_COOLDOWN` response restores the sent state. After expiry, the button can create a fresh request. Failure/verification messages appear only when an action needs attention.
-5. The protected PDF is attached to the delivered email. Its opening password is the lowercase surname without spaces plus four random digits, and the email contains the exact password/instructions. The browser never receives the password or downloads this PDF through `apiFile`.
+5. The protected PDF is attached to the delivered email. Its opening password is the lowercase surname without spaces only, and the email contains opening instructions without printing the password. The browser never receives the password or downloads this PDF through `apiFile`.
 
 See [soa.js](../backend/services/soa.js) for access, rendering, encryption and cooldowns, and [email.js](../backend/services/email.js) for the shared email layout. SOA email dates use `January 1, 2026` style; balances use `PHP 2,228.24` style. The 30-minute wait governs another request, not the lifetime of an already emailed PDF.
 

@@ -34,8 +34,8 @@ try {
     const admin = { ...resident, id: 1, role: 'ADMIN', fullName: 'Sample Admin' }
     let user = resident, count = 2, submitted = 0, previews = 0
     const bill = { id: 171, unitNumber: '237', totalAmount: 1675.88, remainingBalance: 1675.88,
-      paymentStatus: 'UNPAID', allowedPaymentPurposes: ['COMBINED'], charges: [] }
-    const payment = { id: 171, unitNumber: '237', entryType: 'RECEIPT_UPLOAD', reviewStatus: 'APPROVED',
+      approvedAmount: 500, status: 'FORWARDED', publishedAt: '2026-11-12T00:00:00Z', paymentStatus: 'UNPAID', allowedPaymentPurposes: ['COMBINED'], charges: [] }
+    const payment = { id: 171, targetBillId: 171, unitNumber: '237', entryType: 'RECEIPT_UPLOAD', reviewStatus: 'APPROVED',
       receiptType: 'BDO', receiptMimeType: 'image/png', submittedByName: 'Sample Resident', submittedAt: '2026-11-12T00:00:00Z',
       ocrAmount: analysis.amount, ocrReferenceNo: analysis.referenceNo, ocrPaymentDate: analysis.paymentDate,
       paymentPurpose: 'COMBINED', paymentMethod: 'BANK_TRANSFER', verifiedAmount: analysis.amount,
@@ -136,6 +136,14 @@ try {
     await page.reload()
     await page.getByRole('button', { name: 'Download receipt image', exact: true }).waitFor()
     assert.equal(await page.getByRole('navigation', { name: 'Receipt image pages', exact: true }).count(), 0)
+    await page.getByRole('link', { name: 'View SOA', exact: true }).click()
+    await page.waitForURL('**/admin/soa/bills/171/view')
+    await page.getByRole('button', { name: 'Print / Save PDF', exact: true }).waitFor()
+    await page.getByText('Loading statement...', { exact: true }).waitFor({ state: 'hidden' })
+    assert.equal(await page.getByRole('region', { name: 'SOA invoice entry', exact: true }).count(), 0)
+    assert.equal(await page.getByRole('button', { name: 'Correct SOA', exact: true }).count(), 0)
+    assert.equal(await page.getByText('Payment note (optional)', { exact: true }).count(), 0)
+    assert.equal(await page.locator('input, textarea, select').count(), 0)
     console.log(`PASS ${mobile ? 'mobile' : 'desktop'} receipt selection, combined OCR, two-image submission, gallery, active-image download/share and legacy single image`)
     await context.close()
   }

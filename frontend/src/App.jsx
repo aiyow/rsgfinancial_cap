@@ -68,6 +68,7 @@ export default function App() {
       <Route path="/admin/soa" element={<ProtectedRoute allowedRole="ADMIN"><AdminSoaPage /></ProtectedRoute>} />
       <Route path="/admin/soa/batches/:periodId" element={<ProtectedRoute allowedRole="ADMIN"><AdminSoaBatchPage /></ProtectedRoute>} />
       <Route path="/admin/soa/bills/:id" element={<ProtectedRoute allowedRole="ADMIN"><AdminSoaBillPage /></ProtectedRoute>} />
+      <Route path="/admin/soa/bills/:id/view" element={<ProtectedRoute allowedRole="ADMIN"><AdminSoaBillPage readOnly /></ProtectedRoute>} />
       <Route path="/admin/payments" element={<ProtectedRoute allowedRole="ADMIN"><AdminPaymentsPage /></ProtectedRoute>} />
       <Route path="/admin/payments/:id" element={<ProtectedRoute allowedRole="ADMIN"><AdminPaymentPage /></ProtectedRoute>} />
       <Route path="/admin/audit-logs" element={<ProtectedRoute allowedRole="ADMIN"><AdminAuditLogsPage /></ProtectedRoute>} />

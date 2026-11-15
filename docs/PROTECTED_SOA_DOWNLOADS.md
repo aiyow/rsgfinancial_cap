@@ -6,11 +6,11 @@ The resident's **Request SOA** action emails an AES-256 revision 6 encrypted PDF
 
 The email includes a clean HTML layout and a plain-text alternative, a personal greeting, resident name, unit, billing period, due date, request reference, attachment filename, opening instructions, assistance guidance and a confidentiality notice. The attachment is named `SOA-SX-<reference>.pdf`. It contains the existing official statement layout.
 
-The opening password is the requesting resident's surname in lowercase with spaces removed, followed by four cryptographically random decimal digits, including leading zeroes (for example, `kamado0042`). Accents, apostrophes and hyphens are preserved. The email explicitly gives both the four digits and the complete document password. It explains that passwords are case-sensitive and must match the attachment in that same email.
+The opening password is the requesting resident's surname in lowercase with spaces removed. No random digits are added. Accents, apostrophes and hyphens are preserved. The email provides opening instructions without printing the generated password.
 
-Accounts currently store only `full_name`, rather than a separate surname. The surname helper uses the final name component, including preceding common surname particles such as `de la`, `dela`, `del`, `san`, `van` and `von`, and excludes generational suffixes such as Jr. or III. Arbitrary compound surnames without those particles cannot be identified reliably from a complete name alone; the exact generated password is always provided in the email.
+Accounts currently store only `full_name`, rather than a separate surname. The surname helper uses the final name component, including preceding common surname particles such as `de la`, `dela`, `del`, `san`, `van` and `von`, and excludes generational suffixes such as Jr. or III. Arbitrary compound surnames without those particles cannot be identified reliably from a complete name alone; property management can help resolve name mismatches.
 
-Each fresh request generates its password independently. With only four random digits, repeated values are possible. An independent random owner password is discarded. Opening passwords are never returned to the browser, saved in PostgreSQL, included in filenames or Activity Log, or passed in process arguments.
+New requests use the same surname rule. Previously emailed PDFs retain their original passwords. An independent random owner password is discarded. Opening passwords are never returned to the browser, saved in PostgreSQL, included in filenames or Activity Log, or passed in process arguments.
 
 ## API and lifecycle
 

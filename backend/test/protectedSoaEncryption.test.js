@@ -17,7 +17,7 @@ test('actual qpdf rejects missing/wrong passwords, accepts emailed password, R6 
   const directory = await mkdtemp(join(tmpdir(), 'soa-encryption-test-'));
   const root = join(tmpdir(), 'residens-protected-soa');
   let password = createSoaPassword('José Niño de la Peña');
-  assert.match(password, /^delapeña\d{4}$/);
+  assert.match(password, /^delapeña$/);
   try {
     const charges = [{ chargeType: 'WATER', amount: 85.38, rateApplied: 23 }, { chargeType: 'ASSOCIATION_DUES', description: 'Association dues', amount: 1608.84 }];
     const bill = { soaTemplate: defaultSoaTemplate, charges, unitNumber: '234', floor: '2', payerName: 'José Niño de la Peña', periodStart: '2026-10-05', periodEnd: '2026-11-05', statementDate: '2026-10-27', dueDate: '2026-11-10', totalAmount: 1694.22, remainingBalance: 1494.22, approvedAmount: 200, chargePayments: { WATER: { billedAmount: 85.38, remainingBalance: 85.38 }, ASSOCIATION_DUES: { billedAmount: 1608.84, remainingBalance: 1408.84, approvedAmount: 200, invoiceReferences: ['INV-0123'] } } };

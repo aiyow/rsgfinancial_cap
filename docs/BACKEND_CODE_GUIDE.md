@@ -141,7 +141,7 @@ Admin can unpublish one SOA, a selected subset or the full batch. Selected/all b
 
 1. A Resident's authenticated `GET /api/bills/:id/protected-exports` checks recent preparation/delivery state without sending email.
 2. `POST` to the same path uses an empty body and UUID `Idempotency-Key`. The server loads current verified email, assignment and published statement data; it never accepts browser-supplied recipient/PDF/totals.
-3. The server renders an AES-256 R6 PDF and emails it as an attachment. The opening password is the resident's lowercase surname without spaces plus four random digits; the exact password and instructions appear in the same email. Names come from stored full names, with common compound surname particles handled by the helper.
+3. The server renders an AES-256 R6 PDF and emails it as an attachment. The opening password is the resident's lowercase surname without spaces only; the email contains opening instructions without printing the password. Names come from stored full names, with common compound surname particles handled by the helper.
 4. States are `PREPARING`, `EMAIL_PENDING`, then `READY` after SMTP acceptance, or `FAILED`. Retry identity and concurrent-request deduplication avoid duplicate sends.
 5. A successful send starts a server-enforced 30-minute cooldown per resident/SOA/current email. Responses include `nextRequestAt`; new keys during cooldown receive `429 SOA_EMAIL_COOLDOWN` and `Retry-After`. Failed sends retain the separate attempt-rate limits.
 6. `GET /api/soa-exports/:exportId` polls status. The old `/file` route returns `410 SOA_EMAIL_ONLY`; residents download the PDF from email. Passwords and new PDF bytes are not saved in PostgreSQL or returned to the browser.

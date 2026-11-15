@@ -584,7 +584,9 @@ body:has(.resident-bills-shell), body:has(.resident-payments-shell) { min-width:
   body:has(.soa-sheet) .dashboard-shell,
   body:has(.soa-sheet) main { background: #fff !important; }
   body:has(.soa-sheet) main > .mx-auto { max-width: none !important; padding: 0 !important; }
-  .soa-sheet {
+  .print-document.soa-sheet {
+    border: 1pt solid #285b78 !important;
+    box-sizing: border-box !important;
     width: 100% !important;
     margin: 0 !important;
     font-size: 12px;
