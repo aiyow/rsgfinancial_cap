@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import App from './App'
 import './index.css'
+import './services/pwaInstall'
+import SearchMetadata from './components/SearchMetadata'
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureContext) {
   window.addEventListener('load', () => {
@@ -14,6 +16,7 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureConte
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
+      <SearchMetadata />
       <AuthProvider>
         <App />
       </AuthProvider>

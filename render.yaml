@@ -62,6 +62,53 @@ services:
         value: 22.14.0
       - key: VITE_API_URL
         sync: false
+      - key: VITE_SITE_URL
+        value: https://residens-condo.onrender.com
+    # Do not block crawling of these paths in robots.txt: crawlers must be
+    # able to read the noindex response header. Authentication still controls access.
+    headers:
+      - path: /admin
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /admin/**
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /collector
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /collector/**
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /resident
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /resident/**
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /profile
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /settings
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /notifications
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /register
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /forgot-password
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /reset-password
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /verify-email
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /pending-approval
+        name: X-Robots-Tag
+        value: noindex, nofollow
     routes:
       - type: rewrite
         source: /*

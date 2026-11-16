@@ -1,0 +1,40 @@
+// Checks the built public site locally. No account or Search Console changes.
+import assert from 'node:assert/strict'
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
+const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5190'
+const origin = 'https://residens-condo.onrender.com'
+const browser = await chromium.launch({ channel: 'chrome', headless: true })
+try {
+  const context = await browser.newContext({ javaScriptEnabled: false })
+  const page = await context.newPage()
+  const response = await page.goto(base + '/login')
+  assert.equal(response.status(), 200)
+  await page.getByRole('heading', { name: 'The ResiDens Condominium Resident Portal' }).waitFor()
+  assert.equal(await page.locator('link[rel="canonical"]').getAttribute('href'), origin + '/login')
+  assert.equal(await page.locator('meta[name="robots"]').getAttribute('content'), 'index, follow')
+  assert.equal(await page.title(), 'The ResiDens Condominium | Resident Portal')
+  assert.equal(await page.locator('meta[property="og:url"]').getAttribute('content'), origin + '/login')
+  const robots = await context.request.get(base + '/robots.txt')
+  assert.equal(robots.status(), 200)
+  assert.match(robots.headers()['content-type'], /text\/plain/)
+  assert.match(await robots.text(), /Sitemap: https:\/\/residens-condo.onrender.com\/sitemap.xml/)
+  const sitemap = await context.request.get(base + '/sitemap.xml')
+  assert.equal(sitemap.status(), 200)
+  assert.match(sitemap.headers()['content-type'], /xml/)
+  assert.equal((await sitemap.text()).match(/<loc>/g).length, 1)
+  await context.close()
+  console.log('PASS public page without JavaScript, canonical metadata, robots.txt and XML sitemap')
+
+  const interactive = await browser.newContext()
+  await interactive.route('**/api/**', route => { assert.equal(route.request().method(), 'GET'); return route.fulfill({ json: { user: null } }) })
+  const live = await interactive.newPage()
+  await live.goto(base + '/login')
+  await live.getByRole('heading', { name: 'Sign in to your portal' }).waitFor()
+  assert.equal(await live.locator('meta[name="robots"]').getAttribute('content'), 'index, follow')
+  await live.goto(base + '/forgot-password')
+  await live.waitForFunction(() => document.querySelector('meta[name="robots"]').content === 'noindex, nofollow')
+  await live.goto(base + '/login')
+  await live.waitForFunction(() => document.querySelector('meta[name="robots"]').content === 'index, follow')
+  await interactive.close()
+  console.log('PASS React login flow and account-recovery noindex metadata')
+} finally { await browser.close() }

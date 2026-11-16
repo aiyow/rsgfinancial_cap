@@ -1,9 +1,11 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
+import { DEFAULT_SITE_URL, searchDiscovery } from './search-discovery.mjs'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { createHash } from 'node:crypto'
 import { readFile, readdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { cwd } from 'node:process'
 
 function offlineShell() {
   let output
@@ -26,6 +28,10 @@ function offlineShell() {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss(), offlineShell()],
+export default defineConfig(({ mode }) => {
+  const environment = loadEnv(mode, cwd(), 'VITE_')
+  return { plugins: [react(), tailwindcss(), searchDiscovery({
+    siteUrl: environment.VITE_SITE_URL || DEFAULT_SITE_URL,
+    verification: environment.VITE_GOOGLE_SITE_VERIFICATION || '',
+  }), offlineShell()] }
 })

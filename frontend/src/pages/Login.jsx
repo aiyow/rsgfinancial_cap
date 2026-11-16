@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, LayoutDashboard, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
+import PwaInstallPrompt from '../components/PwaInstallPrompt'
 import { dashboardPathFor } from '../constants/routes'
 import useAuth from '../hooks/useAuth'
 
@@ -80,7 +81,7 @@ export default function Login() {
           <label className="block text-sm font-bold text-slate-800">Password<div className="input-with-icon"><LockKeyhole size={19} /><input required type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password" value={form.password} onChange={(e) => update('password', e.target.value)} /><button type="button" onClick={() => setShowPassword(!showPassword)} className="password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button></div></label>
           <div className="-mt-2 flex justify-end"><Link to="/forgot-password" className="account-registration-link text-sm">Forgot password?</Link></div>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-500"><input type="checkbox" checked={rememberEmail} onChange={(event) => setRememberEmail(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-[var(--primary)] focus:ring-[var(--primary)]" />Remember email</label><button disabled={loading} aria-busy={loading} className="login-submit">{loading && <span className="login-spinner" aria-hidden="true" />}{loading ? 'Signing in...' : 'Sign in'}</button>
-        </form></div><Link to="/register" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-3 text-sm font-bold text-emerald-800 shadow-sm transition hover:border-emerald-500 hover:bg-emerald-50">Create an account <ArrowRight size={17} /></Link></div></section>
+        </form></div><Link to="/register" className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-3 text-sm font-bold text-emerald-800 shadow-sm transition hover:border-emerald-500 hover:bg-emerald-50">Create an account <ArrowRight size={17} /></Link><div className="mt-2 text-center"><PwaInstallPrompt /></div></div></section>
     </main>
   )
 }
