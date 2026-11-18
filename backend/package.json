@@ -20,6 +20,8 @@
     "payments:migrate-receipts": "node scripts/migratePaymentOfficialReceipts.js",
     "audit:migrate": "node scripts/migrateAuditLogs.js",
     "soa-exports:migrate": "node scripts/migrateProtectedSoaExports.js",
+    "soa-names:migrate": "node scripts/migrateUnitSoaNames.js",
+    "test:soa-names": "node --test test/integration/unitSoaNamesHttp.test.js",
     "soa-exports:preflight": "node scripts/protectedSoaPreflight.js",
     "test:soa-exports": "node --test test/protectedSoa*.test.js test/integration/protectedSoaExportsHttp.test.js",
     "test:audit": "node --test test/auditDetails.test.js test/auditCoverage.test.js test/integration/detailedAuditHttp.test.js",

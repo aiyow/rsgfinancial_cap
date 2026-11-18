@@ -19,7 +19,7 @@ test('combined financial report, exports and consistent payment-cutoff snapshots
  try {
   await setup.query(`CREATE SCHEMA "${schema}"`);created=true;assert.equal((await setup.query('SELECT current_schema() AS schema')).rows[0].schema,schema);
   await setup.query(`CREATE TABLE users(id BIGINT PRIMARY KEY,full_name TEXT,role TEXT,is_active BOOLEAN DEFAULT TRUE,approval_status TEXT DEFAULT 'APPROVED',auth_version INT DEFAULT 0);
-   CREATE TABLE units(id BIGINT PRIMARY KEY,unit_number TEXT,floor TEXT,occupancy_status TEXT DEFAULT 'VACANT');
+   CREATE TABLE units(id BIGINT PRIMARY KEY,unit_number TEXT,floor TEXT,soa_resident_name TEXT,occupancy_status TEXT DEFAULT 'VACANT');
    CREATE TABLE unit_assignments(id BIGINT PRIMARY KEY,unit_id BIGINT,user_id BIGINT,end_date DATE);
    CREATE TABLE billing_periods(id BIGINT PRIMARY KEY,period_type TEXT,status TEXT);
    CREATE TABLE unit_bills(id BIGINT PRIMARY KEY,unit_id BIGINT,billing_period_id BIGINT,unit_number_snapshot TEXT,payer_name_snapshot TEXT,

@@ -88,8 +88,8 @@ test('history downloads export legacy readings and retain confirmed original wor
     assert.equal(liveVerified.status,200);
     assert.equal((await liveVerified.json()).reusedLiveBilling,true);
     assert.equal((await query("SELECT COUNT(*)::int AS count FROM billing_periods WHERE DATE_TRUNC('month',period_start)='2026-10-01'")).rows[0].count,1,'Verifying a live month must not duplicate its analytics');
-    // Three raw columns are sufficient; optional spreadsheet financial/formula
-    // columns cannot override the server's consumption or saved billing rate.
+    // Three reading columns still work. The optional rate is used for historical
+    // periods while the server calculates consumption and protects live rates.
     const rawWorkbook = async (headers, rows) => {
       const wb = new ExcelJS.Workbook(); wb.addWorksheet('Readings').addRows([headers, ...rows]);
       return Buffer.from(await wb.xlsx.writeBuffer());
@@ -101,11 +101,36 @@ test('history downloads export legacy readings and retain confirmed original wor
     const raw = await rawWorkbook(['UNIT','PREVIOUS','CURRENT'],[['101',120,130],['102',205,210]]);
     const rawPreview = await previewRaw(raw);
     assert.equal(rawPreview.valid,true); assert.equal(rawPreview.rows[0].consumption,10);
-    assert.equal(rawPreview.rows[0].waterCharge,undefined); assert.equal(rawPreview.waterRate,undefined);
+    assert.equal(rawPreview.rows[0].waterCharge,undefined); assert.equal(rawPreview.waterRate,null);
     const present = await previewRaw(await rawWorkbook([' units ','previous','present'],[['101',120,130],['102',205,210]]));
     assert.equal(present.valid,true,'Existing PRESENT and plural UNITS headers remain accepted');
-    const ignored = await previewRaw(await rawWorkbook(['UNIT','PREVIOUS','CURRENT','CONSUMPTION','WRATE','WATER BILLED'],[['101',120,130,999,'not a rate',999],['102',205,210,999,-1,999]]));
-    assert.equal(ignored.valid,true); assert.equal(ignored.rows[0].consumption,10); assert.equal(ignored.summary.warningCount,0);
+    const rated = await rawWorkbook(['UNIT','PREVIOUS','CURRENT','CONSUMPTION','Water Rate (₱/m³)','WATER BILLED'],
+      [['101',120,130,999,{formula:'30+1.75',result:31.75},999],['102',205,210,999,31.75,999]]);
+    const ratedPreview = await previewRaw(rated);
+    assert.equal(ratedPreview.valid,true);
+    assert.equal(ratedPreview.waterRate,31.75);
+    assert.equal(ratedPreview.rows[0].waterRate,31.75);
+    assert.equal(ratedPreview.rows[0].consumption,10);
+    const mismatch = await upload(rated,'2026-10');
+    assert.equal(mismatch.status,409);
+    assert.match((await mismatch.json()).message,/water rate does not match/i);
+
+    for (const rates of [[23,24], ['not a rate',23], [0,23], [23.125,23]]) {
+      const invalid = await rawWorkbook(['UNIT','PREVIOUS','CURRENT','WRATE'],
+        [['101',120,130,rates[0]],['102',205,210,rates[1]]]);
+      const preview = await previewRaw(invalid);
+      assert.equal(preview.valid,false);
+      assert.ok(preview.summary.errorCount > 0);
+      assert.equal((await upload(invalid,'2026-03')).status,400);
+    }
+    await query('SAVEPOINT workbook_rate');
+    await query('UPDATE billing_periods SET water_rate_per_cubic_m=0');
+    const firstRatedImport = await upload(rated,'2026-03');
+    assert.equal(firstRatedImport.status,201,await firstRatedImport.text());
+    assert.equal(Number((await query("SELECT water_rate_per_cubic_m AS rate FROM billing_periods WHERE period_start='2026-03-01'")).rows[0].rate),31.75,
+      'A workbook rate is saved even when there is no positive rate in the database');
+    await query('ROLLBACK TO SAVEPOINT workbook_rate');
+    await query('RELEASE SAVEPOINT workbook_rate');
     for (const rows of [[['101',120,130],['101',205,210]], [['101',120,130]], [['101',-1,130],['102',205,210]], [['101',120,''],['102',205,210]]]) {
       assert.equal((await previewRaw(await rawWorkbook(['UNIT','PREVIOUS','CURRENT'],rows))).valid,false,'Duplicate, missing or invalid raw readings remain blocked');
     }

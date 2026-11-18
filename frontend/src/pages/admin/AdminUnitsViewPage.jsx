@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Building2, ChevronDown, Users } from 'lucide-react'
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import UnitDetailsModal from '../../components/UnitDetailsModal'
+import UnitTenantListModal from '../../components/UnitTenantListModal'
 import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 import { formatLabel } from '../../utils/formatText'
@@ -60,6 +61,7 @@ export default function AdminUnitsViewPage() {
   const [page, setPage] = useState(1)
   const [error, setError] = useState('')
   const [viewingId, setViewingId] = useState(null)
+  const [viewingTenants, setViewingTenants] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -77,7 +79,8 @@ export default function AdminUnitsViewPage() {
     const assignmentsByUnit = new Map()
     assignments
       .filter((assignment) => !assignment.endDate)
-      .sort((a, b) => Number(b.isPrimaryPayer) - Number(a.isPrimaryPayer))
+      .sort((a, b) => Number(Boolean(b.isPrimaryPayer)) - Number(Boolean(a.isPrimaryPayer))
+        || String(a.residentName || '').localeCompare(String(b.residentName || ''), undefined, { sensitivity: 'base' }))
       .forEach((assignment) => {
         const current = assignmentsByUnit.get(assignment.unitId) || []
         current.push(assignment)
@@ -122,6 +125,7 @@ export default function AdminUnitsViewPage() {
   return (
     <DashboardLayout title="Unit directory" description="View condominium units, owners, current residents, and occupancy.">
       {viewingId !== null && <UnitDetailsModal key={viewingId} unitId={viewingId} onClose={() => setViewingId(null)} />}
+      {viewingTenants && <UnitTenantListModal key={viewingTenants.id} unit={viewingTenants} onClose={() => setViewingTenants(null)} />}
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryCard label="Total units" value={units.length} icon={Building2} accent="blue" />
@@ -140,8 +144,8 @@ export default function AdminUnitsViewPage() {
 
         <div className="mt-6 overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="border-b border-slate-200 text-xs capitalize tracking-wide text-slate-400">
-              <tr><th className="px-3 py-3">Unit</th><th className="px-3 py-3">Floor</th><th className="px-3 py-3">Owner</th><th className="px-3 py-3 normal-case">Current Resident(s)</th><th className="px-3 py-3">Occupancy</th></tr>
+            <thead className="border-b border-slate-200 text-xs tracking-wide text-slate-400">
+              <tr><th className="px-3 py-3">Unit</th><th className="px-3 py-3">Floor</th><th className="px-3 py-3">Owner</th><th className="px-3 py-3" style={{ textTransform: 'none' }}>Tenant(s)</th><th className="px-3 py-3">Occupancy</th></tr>
             </thead>
             <tbody className="divide-y divide-slate-300">
               {visibleUnits.map((unit) => (
@@ -149,7 +153,7 @@ export default function AdminUnitsViewPage() {
                   <td className="px-3 py-4 font-black text-slate-900"><button type="button" onClick={() => setViewingId(unit.id)} aria-label={`View Unit ${unit.unitNumber}`} className="rounded-sm text-[var(--primary)] underline decoration-transparent underline-offset-4 hover:decoration-current focus-visible:ring-2 focus-visible:ring-[var(--primary)]">Unit {unit.unitNumber}</button></td>
                   <td className="px-3 py-4 text-slate-600">{formatLabel(unit.floor)}</td>
                   <td className="px-3 py-4 text-slate-700">{unit.owners.map((assignment) => assignment.residentName).join(', ') || '—'}</td>
-                  <td className="px-3 py-4 text-slate-700">{unit.currentResidents.map((assignment) => assignment.residentName).join(', ') || '—'}</td>
+                  <td className="px-3 py-4 text-slate-700">{unit.currentResidents.length ? <div className="flex flex-wrap items-center gap-2"><span>{unit.currentResidents[0].residentName}</span>{unit.currentResidents.length > 1 && <button type="button" aria-label={`View all ${unit.currentResidents.length} tenants for Unit ${unit.unitNumber}`} onClick={() => setViewingTenants(unit)} className="inline-flex min-h-9 items-center rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 hover:bg-emerald-100 focus-visible:ring-2 focus-visible:ring-emerald-600">+{unit.currentResidents.length - 1} more</button>}</div> : '—'}</td>
                   <td className="px-3 py-4"><StatusBadge status={unit.occupancyStatus} /></td>
                 </tr>
               ))}

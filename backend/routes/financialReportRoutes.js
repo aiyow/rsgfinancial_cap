@@ -104,7 +104,7 @@ export function createWorkbook(report, tab) {
     addTable(sheet, ['Unit', 'Resident / payer', 'Bill period', 'Due date', 'Billed', 'Paid', 'Balance', 'Status'], report.receivables.map((row) => [row.unitNumber, row.payerName, date(row.periodStart), date(row.dueDate), money(row.totalBilled), money(row.paidAmount), money(row.remainingBalance), row.paymentStatus]), [5, 6, 7]);
   }
   if (tab === 'occupancy') {
-    addTable(sheet, ['Unit', 'Floor', 'Resident / payer', 'Occupancy'], report.occupancy.rows.map((row) => [row.unitNumber, row.floor || '—', row.residentNames, row.occupancyStatus]));
+    addTable(sheet, ['Unit', 'Floor', 'Resident Name', 'Occupancy'], report.occupancy.rows.map((row) => [row.unitNumber, row.floor || '—', row.soaResidentName || '—', row.occupancyStatus]));
     const total = sheet.addRow(['Total units', report.occupancy.totalUnits, 'Occupied', report.occupancy.occupiedUnits, 'Vacant', report.occupancy.vacantUnits]);
     total.font = { bold: true };
   }

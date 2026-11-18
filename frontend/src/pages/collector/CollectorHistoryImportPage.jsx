@@ -18,6 +18,8 @@ function number(value, digits = 3) {
   return value === null || value === undefined ? '-' : Number(value).toFixed(digits)
 }
 
+const waterRateFormat = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' })
+
 function Field({ label, children }) {
   return <label className="block text-xs font-bold text-slate-600">{label}{children}</label>
 }
@@ -160,7 +162,7 @@ export default function CollectorHistoryImportPage() {
         </form>
       </Panel>
 
-      <Panel accent="red" title="Preview readings" description="Required columns: UNIT, PREVIOUS, and CURRENT (or PRESENT). Consumption is calculated automatically.">
+      <Panel accent="red" title="Preview readings" description="Include UNIT, PREVIOUS, and CURRENT (or PRESENT). Add WRATE or WATER RATE to supply the monthly water rate.">
         {!preview ? <EmptyRow message="No workbook preview yet." /> : (
           <div>
             <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
@@ -184,7 +186,7 @@ export default function CollectorHistoryImportPage() {
             </div>}
             <div className="max-h-[520px] overflow-auto rounded-xl border border-slate-200">
               <table className="w-full min-w-[680px] text-left text-sm">
-                <thead className="sticky top-0 bg-white text-xs capitalize text-slate-400"><tr><th className="p-3">Row</th><th>Unit</th><th>Previous</th><th>Current</th><th>Consumption (m³)</th><th>Validation</th></tr></thead>
+                <thead className="sticky top-0 bg-white text-xs capitalize text-slate-400"><tr><th className="p-3">Row</th><th>Unit</th><th>Previous</th><th>Current</th><th>Consumption (m³)</th><th>Water Rate (₱/m³)</th><th>Validation</th></tr></thead>
                 <tbody className="divide-y divide-slate-100">
                   {preview.rows.map((row) => (
                     <tr key={row.rowNumber} className={row.errors.length ? 'bg-red-50' : row.warnings.length ? 'bg-amber-50' : ''}>
@@ -193,6 +195,7 @@ export default function CollectorHistoryImportPage() {
                       <td>{number(row.previousReading)}</td>
                       <td>{number(row.currentReading)}</td>
                       <td>{number(row.consumption)}</td>
+                      <td className="whitespace-nowrap">{row.waterRate != null ? waterRateFormat.format(row.waterRate) : '—'}</td>
                       <td>{row.errors.length ? <span className="text-red-700">{row.errors.join(' ')}</span> : row.warnings.length ? <span className="text-amber-700">{row.warnings.join(' ')}</span> : <span className="text-emerald-700">Ready</span>}</td>
                     </tr>
                   ))}

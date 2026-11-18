@@ -84,8 +84,10 @@ async function parseWorkbook(buffer, units) {
   if (!sheet) return { valid: false, rows: [], errors: ["The workbook has no worksheet."], warnings: [], waterRate: null };
 
   const headers = new Map();
+  const rateColumns = [];
   sheet.getRow(1).eachCell((cell, column) => {
     const name = String(cellValue(cell) ?? '').trim().toUpperCase();
+    if (name === 'WRATE' || /^WATER[ _-]*RATE(?:$|[\s(/])/.test(name)) rateColumns.push(column);
     headers.set(name === 'CURRENT' ? 'PRESENT' : name === 'UNITS' ? 'UNIT' : name, column);
   });
   const required = ["UNIT", "PREVIOUS", "PRESENT"];
@@ -99,6 +101,8 @@ async function parseWorkbook(buffer, units) {
   const rows = [];
   const errors = [];
   const warnings = [];
+  const waterRates = new Set();
+  if (rateColumns.length > 1) errors.push("Keep only one water rate column in the workbook.");
 
   for (let rowNumber = 2; rowNumber <= sheet.actualRowCount; rowNumber += 1) {
     const row = sheet.getRow(rowNumber);
@@ -116,6 +120,19 @@ async function parseWorkbook(buffer, units) {
     if (previousReading === null || previousReading < 0) rowErrors.push("Previous reading must be a non-negative number.");
     if (currentReading === null || currentReading < 0) rowErrors.push("Present reading must be a non-negative number.");
 
+    let waterRate = null;
+    const rateCell = rateColumns.length === 1 ? row.getCell(rateColumns[0]) : null;
+    if (rateCell?.value != null && String(rateCell.value).trim() !== "") {
+      const value = cellValue(rateCell);
+      const rate = typeof value === "number" || typeof value === "string" ? numberValue(value) : null;
+      if (rate === null || rate <= 0 || rate >= 10_000_000_000 || rate !== Number(rate.toFixed(2))) {
+        rowErrors.push("Water rate must be a positive number with up to two decimal places.");
+      } else {
+        waterRate = rate;
+        waterRates.add(rate);
+      }
+    }
+
     const consumption = previousReading !== null && currentReading !== null ? currentReading - previousReading : null;
     if (consumption !== null && consumption < 0) rowWarnings.push("Present reading is lower than the previous reading and will be flagged.");
 
@@ -126,6 +143,7 @@ async function parseWorkbook(buffer, units) {
       previousReading,
       currentReading,
       consumption,
+      waterRate,
       errors: rowErrors,
       warnings: rowWarnings,
     });
@@ -136,6 +154,7 @@ async function parseWorkbook(buffer, units) {
     .map((unit) => unit.unit_number);
   if (missingUnits.length) errors.push(`Missing meter readings for units: ${missingUnits.join(", ")}.`);
   if (rows.length === 0) errors.push("The workbook does not contain any meter readings.");
+  if (waterRates.size > 1) errors.push("Water rates differ across rows. Use one water rate for the entire month.");
 
   const rowErrorCount = rows.reduce((sum, row) => sum + row.errors.length, 0);
   return {
@@ -143,6 +162,7 @@ async function parseWorkbook(buffer, units) {
     rows,
     errors,
     warnings,
+    waterRate: waterRates.size === 1 ? [...waterRates][0] : null,
     summary: {
       rowCount: rows.length,
       unitCount: units.length,
@@ -153,9 +173,8 @@ async function parseWorkbook(buffer, units) {
   };
 }
 
-// The spreadsheet supplies readings only. Replacements preserve their saved rate;
-// new history uses the latest preceding saved rate, or the first available later
-// rate when importing older history. Never manufacture zero financial estimates.
+// Workbooks without a rate reuse the existing month's rate, the most recent
+// preceding rate, or the earliest later rate when importing older history.
 async function historyWaterRate(client, periodStart, existing) {
   if (existing && Number(existing.waterRate) > 0) return Number(existing.waterRate);
   const result = await client.query(`SELECT water_rate_per_cubic_m AS rate FROM billing_periods
@@ -325,8 +344,8 @@ router.post("/", upload.single("file"), async (req, res, next) => {
       const units = await pool.query("SELECT id, unit_number FROM units ORDER BY unit_number");
       const preview = await parseWorkbook(req.file.buffer, units.rows);
       if (!preview.valid) return res.status(400).json({ message: preview.errors[0] || preview.rows.flatMap(row => row.errors)[0] || "The workbook contains invalid readings." });
-      // Re-parse the confirmed file so the retained original always matches the imported readings.
-      payload = { periodMonth: selectedMonth.data,
+      // Read both the rate and readings from the confirmed workbook on the server.
+      payload = { periodMonth: selectedMonth.data, waterRatePerCubicM: preview.waterRate ?? undefined,
         readings: preview.rows.map(({ unitId, previousReading, currentReading }) => ({ unitId, previousReading, currentReading })) };
     }
     const parsed = importSchema.safeParse(payload);

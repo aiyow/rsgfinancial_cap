@@ -8,6 +8,13 @@ import { writeAuditLog } from "../services/audit.js";
 
 const router = express.Router();
 const occupancySchema = z.enum(["OCCUPIED", "VACANT"]);
+const soaResidentNameField = z.string().trim().min(1).max(205)
+  .regex(/^[^\u0000-\u001f\u007f]+$/, "Enter a name on one line.");
+const soaNameSchema = z.object({ soaResidentName: soaResidentNameField }).strict();
+const soaNamesSchema = z.object({
+  names: z.array(z.object({ unitId: z.number().int().positive().safe(), soaResidentName: soaResidentNameField }).strict())
+    .min(1).max(2000).refine(names => new Set(names.map(row => row.unitId)).size === names.length, "Each unit must appear only once."),
+}).strict();
 const unitColumns = `u.id, u.unit_number AS "unitNumber", u.floor,
   u.billable_area_sqm AS "billableAreaSqm",
   u.occupancy_status AS "occupancyStatus",
@@ -113,6 +120,40 @@ router.post("/", allowRoles("ADMIN"), validateBody(createUnitSchema), async (req
   } finally { client?.release(); }
 });
 
+router.patch("/soa-names", allowRoles("ADMIN"), validateBody(soaNamesSchema), async (req, res, next) => {
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const names = [...req.validatedBody.names].sort((a, b) => a.unitId - b.unitId);
+    const before = await client.query(
+      `SELECT id, unit_number AS "unitNumber", soa_resident_name AS "soaResidentName"
+       FROM units WHERE id = ANY($1::bigint[]) ORDER BY id FOR UPDATE`, [names.map(row => row.unitId)],
+    );
+    if (before.rows.length !== names.length) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "A selected unit no longer exists. Refresh the report and try again." });
+    }
+    const units = [];
+    for (const [index, name] of names.entries()) {
+      const result = await client.query(
+        `UPDATE units SET soa_resident_name = $2, updated_at = NOW() WHERE id = $1
+         RETURNING id, unit_number AS "unitNumber", soa_resident_name AS "soaResidentName"`,
+        [name.unitId, name.soaResidentName],
+      );
+      await writeAuditLog({ client, actorUserId: req.user.id, entityName: "UNIT", entityId: name.unitId,
+        action: "UPDATE", oldValues: before.rows[index], newValues: result.rows[0],
+        remarks: "Updated the resident name template for new SOAs. Existing SOAs are unchanged." });
+      units.push({ ...result.rows[0], id: Number(result.rows[0].id) });
+    }
+    await client.query("COMMIT");
+    return res.json({ message: "Resident names saved for new SOAs.", units });
+  } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
+    return next(error);
+  } finally { client?.release(); }
+});
+
 router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateUnitSchema), async (req, res, next) => {
   let client;
   try {
@@ -163,6 +204,35 @@ router.patch("/:id", allowRoles("ADMIN"), requireId, validateBody(updateUnitSche
     });
     await client.query("COMMIT");
     return res.json({ message: "Unit updated.", unit: result.rows[0] });
+  } catch (error) {
+    if (client) await client.query("ROLLBACK").catch(() => {});
+    return next(error);
+  } finally { client?.release(); }
+});
+
+router.patch("/:id/soa-name", allowRoles("ADMIN"), requireId, validateBody(soaNameSchema), async (req, res, next) => {
+  let client;
+  try {
+    client = await pool.connect();
+    await client.query("BEGIN");
+    const before = await client.query(
+      `SELECT id, unit_number AS "unitNumber", soa_resident_name AS "soaResidentName"
+       FROM units WHERE id = $1 FOR UPDATE`, [req.resourceId],
+    );
+    if (!before.rows[0]) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ message: "Unit not found." });
+    }
+    const result = await client.query(
+      `UPDATE units SET soa_resident_name = $2, updated_at = NOW() WHERE id = $1
+       RETURNING id, unit_number AS "unitNumber", soa_resident_name AS "soaResidentName"`,
+      [req.resourceId, req.validatedBody.soaResidentName],
+    );
+    await writeAuditLog({ client, actorUserId: req.user.id, entityName: "UNIT", entityId: req.resourceId,
+      action: "UPDATE", oldValues: before.rows[0], newValues: result.rows[0],
+      remarks: "Updated the resident name template for new SOAs. Existing SOAs are unchanged." });
+    await client.query("COMMIT");
+    return res.json({ message: "Resident name saved. It will be used for new SOAs.", unit: result.rows[0] });
   } catch (error) {
     if (client) await client.query("ROLLBACK").catch(() => {});
     return next(error);

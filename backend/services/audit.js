@@ -358,7 +358,7 @@ export const auditCoverage = {
   prescriptiveRecommendationRoutes: { recorded: ['PATCH /:id/view', 'DELETE /:id'] },
   soaTemplateRoutes: { recorded: ['PATCH /', 'POST /assets/:type'] },
   userRoutes: { recorded: ['POST /', 'PATCH /:id', 'DELETE /:id'] },
-  unitRoutes: { recorded: ['POST /', 'PATCH /:id', 'DELETE /:id'] },
+  unitRoutes: { recorded: ['POST /', 'PATCH /:id', 'PATCH /:id/soa-name', 'PATCH /soa-names', 'DELETE /:id'] },
   unitAssignmentRoutes: { recorded: ['POST /', 'PATCH /:id', 'DELETE /:id'] },
 };
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
 import useAuth from '../../hooks/useAuth'
@@ -39,7 +39,6 @@ function reviewFormFrom(payment) {
 
 export default function AdminPaymentPage() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const { token } = useAuth()
   const [payment, setPayment] = useState(null)
   const [form, setForm] = useState(null)
@@ -117,20 +116,6 @@ export default function AdminPaymentPage() {
     }
   }
 
-  async function removeRejectedPayment() {
-    if (!payment || payment.reviewStatus !== 'REJECTED') return
-    if (!window.confirm('Permanently delete this rejected payment proof? This cannot be undone.')) return
-    setBusy(true)
-    setNotice({ error: '', message: '' })
-    try {
-      const data = await apiRequest(`/api/payments/${id}`, { method: 'DELETE', token })
-      navigate('/admin/payments', { replace: true, state: { message: data.message } })
-    } catch (error) {
-      setNotice({ error: error.message, message: '' })
-      setBusy(false)
-    }
-  }
-
   function downloadReceipt(image) {
     if (!image?.src) return
     const link = document.createElement('a')
@@ -162,7 +147,6 @@ export default function AdminPaymentPage() {
       <div className="flex flex-wrap gap-3">
         <Link to="/admin/payments" className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:!text-white hover:shadow-md">Back to payments</Link>
         {payment?.targetBillId && <Link to={`/admin/soa/bills/${payment.targetBillId}/view`} className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:!text-white hover:shadow-md">View SOA</Link>}
-        {payment?.reviewStatus === 'REJECTED' && <button disabled={busy} onClick={removeRejectedPayment} className="rounded-lg border border-rose-300 px-4 py-2 text-sm font-bold text-rose-700 disabled:opacity-50">Delete rejected proof</button>}
       </div>
 
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />

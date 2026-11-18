@@ -209,6 +209,7 @@ export async function getFinancialReport(pool, filters) {
   const occupancyResult = await pool.query(
       `SELECT u.id AS "unitId", u.unit_number AS "unitNumber", u.floor,
          u.occupancy_status AS "occupancyStatus",
+         u.soa_resident_name AS "soaResidentName",
          COALESCE(STRING_AGG(DISTINCT usr.full_name, ', ' ORDER BY usr.full_name), 'Unassigned resident') AS "residentNames"
        FROM units u
        LEFT JOIN unit_assignments a ON a.unit_id = u.id AND a.end_date IS NULL

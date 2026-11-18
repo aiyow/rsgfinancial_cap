@@ -448,7 +448,7 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
            period_start_snapshot, period_end_snapshot, statement_date, due_date_snapshot,
            previous_reading_snapshot, current_reading_snapshot, generation_warning,
            late_penalty_percent_snapshot, soa_template_snapshot)
-       SELECT u.id, p.id, $2, NOW(), u.unit_number, payer.full_name, payer.email,
+       SELECT u.id, p.id, $2, NOW(), u.unit_number, u.soa_resident_name, payer.email,
          p.period_start, p.period_end, CURRENT_DATE, p.due_date,
          m.previous_reading, m.current_reading,
          CASE
@@ -463,7 +463,7 @@ router.post("/:id/generate", allowRoles("COLLECTOR"), requireId, async (req, res
        LEFT JOIN LATERAL (SELECT template_data FROM soa_templates WHERE id = 1) template ON TRUE
        LEFT JOIN meter_readings m ON m.unit_id = u.id AND m.billing_period_id = p.id
        LEFT JOIN LATERAL (
-         SELECT usr.full_name, usr.email
+         SELECT usr.email
          FROM unit_assignments a JOIN users usr ON usr.id = a.user_id
          WHERE a.unit_id = u.id AND a.end_date IS NULL
          ORDER BY a.is_primary_payer DESC, a.id LIMIT 1

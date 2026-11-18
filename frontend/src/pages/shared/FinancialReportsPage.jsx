@@ -4,6 +4,7 @@ import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveCo
 import DashboardLayout, { EmptyRow, Panel } from '../../components/DashboardLayout'
 import useAuth from '../../hooks/useAuth'
 import CombinedBillingReport from '../../components/CombinedBillingReport'
+import UnitSoaNameCell from '../../components/UnitSoaNameCell'
 import { apiFile, apiRequest } from '../../services/api'
 
 const tabs = [
@@ -169,11 +170,40 @@ function Receivables({ rows, endDate }) {
   </Panel>
 }
 
-function OccupancyReport({ occupancy }) {
+function OccupancyReport({ occupancy, canEdit, onSaveNames }) {
+  const [editing, setEditing] = useState(false)
+  const [draftNames, setDraftNames] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [saved, setSaved] = useState(false)
   const rows = occupancy?.rows || []
   const occupiedUnits = Number(occupancy?.occupiedUnits || 0)
   const vacantUnits = Number(occupancy?.vacantUnits || 0)
   const totalUnits = Number(occupancy?.totalUnits || 0)
+  const changedNames = editing ? rows.filter(row => (draftNames[row.unitId] ?? '').trim() !== (row.soaResidentName || '').trim())
+    .map(row => ({ unitId: row.unitId, soaResidentName: draftNames[row.unitId].trim() })) : []
+  const invalid = changedNames.some(row => !row.soaResidentName)
+
+  function editNames(event) {
+    event.preventDefault()
+    setDraftNames(Object.fromEntries(rows.map(row => [row.unitId, row.soaResidentName || ''])))
+    setError('')
+    setSaved(false)
+    setEditing(true)
+  }
+
+  async function saveNames(event) {
+    event.preventDefault()
+    if (saving || invalid) return
+    if (!changedNames.length) { setEditing(false); return }
+    setSaving(true)
+    setError('')
+    try {
+      await onSaveNames(changedNames)
+      setEditing(false)
+      setSaved(true)
+    } catch (requestError) { setError(requestError.message) } finally { setSaving(false) }
+  }
 
   return <div className="space-y-6">
     <div className="grid gap-4 sm:grid-cols-3">
@@ -181,8 +211,19 @@ function OccupancyReport({ occupancy }) {
       <Metric label="Occupied units" value={occupiedUnits} detail={totalUnits ? `${percentage((occupiedUnits / totalUnits) * 100)} of all units` : 'No units recorded'} icon={Users} />
       <Metric label="Vacant units" value={vacantUnits} detail={totalUnits ? `${percentage((vacantUnits / totalUnits) * 100)} of all units` : 'No units recorded'} icon={Building2} tone="amber" />
     </div>
-    <Panel title="Unit Occupancy" description="Current occupied and vacant status for every unit. This is a live directory snapshot and is not affected by the selected financial date range.">
-      {rows.length ? <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Floor</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Occupancy</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={row.unitId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.floor || '—'}</DataCell><DataCell>{row.residentNames}</DataCell><DataCell><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${row.occupancyStatus === 'OCCUPIED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{row.occupancyStatus === 'OCCUPIED' ? 'Occupied' : 'Vacant'}</span></DataCell></tr>)}</tbody></Table> : <EmptyRow message="No units are available in the directory." />}
+    <Panel title="Unit Occupancy" description="Resident names are saved templates for new SOAs. Only Admin can edit these names. Existing SOAs keep their original names. Occupancy and floor come from the unit directory and are not affected by the financial date range.">
+      <form onSubmit={saveNames}>
+      {canEdit && rows.length > 0 && <div className="mb-4 flex flex-wrap items-center gap-2">
+        {editing
+          ? <button type="submit" disabled={saving || invalid} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save'}</button>
+          : <button type="button" onClick={editNames} className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-50">Edit</button>}
+        {editing && <button type="button" disabled={saving} onClick={() => { setEditing(false); setError('') }} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold disabled:opacity-50">Cancel</button>}
+        {saved && <p role="status" className="text-sm text-emerald-700">Names saved for new SOAs.</p>}
+      </div>}
+      {error && <p role="alert" className="mb-3 text-sm text-red-700">{error}</p>}
+      {invalid && <p className="mb-3 text-sm text-red-700">Enter a resident name for each unit you changed.</p>}
+      {rows.length ? <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Floor</HeaderCell><HeaderCell>Resident Name</HeaderCell><HeaderCell>Occupancy</HeaderCell></TableHead><tbody className="divide-y divide-slate-100">{rows.map((row) => <tr key={row.unitId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.floor || '—'}</DataCell><DataCell><UnitSoaNameCell row={row} editing={canEdit && editing} name={draftNames[row.unitId] ?? ''} saving={saving} onChange={name => setDraftNames(current => ({ ...current, [row.unitId]: name }))} /></DataCell><DataCell><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${row.occupancyStatus === 'OCCUPIED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>{row.occupancyStatus === 'OCCUPIED' ? 'Occupied' : 'Vacant'}</span></DataCell></tr>)}</tbody></Table> : <EmptyRow message="No units are available in the directory." />}
+      </form>
     </Panel>
   </div>
 }
@@ -224,11 +265,11 @@ function PrintReceivables({ rows }) {
 }
 
 function PrintOccupancy({ rows }) {
-  return <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Floor</HeaderCell><HeaderCell>Resident / payer</HeaderCell><HeaderCell>Occupancy</HeaderCell></TableHead><tbody>{rows.map((row) => <tr key={row.unitId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.floor || '—'}</DataCell><DataCell>{row.residentNames}</DataCell><DataCell>{row.occupancyStatus}</DataCell></tr>)}</tbody></Table>
+  return <Table><TableHead><HeaderCell>Unit</HeaderCell><HeaderCell>Floor</HeaderCell><HeaderCell>Resident Name</HeaderCell><HeaderCell>Occupancy</HeaderCell></TableHead><tbody>{rows.map((row) => <tr key={row.unitId}><DataCell>{row.unitNumber}</DataCell><DataCell>{row.floor || '—'}</DataCell><DataCell>{row.soaResidentName || '—'}</DataCell><DataCell>{row.occupancyStatus}</DataCell></tr>)}</tbody></Table>
 }
 
 export default function FinancialReportsPage() {
-  const { token } = useAuth()
+  const { token, user } = useAuth()
   const [form, setForm] = useState({ mode: 'month', month: currentMonth(), startDate: '', endDate: '' })
   const [appliedFilter, setAppliedFilter] = useState({ mode: 'month', month: currentMonth(), startDate: '', endDate: '' })
   const [tab, setTab] = useState('overview')
@@ -252,6 +293,13 @@ export default function FinancialReportsPage() {
   }, [query, requestVersion, token])
   const canExport = Boolean(report) && !loading && loadedQuery === query && (tab !== 'combined' || Boolean(report.combined))
 
+  async function saveSoaNames(names) {
+    const data = await apiRequest('/api/units/soa-names', { token, method: 'PATCH', body: { names } })
+    const savedNames = new Map(data.units.map(unit => [unit.id, unit.soaResidentName]))
+    setReport(current => current ? { ...current, occupancy: { ...current.occupancy,
+      rows: current.occupancy.rows.map(row => savedNames.has(row.unitId) ? { ...row, soaResidentName: savedNames.get(row.unitId) } : row),
+    } } : current)
+  }
 
   function viewReport(event) {
     event.preventDefault()
@@ -286,7 +334,7 @@ export default function FinancialReportsPage() {
       </form>
       {error && <p className="print-hidden rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       <div className="print-hidden flex flex-wrap items-center justify-between gap-3"><div className="flex flex-wrap gap-2" role="tablist" aria-label="Financial report tabs">{tabs.map((item) => <button key={item.key} type="button" role="tab" aria-selected={tab === item.key} onClick={() => setTab(item.key)} className={`rounded-lg px-3 py-2 text-sm font-bold ${tab === item.key ? 'bg-emerald-700 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}>{item.label}</button>)}</div>{tab !== 'overview' && <div className="flex gap-2"><button type="button" disabled={exporting || !canExport} onClick={exportExcel} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-700 disabled:opacity-50"><Download size={16} />{exporting ? 'Exporting…' : 'Export Excel'}</button><button type="button" disabled={!canExport} onClick={() => { if (canExport) window.print() }} className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-bold text-white disabled:opacity-50"><Printer size={16} />Print / Save PDF</button></div>}</div>
-      {report && <><div className="print-hidden">{loading ? <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel> : <>{tab === 'overview' && <Overview overview={report.overview} />}{tab === 'combined' && <CombinedBillingReport report={report} />}{tab === 'dues' && <ChargeReport report={report.dues} kind="dues" />}{tab === 'water' && <ChargeReport report={report.water} kind="water" />}{tab === 'paidDues' && <PaidMonthlyDues report={report.paidDues} />}{tab === 'receivables' && <Receivables rows={report.receivables} endDate={report.filters.endDate} />}{tab === 'occupancy' && <OccupancyReport occupancy={report.occupancy} />}</>}</div><div className="hidden print:block">{canExport && <FinancialReportPrint activeLabel={activeLabel} report={report} tab={tab} />}</div></>}
+      {report && <><div className="print-hidden">{loading ? <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel> : <>{tab === 'overview' && <Overview overview={report.overview} />}{tab === 'combined' && <CombinedBillingReport report={report} />}{tab === 'dues' && <ChargeReport report={report.dues} kind="dues" />}{tab === 'water' && <ChargeReport report={report.water} kind="water" />}{tab === 'paidDues' && <PaidMonthlyDues report={report.paidDues} />}{tab === 'receivables' && <Receivables rows={report.receivables} endDate={report.filters.endDate} />}{tab === 'occupancy' && <OccupancyReport occupancy={report.occupancy} canEdit={user?.role === 'ADMIN'} onSaveNames={saveSoaNames} />}</>}</div><div className="hidden print:block">{canExport && <FinancialReportPrint activeLabel={activeLabel} report={report} tab={tab} />}</div></>}
       {!report && loading && <Panel title="Loading report"><EmptyRow message="Loading financial records..." /></Panel>}
     </div>
   </DashboardLayout>

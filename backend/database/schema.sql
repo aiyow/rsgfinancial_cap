@@ -20,13 +20,8 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS users_email_verification_token_hash_idx
-  ON users (email_verification_token_hash)
-  WHERE email_verification_token_hash IS NOT NULL;
-
-CREATE INDEX IF NOT EXISTS users_password_reset_token_hash_idx
-  ON users (password_reset_token_hash)
-  WHERE password_reset_token_hash IS NOT NULL;
+-- Migrations 025 and 031 create the token indexes after adding the
+-- corresponding columns on older installations.
 
 -- Temporary email verification only: no user account or password is stored here.
 CREATE TABLE IF NOT EXISTS public.registration_challenges (

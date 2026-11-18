@@ -34,7 +34,7 @@ const navigationByRole = {
     view: [
       { label: 'Dashboard', to: '/admin', end: true, icon: LayoutDashboard },
       { label: 'Unit Directory', to: '/admin/units', end: true, icon: Building2 },
-      { label: 'SOA Batches', to: '/admin/soa', icon: FileText },
+      { label: 'Billing Batches', to: '/admin/soa', icon: FileText },
       { label: 'Payment Records', to: '/admin/payments', icon: CreditCard },
       { label: 'Water Analytics', to: '/admin/analytics', icon: BarChart3 },
       { label: 'Financial Reports', to: '/admin/reports', icon: FolderKanban },
@@ -226,7 +226,7 @@ export default function DashboardLayout({ title, description, className = '', ch
             <BrandMark />
             <div className={collapsed ? 'lg:sr-only' : ''}>
               <p className="text-sm font-black tracking-tight text-[var(--ink)]">The ResiDens</p>
-              <p className="mt-0.5 text-[10px] font-black capitalize tracking-[0.16em] text-[var(--muted)]">Water Billing</p>
+              <p className="mt-0.5 text-[10px] font-black tracking-[0.16em] text-[var(--muted)]">Financial Platform</p>
             </div>
           </div>
           <button
