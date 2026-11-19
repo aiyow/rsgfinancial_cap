@@ -216,7 +216,7 @@ export default function CollectorHistoryImportPage() {
             <RotateCcw size={16} /> Clear all imports
           </button>
         </div>
-        <p className="mb-3 text-xs leading-5 text-slate-600">Forwarded billing months are included in Water Analytics automatically. They do not need to be uploaded again and are listed under Forward Billings.</p>
+        <p className="mb-3 text-xs leading-5 text-slate-600">Forwarded billing months are included in Water Analytics automatically. They do not need to be uploaded again and are listed under Billing Batches.</p>
         <p className="mb-3 text-xs leading-5 text-slate-500">Download the original workbook when available, or an Excel copy of the saved readings for older imports.</p>
         {sortedImports.length ? (
           <div className="overflow-auto rounded-xl border border-slate-200">

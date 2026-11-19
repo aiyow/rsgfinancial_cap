@@ -45,10 +45,11 @@ export function mergeReceiptAnalyses(images, receiptType = 'OTHER') {
   };
 }
 
-export async function analyzeReceiptImages(files, receiptType, analyze = analyzeReceipt) {
+export async function analyzeReceiptImages(files, receiptType, analyze = analyzeReceipt, timing) {
   // Process serially to bound OCR memory use on the hosted backend.
   const images = [];
-  for (const file of files) images.push(await analyze(file.buffer, receiptType));
+  const options = { timing };
+  for (const file of files) images.push(await analyze(file.buffer, receiptType, options));
   return mergeReceiptAnalyses(images, receiptType);
 }
 

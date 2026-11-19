@@ -218,6 +218,20 @@ export default function OperationalDashboard({ role }) {
         </Panel>
   )
 
+  const financialHealth = (
+    <Panel title="Financial health" description="Track the current billing period at a glance.">
+      <div className="space-y-5">
+        <ProgressRow label="Collected from current billing" value={collectionRate || 0} amount={`${money(currentCollected)} of ${money(currentBilled)}`} tone={collectionRate !== null && collectionRate < 70 ? 'amber' : 'emerald'} />
+        <div className="grid gap-3 sm:grid-cols-3">
+          <QuickStat label="Fully paid" value={metrics.currentPaidBills || 0} detail="statements cleared" tone="emerald" />
+          <QuickStat label="Partly paid" value={metrics.currentPartialBills || 0} detail="need a balance payment" tone="amber" />
+          <QuickStat label="Not yet paid" value={metrics.currentUnpaidBills || 0} detail="no payment applied" tone="red" />
+        </div>
+      </div>
+    </Panel>
+  )
+  const waterBillChart = <WaterTrendChart waterTrend={waterTrend} isAdmin={roleIsAdmin} guidance={data?.analytics?.adminWaterGuidance} />
+
   return <DashboardLayout title={roleIsAdmin ? 'Dashboard' : 'Billing Associate Dashboard'} description="Live operational overview of billing, payments, occupancy, and water use.">
     {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
     {!data ? <Panel title="Loading dashboard"><EmptyRow message="Loading your latest billing summary..." /></Panel> : <>
@@ -241,13 +255,11 @@ export default function OperationalDashboard({ role }) {
         </Panel>
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
-        <Panel title="Financial health" description="Track the current billing period at a glance.">
-          <div className="space-y-5"><ProgressRow label="Collected from current billing" value={collectionRate || 0} amount={`${money(currentCollected)} of ${money(currentBilled)}`} tone={collectionRate !== null && collectionRate < 70 ? 'amber' : 'emerald'} /><div className="grid gap-3 sm:grid-cols-3"><QuickStat label="Fully paid" value={metrics.currentPaidBills || 0} detail="statements cleared" tone="emerald" /><QuickStat label="Partly paid" value={metrics.currentPartialBills || 0} detail="need a balance payment" tone="amber" /><QuickStat label="Not yet paid" value={metrics.currentUnpaidBills || 0} detail="no payment applied" tone="red" /></div></div>
-        </Panel>
+        {roleIsAdmin ? financialHealth : waterBillChart}
         {roleIsAdmin ? <BillStatusChart billStatus={billStatus} /> : waterOutlook}
       </div>
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,1fr)]">
-        <WaterTrendChart waterTrend={waterTrend} isAdmin={roleIsAdmin} guidance={data.analytics?.adminWaterGuidance} />
+        {roleIsAdmin ? waterBillChart : financialHealth}
         {roleIsAdmin ? waterOutlook : <BillStatusChart billStatus={billStatus} />}
       </div>
     </>}

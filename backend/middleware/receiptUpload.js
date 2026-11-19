@@ -49,15 +49,21 @@ async function validateReceipt(file) {
 
 // Both OCR preview and final submission must pass the same validation first.
 export function receiptUpload(req, res, next) {
+  const timing = res.locals.receiptOcrTiming;
+  const started = performance.now();
+  const finish = error => {
+    if (timing) timing.uploadValidationMs = performance.now() - started;
+    return next(error);
+  };
   receiveReceipt(req, res, error => {
     if (error) {
       if (error.code === 'LIMIT_FILE_SIZE') error.message = 'Receipt images must be 5 MB or smaller.';
       if (['LIMIT_FILE_COUNT', 'LIMIT_UNEXPECTED_FILE'].includes(error.code)) error.message = 'Choose one or two receipt images only.';
-      return next(error);
+      return finish(error);
     }
-    if (!req.files?.length) return next(invalidReceipt('Choose one or two receipt images first.'));
+    if (!req.files?.length) return finish(invalidReceipt('Choose one or two receipt images first.'));
     // Keep req.file available to existing single-image consumers.
     req.file = req.files[0];
-    return Promise.all(req.files.map(validateReceipt)).then(() => next(), next);
+    return Promise.all(req.files.map(validateReceipt)).then(() => finish(), finish);
   });
 }

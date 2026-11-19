@@ -144,9 +144,14 @@ export default function AdminPaymentPage() {
 
   return (
     <DashboardLayout title="Payment verification" description="Compare uploaded receipts or review Admin-recorded payment details.">
-      <div className="flex flex-wrap gap-3">
-        <Link to="/admin/payments" className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:!text-white hover:shadow-md">Back to payments</Link>
-        {payment?.targetBillId && <Link to={`/admin/soa/bills/${payment.targetBillId}/view`} className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:!text-white hover:shadow-md">View SOA</Link>}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap gap-3">
+          <Link to="/admin/payments" className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:!text-white hover:shadow-md">Back to payments</Link>
+          {payment?.targetBillId && <Link to={`/admin/soa/bills/${payment.targetBillId}/view`} className="rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-emerald-700 hover:bg-emerald-700 hover:!text-white hover:shadow-md">View SOA</Link>}
+        </div>
+        {payment?.entryType === 'RECEIPT_UPLOAD' && payment.reviewStatus === 'REJECTED' && (
+          <span className="ml-auto shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-bold text-rose-800">Rejected</span>
+        )}
       </div>
 
       <NoticeToast key={notice.error || notice.message || 'empty'} error={notice.error} message={notice.message} />

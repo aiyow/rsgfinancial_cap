@@ -52,7 +52,7 @@ const navigationByRole = {
     view: [
       { label: 'Dashboard', to: '/collector', end: true, icon: LayoutDashboard },
       { label: 'Unit Directory', to: '/collector/units', icon: Building2 },
-      { label: 'Forward Billings', to: '/collector/bills', icon: FileText },
+      { label: 'Billing Batches', to: '/collector/bills', icon: FileText },
       { label: 'Payment Records', to: '/collector/payments', icon: WalletCards },
       { label: 'Water Analytics', to: '/collector/analytics', icon: BarChart3 },
       { label: 'Financial Reports', to: '/collector/reports', icon: FolderKanban },

@@ -9,7 +9,7 @@ import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
 import { receiptUpload } from "../middleware/receiptUpload.js";
-import { receiptDeliveryUrl } from "../services/receipts.js";
+import { analyzeReceipt, receiptDeliveryUrl, timeReceiptPhase } from "../services/receipts.js";
 import { analyzeReceiptImages, cleanupReceiptImages, ensureReceiptImagesSchema, insertReceiptImages, receiptHash, receiptImagesSelectSql, receiptTypeFromRequest, uploadReceiptImages } from '../services/receiptBatches.js';
 import { writeAuditLog } from "../services/audit.js";
 
@@ -32,6 +32,9 @@ import {
 } from "../services/payments.js";
 
 const router = express.Router();
+const RECEIPT_PREVIEW_TTL_MS = 5 * 60_000;
+const MAX_RECEIPT_PREVIEWS = 32;
+const receiptPreviews = new Map();
 const uploadDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../uploads/payment-proofs");
 const paymentMethodSchema = z.enum(["GCASH", "BANK_TRANSFER", "CASH", "OTHER"]);
 const purposeSchema = z.enum(['WATER', 'ASSOCIATION_DUES', 'COMBINED']);
@@ -127,27 +130,63 @@ async function residentBill(id, userId, client = pool) {
   return result.rows[0];
 }
 
-async function processReceipt(req, res) {
+function forgetReceiptPreview(key) {
+  clearTimeout(receiptPreviews.get(key)?.timer);
+  receiptPreviews.delete(key);
+}
+
+async function processReceipt(req, res, { preview = false, hashes = req.files?.map(file => receiptHash(file.buffer)) || [] } = {}) {
   const receiptType = receiptTypeFromRequest(req.body.receiptType);
-  if (!req.files?.length) { res.status(400).json({ message: "Choose one or two receipt images." }); return null; }
-  if (new Set(req.files.map(file => receiptHash(file.buffer))).size !== req.files.length) {
+  if (!hashes.length) { res.status(400).json({ message: "Choose one or two receipt images." }); return null; }
+  if (new Set(hashes).size !== hashes.length) {
     res.status(400).json({ message: 'The same image was selected twice. Choose different screenshots of the same payment.' });
     return null;
   }
+  // Reuse only a server-generated preview for the same resident, bill, type and ordered image bytes.
+  const key = JSON.stringify([req.user.id, req.resourceId, receiptType, hashes]);
+  const cached = receiptPreviews.get(key);
+  const timing = res.locals.receiptOcrTiming;
+  if (timing) timing.cacheHit = Boolean(cached);
+  if (cached) return cached.analysis;
   try {
-    return await analyzeReceiptImages(req.files, receiptType);
+    const analysis = await analyzeReceiptImages(req.files, receiptType, analyzeReceipt, timing);
+    if (preview && analysis.quality.status === 'GOOD') {
+      forgetReceiptPreview(key);
+      if (receiptPreviews.size >= MAX_RECEIPT_PREVIEWS) {
+        forgetReceiptPreview(receiptPreviews.keys().next().value);
+      }
+      const timer = setTimeout(() => forgetReceiptPreview(key), RECEIPT_PREVIEW_TTL_MS).unref();
+      receiptPreviews.set(key, { analysis, timer });
+    }
+    return analysis;
   } catch {
     res.status(400).json({ message: "The uploaded file is not a readable JPEG/JPG or PNG image." });
     return null;
   }
 }
 
+router.use("/bills/:id/preview", (req, res, next) => {
+  if (req.method !== 'POST' || req.path !== '/') return next();
+  const started = performance.now();
+  const timing = { uploadValidationMs: 0, databaseMs: 0, preprocessMs: 0, queueMs: 0, workerInitMs: 0, recognitionMs: 0 };
+  res.locals.receiptOcrTiming = timing;
+  res.once('finish', () => {
+    const phases = Object.fromEntries(Object.entries(timing).map(([key, value]) => [key,
+      typeof value === 'number' ? Math.round(value) : value]));
+    console.info('Receipt OCR preview', { ...phases, imageCount: req.files?.length ?? 0,
+      status: res.statusCode, totalMs: Math.round(performance.now() - started) });
+  });
+  return next();
+});
+
 router.use(requireAuth, allowRoles("ADMIN", "COLLECTOR", "RESIDENT"));
 router.use(async (req, res, next) => {
   try {
-    await ensurePaymentLedgerSchema(pool);
-    await ensureReceiptImagesSchema(pool);
-    await applyDueLatePenalties(pool);
+    await timeReceiptPhase(res.locals.receiptOcrTiming, 'databaseMs', async () => {
+      await ensurePaymentLedgerSchema(pool);
+      await ensureReceiptImagesSchema(pool);
+      await applyDueLatePenalties(pool);
+    });
     return next();
   } catch (error) {
     return next(error);
@@ -156,10 +195,13 @@ router.use(async (req, res, next) => {
 
 router.post("/bills/:id/preview", allowRoles("RESIDENT"), requireId, receiptUpload, async (req, res, next) => {
   try {
-    const bill = await residentBill(req.resourceId, req.user.id);
+    const bill = await timeReceiptPhase(res.locals.receiptOcrTiming, 'databaseMs', async () => {
+      const current = await residentBill(req.resourceId, req.user.id);
+      if (current) await validateResidentPurpose(pool, current, req.user.id, req.body.paymentPurpose);
+      return current;
+    });
     if (!bill) return res.status(404).json({ message: "Published SOA not found." });
-    await validateResidentPurpose(pool, bill, req.user.id, req.body.paymentPurpose);
-    const analysis = await processReceipt(req, res);
+    const analysis = await processReceipt(req, res, { preview: true });
     if (!analysis) return undefined;
     if (analysis.quality.status !== "GOOD") {
       return res.status(422).json({
@@ -190,7 +232,7 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload, asyn
     const duplicate = await pool.query(`SELECT id FROM payment_submissions WHERE receipt_sha256 = ANY($1::text[])
       UNION ALL SELECT payment_submission_id AS id FROM payment_receipt_images WHERE sha256 = ANY($1::text[]) LIMIT 1`, [hashes]);
     if (duplicate.rows[0]) return res.status(409).json({ message: "This receipt image was already submitted." });
-    const analysis = await processReceipt(req, res);
+    const analysis = await processReceipt(req, res, { hashes });
     if (!analysis) return undefined;
     if (analysis.quality.status !== "GOOD") {
       return res.status(422).json({

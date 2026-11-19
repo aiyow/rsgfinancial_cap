@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, Eye, EyeOff, LayoutDashboard, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ReceiptText, ShieldCheck, TrendingUp } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
 import PwaInstallPrompt from '../components/PwaInstallPrompt'
 import { dashboardPathFor } from '../constants/routes'
@@ -64,14 +64,21 @@ export default function Login() {
 
   return (
     <main className="login-shell min-h-screen lg:grid lg:grid-cols-[minmax(420px,0.95fr)_minmax(560px,1.05fr)]">
-      <section className="login-brand-panel relative flex min-h-[430px] flex-col justify-between overflow-hidden px-7 py-8 text-white sm:px-12 sm:py-10 lg:min-h-screen lg:px-[8%] lg:py-12">
+      <section className="login-brand-panel relative flex min-h-[430px] flex-col overflow-hidden px-7 py-8 text-white sm:px-12 sm:py-10 lg:min-h-screen lg:px-[8%] lg:py-[clamp(1.75rem,5.4vh,3rem)]">
         <div className="relative z-10 flex items-center gap-4"><BrandMark size="lg" /><div><h1 className="text-xl font-black tracking-tight">The ResiDens</h1><p className="text-xs font-medium capitalize tracking-[0.18em] text-emerald-100/75">Financial platform</p></div></div>
-        <div className="login-brand-content relative z-10 max-w-xl py-12 lg:py-0">
-          <h2 className="login-hero-title max-w-lg text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl"><span className="lg:hidden">Your condo bills.<br />One simple portal.</span><span className="hidden lg:inline">Financial Management System for <span className="whitespace-nowrap">The ResiDens</span> Condominium.</span></h2>
-          <p className="login-hero-description mt-8 max-w-lg text-base leading-7 text-emerald-50/75"><span className="lg:hidden">View bills, manage payments, and stay up to date.</span><span className="hidden lg:inline">Manage billing, collections, payment processing, reporting, and financial operations through one centralized platform.</span></p>
-          <div className="mt-10 hidden max-w-xl grid-cols-3 gap-5 border-t border-white/15 pt-7 lg:grid"><BrandFeature icon={ShieldCheck} title="Secure" text="Protected financial records" /><BrandFeature icon={LayoutDashboard} title="Centralized" text="One platform for operations" /><BrandFeature icon={ArrowRight} title="Efficient" text="Faster financial workflows" /></div>
+        <div className="login-brand-content relative z-10 max-w-xl py-12 lg:mt-[clamp(2rem,7vh,4rem)] lg:py-0">
+          <h2 className="login-hero-title text-4xl font-black leading-[1.08] tracking-tight sm:text-5xl lg:text-[clamp(2.125rem,3.2vw,3rem)]"><span className="lg:hidden">Your condo bills.<br />One simple portal.</span><span className="hidden lg:inline">Financial Management System for <span className="whitespace-nowrap">The ResiDens</span> Condominium.</span></h2>
+          <p className="login-hero-description mt-5 max-w-lg text-base leading-6 text-emerald-50/75">
+            <span className="lg:hidden">View bills, scan payment receipts, and see water forecasts.</span>
+            <span className="hidden lg:inline">Manage condo billing, collections, payments, and financial reports in one place.</span>
+          </p>
+          <div className="mt-7 hidden grid-cols-3 gap-3 border-t border-white/15 pt-5 lg:grid xl:gap-4">
+            <BrandFeature icon={TrendingUp} title="Water Forecasts" text="Estimates water use and bills" />
+            <BrandFeature icon={ReceiptText} title="Receipt OCR" text="Reads payment details for review" />
+            <BrandFeature icon={ShieldCheck} title="Access Control" text="Records by role and unit" />
+          </div>
         </div>
-        <p className="relative z-10 hidden text-xs text-emerald-100/60 lg:block">© 2026 The ResiDens. All rights reserved.</p>
+        <p className="relative z-10 mt-auto hidden pt-6 text-xs text-emerald-100/60 lg:block">© 2026 The ResiDens. All rights reserved.</p>
       </section>
 
       <section id="sign-in" aria-labelledby="sign-in-heading" className="login-form-panel flex min-h-screen items-center justify-center bg-[#f7faf8] px-6 py-12 sm:px-12 lg:px-[9%]"><div className="w-full max-w-xl"><div className="login-form-heading mb-8"><h2 id="sign-in-heading" className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Sign in to your portal</h2><p className="mt-2 text-base text-slate-500">Enter your credentials to continue.</p></div>
@@ -85,4 +92,11 @@ export default function Login() {
   )
 }
 
-function BrandFeature({ icon: Icon, title, text }) { return <div className="brand-feature"><Icon size={17} /><p className="font-bold">{title}</p><span>{text}</span></div> }
+function BrandFeature({ icon: Icon, title, text }) {
+  return (
+    <div className="brand-feature">
+      <div className="flex items-center gap-2 font-bold"><Icon size={17} className="shrink-0" aria-hidden="true" /><p>{title}</p></div>
+      <span>{text}</span>
+    </div>
+  )
+}

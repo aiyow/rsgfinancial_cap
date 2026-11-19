@@ -249,8 +249,7 @@ body:has(.login-shell) { min-width: 0; }
 @keyframes login-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .login-spinner { animation: none; } }
 .brand-feature { color: #55e09b; font-size: 0.85rem; }
-.brand-feature p { display: inline; margin-left: 7px; }
-.brand-feature span { display: block; margin-top: 9px; color: rgba(235, 255, 242, 0.48); font-size: 0.7rem; line-height: 1.4; }
+.brand-feature span { display: block; margin-top: 6px; color: rgba(235, 255, 242, 0.75); font-size: 0.75rem; line-height: 1.4; }
 .green-shell { --resident-green: #215d47; }
 .green-shell .green-sidebar { background: var(--resident-green); border-color: rgba(255,255,255,0.1); }
 .green-shell .green-sidebar > div:first-child { border-color: rgba(255,255,255,0.12); }

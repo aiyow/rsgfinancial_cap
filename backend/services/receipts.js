@@ -1,6 +1,8 @@
 import sharp from 'sharp';
-import { createWorker, PSM } from 'tesseract.js';
+import { createWorker, OEM, PSM } from 'tesseract.js';
 import crypto from 'node:crypto';
+import { once } from 'node:events';
+import { fileURLToPath } from 'node:url';
 import { v2 as cloudinary } from 'cloudinary';
 
 // Receipts service. Fold the region sections to navigate related code.
@@ -144,7 +146,74 @@ export function reconcileReceiptFields(candidates) {
 
 const MIN_WIDTH = 600;
 const MIN_HEIGHT = 600;
-const BLUR_THRESHOLD = 20;
+const BLUR_THRESHOLD = 10;
+const OCR_LANGUAGE_DIRECTORY = fileURLToPath(new URL('../', import.meta.url));
+const OCR_WORKER_IDLE_MS = 60_000;
+
+let receiptOcrWorker;
+let receiptOcrIdleTimer;
+let receiptOcrQueue = Promise.resolve();
+
+export async function timeReceiptPhase(timing, phase, run) {
+  if (!timing) return run();
+  const start = performance.now();
+  try {
+    return await run();
+  } finally {
+    timing[phase] = (timing[phase] ?? 0) + performance.now() - start;
+  }
+}
+
+async function startReceiptOcrWorker() {
+  const { promise, reject } = Promise.withResolvers();
+  return Promise.race([promise, createWorker('eng', OEM.LSTM_ONLY, {
+    langPath: OCR_LANGUAGE_DIRECTORY,
+    gzip: false,
+    cacheMethod: 'none',
+    errorHandler: reject,
+  })]);
+}
+
+async function stopReceiptOcrWorker() {
+  const worker = receiptOcrWorker;
+  receiptOcrWorker = undefined;
+  await worker?.terminate();
+}
+
+function withReceiptOcrWorker(timing, recognize) {
+  // An entire receipt needs exclusive access because its passes change the worker's page mode.
+  const queuedAt = performance.now();
+  const result = receiptOcrQueue.then(async () => {
+    if (timing) timing.queueMs = (timing.queueMs ?? 0) + performance.now() - queuedAt;
+    clearTimeout(receiptOcrIdleTimer);
+    const active = new AbortController();
+    try {
+      receiptOcrWorker ??= await timeReceiptPhase(timing, 'workerInitMs', startReceiptOcrWorker);
+      const { worker } = receiptOcrWorker;
+      worker.ref();
+      const stopped = once(worker, 'exit', { signal: active.signal }).then(() => {
+        throw new Error('The receipt OCR worker stopped.');
+      });
+      const current = receiptOcrWorker;
+      const ocr = {
+        setParameters: current.setParameters,
+        recognize: (...args) => timeReceiptPhase(timing, 'recognitionMs', () => current.recognize(...args)),
+      };
+      return await Promise.race([stopped, recognize(ocr)]);
+    } catch (error) {
+      await stopReceiptOcrWorker();
+      throw error;
+    } finally {
+      active.abort();
+      if (receiptOcrWorker) {
+        receiptOcrWorker.worker.unref();
+        receiptOcrIdleTimer = setTimeout(stopReceiptOcrWorker, OCR_WORKER_IDLE_MS).unref();
+      }
+    }
+  });
+  receiptOcrQueue = result.catch(() => {});
+  return result;
+}
 
 async function imageQuality(buffer) {
   const metadata = await sharp(buffer).metadata();
@@ -272,107 +341,187 @@ export function referenceValueWords(words) {
   });
 }
 
-// Reread just the printed ID. A neighboring copy icon can otherwise become a
-// trailing zero, and whole-page thresholding can confuse an initial I with 1.
-async function rereadReference(worker, oriented, rows, scale) {
-  for (let i = 0; i < rows.length; i++) {
-    if (!/\b(?:ref(?:erence)?\.?\s*(?:no\.?|number)?|transaction\s+id)\b/i.test(rows[i].text)) continue;
-    let row = rows[i];
-    let words = (row.words || []).filter(word => /\d/.test(word.text));
-    if (!words.length && rows[i + 1] && rows[i + 1].bbox.y0 - row.bbox.y1 < (row.bbox.y1 - row.bbox.y0) * 4) {
-      row = rows[i + 1];
-      words = (row.words || []).filter(word => /\d/.test(word.text));
-    }
-    if (!words.length) continue;
-    const selected = referenceValueWords(words);
-    const first = selected[0];
-    const box = { x0: first.bbox.x0, y0: Math.min(...selected.map(w => w.bbox.y0)),
-      x1: Math.max(...selected.map(w => w.bbox.x1)), y1: Math.max(...selected.map(w => w.bbox.y1)) };
-    const meta = await sharp(oriented).metadata();
-    const left = Math.max(0, Math.floor(box.x0 / scale) - 2), top = Math.max(0, Math.floor(box.y0 / scale) - 2);
-    const width = Math.min(meta.width - left, Math.ceil((box.x1 - box.x0) / scale) + 4);
-    const height = Math.min(meta.height - top, Math.ceil((box.y1 - box.y0) / scale) + 4);
-    const crop = await sharp(oriented).extract({ left, top, width, height }).resize({ height: Math.max(80, height * 2) })
-      .extend({ top: 16, bottom: 16, left: 16, right: 16, background: 'white' }).png().toBuffer();
-    await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_LINE });
-    const { data } = await worker.recognize(crop);
-    const referenceNo = parseReference(`Reference No. ${normalizeReceiptText(data.text)}`);
-    if (referenceNo && data.confidence >= 60) return referenceNo;
-  }
-  return null;
+const fieldLabels = { amount: 'amount', referenceNo: 'reference number', paymentDate: 'payment date' };
+const fieldAnchors = {
+  amount: /\b(?:transfer amount|amount sent|amount paid|amount|total)\b/i,
+  referenceNo: /\b(?:ref(?:erence)?\.?\s*(?:no\.?|number)?|transaction\s+id)\b/i,
+  paymentDate: /\b(?:date|created on|paid on|sent on)\b/i,
+};
+const MONTH_NAME = /^(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i;
+const MIN_FIELD_CONFIDENCE = 80;
+
+function correctedGoTymeReference(reference) {
+  const match = /^(?:IT|17|1T|I7)([0-9O]{6,38})$/i.exec(reference || '');
+  const canonical = match && 'IT' + match[1].replace(/o/gi, '0');
+  return canonical !== reference ? canonical : null;
 }
 
-export async function analyzeReceipt(buffer, receiptType = 'OTHER') {
-  // Honor EXIF orientation before quality assessment, preprocessing, and coordinates.
-  const oriented = await sharp(buffer).rotate().flatten({ background: '#ffffff' }).png().toBuffer();
-  const quality = await imageQuality(oriented);
-  if (quality.status !== "GOOD") {
-    return { quality, rawText: "", confidence: null, amount: null, referenceNo: null, paymentDate: null, complete: false };
+function evidenceForField(rows, key, value, receiptType) {
+  const anchor = fieldAnchors[key];
+  const regions = rows.map((row, i) => {
+    const next = rows[i + 1];
+    const nearby = next && next.bbox.y0 - row.bbox.y1 < (row.bbox.y1 - row.bbox.y0) * 4;
+    if (nearby && anchor.test(row.text) && !Object.values(fieldAnchors).some(label => label.test(next.text))
+      && parseReceiptText(row.text, receiptType)[key] === null) return [row, next];
+    return [row];
+  });
+
+  const readings = regions.filter(region => value !== null
+    && parseReceiptText(region.map(row => row.text).join('\n'), receiptType)[key] === value);
+  // Ambiguous candidates require a page reread to avoid cropping the wrong line.
+  const labeled = readings.filter(([row]) => anchor.test(row.text));
+  const candidates = labeled.length ? labeled : readings;
+  const anchors = regions.filter(([row]) => anchor.test(row.text));
+  const region = candidates.length === 1 ? candidates[0]
+    : !candidates.length && anchors.length === 1 ? anchors[0] : null;
+  if (!region || !candidates.length) return { region, confident: false };
+
+  const words = region.flatMap(row => row.words);
+  const values = words.filter(word => /\d/.test(word.text) || (key === 'paymentDate' && MONTH_NAME.test(word.text)));
+  // A small copy icon can look like an extra digit beside a reference.
+  const referenceWords = key === 'referenceNo' ? referenceValueWords(values) : values;
+  const isolatedReference = referenceWords.length < values.length ? referenceWords : null;
+  return { region, isolatedReference, confident: !isolatedReference && values.length > 0
+    && values.every(word => word.confidence >= MIN_FIELD_CONFIDENCE) };
+}
+
+function boundsForRows(rows, scale, quality) {
+  const boxes = rows.map(row => row.bbox);
+  const left = Math.max(0, Math.floor(Math.min(...boxes.map(box => box.x0)) / scale) - 5);
+  const top = Math.max(0, Math.floor(Math.min(...boxes.map(box => box.y0)) / scale) - 5);
+  const right = Math.min(quality.width, Math.ceil(Math.max(...boxes.map(box => box.x1)) / scale) + 5);
+  const bottom = Math.min(quality.height, Math.ceil(Math.max(...boxes.map(box => box.y1)) / scale) + 5);
+  return { left, top, width: right - left, height: bottom - top };
+}
+
+function receiptRowsText(rows, fallback) {
+  return normalizeReceiptText(rows.length ? rows.map(row => row.text).join('\n') : fallback);
+}
+
+async function readReceiptPage(worker, oriented, quality, scale, mode, timing) {
+  const image = await timeReceiptPhase(timing, 'preprocessMs', async () => {
+    const grayscale = await sharp(oriented).resize({ width: Math.round(quality.width * scale) })
+      .greyscale().normalise().png().toBuffer();
+    return mode === PSM.SINGLE_BLOCK ? sharp(grayscale).threshold(165).png().toBuffer() : grayscale;
+  });
+  await worker.setParameters({ user_defined_dpi: '300', preserve_interword_spaces: '1', tessedit_pageseg_mode: mode });
+  const { data } = await worker.recognize(image, {}, { text: true, blocks: true });
+  return { image, data, rows: readRows(data), scale };
+}
+
+async function restoreReceiptMasks(worker, { rows, image }, timing) {
+  const uncertain = rows.filter(row => row.confidence < MIN_FIELD_CONFIDENCE);
+  if (!uncertain.length) return;
+  const { data, info } = await timeReceiptPhase(timing, 'preprocessMs',
+    () => sharp(image).toColourspace('b-w').raw().toBuffer({ resolveWithObject: true }));
+  let recovered = 0;
+  for (const row of uncertain) {
+    const dots = privacyDots(data, info.width, row.bbox);
+    if (dots.length) {
+      row.text = await restoreMask(worker, image, row, dots);
+      if (++recovered === 4) break;
+    }
   }
-  const scale = Math.min(2, 1800 / quality.width, 4096 / quality.height);
-  const image = await sharp(oriented).resize({ width: Math.round(quality.width * scale) })
-    .greyscale().normalise().png().toBuffer();
-  const binary = await sharp(image).threshold(165).png().toBuffer();
-  const worker = await createWorker("eng");
-  try {
-    await worker.setParameters({ user_defined_dpi: '300', preserve_interword_spaces: '1',
-      tessedit_pageseg_mode: PSM.SPARSE_TEXT });
-    const first = (await worker.recognize(image, {}, { text: true, blocks: true })).data;
-    await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_BLOCK });
-    const second = (await worker.recognize(binary, {}, { text: true, blocks: true })).data;
-    const firstRows = readRows(first), secondRows = readRows(second);
-    const rows = firstRows.map((row) => {
-      const other = secondRows.find((item) => sameRow(item.bbox, row.bbox));
-      return other && other.confidence > row.confidence ? other : row;
-    });
-    for (const row of secondRows) {
-      if (!rows.some((item) => sameRow(item.bbox, row.bbox)) && row.confidence >= 60) rows.push(row);
-    }
-    rows.sort((a, b) => a.bbox.y0 - b.bbox.y0);
-    const { data: pixels, info } = await sharp(image).raw().toBuffer({ resolveWithObject: true });
-    let masksRecovered = 0;
-    for (const row of rows) {
-      if (row.confidence >= 80 || masksRecovered >= 4) continue;
-      const dots = privacyDots(pixels, info.width, row.bbox);
-      if (dots.length) {
-        row.text = await restoreMask(worker, image, row, dots);
-        masksRecovered++;
+}
+
+function mergePageRows(primary, retry) {
+  const ratio = primary.scale / retry.scale;
+  const retryRows = retry.rows.map(row => ({
+    ...row,
+    bbox: Object.fromEntries(Object.entries(row.bbox).map(([key, value]) => [key, value * ratio])),
+  }));
+  const rows = primary.rows.map(row => {
+    const other = retryRows.find(item => sameRow(item.bbox, row.bbox));
+    return other && other.confidence > row.confidence ? other : row;
+  });
+  for (const row of retryRows) {
+    if (row.confidence >= 60 && !rows.some(item => sameRow(item.bbox, row.bbox))) rows.push(row);
+  }
+  return rows.sort((a, b) => a.bbox.y0 - b.bbox.y0);
+}
+
+export async function analyzeReceipt(buffer, receiptType = 'OTHER', { timing } = {}) {
+  const { oriented, quality } = await timeReceiptPhase(timing, 'preprocessMs', async () => {
+    const oriented = await sharp(buffer).rotate().flatten({ background: '#ffffff' }).png().toBuffer();
+    return { oriented, quality: await imageQuality(oriented) };
+  });
+  if (quality.status !== 'GOOD') {
+    return { quality, rawText: '', confidence: null, amount: null, referenceNo: null, paymentDate: null, complete: false };
+  }
+
+  const fullScale = Math.min(2, 1800 / quality.width, 4096 / quality.height);
+  const primaryScale = Math.min(1, fullScale);
+  return withReceiptOcrWorker(timing, async worker => {
+    const primary = await readReceiptPage(worker, oriented, quality, primaryScale, PSM.SPARSE_TEXT, timing);
+    await restoreReceiptMasks(worker, primary, timing);
+    let rows = primary.rows;
+    let rawText = receiptRowsText(rows, primary.data.text);
+    const first = parseReceiptText(rawText, receiptType);
+    const detectedType = detectReceiptType(rawText);
+    const parserType = receiptType === 'OTHER' ? detectedType || receiptType : receiptType;
+    const evidence = Object.fromEntries(Object.keys(first).map(key => [key, evidenceForField(rows, key, first[key], parserType)]));
+    const goTyme = receiptType === 'GOTYME' || detectedType === 'GOTYME';
+    if (goTyme && correctedGoTymeReference(first.referenceNo)) evidence.referenceNo.confident = false;
+    const uncertain = Object.keys(first).filter(key => !evidence[key].confident);
+    const key = uncertain[0];
+    const second = { amount: null, referenceNo: null, paymentDate: null };
+
+    if (uncertain.length === 1 && evidence[key].region) {
+      const { region, isolatedReference } = evidence[key];
+      const bounds = boundsForRows(isolatedReference || region, primaryScale, quality);
+      const crop = await timeReceiptPhase(timing, 'preprocessMs', () => sharp(oriented).extract(bounds)
+        .resize({ width: Math.min(1800, bounds.width * 2) }).greyscale().normalise()
+        .extend({ top: 16, bottom: 16, left: 16, right: 16, background: 'white' }).png().toBuffer());
+      await worker.setParameters({ tessedit_pageseg_mode: isolatedReference ? PSM.SINGLE_LINE : PSM.SINGLE_BLOCK });
+      const { data } = await worker.recognize(crop, {}, { text: true, blocks: true });
+      const text = receiptRowsText(readRows(data), data.text);
+      const cropText = isolatedReference ? `Reference No. ${text}` : text;
+      const value = parseReceiptText(cropText, parserType)[key];
+      second[key] = value;
+      if (isolatedReference && value && value === parseReference(`Reference No. ${isolatedReference.map(word => word.text).join(' ')}`)) {
+        // The isolated reading agrees with the primary text after excluding the copy icon.
+        first[key] = value;
       }
+      if (value !== null && !rawText.includes(text)) rawText = normalizeReceiptText(rawText + '\n' + text);
+    } else if (uncertain.length) {
+      const retry = await readReceiptPage(worker, oriented, quality, fullScale, PSM.SINGLE_BLOCK, timing);
+      await restoreReceiptMasks(worker, retry, timing);
+      const retryText = receiptRowsText(retry.rows, retry.data.text);
+      Object.assign(second, parseReceiptText(retryText, receiptType));
+      rows = mergePageRows(primary, retry);
+      rawText = receiptRowsText(rows, rawText || retryText);
     }
-    const rawText = normalizeReceiptText(rows.length ? rows.map((row) => row.text).join('\n') : first.text);
-    const candidates = [
-      parseReceiptText(firstRows.map((row) => row.text).join('\n') || first.text, receiptType),
-      parseReceiptText(secondRows.map((row) => row.text).join('\n') || second.text, receiptType),
-    ];
-    const fields = reconcileReceiptFields(candidates);
-    let focusedReference = await rereadReference(worker, oriented, rows, scale);
-    // GoTyme's IT reference has a numeric body. Correct an O in that body only
-    // when another full-page pass independently printed the exact numeric ID.
-    if ((receiptType === 'GOTYME' || detectReceiptType(rawText) === 'GOTYME') && /^IT[0-9O]{6,38}$/i.test(focusedReference || '')) {
-      const numericBody = 'IT' + focusedReference.slice(2).replace(/o/gi, '0');
-      if (candidates.some(candidate => candidate.referenceNo === numericBody)) focusedReference = numericBody;
+
+    // Use GoTyme's numeric ID only when the other reading independently supports it.
+    if (goTyme) {
+      const correctedFirst = correctedGoTymeReference(first.referenceNo);
+      const correctedSecond = correctedGoTymeReference(second.referenceNo);
+      if (correctedFirst && correctedFirst === second.referenceNo) first.referenceNo = correctedFirst;
+      if (correctedSecond && correctedSecond === first.referenceNo) second.referenceNo = correctedSecond;
+      else if (correctedSecond && /O/i.test(second.referenceNo) && (
+        first.referenceNo === null || second.referenceNo === first.referenceNo
+      )) second.referenceNo = null;
     }
-    // A focused, spatially bounded reading must agree with at least one page
-    // pass (or its printed value before a separate icon) before resolving it.
-    if (focusedReference && candidates.some(c => c.referenceNo === focusedReference
-      || (c.referenceNo === focusedReference + '0' && /\bReference Number\b/i.test(rawText)))) {
-      fields.referenceNo = focusedReference;
+    const fields = reconcileReceiptFields([first, second]);
+    const warnings = [];
+    for (const field of Object.keys(first)) {
+      const value = second[field];
+      if (value != null && first[field] != null && first[field] !== value) {
+        warnings.push('The ' + fieldLabels[field] + ' could not be read consistently. Admin will check the receipt.');
+      } else if (value === null && !evidence[field].confident) {
+        fields[field] = null;
+      }
     }
     const characters = rows.reduce((sum, row) => sum + row.text.length, 0);
     const confidence = characters
       ? rows.reduce((sum, row) => sum + row.confidence * row.text.length, 0) / characters
-      : first.confidence;
+      : primary.data.confidence;
     const confirmationNo = rawText.match(/\bconfirmation\s+no\.?\s*[:#]?\s*(\d{6,40})/i)?.[1];
-    const warnings = ['amount', 'referenceNo', 'paymentDate'].filter(key => new Set(candidates.map(c => c[key]).filter(v => v != null)).size > 1 && fields[key] == null)
-      .map(key => `The ${({ amount: 'amount', referenceNo: 'reference number', paymentDate: 'payment date' })[key]} could not be read consistently. Admin will check the receipt.`);
-    const detectedReceiptType = detectReceiptType(rawText);
-    return { quality, rawText, confidence: Number(confidence.toFixed(2)), ...fields, detectedReceiptType, warnings,
-      additionalReferences: confirmationNo ? { confirmationNo } : {},
-      complete: Boolean(fields.amount && fields.referenceNo && fields.paymentDate) };
-  } finally {
-    await worker.terminate();
-  }
+    return { quality, rawText, confidence: Number(confidence.toFixed(2)), ...fields, detectedReceiptType: detectReceiptType(rawText), warnings,
+      additionalReferences: confirmationNo ? { confirmationNo } : {}, complete: Boolean(fields.amount && fields.referenceNo && fields.paymentDate) };
+  });
 }
+
 
 // #endregion
 

@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFile, readdir } from 'node:fs/promises';
 import { Writable } from 'node:stream';
 import { once } from 'node:events';
+import { Worker } from 'node:worker_threads';
 import { PGlite } from '@electric-sql/pglite';
 import express from 'express';
 import jwt from 'jsonwebtoken';
@@ -108,8 +109,58 @@ test('receipt migration and HTTP flow preserve legacy data, image privacy, dupli
     const poor = await upload([first, tiny], { preview: true });
     assert.equal(poor.status, 422); assert.equal(poor.data.analysis.quality.imagePosition, 2); assert.equal(uploaded, 0);
 
+    const workerMessages = t.mock.method(Worker.prototype, 'postMessage');
+    const scans = () => workerMessages.mock.calls.filter(({ arguments: [message] }) => message?.action === 'recognize').length;
+    const preview = await upload([first, second], { preview: true });
+    assert.equal(preview.status, 200, JSON.stringify(preview.data));
+    const previewScans = scans();
+    assert.ok(previewScans > 0);
+    const repeatedPreview = await upload([first, second], { preview: true });
+    assert.deepEqual(repeatedPreview, preview);
+    assert.equal(scans(), previewScans);
+    const changedType = await upload([first, second], { preview: true, type: 'OTHER' });
+    assert.equal(changedType.data.analysis.receiptType, 'OTHER');
+    assert.ok(scans() > previewScans);
+    const scansBeforeSubmit = scans();
     const submitted = await upload([first, second]);
     assert.equal(submitted.status, 201, JSON.stringify(submitted.data));
+    assert.deepEqual(submitted.data.analysis, preview.data.analysis);
+    assert.equal(scans(), scansBeforeSubmit);
+
+    const pageWidths = () => workerMessages.mock.calls.flatMap(({ arguments: [message] }) => message?.action === 'recognize'
+      ? [Buffer.from(message.payload.image).readUInt32BE(16)].filter(width => width >= 1080) : []);
+    const largeReceipt = async text => sharp(await makeReceipt(text)).resize({ width: 1080 }).png().toBuffer();
+    const completeText = 'GCash Express Send\nAmount PHP 700.00\nReference No. 1234567890123\nNov 19, 2026';
+    workerMessages.mock.resetCalls();
+    const native = await upload([await largeReceipt(completeText)], { preview: true, type: 'GCASH' });
+    assert.equal(native.status, 200, JSON.stringify(native.data));
+    assert.deepEqual([native.data.analysis.amount, native.data.analysis.referenceNo, native.data.analysis.paymentDate],
+      [700, '1234567890123', '2026-11-19']);
+    assert.deepEqual(pageWidths(), [1080]);
+    assert.equal(scans(), 1);
+
+    workerMessages.mock.resetCalls();
+    const fallback = await upload([await largeReceipt(completeText.replace('Reference No. 1234567890123\n', ''))], { preview: true, type: 'GCASH' });
+    assert.equal(fallback.status, 200, JSON.stringify(fallback.data));
+    assert.deepEqual([fallback.data.analysis.amount, fallback.data.analysis.referenceNo, fallback.data.analysis.paymentDate],
+      [700, null, '2026-11-19']);
+    assert.deepEqual(pageWidths(), [1080, 1800]);
+
+    workerMessages.mock.resetCalls();
+    const missingReference = 'GCash Express Send\nAmount PHP 700.00\nNov 19, 2026\nReference No.';
+    const cropped = await upload([await largeReceipt(missingReference)], { preview: true, type: 'GCASH' });
+    assert.equal(cropped.status, 200, JSON.stringify(cropped.data));
+    assert.deepEqual([cropped.data.analysis.amount, cropped.data.analysis.referenceNo, cropped.data.analysis.paymentDate],
+      [700, null, '2026-11-19']);
+    assert.deepEqual(pageWidths(), [1080]);
+    assert.equal(scans(), 2);
+
+    const goTymeText = 'GoTyme Bank\nTransfer complete\nAmount sent PHP 720.00\nReference No. IT123456789\nNov 19, 2026';
+    const goTyme = await upload([await largeReceipt(goTymeText)], { preview: true, type: 'GOTYME' });
+    assert.equal(goTyme.status, 200, JSON.stringify(goTyme.data));
+    assert.deepEqual([goTyme.data.analysis.amount, goTyme.data.analysis.referenceNo, goTyme.data.analysis.paymentDate],
+      [720, 'IT123456789', '2026-11-19']);
+    workerMessages.mock.restore();
     assert.deepEqual([submitted.data.analysis.amount, submitted.data.analysis.referenceNo, submitted.data.analysis.paymentDate], [500, 'BN-20261112-12345678', '2026-11-12']);
     const paymentId = submitted.data.paymentId;
     const detail = await (await request(`/api/payments/${paymentId}`)).json();
