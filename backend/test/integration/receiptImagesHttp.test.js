@@ -12,7 +12,8 @@ import { v2 as cloudinary } from 'cloudinary';
 import pool from '../../config/db.js';
 import paymentRoutes from '../../routes/paymentRoutes.js';
 import errorHandler from '../../middleware/errorHandler.js';
-import { ensureReceiptImagesSchema, receiptHash } from '../../services/receiptBatches.js';
+import { analyzeReceiptImages, ensureReceiptImagesSchema, receiptHash } from '../../services/receiptBatches.js';
+import { processReceiptOcrJob } from '../../services/receiptOcrQueue.js';
 
 // Real SQL, migrations, authentication, multipart validation and OCR. Only the
 // database connection and Cloudinary transport are replaced. No live data is used.
@@ -160,7 +161,6 @@ test('receipt migration and HTTP flow preserve legacy data, image privacy, dupli
     assert.equal(goTyme.status, 200, JSON.stringify(goTyme.data));
     assert.deepEqual([goTyme.data.analysis.amount, goTyme.data.analysis.referenceNo, goTyme.data.analysis.paymentDate],
       [720, 'IT123456789', '2026-11-19']);
-    workerMessages.mock.restore();
     assert.deepEqual([submitted.data.analysis.amount, submitted.data.analysis.referenceNo, submitted.data.analysis.paymentDate], [500, 'BN-20261112-12345678', '2026-11-12']);
     const paymentId = submitted.data.paymentId;
     const detail = await (await request(`/api/payments/${paymentId}`)).json();
@@ -200,14 +200,65 @@ test('receipt migration and HTTP flow preserve legacy data, image privacy, dupli
     assert.ok(deleted.length >= 3);
     t.diagnostic('PASS failed second upload and database rollback remove all new private images');
 
-    // The legacy API may omit receiptType, but still receives Other safely.
-    const legacyClient = await upload([extraFirst], { type: null });
+    // Submit without a preview. The files and pending payment are available before OCR.
+    const scansBeforeUpload = scans();
+    const legacyClient = await upload([extraFirst, extraSecond], { type: null });
     assert.equal(legacyClient.status, 201, JSON.stringify(legacyClient.data));
-    assert.equal(legacyClient.data.analysis.receiptType, 'OTHER');
-    const approval = await request(`/api/payments/${legacyClient.data.paymentId}/review`, { method: 'POST',
-      headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status: 'APPROVED', verifiedAmount: 600,
-        paymentMethod: 'BANK_TRANSFER', verifiedReferenceNo: 'BN-20261112-55555555', verifiedPaymentDate: '2026-11-12' }) });
-    assert.equal(approval.status, 200, await approval.text());
+    assert.equal(legacyClient.data.ocrStatus, 'QUEUED');
+    assert.equal(legacyClient.data.analysis, undefined);
+    assert.equal(scans(), scansBeforeUpload);
+    const queuedId = legacyClient.data.paymentId;
+    const paymentDetail = async () => (await (await request(`/api/payments/${queuedId}`)).json()).payment;
+    const queued = await paymentDetail();
+    assert.equal(queued.ocrStatus, 'QUEUED');
+    assert.equal(queued.receiptType, 'OTHER');
+    assert.equal(queued.reviewStatus, 'PENDING');
+    assert.equal(queued.ocrAmount, null);
+    const imageBeforeScan = await request(`/api/payments/${queuedId}/receipts/${queued.receiptImages[1].id}`);
+    assert.deepEqual(Buffer.from(await imageBeforeScan.arrayBuffer()), extraSecond);
+
+    // Simulate a worker recovering an interrupted lease after a restart.
+    await db.query("UPDATE payment_submissions SET ocr_status='PROCESSING', ocr_attempts=1, ocr_available_at=NOW()-INTERVAL '1 second' WHERE id=$1", [queuedId]);
+    const started = Promise.withResolvers();
+    const permitOcr = Promise.withResolvers();
+    const work = processReceiptOcrJob({ analyze: async (...args) => {
+      started.resolve();
+      await permitOcr.promise;
+      return analyzeReceiptImages(...args);
+    } });
+    try {
+      await Promise.race([started.promise, work.then(() => { throw new Error('Worker did not reach OCR'); })]);
+      assert.equal((await paymentDetail()).ocrStatus, 'PROCESSING');
+      assert.equal(await processReceiptOcrJob(), false, 'A second worker cannot take an active claim');
+      const approval = await request(`/api/payments/${queuedId}/review`, { method: 'POST',
+        headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status: 'APPROVED', verifiedAmount: 599,
+          paymentMethod: 'BANK_TRANSFER', verifiedReferenceNo: 'ADMIN-VERIFIED-REF', verifiedPaymentDate: '2026-11-12' }) });
+      assert.equal(approval.status, 200, await approval.text());
+    } finally {
+      permitOcr.resolve();
+      assert.equal(await work, true);
+    }
+    const completed = await paymentDetail();
+    assert.equal(completed.ocrStatus, 'COMPLETED');
+    assert.equal(Number(completed.ocrAmount), 600);
+    assert.equal(completed.ocrReferenceNo, 'BN-20261112-55555555');
+    assert.equal(completed.reviewStatus, 'APPROVED');
+    assert.equal(completed.verifiedReferenceNo, 'ADMIN-VERIFIED-REF');
+    assert.equal(Number(completed.verifiedAmount), 599);
+    const imageAnalyses = (await db.query('SELECT ocr_analysis FROM payment_receipt_images WHERE payment_submission_id=$1 ORDER BY position', [queuedId])).rows;
+    assert.equal(imageAnalyses.length, 2);
+    assert.ok(imageAnalyses.every(row => row.ocr_analysis.amount === 600));
+    workerMessages.mock.restore();
+
+    const failedJob = await upload([await makeReceipt('GCash\nAmount PHP 12.00\nNov 12, 2026', 'Unavailable storage')]);
+    assert.equal(failedJob.status, 201, JSON.stringify(failedJob.data));
+    for (const status of ['QUEUED', 'QUEUED', 'FAILED']) {
+      await db.query("UPDATE payment_submissions SET ocr_available_at=NOW() WHERE id=$1", [failedJob.data.paymentId]);
+      assert.equal(await processReceiptOcrJob({ loadImage: async () => { throw Error('Fixture storage error'); } }), true);
+      const record = (await db.query('SELECT ocr_status, review_status FROM payment_submissions WHERE id=$1', [failedJob.data.paymentId])).rows[0];
+      assert.deepEqual(record, { ocr_status: status, review_status: 'PENDING' });
+    }
+    t.diagnostic('PASS background OCR, expired lease recovery, manual approval during OCR and terminal scan failure');
     assert.equal((await request(`/api/payments/${legacyClient.data.paymentId}/receipt`, { id: 4 })).status, 200);
     assert.equal((await request(`/api/payments/${paymentId}`, { method: 'DELETE' })).status, 409);
     await db.query("UPDATE payment_submissions SET review_status='REJECTED',reviewed_by=1,reviewed_at=NOW(),remarks='Fixture rejection' WHERE id=$1", [paymentId]);

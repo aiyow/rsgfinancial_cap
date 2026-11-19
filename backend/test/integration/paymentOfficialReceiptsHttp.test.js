@@ -58,6 +58,7 @@ test('one unique REF per approved transaction across uploads, manual payments an
   await setup.query(migration.replaceAll('public.',''));
   await setup.query(migration.replaceAll('public.','')); // Repeat-safe conversion.
   const after=(await setup.query("SELECT jsonb_agg(to_jsonb(p)-'official_receipt_no' ORDER BY p.id) AS rows FROM payment_submissions p")).rows[0].rows;assert.deepEqual(after,before);
+  await setup.query(await readFile(new URL('../../database/migrations/047_background_receipt_ocr.sql',import.meta.url),'utf8'));
   async function scoped(){const c=await fixtures.connect();assert.equal((await c.query('SELECT current_schema() AS schema')).rows[0].schema,schema);return c;}
   pool.query=async(sql,values)=>{const c=await scoped();try{return await c.query(sql,values);}finally{c.release();}};
   pool.connect=async()=>{const c=await scoped();return{query(sql,values){if(failAudit&&sql.includes('INSERT INTO audit_logs'))throw Object.assign(new Error('Simulated audit failure'),{status:503});return c.query(sql,values);},release(){c.release();}};};

@@ -7,26 +7,31 @@ approve a payment automatically.
 
 ## Deploy
 
-1. Install the updated backend dependencies and deploy the backend code. The
-   PostgreSQL emulator is a development dependency used only by tests.
-2. Apply migration 045 to the intended database before using the updated payment
-   pages. From the backend directory, or the deployed backend service shell, run:
+1. Install the updated backend dependencies. From the backend directory with
+   the intended database configured, apply both migrations in order:
 
    ```sh
    npm run receipts:migrate-images
+   npm run receipts:migrate-ocr
    ```
 
-   This command is safe to rerun. It adds receipt type/OCR metadata and an ordered
-   image table, then backfills existing uploaded receipts as image 1. Existing
-   payment amounts, references, review decisions and allocations are preserved.
-   Where a deployment system supports a migration phase, run this command there
-   before the new backend starts serving payment requests.
-3. Deploy the frontend after the backend and migration are ready. Older installed
-   clients can still send one image without a receipt type; the backend uses Other
-   and the general parser. The existing first-image endpoint remains available.
+   These commands are safe to rerun. Migration 045 adds the ordered image table
+   and backfills existing uploaded receipts as image 1. Migration 047 adds the
+   OCR queue fields. Existing OCR results and payment review decisions are preserved.
+2. Deploy the updated backend. The OCR worker starts with the API and can resume
+   unfinished jobs after a restart.
+3. Deploy the frontend. Older installed clients can still send one image without
+   a receipt type. The backend uses Other and the general parser.
 
 No new OCR service credentials are required. The implementation uses the existing
 Tesseract, Sharp and private Cloudinary configuration.
+
+Residents submit directly after selecting their receipt images. The API
+validates and saves the original images and returns once the pending payment is
+committed. The worker then reads the private images, runs OCR with its existing
+rereads, and saves the detected fields. In Payment Verification, Admin can enter
+values while OCR is queued or processing. Results fill only untouched inputs.
+An OCR failure still leaves the receipt available for manual review.
 
 ## Interfaces and storage
 
@@ -35,7 +40,7 @@ Tesseract, Sharp and private Cloudinary configuration.
   the existing `paymentPurpose` field.
 - `analysis` includes combined fields, `images`, `warnings`, `detectedReceiptType`
   and `additionalReferences`. Conflicting values remain empty for Admin review.
-- Payment details include ordered `receiptImages` metadata and `ocrDetails`.
+- Payment details include ordered `receiptImages` metadata, `ocrStatus` and `ocrDetails`.
   Images are fetched through authenticated
   `GET /api/payments/:id/receipts/:imageId`; `GET /api/payments/:id/receipt` still
   returns the first image. Image IDs must belong to the authorized payment.

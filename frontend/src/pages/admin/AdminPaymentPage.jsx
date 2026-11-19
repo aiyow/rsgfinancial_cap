@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import DashboardLayout, { Panel } from '../../components/DashboardLayout'
 import NoticeToast from '../../components/NoticeToast'
@@ -13,6 +13,7 @@ import { paymentDateLabel, paymentDateTime, paymentResidentName } from '../../ut
 
 const inputClass = 'mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm'
 const methods = ['GCASH', 'BANK_TRANSFER', 'CASH', 'OTHER']
+const ocrReviewFields = ['verifiedAmount', 'verifiedReferenceNo', 'verifiedPaymentDate']
 
 function money(value) {
   return `PHP ${Number(value || 0).toLocaleString('en-PH', { useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/\.00$/, '')}`
@@ -46,6 +47,8 @@ export default function AdminPaymentPage() {
   const [receiptImages, setReceiptImages] = useState([])
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState({ error: '', message: '' })
+  const editedFields = useRef(new Set())
+  const ocrPending = String(payment?.id) === id && ['QUEUED', 'PROCESSING'].includes(payment?.ocrStatus)
 
   useEffect(() => {
     let active = true
@@ -54,6 +57,7 @@ export default function AdminPaymentPage() {
       try {
         const paymentData = await apiRequest(`/api/payments/${id}`, { token })
         if (!active) return
+        editedFields.current.clear()
         setReceiptImages([])
         setPayment(paymentData.payment)
         setForm(reviewFormFrom(paymentData.payment))
@@ -80,7 +84,37 @@ export default function AdminPaymentPage() {
     }
   }, [id, token])
 
+  useEffect(() => {
+    if (!ocrPending || busy) return
+    const controller = new AbortController()
+    let timer
+
+    async function refreshOcr() {
+      try {
+        const { payment: refreshed } = await apiRequest(`/api/payments/${id}`, { token, signal: controller.signal })
+        if (controller.signal.aborted) return
+        setPayment(refreshed)
+        if (refreshed.ocrStatus === 'COMPLETED') {
+          const suggested = reviewFormFrom(refreshed)
+          const untouched = ocrReviewFields.filter(field => !editedFields.current.has(field) && suggested[field] !== '')
+          setForm(current => ({ ...current, ...Object.fromEntries(untouched.map(field => [field, suggested[field]])) }))
+        }
+        if (!['QUEUED', 'PROCESSING'].includes(refreshed.ocrStatus)) return
+      } catch {
+        // A transient polling error should not interrupt manual review.
+      }
+      if (!controller.signal.aborted) timer = setTimeout(refreshOcr, 3000)
+    }
+
+    timer = setTimeout(refreshOcr, 3000)
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [id, token, ocrPending, busy])
+
   function update(field, value) {
+    editedFields.current.add(field)
     setForm((current) => ({ ...current, [field]: value }))
   }
 
@@ -183,17 +217,23 @@ export default function AdminPaymentPage() {
             {payment.entryType === 'RECEIPT_UPLOAD' && (
               <div className="mt-5 rounded-xl bg-slate-50 p-4">
                 <p className="text-xs font-bold capitalize text-slate-500">Raw OCR text</p>
-                <pre className="mt-3 whitespace-pre-wrap break-words text-sm text-slate-700">{payment.ocrRawText || 'No OCR text was extracted.'}</pre>
+                <pre className="mt-3 whitespace-pre-wrap break-words text-sm text-slate-700">{ocrPending ? 'Processing…' : payment.ocrRawText || 'No OCR text was extracted.'}</pre>
               </div>
             )}
           </Panel>
 
           <div className="space-y-6">
             <Panel title="Detected fields">
+              {ocrPending && <p role="status" className="mb-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
+                <strong>Processing receipt…</strong> You can enter the payment details from the receipt while OCR runs.
+              </p>}
+              {payment.ocrStatus === 'FAILED' && <p role="status" className="mb-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                OCR could not finish. Please enter the payment details from the receipt.
+              </p>}
               <dl className="grid gap-4 sm:grid-cols-2">
-                <Fact label="OCR amount" value={payment.ocrAmount != null && payment.ocrAmount !== '' ? money(payment.ocrAmount) : 'Not detected'} />
-                <Fact label="OCR reference" value={payment.ocrReferenceNo || 'Not detected'} />
-                <Fact label="OCR payment date" value={payment.ocrPaymentDate ? paymentDateLabel(payment.ocrPaymentDate) : 'Not detected'} />
+                <Fact label="OCR amount" value={payment.ocrAmount != null && payment.ocrAmount !== '' ? money(payment.ocrAmount) : ocrPending ? '—' : 'Not detected'} />
+                <Fact label="OCR reference" value={payment.ocrReferenceNo || (ocrPending ? '—' : 'Not detected')} />
+                <Fact label="OCR payment date" value={payment.ocrPaymentDate ? paymentDateLabel(payment.ocrPaymentDate) : ocrPending ? '—' : 'Not detected'} />
                 <Fact label="Resident due date" value={paymentDateLabel(payment.dueDate)} />
               </dl>
             </Panel>

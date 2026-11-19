@@ -40,6 +40,7 @@
     "data:import-history": "node scripts/importHistoricalAnalytics.js",
     "receipts:migrate-cloudinary": "node scripts/migrateLocalReceiptsToCloudinary.js",
     "receipts:migrate-images": "node scripts/migrateReceiptImages.js",
+    "receipts:migrate-ocr": "node scripts/migrateReceiptOcr.js",
     "test:receipt-images": "node --test test/receiptText.test.js test/receiptUpload.test.js test/receiptBatches.test.js test/integration/receiptImagesHttp.test.js",
     "forecasts:compare-policies": "node scripts/compareForecastPolicies.js"
   },

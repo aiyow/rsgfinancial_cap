@@ -180,13 +180,14 @@ async function stopReceiptOcrWorker() {
   await worker?.terminate();
 }
 
-function withReceiptOcrWorker(timing, recognize) {
+function withReceiptOcrWorker(timing, recognize, timeoutMs) {
   // An entire receipt needs exclusive access because its passes change the worker's page mode.
   const queuedAt = performance.now();
   const result = receiptOcrQueue.then(async () => {
     if (timing) timing.queueMs = (timing.queueMs ?? 0) + performance.now() - queuedAt;
     clearTimeout(receiptOcrIdleTimer);
     const active = new AbortController();
+    let deadline;
     try {
       receiptOcrWorker ??= await timeReceiptPhase(timing, 'workerInitMs', startReceiptOcrWorker);
       const { worker } = receiptOcrWorker;
@@ -199,11 +200,16 @@ function withReceiptOcrWorker(timing, recognize) {
         setParameters: current.setParameters,
         recognize: (...args) => timeReceiptPhase(timing, 'recognitionMs', () => current.recognize(...args)),
       };
-      return await Promise.race([stopped, recognize(ocr)]);
+      const work = [stopped, recognize(ocr)];
+      if (timeoutMs) work.push(new Promise((_, reject) => {
+        deadline = setTimeout(() => reject(new Error('Receipt OCR timed out.')), timeoutMs).unref();
+      }));
+      return await Promise.race(work);
     } catch (error) {
       await stopReceiptOcrWorker();
       throw error;
     } finally {
+      clearTimeout(deadline);
       active.abort();
       if (receiptOcrWorker) {
         receiptOcrWorker.worker.unref();
@@ -440,11 +446,17 @@ function mergePageRows(primary, retry) {
   return rows.sort((a, b) => a.bbox.y0 - b.bbox.y0);
 }
 
-export async function analyzeReceipt(buffer, receiptType = 'OTHER', { timing } = {}) {
-  const { oriented, quality } = await timeReceiptPhase(timing, 'preprocessMs', async () => {
-    const oriented = await sharp(buffer).rotate().flatten({ background: '#ffffff' }).png().toBuffer();
-    return { oriented, quality: await imageQuality(oriented) };
-  });
+async function prepareReceipt(buffer) {
+  const oriented = await sharp(buffer).rotate().flatten({ background: '#ffffff' }).png().toBuffer();
+  return { oriented, quality: await imageQuality(oriented) };
+}
+
+export async function inspectReceiptQuality(buffer) {
+  return (await prepareReceipt(buffer)).quality;
+}
+
+export async function analyzeReceipt(buffer, receiptType = 'OTHER', { timing, timeoutMs } = {}) {
+  const { oriented, quality } = await timeReceiptPhase(timing, 'preprocessMs', () => prepareReceipt(buffer));
   if (quality.status !== 'GOOD') {
     return { quality, rawText: '', confidence: null, amount: null, referenceNo: null, paymentDate: null, complete: false };
   }
@@ -519,7 +531,7 @@ export async function analyzeReceipt(buffer, receiptType = 'OTHER', { timing } =
     const confirmationNo = rawText.match(/\bconfirmation\s+no\.?\s*[:#]?\s*(\d{6,40})/i)?.[1];
     return { quality, rawText, confidence: Number(confidence.toFixed(2)), ...fields, detectedReceiptType: detectReceiptType(rawText), warnings,
       additionalReferences: confirmationNo ? { confirmationNo } : {}, complete: Boolean(fields.amount && fields.referenceNo && fields.paymentDate) };
-  });
+  }, timeoutMs);
 }
 
 

@@ -34,12 +34,12 @@ flowchart LR
 
 | File | Responsibility |
 | --- | --- |
-| [server.js](../backend/server.js) | Loads environment, configures CORS/JSON and trusted proxy hops, mounts routers, exposes `/` and `/api/health`, handles 404/errors, listens on `PORT` or 5000, and starts registration cleanup, protected-SOA maintenance and the optional reminder scheduler. |
+| [server.js](../backend/server.js) | Loads environment, configures CORS/JSON and trusted proxy hops, mounts routers, exposes `/` and `/api/health`, handles 404/errors, listens on `PORT` or 5000, and starts registration cleanup, protected SOA maintenance, the optional reminder scheduler, Web Push delivery and the receipt OCR worker. |
 | [config/db.js](../backend/config/db.js) | Loads `backend/.env` by file URL. Uses `DATABASE_URL` when supplied, otherwise `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_PORT`. With a connection URL, `DB_SSL=true` enables TLS. Keeps PostgreSQL DATE values as `YYYY-MM-DD` strings. |
 | [authMiddleware.js](../backend/middleware/authMiddleware.js) | `requireAuth` verifies JWT, reloads current user role/active/auth version, and attaches `{ id, role }` to `req.user`. `allowRoles` rejects excluded roles with 403. |
 | [validate.js](../backend/middleware/validate.js) | `validateBody(schema)` stores parsed Zod output in `req.validatedBody`; failure returns 400 with field issues. `requireId` validates positive safe integer `:id` into `req.resourceId`. |
 | [errorHandler.js](../backend/middleware/errorHandler.js) | Maps input/upload errors to 400, unavailable storage configuration to 503, unique/foreign-key conflicts to 409, explicit application statuses to their response, and unexpected failures to 500. |
-| [receiptUpload.js](../backend/middleware/receiptUpload.js) | Enforces receipt extensions, byte limits and genuine JPEG/PNG image data before resident payment preview/submission. Uses the receipt policy section in `services/receipts.js`. |
+| [receiptUpload.js](../backend/middleware/receiptUpload.js) | Accepts one or two JPEG, JFIF or PNG images up to 5 MB each. Sharp verifies that each image decodes and normalizes the filename and MIME type to match the detected format. Uses the receipt policy section in `services/receipts.js`. |
 
 Multipart routes use Multer rather than `express.json` to populate file/body input. Some handlers validate query strings or multipart fields inline. Follow actual middleware order instead of assuming every endpoint uses every helper.
 
@@ -69,15 +69,17 @@ Authenticated Admin, Collector and Resident accounts can use `POST /change-passw
 
 ## 3. Database and transaction model
 
-The authoritative schema is [schema.sql](../backend/database/schema.sql) plus [numbered migrations](../backend/database/migrations/). The base schema alone is not the finished system. `initDatabase.js` executes filenames matching three digits plus underscore in sorted order. The current set reaches `043` and includes two distinct `022_...` files; `units.sql` does not match the initializer pattern. Recent migrations cover OTP recovery, staff email changes, retained history workbooks, expanded names, registration OTPs, payment references, detailed audits and protected SOA requests.
+The authoritative schema is [schema.sql](../backend/database/schema.sql) plus [numbered migrations](../backend/database/migrations/). The base schema alone is not the finished system. `initDatabase.js` executes filenames matching three digits plus underscore in sorted order. The numbered set reaches `047` and includes two distinct `022_...` files. The unnumbered `units.sql` does not match the initializer pattern. The base schema defines fresh tables. Migrations `025` and `031` add the verification and password reset columns before creating their indexes.
 
-There is no migration-history table. Re-executing all migrations is not a general upgrade strategy: some alter/remove data, and category-ledger activation requires a clean start. Use `db:init` for a fresh/disposable database. For an existing payment installation, follow the [category rollout reference](category-payments-rollout.md).
+There is no migration-history table. Re-executing all migrations is not a general upgrade strategy: some alter/remove data, and category-ledger activation requires a clean start. Use `db:init` for a fresh/disposable database. For an existing installation, check which migrations are already applied and run the required upgrades in order. Ledger activation follows the [category rollout reference](category-payments-rollout.md).
+
+[config/db.js](../backend/config/db.js) loads `backend/.env` and uses `DATABASE_URL` when set. For local PostgreSQL, leave `DATABASE_URL` unset and set `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD`. Render sets its own environment values.
 
 ### Core data graph
 
 `users -> unit_assignments -> units -> unit_bills -> bill_charges` connects identity to billing. `billing_periods` groups readings and bills. Payment submissions connect to units and optionally an intended bill. Approved submissions produce category allocations; applications connect those allocations to a bill's `PRINCIPAL` or `LATE_PENALTY` component.
 
-SOAs snapshot unit/payer, dates, readings, penalty percentage and template to preserve generated document context. Revision/reason metadata records corrections. Read each endpoint to see whether it uses a snapshot or a live field.
+SOAs snapshot unit/payer, dates, readings, penalty percentage and template to preserve generated document context. New generation copies `units.soa_resident_name` into `unit_bills.payer_name_snapshot`. The recipient email still follows the unit assignment. Revision/reason metadata records corrections. Read each endpoint to see whether it uses a snapshot or a live field.
 
 PostgreSQL commonly returns numeric values as strings. Services convert/round values where needed. Monetary allocation uses integer centavos to avoid fractional-cent drift. Dates without times stay strings; date-sensitive ledger/assignment operations use Manila dates where specified.
 
@@ -125,7 +127,11 @@ All audit helpers live in [audit.js](../backend/services/audit.js). `writeAuditL
 
 Water charge = consumption times cubic-meter rate. Association principal = billable area times square-meter rate. Current policy adds the configured one-time late penalty to association principal unpaid at due date, never water. Applications reduce the corresponding category/component balance.
 
-Historical analytics imports are a separate flow in `analyticsImportRoutes.js`. The web uploader requires only `UNIT`, `PREVIOUS`, and `CURRENT` (`PRESENT` is accepted); consumption is computed. Extra rate/charge columns are ignored, and an existing saved rate is selected internally. Original workbook bytes are retained for authenticated downloads. See [HISTORY_IMPORT_FORMAT.md](HISTORY_IMPORT_FORMAT.md); history uploads do not create live SOAs.
+Historical analytics imports are a separate flow in `analyticsImportRoutes.js`. The web uploader requires only `UNIT`, `PREVIOUS`, and `CURRENT` (`PRESENT` is accepted); consumption is computed. An optional `WRATE` or `WATER RATE` column supplies one positive rate for the month, with up to two decimal places. Preview shows the row rate, and confirmation rereads the uploaded file and saves its rate for historical periods. If the workbook omits a rate, the importer looks for the existing month’s rate, then the latest preceding or earliest later positive rate. A workbook rate must match the saved rate for a live billing period. Original workbook bytes are retained for authenticated history downloads. See [HISTORY_IMPORT_FORMAT.md](HISTORY_IMPORT_FORMAT.md); history uploads do not create live SOAs.
+
+### SOA resident names by unit
+
+Migration `046` copies the active payer’s name once, prioritizing the primary payer assignment. Admin saves name changes through `PATCH /api/units/soa-names`. The route validates the changed rows and writes updates and audit records in one transaction. `PATCH /api/units/:id/soa-name` also supports a single-unit update. Staff can read the saved names in Unit Occupancy and its exported report. Previously generated SOAs retain their payer snapshots, and access still follows unit assignments. See the [unit name rollout](../backend/docs/unit-soa-names.md).
 
 ### Forward, publish and delivery
 
@@ -141,7 +147,7 @@ Admin can unpublish one SOA, a selected subset or the full batch. Selected/all b
 
 1. A Resident's authenticated `GET /api/bills/:id/protected-exports` checks recent preparation/delivery state without sending email.
 2. `POST` to the same path uses an empty body and UUID `Idempotency-Key`. The server loads current verified email, assignment and published statement data; it never accepts browser-supplied recipient/PDF/totals.
-3. The server renders an AES-256 R6 PDF and emails it as an attachment. The opening password is the resident's lowercase surname without spaces only; the email contains opening instructions without printing the password. Names come from stored full names, with common compound surname particles handled by the helper.
+3. The server renders an AES-256 R6 PDF and emails it as an attachment. The opening password uses the requesting resident’s account surname in lowercase with spaces removed. The helper supports common compound surnames. The email gives opening instructions with a generic example. The displayed SOA name comes from the bill snapshot.
 4. States are `PREPARING`, `EMAIL_PENDING`, then `READY` after SMTP acceptance, or `FAILED`. Retry identity and concurrent-request deduplication avoid duplicate sends.
 5. A successful send starts a server-enforced 30-minute cooldown per resident/SOA/current email. Responses include `nextRequestAt`; new keys during cooldown receive `429 SOA_EMAIL_COOLDOWN` and `Retry-After`. Failed sends retain the separate attempt-rate limits.
 6. `GET /api/soa-exports/:exportId` polls status. The old `/file` route returns `410 SOA_EMAIL_ONLY`; residents download the PDF from email. Passwords and new PDF bytes are not saved in PostgreSQL or returned to the browser.
@@ -190,8 +196,8 @@ Assume association PHP 1,608.84 and water PHP 58.90, with no penalties/prior app
 
 ### Approval flow
 
-1. Receipt preview analyzes image/text and returns quality/OCR candidates. Final submission revalidates access/purpose and stores pending proof using private Cloudinary assets.
-2. Admin supplies verified amount/date/method/reference, or rejects with remarks.
+1. Resident submission checks access, purpose and image quality. It stores one or two private Cloudinary images and commits the pending proof and OCR job together. The worker reads the images and merges suggestions in the background. The preview endpoint remains available to older clients.
+2. Admin can inspect the saved proof immediately, supply verified amount/date/method/reference while OCR runs, or reject with remarks. OCR only updates the detected fields.
 3. The transaction locks unit/submission, rejects an already-reviewed record and checks duplicate approved references.
 4. Approval stores verified facts and calls `createPaymentAllocations` to create category budgets and apply approved cash to the selected SOA.
 5. That SOA's applications may be rebuilt for an earlier verified date, with penalty recalculation. Approval does not sweep other SOAs or unrelated existing credit.
@@ -207,7 +213,9 @@ Invoices belong to approved payment/category allocations, not one bill-level inv
 
 Keep three reference concepts separate: `officialReceiptNo` is the system-generated `REF-...` transaction reference; `verifiedReferenceNo` is the reviewed cash/bank/e-wallet proof reference; category `invoiceNumber` belongs to payment allocations. Names retained in schemas do not make them interchangeable. See [PAYMENT_OFFICIAL_RECEIPTS.md](PAYMENT_OFFICIAL_RECEIPTS.md).
 
-Private images are served through authenticated `/api/payments/:id/receipt` with role visibility checks. Cloudinary stores authenticated assets and the backend streams them; legacy local receipt support remains for older records. Current deletion allows rejected submissions only.
+Preview and submission accept repeated multipart `receipt` fields, `receiptType` and `paymentPurpose`. The selected bank or app guides parsing. The detected issuing bank is reported separately. Older clients that omit the type use Other. The combined result includes image quality, detected receipt type, additional references and warnings. Conflicting fields stay blank for review. The backend rejects duplicate image hashes and cleans up uploaded assets if saving fails.
+
+Migration `045` stores ordered images in `payment_receipt_images` and backfills existing single-image proofs. Authenticated `GET /api/payments/:id/receipts/:imageId` streams each image subject to payment visibility. The singular `/:id/receipt` path still serves the first image, including older local files. The Admin API retains rejected-only deletion, although Payment Verification no longer offers that button. See [receipt images rollout](receipt-images-rollout.md).
 
 ## 6. Forecasts and recommendations
 
@@ -246,18 +254,18 @@ Paths include the base mounted in `server.js`. Read each module for payload/quer
 | [registrationRoutes.js](../backend/routes/registrationRoutes.js), `/api/auth` | Public `POST /register/send-otp` and `/register/verify-otp`; verifies email and issues the grant required by account creation. |
 | [accountRoutes.js](../backend/routes/accountRoutes.js), `/api/account` | Staff `PATCH /profile`, `POST /email-change`, and `/email-change/verify`; verifies current credentials/code and updates session/account state where required. |
 | [userRoutes.js](../backend/routes/userRoutes.js), `/api/users` | Admin list/detail/create/update/delete, with current-user/deletion/approval/session guards. |
-| [unitRoutes.js](../backend/routes/unitRoutes.js), `/api/units` | Role-filtered list/detail for all roles; Admin create/update/delete with reference/password safeguards. |
+| [unitRoutes.js](../backend/routes/unitRoutes.js), `/api/units` | Role-filtered list/detail for all roles; Admin create/update/delete with reference/password safeguards and `PATCH /soa-names` or `PATCH /:id/soa-name` for saved SOA display names. |
 | [unitAssignmentRoutes.js](../backend/routes/unitAssignmentRoutes.js), `/api/unit-assignments` | Role-filtered list/detail; Admin create/update/end (`DELETE :id`). |
 | [billingPeriodRoutes.js](../backend/routes/billingPeriodRoutes.js), `/api/billing-periods` | Staff list/readings preview/read/save; Collector create/update/generate/reopen/forward/delete; Admin `:id/publish`, `:id/unpublish`, `:id/unpublish-selected`, `:id/bills/:billId/unpublish`, email retry/resend. Reading save is `PUT`; actions are `POST`. |
 | [billRoutes.js](../backend/routes/billRoutes.js), `/api/bills` | Role-filtered `GET /` and `GET /:id`; staff `PATCH /:id` correction and `PATCH /:id/payment-references` note. |
 | [soaExportRoutes.js](../backend/routes/soaExportRoutes.js), `/api` | Resident `GET/POST /bills/:id/protected-exports`, `GET /soa-exports/:exportId`; `/file` is retained as an authenticated email-only error response. The browser cannot download a protected SOA from this route. |
-| [paymentRoutes.js](../backend/routes/paymentRoutes.js), `/api/payments` | Resident `POST /bills/:id/preview` and `/bills/:id`; Admin `POST /allocation-preview`, `/manual`, `/:id/review`, rejected-only `DELETE /:id`; Admin/Resident `GET /credits`; role-filtered list/detail/receipt; staff `PATCH /:id/invoice-references`. |
-| [analyticsImportRoutes.js](../backend/routes/analyticsImportRoutes.js), `/api/analytics/imports` | Collector list, workbook download (`GET /:periodMonth/workbook`), preview/import and confirmed deletion. Web upload uses unit and previous/current readings; extra charge/rate columns are ignored. These imports never create live SOAs. |
+| [paymentRoutes.js](../backend/routes/paymentRoutes.js), `/api/payments` | Resident `POST /bills/:id/preview` and `/bills/:id`; Admin `POST /allocation-preview`, `/manual`, `/:id/review`, rejected-only `DELETE /:id`; Admin/Resident `GET /credits`; role-filtered list/detail and receipt image reads; staff `PATCH /:id/invoice-references`. |
+| [analyticsImportRoutes.js](../backend/routes/analyticsImportRoutes.js), `/api/analytics/imports` | Collector list, workbook download (`GET /:periodMonth/workbook`), preview/import and confirmed deletion. Web upload accepts readings and an optional monthly water rate. The server calculates consumption and charges. These imports never create live SOAs. |
 | [analyticsRoutes.js](../backend/routes/analyticsRoutes.js), `/api/analytics` | Resident `GET /resident`; staff `GET /overview`, `GET /units/:id`, `POST /refresh-forecasts`. |
 | [prescriptiveRecommendationRoutes.js](../backend/routes/prescriptiveRecommendationRoutes.js), `/api/prescriptive-recommendations` | Resident `GET /resident`, `PATCH /:id/view`; staff `GET /`, `DELETE /:id`. |
 | [soaTemplateRoutes.js](../backend/routes/soaTemplateRoutes.js), `/api/soa-template` | Staff `GET /`; Admin `PATCH /`, `POST /assets/:type`; authenticated roles `GET /assets/:type`. |
 | [dashboardRoutes.js](../backend/routes/dashboardRoutes.js), `/api/dashboard` | Staff `GET /overview`; Resident dashboard composes its own bill/analytics APIs. |
-| [notificationRoutes.js](../backend/routes/notificationRoutes.js), `/api/notifications` | Current-user `GET /`, `PATCH /read-all`, `PATCH /:id/read` with ownership checks. |
+| [notificationRoutes.js](../backend/routes/notificationRoutes.js), `/api/notifications` | Current-user list and read actions. Web Push uses `POST /push/settings`, `PUT /push/subscription` and `DELETE /push/subscription`. |
 | [auditLogRoutes.js](../backend/routes/auditLogRoutes.js), `/api/audit-logs` | Admin filtered/paginated `GET /` and `GET /:id` detail. List responses contain compact identities/changes; the current feed uses the list without expansion. |
 | [financialReportRoutes.js](../backend/routes/financialReportRoutes.js), `/api/reports` | Staff `GET /financial`, `/financial/export`; month or inclusive date-range filters and ExcelJS export. |
 | [billingErrorRoutes.js](../backend/routes/billingErrorRoutes.js), `/api/billing-errors` | Resident `POST /bills/:id`; staff `GET /` open/resolved/all; Collector `PATCH /:id/resolve`. |
@@ -275,6 +283,9 @@ Related helpers are consolidated into one file per feature. Each grouped service
 | [billing.js](../backend/services/billing.js) | Period/date policy, meter validation, billing error support, statement queries and resident bill details. |
 | [payments.js](../backend/services/payments.js) | Centavo validation, purposes, permissions, resident/recipient identity, payment allocations, credit, penalties and reconciliation. |
 | [receipts.js](../backend/services/receipts.js) | Receipt file policy, OCR/text parsing, quality checks and authenticated private storage. |
+| [receiptBatches.js](../backend/services/receiptBatches.js) | Combines OCR results across receipt images, manages image storage and persists ordered receipt metadata. |
+| [receiptOcrQueue.js](../backend/services/receiptOcrQueue.js) | Claims persisted OCR jobs, retries temporary failures and saves results to the payment and its images. |
+| [webPush.js](../backend/services/webPush.js) | Uses VAPID configuration to send queued notifications to subscribed browsers and removes expired subscriptions. |
 | [analytics.js](../backend/services/analytics.js) | History eligibility, anomaly rules, forecast models, recommendations, evaluation/comparison, guidance and refresh. |
 | [spreadsheets.js](../backend/services/spreadsheets.js) | Spreadsheet XML compatibility and analytics workbook exports. |
 | [financialReports.js](../backend/services/financialReports.js) | Ledger-derived reports, receivables, collections, occupancy and efficiency. |
@@ -282,6 +293,8 @@ Related helpers are consolidated into one file per feature. Each grouped service
 | [audit.js](../backend/services/audit.js) | Sanitized snapshots, context, summaries, historical identity recovery, transactional writer, delivery outcomes and route coverage. |
 
 Reminders require `SOA_REMINDER_SCHEDULER_ENABLED=true`; timezone uses `SOA_REMINDER_TIMEZONE`. Its three-day email window differs from prescriptive payment-reminder rules. Deduplication means an already-sent overdue event is not emailed daily.
+
+Web Push requires migration `044` and server-side `WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY` and `WEB_PUSH_SUBJECT`. A database trigger queues delivery for subscriptions when an in-app notification is inserted. The worker retries delivery based on the queue state. Email delivery and browser push have separate configuration. See the [Web Push setup in the README](../README.md#enable-web-push-on-render).
 
 Some `ensure...Schema` helpers create/upgrade supporting tables lazily; they do not replace initialization. `ensurePaymentLedgerSchema` requires active policy version 2 and does not silently migrate legacy payments.
 
@@ -320,6 +333,10 @@ Choose `dev` for nodemon restart or `start` for normal execution; do not run bot
 | [migrateRegistrationVerification.js](../backend/scripts/migrateRegistrationVerification.js), `accounts:migrate-registration` | Targeted registration-verification schema migration for an existing environment. |
 | [migrateAuditLogs.js](../backend/scripts/migrateAuditLogs.js), `audit:migrate` | Detailed audit migration; preserves the service's snapshot-based history design. |
 | [migrateProtectedSoaExports.js](../backend/scripts/migrateProtectedSoaExports.js), `soa-exports:migrate` | Installs migration `043` for protected request metadata/quotas. |
+| [migrateWebPush.js](../backend/scripts/migrateWebPush.js), `notifications:migrate` | Applies migration `044` for browser subscriptions and delivery queue. |
+| [migrateReceiptImages.js](../backend/scripts/migrateReceiptImages.js), `receipts:migrate-images` | Applies migration `045` and backfills ordered image metadata. |
+| [migrateUnitSoaNames.js](../backend/scripts/migrateUnitSoaNames.js), `soa-names:migrate` | Applies migration `046` and seeds the per-unit display name once. |
+| [migrateReceiptOcr.js](../backend/scripts/migrateReceiptOcr.js), `receipts:migrate-ocr` | Applies migration `047` for background receipt OCR. |
 | [protectedSoaPreflight.js](../backend/scripts/protectedSoaPreflight.js), `soa-exports:preflight` | Checks schema, renderer/assets, encryption and SMTP negotiation without sending a resident email. |
 
 Existing-database ledger maintenance follows [category-payments-rollout.md](category-payments-rollout.md). `npm test` does not activate policy, run reminder mail or invoke the current-database payment regression command.
@@ -343,7 +360,7 @@ Existing-database ledger maintenance follows [category-payments-rollout.md](cate
 
 Names omit `.test.js`. [helpers/paymentHttpRegression.js](../backend/test/helpers/paymentHttpRegression.js) supports the opt-in database/HTTP regression script, not the top-level test glob. Many unit tests inject fake database/integration behavior; passing unit tests do not establish a deployed database or SMTP/Cloudinary connection.
 
-Targeted npm commands include `test:audit`, `test:soa-exports`, `test:registration`, `test:password-reset`, `test:account-settings`, `test:account-safeguards`, `test:payment-receipts`, `test:soa-dates`, `test:soa-unpublish`, and `test:combined-report`. Check [package.json](../backend/package.json) for the exact files. Relevant HTTP suites use disposable schemas and intercepted mail; read each fixture setup before running against configured infrastructure.
+Targeted npm commands include `test:audit`, `test:soa-exports`, `test:registration`, `test:password-reset`, `test:account-settings`, `test:account-safeguards`, `test:payment-receipts`, `test:soa-dates`, `test:soa-unpublish`, `test:combined-report`, `test:receipt-images` and `test:soa-names`. Check [package.json](../backend/package.json) for the exact files. Relevant HTTP suites use disposable schemas and intercepted mail; read each fixture setup before running against configured infrastructure.
 
 ### Debug an API action
 

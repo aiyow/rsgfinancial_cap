@@ -9,7 +9,7 @@ import pool from "../config/db.js";
 import { allowRoles, requireAuth } from "../middleware/authMiddleware.js";
 import { requireId, validateBody } from "../middleware/validate.js";
 import { receiptUpload } from "../middleware/receiptUpload.js";
-import { analyzeReceipt, receiptDeliveryUrl, timeReceiptPhase } from "../services/receipts.js";
+import { inspectReceiptQuality, receiptDeliveryUrl, timeReceiptPhase } from "../services/receipts.js";
 import { analyzeReceiptImages, cleanupReceiptImages, ensureReceiptImagesSchema, insertReceiptImages, receiptHash, receiptImagesSelectSql, receiptTypeFromRequest, uploadReceiptImages } from '../services/receiptBatches.js';
 import { writeAuditLog } from "../services/audit.js";
 
@@ -81,7 +81,7 @@ const paymentSelect = `SELECT ps.id, ps.official_receipt_no AS "officialReceiptN
     FROM payment_charge_allocations a WHERE a.payment_submission_id=ps.id),'[]'::jsonb) AS allocations,
   ps.unit_id AS "unitId", ps.entry_type AS "entryType", ps.payment_method AS "paymentMethod",
   ps.receipt_original_name AS "receiptOriginalName", ps.receipt_mime_type AS "receiptMimeType",
-  ps.receipt_type AS "receiptType", ps.ocr_details AS "ocrDetails", ${receiptImagesSelectSql} AS "receiptImages",
+  ps.receipt_type AS "receiptType", ps.ocr_status AS "ocrStatus", ps.ocr_details AS "ocrDetails", ${receiptImagesSelectSql} AS "receiptImages",
   ps.ocr_raw_text AS "ocrRawText", ps.ocr_confidence AS "ocrConfidence",
   ps.ocr_quality_status AS "ocrQualityStatus", ps.ocr_amount AS "ocrAmount",
   ps.ocr_reference_no AS "ocrReferenceNo", ps.ocr_payment_date AS "ocrPaymentDate",
@@ -135,7 +135,12 @@ function forgetReceiptPreview(key) {
   receiptPreviews.delete(key);
 }
 
-async function processReceipt(req, res, { preview = false, hashes = req.files?.map(file => receiptHash(file.buffer)) || [] } = {}) {
+function receiptPreviewKey(req, receiptType, hashes) {
+  return JSON.stringify([req.user.id, req.resourceId, receiptType, hashes]);
+}
+
+async function previewReceipt(req, res) {
+  const hashes = req.files.map(file => receiptHash(file.buffer));
   const receiptType = receiptTypeFromRequest(req.body.receiptType);
   if (!hashes.length) { res.status(400).json({ message: "Choose one or two receipt images." }); return null; }
   if (new Set(hashes).size !== hashes.length) {
@@ -143,14 +148,14 @@ async function processReceipt(req, res, { preview = false, hashes = req.files?.m
     return null;
   }
   // Reuse only a server-generated preview for the same resident, bill, type and ordered image bytes.
-  const key = JSON.stringify([req.user.id, req.resourceId, receiptType, hashes]);
+  const key = receiptPreviewKey(req, receiptType, hashes);
   const cached = receiptPreviews.get(key);
   const timing = res.locals.receiptOcrTiming;
   if (timing) timing.cacheHit = Boolean(cached);
   if (cached) return cached.analysis;
   try {
-    const analysis = await analyzeReceiptImages(req.files, receiptType, analyzeReceipt, timing);
-    if (preview && analysis.quality.status === 'GOOD') {
+    const analysis = await analyzeReceiptImages(req.files, receiptType, undefined, { timing });
+    if (analysis.quality.status === 'GOOD') {
       forgetReceiptPreview(key);
       if (receiptPreviews.size >= MAX_RECEIPT_PREVIEWS) {
         forgetReceiptPreview(receiptPreviews.keys().next().value);
@@ -201,7 +206,7 @@ router.post("/bills/:id/preview", allowRoles("RESIDENT"), requireId, receiptUplo
       return current;
     });
     if (!bill) return res.status(404).json({ message: "Published SOA not found." });
-    const analysis = await processReceipt(req, res, { preview: true });
+    const analysis = await previewReceipt(req, res);
     if (!analysis) return undefined;
     if (analysis.quality.status !== "GOOD") {
       return res.status(422).json({
@@ -226,20 +231,26 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload, asyn
     if (Number(bill.approved) >= Number(bill.total) && Number(bill.total) > 0) {
       return res.status(409).json({ message: "This SOA is already fully paid." });
     }
-    receiptTypeFromRequest(req.body.receiptType);
+    const receiptType = receiptTypeFromRequest(req.body.receiptType);
     const hashes = req.files.map(file => receiptHash(file.buffer));
+    if (new Set(hashes).size !== hashes.length) {
+      return res.status(400).json({ message: 'The same image was selected twice. Choose different screenshots of the same payment.' });
+    }
     const digest = hashes[0];
     const duplicate = await pool.query(`SELECT id FROM payment_submissions WHERE receipt_sha256 = ANY($1::text[])
       UNION ALL SELECT payment_submission_id AS id FROM payment_receipt_images WHERE sha256 = ANY($1::text[]) LIMIT 1`, [hashes]);
     if (duplicate.rows[0]) return res.status(409).json({ message: "This receipt image was already submitted." });
-    const analysis = await processReceipt(req, res, { hashes });
-    if (!analysis) return undefined;
-    if (analysis.quality.status !== "GOOD") {
-      return res.status(422).json({
-        message: `Image ${analysis.quality.imagePosition} is blurred or too small. Please replace it with a clearer image and try again.`,
-        analysis,
-      });
+    // Older clients may already have run preview. Reuse that result if present.
+    // New submissions only check image quality here. OCR runs after the commit.
+    const analysis = receiptPreviews.get(receiptPreviewKey(req, receiptType, hashes))?.analysis;
+    if (!analysis) {
+      const quality = await Promise.all(req.files.map(file => inspectReceiptQuality(file.buffer)));
+      const poorImage = quality.findIndex(image => image.status !== 'GOOD');
+      if (poorImage !== -1) {
+        return res.status(422).json({ message: `Image ${poorImage + 1} is blurred or too small. Please replace it with a clearer image and try again.` });
+      }
     }
+    const ocrStatus = analysis ? 'COMPLETED' : 'QUEUED';
 
     uploadedReceipts = await uploadReceiptImages(req.files);
     const uploadedReceipt = uploadedReceipts[0];
@@ -249,17 +260,24 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload, asyn
     const currentBill = await residentBill(req.resourceId, req.user.id, client);
     if (!currentBill) throw Object.assign(new Error('Published SOA not found.'), { status: 404 });
     await validateResidentPurpose(client, currentBill, req.user.id, req.body.paymentPurpose);
+    if (Number(currentBill.approved) >= Number(currentBill.total) && Number(currentBill.total) > 0) {
+      throw Object.assign(new Error('This SOA is already fully paid.'), { status: 409 });
+    }
     const result = await client.query(
       `INSERT INTO payment_submissions
         (unit_id, submitted_by, target_unit_bill_id, receipt_path, receipt_storage, receipt_cloudinary_public_id,
          receipt_original_name, receipt_mime_type, receipt_sha256,
-         ocr_raw_text, ocr_confidence, ocr_quality_status, ocr_amount, ocr_reference_no, ocr_payment_date, payment_purpose, receipt_type, ocr_details)
-       VALUES ($1, $2, $3, $4, 'CLOUDINARY', $5, $6, $7, $8, $9, $10, 'GOOD', $11, $12, $13, $14, $15, $16::jsonb)
+         ocr_raw_text, ocr_confidence, ocr_quality_status, ocr_amount, ocr_reference_no, ocr_payment_date,
+         payment_purpose, receipt_type, ocr_details, ocr_status, ocr_available_at)
+       VALUES ($1, $2, $3, $4, 'CLOUDINARY', $5, $6, $7, $8, $9, $10, 'GOOD', $11, $12, $13, $14, $15, $16::jsonb,
+         $17, CASE WHEN $17 = 'QUEUED' THEN NOW() ELSE NULL END)
        RETURNING id`,
       [bill.unitId, req.user.id, req.resourceId, uploadedReceipt.publicId, uploadedReceipt.publicId,
         req.file.originalname.slice(0, 255), req.file.mimetype, digest,
-        analysis.rawText, analysis.confidence, analysis.amount, analysis.referenceNo, analysis.paymentDate, req.body.paymentPurpose,
-        analysis.receiptType, JSON.stringify({ detectedReceiptType: analysis.detectedReceiptType, warnings: analysis.warnings, additionalReferences: analysis.additionalReferences })],
+        analysis?.rawText ?? '', analysis?.confidence ?? null, analysis?.amount ?? null, analysis?.referenceNo ?? null,
+        analysis?.paymentDate ?? null, req.body.paymentPurpose, receiptType,
+        JSON.stringify(analysis ? { detectedReceiptType: analysis.detectedReceiptType, warnings: analysis.warnings,
+          additionalReferences: analysis.additionalReferences } : {}), ocrStatus],
     );
     await insertReceiptImages(client, result.rows[0].id, req.files, uploadedReceipts, analysis);
     await writeAuditLog({
@@ -272,12 +290,11 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload, asyn
         targetBillId: req.resourceId,
         paymentPurpose: req.body.paymentPurpose,
         receiptOriginalName: req.file.originalname.slice(0, 255),
-        receiptType: analysis.receiptType,
+        receiptType,
+        ocrStatus,
         receiptImages: req.files.map((file, index) => ({ position: index + 1, originalFilename: file.originalname.slice(0, 255) })),
         receiptStorage: "CLOUDINARY",
-        ocrAmount: analysis.amount,
-        ocrReferenceNo: analysis.referenceNo,
-        ocrPaymentDate: analysis.paymentDate,
+        ...(analysis && { ocrAmount: analysis.amount, ocrReferenceNo: analysis.referenceNo, ocrPaymentDate: analysis.paymentDate }),
       },
     });
     const recipients = await client.query(
@@ -294,7 +311,8 @@ router.post("/bills/:id", allowRoles("RESIDENT"), requireId, receiptUpload, asyn
       dedupeKey: `payment-submitted-${result.rows[0].id}`,
     })));
     await client.query("COMMIT");
-    return res.status(201).json({ message: "Payment proof submitted for Admin verification.", paymentId: result.rows[0].id, analysis });
+    return res.status(201).json({ message: "Payment proof submitted for Admin verification.",
+      paymentId: result.rows[0].id, ocrStatus, ...(analysis && { analysis }) });
   } catch (error) {
     if (client) await client.query("ROLLBACK").catch(() => {});
     await cleanupReceiptImages(uploadedReceipts);

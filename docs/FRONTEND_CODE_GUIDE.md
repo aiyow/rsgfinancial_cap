@@ -46,13 +46,21 @@ flowchart TD
 
 | File | What to learn |
 | --- | --- |
-| [main.jsx](../frontend/src/main.jsx) | Mounts into `#root` in `StrictMode`, then `BrowserRouter`, `AuthProvider`, and `App`; imports global CSS. |
+| [main.jsx](../frontend/src/main.jsx) | Mounts `App` in `StrictMode`, `BrowserRouter` and `AuthProvider`, imports global CSS, and registers the service worker in secure production contexts. |
 | [App.jsx](../frontend/src/App.jsx) | The actual route table. `HomeRedirect` waits for session initialization and sends users to login or their role dashboard; unknown URLs redirect to `/`. |
 | [routes.js](../frontend/src/constants/routes.js) | `dashboardPathFor(role)` centralizes role landing paths. |
 | [auth-context.js](../frontend/src/context/auth-context.js) | Defines the React context object separately from its provider. |
-| [AuthContext.jsx](../frontend/src/context/AuthContext.jsx) | Owns user/token/initializing, `login`, `replaceToken`, `updateUser` and `logout`. Restores `condo_token` and `condo_user` from localStorage, validates the token through `/api/auth/me`, and clears a failed session. |
+| [AuthContext.jsx](../frontend/src/context/AuthContext.jsx) | Owns user/token/initializing, `login`, `replaceToken`, `updateUser` and `logout`. Restores `condo_token` and `condo_user` from localStorage, validates the token through `/api/auth/me`, and restores an eligible Resident session if the API cannot be reached, and clears invalid sessions. |
 | [useAuth.js](../frontend/src/hooks/useAuth.js) | Reads the context so pages do not import the context object directly. |
 | [ProtectedRoute.jsx](../frontend/src/components/ProtectedRoute.jsx) | Waits for initialization; redirects signed-out users to `/login`; redirects a wrong-role user to their own dashboard. Accepts `allowedRole` or `allowedRoles`. |
+
+### Installation, offline access and search metadata
+
+[Login.jsx](../frontend/src/pages/Login.jsx) renders [PwaInstallPrompt.jsx](../frontend/src/components/PwaInstallPrompt.jsx). [pwaInstall.js](../frontend/src/services/pwaInstall.js) captures the browser’s install event so the prompt can open from a user click. Browsers without a native prompt receive manual instructions. The production [service worker](../frontend/public/push-worker.js) caches the app shell and handles device notifications.
+
+[residentOffline.js](../frontend/src/services/residentOffline.js) keeps eligible Resident reads in IndexedDB after online verification. Previously loaded bills, analytics, recommendations, payment history and notifications can be read offline, subject to the seven-day session and data limits. Writes and other online-only actions require a connection. Logout clears the saved Resident session and responses.
+
+[search-discovery.mjs](../frontend/search-discovery.mjs) generates `robots.txt`, a sitemap for `/login`, and canonical and social metadata during the build. `VITE_SITE_URL` supplies the public HTTPS origin and `VITE_GOOGLE_SITE_VERIFICATION` is optional. [SearchMetadata.jsx](../frontend/src/components/SearchMetadata.jsx) adds `noindex` on routes outside the public landing and login paths. See the [Google Search setup](google-search-setup.md).
 
 ### What happens at login
 
@@ -66,7 +74,7 @@ The cached user is for immediate UI state; the backend reloads the current user'
 
 [services/api.js](../frontend/src/services/api.js) is the HTTP boundary. `API_URL` uses `VITE_API_URL`, defaults to `http://localhost:5000`, and removes a trailing slash.
 
-`apiRequest(path, { token, body, ...options })` adds the bearer header, JSON-serializes non-FormData bodies, parses response JSON, and throws an Error for an unsuccessful response. The error retains `status` and backend JSON in `data`. Network failures get a reachability message. It does not automatically log users out on every failed page request; the page or authentication provider handles its own failures.
+`apiRequest(path, { token, body, ...options })` adds the bearer header, JSON-serializes non-FormData bodies, parses response JSON, and throws an Error for an unsuccessful response. The error retains `status` and backend JSON in `data`. Eligible offline Resident requests can use previously saved JSON. Other network failures get a reachability message. An authenticated `401` for the active token invalidates that session.
 
 `apiFile(path, { token, signal })` fetches an authenticated blob for receipt images, template assets or workbook exports. It throws the server message on failure. Pages create object URLs to display/download blobs and should revoke them when done. Resident Request SOA uses JSON requests/status polling; its protected PDF is an email attachment, not an `apiFile` download.
 
@@ -76,9 +84,10 @@ Illustrative calls using the existing helper:
 const { bills } = await apiRequest('/api/bills', { token })
 
 const body = new FormData()
-body.append('receipt', file)
+for (const file of selectedFiles) body.append('receipt', file)
+body.append('receiptType', selectedReceiptType)
 body.append('paymentPurpose', selectedPurpose)
-await apiRequest(`/api/payments/bills/${billId}/preview`, {
+await apiRequest(`/api/payments/bills/${billId}`, {
   method: 'POST', token, body,
 })
 ```
@@ -122,13 +131,13 @@ The final three pages allow all authenticated roles.
 | --- | --- | --- |
 | [AdminDashboard.jsx](../frontend/src/pages/admin/AdminDashboard.jsx), `/admin` | Thin wrapper around `OperationalDashboard` for Admin. | `/api/dashboard/overview`, `/api/analytics/overview`. |
 | [AdminUsersPage.jsx](../frontend/src/pages/admin/AdminUsersPage.jsx), `/admin/users` | Account creation/editing, approval, activation/deactivation and guarded deletion. `AccountActionModal` loads current assignment/balance eligibility before destructive account actions. | `/api/users`; approval uses `PATCH` with `approvalStatus`. |
-| [AdminUnitsViewPage.jsx](../frontend/src/pages/admin/AdminUnitsViewPage.jsx), `/admin/units` | Read-only occupancy/assignment overview; also reused by Collector route. | `/api/units`, `/api/unit-assignments`. |
+| [AdminUnitsViewPage.jsx](../frontend/src/pages/admin/AdminUnitsViewPage.jsx), `/admin/units` | Unit, owner, Tenant(s) and occupancy columns. The Tenant(s) cell shows one name and a +N more control for the full list. Also used by the Collector route. | `/api/units`, `/api/unit-assignments`. |
 | [AdminUnitsPage.jsx](../frontend/src/pages/admin/AdminUnitsPage.jsx), `/admin/units/manage` | Unit forms and Resident assignment/ending, with billing/payment context. | Units, assignments, users, bills and payments. |
-| [AdminSoaPage.jsx](../frontend/src/pages/admin/AdminSoaPage.jsx), `/admin/soa` | Forwarded batch list, refreshed periodically. | `/api/billing-periods`. |
+| [AdminSoaPage.jsx](../frontend/src/pages/admin/AdminSoaPage.jsx), `/admin/soa` | Lists forwarded batches and shows the unpublished SOA count or All Published. | `/api/billing-periods`. |
 | [AdminSoaBatchPage.jsx](../frontend/src/pages/admin/AdminSoaBatchPage.jsx), `/admin/soa/batches/:periodId` | Select/publish bills with or without email; delivery status and retry/resend; single, selected or all unpublish actions. Selected/all unpublish use the password confirmation modal. | `/api/bills?billingPeriodId=...`; `/api/billing-periods/:id/...`. |
 | [AdminSoaBillPage.jsx](../frontend/src/pages/admin/AdminSoaBillPage.jsx), `/admin/soa/bills/:id` | View, publish, correct, edit payment note and category invoice references. | `/api/bills/:id`; publication/delivery routes; shared invoice editor. |
 | [AdminPaymentsPage.jsx](../frontend/src/pages/admin/AdminPaymentsPage.jsx), `/admin/payments` | Payment queue and manual/advance entry with allocation preview. | Payments, units, bills and credits; `POST /api/payments/manual`. |
-| [AdminPaymentPage.jsx](../frontend/src/pages/admin/AdminPaymentPage.jsx), `/admin/payments/:id` | Private receipt/OCR review, verified facts, allocation preview, approval/rejection, rejected-record deletion and invoice entry. | `/api/payments/:id`, receipt/review/invoice-reference endpoints. |
+| [AdminPaymentPage.jsx](../frontend/src/pages/admin/AdminPaymentPage.jsx), `/admin/payments/:id` | Private receipt gallery, OCR processing status, editable verified fields, allocation preview, and approval or rejection. View SOA opens `/admin/soa/bills/:id/view` with read-only controls. | `/api/payments/:id`, receipt image reads and review. |
 | [AdminAuditLogsPage.jsx](../frontend/src/pages/admin/AdminAuditLogsPage.jsx), `/admin/audit-logs` | Compact user-change feed with saved actor/record identity, changes, filters and stable pagination. SOA publication names the resident/unit, or gives the bulk count and saved previews. | `/api/audit-logs`; current rows do not request expanded detail. |
 
 `/admin/assignments` redirects to `/admin/units/manage`. [AdminAssignmentsPage.jsx](../frontend/src/pages/admin/AdminAssignmentsPage.jsx) remains in source but is not imported/routed by the current `App.jsx`.
@@ -142,7 +151,7 @@ The final three pages allow all authenticated roles.
 | [CollectorBillsPage.jsx](../frontend/src/pages/collector/CollectorBillsPage.jsx), `/collector/bills` | Batch list/filter and reopen/forward/delete actions. | Periods and bills. |
 | [CollectorBillBatchPage.jsx](../frontend/src/pages/collector/CollectorBillBatchPage.jsx), `/collector/bills/batches/:periodId` | Bill list inside one batch. | `/api/bills?billingPeriodId=...`. |
 | [CollectorBillPage.jsx](../frontend/src/pages/collector/CollectorBillPage.jsx), `/collector/bills/:id` | View/correct SOA and edit allowed payment references. | `/api/bills/:id`; shared invoice editor. |
-| [CollectorHistoryImportPage.jsx](../frontend/src/pages/collector/CollectorHistoryImportPage.jsx), `/collector/history-import` | Reading-only workbook preview/import, saved workbook download and month deletion. Requires unit and previous/current readings; extra spreadsheet rate/charge columns are ignored. | `/api/analytics/imports`; `/:periodMonth/workbook`. |
+| [CollectorHistoryImportPage.jsx](../frontend/src/pages/collector/CollectorHistoryImportPage.jsx), `/collector/history-import` | Workbook preview/import, saved workbook download and month deletion. Reads UNIT, PREVIOUS, CURRENT or PRESENT, and optional WRATE or WATER RATE. Shows the uploaded rate in ₱/m³. | `/api/analytics/imports`; `/:periodMonth/workbook`. |
 | [CollectorPaymentsPage.jsx](../frontend/src/pages/collector/CollectorPaymentsPage.jsx), `/collector/payments` | Approved-payment list/details and category invoice entry. | `/api/payments?status=APPROVED`. |
 | [CollectorSoaTemplatePage.jsx](../frontend/src/pages/collector/CollectorSoaTemplatePage.jsx), `/admin/soa-template` | Template text/color/layout and logo/QR assets. Despite its name, current routing and writes are Admin-only. | `/api/soa-template`; `/assets/:type`. |
 
@@ -154,31 +163,35 @@ The final three pages allow all authenticated roles.
 | --- | --- | --- |
 | [ResidentDashboard.jsx](../frontend/src/pages/resident/ResidentDashboard.jsx), `/resident` | Select assigned unit, show current payable bill, consumption/history/forecast and viewable insights. | Bills, `/api/analytics/resident`, resident recommendations/view action. |
 | [ResidentBillsPage.jsx](../frontend/src/pages/resident/ResidentBillsPage.jsx), `/resident/bills` | Published SOA list with assignment-aware payable amounts. | `/api/bills`. |
-| [ResidentBillPage.jsx](../frontend/src/pages/resident/ResidentBillPage.jsx), `/resident/bills/:id` | Protected viewer, Request SOA email button, assignment-aware payment purpose, receipt preview/final submission, QR and billing-error form. | Bill detail; `/api/bills/:id/protected-exports`; payments preview/submit; QR; billing-error endpoint. |
+| [ResidentBillPage.jsx](../frontend/src/pages/resident/ResidentBillPage.jsx), `/resident/bills/:id` | Protected viewer, Request SOA email button, assignment-aware payment purpose, receipt type selection, direct submission of one or two receipt images, QR and billing-error form. | Bill detail; `/api/bills/:id/protected-exports`; payment submission; QR; billing-error endpoint. |
 | [ResidentPaymentsPage.jsx](../frontend/src/pages/resident/ResidentPaymentsPage.jsx), `/resident/payments` | Filtered submission history with verified/category/invoice detail. | `/api/payments`. |
 
 ### Shared staff pages
 
 | File | Browser routes and behavior |
 | --- | --- |
-| [OperationalDashboard.jsx](../frontend/src/pages/shared/OperationalDashboard.jsx) | Used by the two staff dashboard wrappers; fetches operational and analytics summaries. |
+| [OperationalDashboard.jsx](../frontend/src/pages/shared/OperationalDashboard.jsx) | Fetches operational and analytics summaries for both staff roles. Admin sees Statement Payment Status beside Financial Health and Water Outlook beside the water bill chart. |
 | [AnalyticsPage.jsx](../frontend/src/pages/shared/AnalyticsPage.jsx) | `/admin/analytics`, `/collector/analytics`: forecasts, history, diagnostics and recommendations; uses analytics overview/refresh and staff recommendation APIs. |
-| [FinancialReportsPage.jsx](../frontend/src/pages/shared/FinancialReportsPage.jsx) | `/admin/reports`, `/collector/reports`: date/month filters, overview/charge/receivable/occupancy tabs, workbook export and print layout; `/api/reports/financial` and `/financial/export`. |
+| [FinancialReportsPage.jsx](../frontend/src/pages/shared/FinancialReportsPage.jsx) | `/admin/reports`, `/collector/reports`: Date and month filters, financial and occupancy tabs, Excel export and print layout. In Unit Occupancy, one Admin Edit button enables all Resident Name fields, then Save submits changed rows together to `PATCH /api/units/soa-names`. Reports load through `/api/reports/financial` and `/api/reports/financial/export`. |
 | [BillingErrorsPage.jsx](../frontend/src/pages/shared/BillingErrorsPage.jsx) | `/admin/billing-errors`, `/collector/billing-errors`: open/resolved/all report list. Only Collector receives resolution controls and calls `PATCH /api/billing-errors/:id/resolve`. |
 
 ## 5. Shared components
 
 | File | Role in the UI |
 | --- | --- |
-| [DashboardLayout.jsx](../frontend/src/components/DashboardLayout.jsx) | Role-aware navigation, responsive sidebar, account links, notification bell and logout. Named `Panel`/`EmptyRow` provide common content/empty presentation. |
+| [DashboardLayout.jsx](../frontend/src/components/DashboardLayout.jsx) | Role-aware navigation, responsive sidebar with the Financial Platform subtitle, account links, notification bell and logout. Named `Panel`/`EmptyRow` provide common content/empty presentation. |
 | [BrandMark.jsx](../frontend/src/components/BrandMark.jsx) | Shared brand rendering for account pages and layout. |
-| [NotificationCenter.jsx](../frontend/src/components/NotificationCenter.jsx) | Polling bell/popover, unread count, read actions, toast and optional browser alerts. Clears interval/listeners on cleanup. |
+| [NotificationCenter.jsx](../frontend/src/components/NotificationCenter.jsx) | Polling bell/popover, unread count, read actions, toast and per-device push controls through [PushNotificationSettings.jsx](../frontend/src/components/PushNotificationSettings.jsx). Clears interval/listeners on cleanup. |
 | [NoticeToast.jsx](../frontend/src/components/NoticeToast.jsx) | Reusable transient notice presentation. |
 | [ReadOnlyRecords.jsx](../frontend/src/components/ReadOnlyRecords.jsx) | Retained units/assignments read-only component; not the implementation selected for current unit routes. |
 | [SoaDocument.jsx](../frontend/src/components/SoaDocument.jsx) | Printable SOA formatting, snapshots, charge/invoice sections and authenticated template assets. Displays backend accounting values; also derives presentation values from charge lines. |
 | [SoaViewer.jsx](../frontend/src/components/SoaViewer.jsx) | Responsive fit/zoom wrapper around the fixed-format SOA. Resize measurement and viewer scaling do not alter accounting data. |
 | [ProtectedSoaDownload.jsx](../frontend/src/components/ProtectedSoaDownload.jsx) | Despite the retained filename, this emails a protected SOA. It checks server state, posts an idempotent request, polls pending work and changes to a disabled **SOA already sent in email** button for 30 minutes. No success panel or browser PDF download is shown. |
 | [UnpublishBatchModal.jsx](../frontend/src/components/UnpublishBatchModal.jsx) | Current-password confirmation for selected/all SOA unpublishing, including selected unit context and pending controls. |
+| [UnitTenantListModal.jsx](../frontend/src/components/UnitTenantListModal.jsx) | Shows the full tenant list for a unit in a dismissible dialog. |
+| [UnitSoaNameCell.jsx](../frontend/src/components/UnitSoaNameCell.jsx) | Displays the saved name or its input when the Unit Occupancy table enters edit mode. |
+| [PaymentSubmittedModal.jsx](../frontend/src/components/PaymentSubmittedModal.jsx) | Confirms the receipt was submitted for review and continues to Pending payment history. |
+| [ReceiptGallery.jsx](../frontend/src/components/ReceiptGallery.jsx) | Shows the selected receipt image with Prev and Next controls when multiple images are available. |
 | [ReceiptImageViewer.jsx](../frontend/src/components/ReceiptImageViewer.jsx) | Receipt image loading/error presentation and image-viewing controls. |
 | [AccountActionModal.jsx](../frontend/src/components/AccountActionModal.jsx) | Rechecks account assignment/balance eligibility and explains blocked account actions. |
 | [PasswordInput.jsx](../frontend/src/components/PasswordInput.jsx), [OtpInput.jsx](../frontend/src/components/OtpInput.jsx) | Password reveal/requirements/confirmation and six-digit code entry shared by account flows. |
@@ -219,17 +232,17 @@ The final three pages allow all authenticated roles.
 ### Resident proof to approved payment
 
 1. `ResidentBillPage` loads the bill and uses `allowedPaymentPurposes` from the backend. Tenants are water-only; owners can choose all supported purposes.
-2. Selecting a receipt creates a local image preview. OCR preview posts `receipt` and `paymentPurpose` as FormData; successful preview is not an approved or saved payment.
-3. Final submission posts to `/api/payments/bills/:id` and creates a pending record. The page refreshes bill context.
-4. Admin opens `AdminPaymentPage`, loads JSON and the authenticated receipt blob, checks OCR, and enters verified amount/date/method/reference.
+2. The Resident selects the issuing bank or app and chooses up to two images for the same payment in one picker. The local image preview lets residents check their selection.
+3. Submit posts the files as repeated `receipt` fields with `receiptType` and `paymentPurpose` to `/api/payments/bills/:id`. Once the receipt is saved for review, the Payment Submitted confirmation opens. Continuing opens Payment History filtered to Pending.
+4. Admin opens `AdminPaymentPage` and can see the images and enter the verified amount, date, method and reference immediately. The page checks for OCR results while processing and fills only untouched fields.
 5. `PaymentAllocationPreview` asks the backend how that input would be designated. Admin approval posts to `/api/payments/:id/review`; the backend checks again under locks.
-6. The page reloads payment detail. `PaymentInvoiceEditor` can then save separate or shared category invoices.
+6. The page reloads payment detail. View SOA opens the print-capable read-only SOA. Staff can edit category invoices from screens that mount `PaymentInvoiceEditor`, such as the editable Admin SOA.
 
 For a full SOA balance of PHP 1,667.74 containing water PHP 58.90, paying water PHP 58.90 can make `payableBalance` zero for a tenant while `remainingBalance` still contains association dues. Do not replace resident payable fields with the overall balance.
 
 ### Workbook to SOA
 
-`CollectorBillingPage` creates/selects the period, sends workbook preview, saves reviewed reading rows with `PUT /api/billing-periods/:id/readings`, then requests generation. `CollectorBillsPage` forwards the batch. `AdminSoaBatchPage` publishes selected/all bills with the chosen email option. The backend owns quantities, rates, snapshot creation, access and workflow state.
+`CollectorBillingPage` creates/selects the period, sends workbook preview, saves reviewed reading rows with `PUT /api/billing-periods/:id/readings`, then requests generation. `CollectorBillsPage` forwards the batch. `AdminSoaBatchPage` publishes selected/all bills with the chosen email option. The backend owns quantities, rates, snapshot creation, access and workflow state. It uses the saved Unit Occupancy name when generating a new SOA.
 
 Historical reading uploads use `CollectorHistoryImportPage` and a separate API. Required headers are `UNIT`, `PREVIOUS`, and `CURRENT` (`PRESENT` is also accepted). Consumption is computed; spreadsheet rate/charge columns are ignored. The server selects a saved financial rate and retains the uploaded workbook. See [HISTORY_IMPORT_FORMAT.md](HISTORY_IMPORT_FORMAT.md).
 
@@ -239,7 +252,7 @@ Historical reading uploads use `CollectorHistoryImportPage` and a separate API. 
 2. Clicking Request SOA posts an empty body with a UUID `Idempotency-Key`. Network retries keep the same key, and in-progress responses are polled through `/api/soa-exports/:exportId` with abortable waits.
 3. On `READY`, the UI removes all success details and shows only the disabled **SOA already sent in email** button. The tooltip briefly suggests checking Inbox/Spam and explains the wait. `nextRequestAt` controls the local unlock timer.
 4. The backend enforces the 30-minute cooldown even with a new key or another tab. A `SOA_EMAIL_COOLDOWN` response restores the sent state. After expiry, the button can create a fresh request. Failure/verification messages appear only when an action needs attention.
-5. The protected PDF is attached to the delivered email. Its opening password is the lowercase surname without spaces only, and the email contains opening instructions without printing the password. The browser never receives the password or downloads this PDF through `apiFile`.
+5. The protected PDF is attached to the delivered email. Its opening password is the requesting account’s lowercase surname with spaces removed. The email shows instructions and a generic example. The browser never receives the password or downloads this PDF through `apiFile`.
 
 See [soa.js](../backend/services/soa.js) for access, rendering, encryption and cooldowns, and [email.js](../backend/services/email.js) for the shared email layout. SOA email dates use `January 1, 2026` style; balances use `PHP 2,228.24` style. The 30-minute wait governs another request, not the lifetime of an already emailed PDF.
 
@@ -294,7 +307,10 @@ Run `dev` for normal development; `preview` serves a built `dist/` after `build`
 | [registrationOtp.mjs](../frontend/test/browser/registrationOtp.mjs), [accountActions.mjs](../frontend/test/browser/accountActions.mjs) | Registration gating and guarded account actions. |
 | [residentSoaPrivacy.mjs](../frontend/test/browser/residentSoaPrivacy.mjs) | Conceal/reveal, scrolling, fit/zoom and responsive SOA viewer behavior. |
 | [selectedUnpublish.mjs](../frontend/test/browser/selectedUnpublish.mjs), [bulkUnpublish.mjs](../frontend/test/browser/bulkUnpublish.mjs) | Selection, confirmation/password handling and batch-state refresh. |
-| [historyReadingsOnly.mjs](../frontend/test/browser/historyReadingsOnly.mjs), [paymentOfficialReceipts.mjs](../frontend/test/browser/paymentOfficialReceipts.mjs), [combinedFinancialReport.mjs](../frontend/test/browser/combinedFinancialReport.mjs) | Simplified reading imports, payment references and combined billing output. |
+| [unitTenants.mjs](../frontend/test/browser/unitTenants.mjs), [unitSoaNames.mjs](../frontend/test/browser/unitSoaNames.mjs) | Tenant list presentation and Admin-only unit name editing across desktop and mobile. |
+| [pwaInstall.mjs](../frontend/test/browser/pwaInstall.mjs), [searchDiscovery.mjs](../frontend/test/browser/searchDiscovery.mjs) | Browser installation prompts and public search metadata. |
+| [receiptBatches.mjs](../frontend/test/browser/receiptBatches.mjs) | Two-image upload and review controls. |
+| [historyReadingsOnly.mjs](../frontend/test/browser/historyReadingsOnly.mjs), [paymentOfficialReceipts.mjs](../frontend/test/browser/paymentOfficialReceipts.mjs), [combinedFinancialReport.mjs](../frontend/test/browser/combinedFinancialReport.mjs) | History workbook rate preview and import, payment references and combined billing output. |
 
 Most UI scripts require Vite running at `http://127.0.0.1:5173` and an installed Playwright module; set `PLAYWRIGHT_MODULE` if it is outside the project. They use mocked APIs/synthetic fixtures, not live resident mutations. Email previews can render without Vite. Read each script's setup and output directory before running. Lint/build, utility tests and mocked browser checks provide different evidence; they do not prove deployed inbox delivery.
 

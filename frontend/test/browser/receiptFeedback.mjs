@@ -4,7 +4,8 @@ import { mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
-const output = fileURLToPath(new URL('../../../artifacts/receipt-feedback/', import.meta.url))
+const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5173'
+const output = process.env.TEST_ARTIFACT_DIR || fileURLToPath(new URL('../../../artifacts/receipt-feedback/', import.meta.url))
 await mkdir(output, { recursive: true })
 const qualityMessage = 'The receipt image is blurred. Please upload a clearer image and try again.'
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
@@ -17,7 +18,7 @@ try {
       : { viewport: { width: 1366, height: 900 } })
     const user = { id: 1, role: 'RESIDENT', fullName: 'Receipt Tester', isActive: true, approvalStatus: 'APPROVED' }
     const bill = { id: 171, unitNumber: '237', totalAmount: 1694.22, remainingBalance: 1694.22, paymentStatus: 'UNPAID', allowedPaymentPurposes: ['COMBINED'], charges: [] }
-    let response = { status: 422, body: { message: qualityMessage, analysis: { quality: { status: 'LOW_RESOLUTION' } } } }
+    let response = { status: 422, body: { message: qualityMessage } }
     let submitCount = 0
     await context.addInitScript(user => {
       localStorage.setItem('condo_token', 'mock-only')
@@ -28,8 +29,8 @@ try {
       const path = new URL(request.url()).pathname
       if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'authorization,content-type', 'access-control-allow-methods': 'GET,POST,OPTIONS' } })
       if (request.method() === 'POST') {
-        assert.ok(['/api/payments/bills/171/preview', '/api/payments/bills/171'].includes(path), path)
-        if (path === '/api/payments/bills/171') submitCount++
+        assert.equal(path, '/api/payments/bills/171')
+        submitCount++
         return route.fulfill({ status: response.status, json: response.body })
       }
       assert.equal(request.method(), 'GET')
@@ -48,7 +49,7 @@ try {
     })
     const page = await context.newPage()
     page.on('pageerror', error => runtimeErrors.push(error.message))
-    await page.goto(`${process.env.TEST_BASE_URL || 'http://127.0.0.1:5173'}/resident/bills/171`)
+    await page.goto(`${base}/resident/bills/171`)
     await page.getByRole('button', { name: 'Upload receipt', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Submit your receipt' })
     await dialog.getByLabel('Select Receipt Type', { exact: true }).selectOption('GCASH')
@@ -63,12 +64,11 @@ try {
     assert.match(await dialog.getByRole('alert').innerText(), /Only JPEG/)
     await select('receipt.png')
     assert.equal(await dialog.getByRole('alert').count(), 0)
-    await dialog.getByRole('button', { name: 'Preview OCR', exact: true }).click()
+    await dialog.getByRole('button', { name: 'Submit payment proof', exact: true }).click()
     const alert = dialog.getByRole('alert')
     await alert.waitFor()
     assert.match(await alert.innerText(), /receipt image is blurred.*clearer image and try again/)
     assert.equal(await page.locator('[role="alert"]').count(), 1)
-    await dialog.getByText('Blurred image', { exact: true }).waitFor()
     await dialog.locator('div.overflow-y-auto').last().evaluate(el => { el.scrollTop = el.scrollHeight })
     const box = await alert.boundingBox()
     assert.ok(box.y >= 0 && box.y + box.height <= page.viewportSize().height)
@@ -76,34 +76,28 @@ try {
     await page.screenshot({ path: `${output}/${mobile ? 'mobile' : 'desktop'}-error.png` })
     await alert.waitFor({ state: 'hidden', timeout: 10000 })
     assert.equal(await dialog.isVisible(), true, 'Auto-dismiss keeps the receipt form open')
-    await dialog.getByText('Blurred image', { exact: true }).waitFor()
     assert.equal(await input.evaluate(el => el.files[0]?.name), 'receipt.png')
 
     // Repeating the same failure must show a fresh notification after dismissal.
-    await dialog.getByRole('button', { name: 'Preview OCR', exact: true }).click()
+    await dialog.getByRole('button', { name: 'Submit payment proof', exact: true }).click()
     await alert.waitFor()
     await dialog.getByRole('button', { name: 'Dismiss receipt notification', exact: true }).click()
     assert.equal(await alert.count(), 0)
     assert.equal(await dialog.isVisible(), true)
 
-    for (const [status, message, analysis] of [
-      [422, qualityMessage, { quality: { status: 'BLURRY' } }],
+    for (const [status, message] of [
+      [422, qualityMessage],
       [409, 'This receipt image was already submitted.'],
       [500, 'Upload failed. Please try again.'],
       [400, 'The uploaded file is not a readable JPEG/JPG or PNG image.'],
     ]) {
-      response = { status, body: { message, analysis } }
+      response = { status, body: { message } }
       await dialog.getByRole('button', { name: 'Submit payment proof', exact: true }).click()
       await page.waitForFunction(message => document.getElementById('receipt-form-feedback')?.textContent === message, message)
       assert.equal(await alert.isVisible(), true)
     }
     await select('clear-receipt.png')
-    response = { status: 200, body: { message: 'Receipt is clear and all payment fields were detected.', analysis: { quality: { status: 'GOOD' }, amount: 1694.22 } } }
-    await dialog.getByRole('button', { name: 'Preview OCR', exact: true }).click()
-    await dialog.getByText('Clear image', { exact: true }).waitFor()
-    assert.equal(await dialog.getByText('Receipt preview ready', { exact: true }).count(), 0)
     assert.equal(await dialog.locator('#receipt-form-feedback').count(), 0)
-    assert.equal(new URL(page.url()).pathname, '/resident/bills/171')
     response = { status: 201, body: { message: 'Payment proof submitted for Admin verification.' } }
     const countBefore = submitCount
     await dialog.getByRole('button', { name: 'Submit payment proof', exact: true }).click()

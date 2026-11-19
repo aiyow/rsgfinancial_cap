@@ -45,10 +45,9 @@ export function mergeReceiptAnalyses(images, receiptType = 'OTHER') {
   };
 }
 
-export async function analyzeReceiptImages(files, receiptType, analyze = analyzeReceipt, timing) {
+export async function analyzeReceiptImages(files, receiptType, analyze = analyzeReceipt, options = {}) {
   // Process serially to bound OCR memory use on the hosted backend.
   const images = [];
-  const options = { timing };
   for (const file of files) images.push(await analyze(file.buffer, receiptType, options));
   return mergeReceiptAnalyses(images, receiptType);
 }
@@ -82,6 +81,6 @@ export async function insertReceiptImages(client, paymentId, files, uploaded, an
       (payment_submission_id, position, storage, path, cloudinary_public_id, original_name, mime_type, sha256, ocr_analysis)
       VALUES ($1,$2,'CLOUDINARY',$3,$3,$4,$5,$6,$7::jsonb)`,
     [paymentId, index + 1, uploaded[index].publicId, files[index].originalname.slice(0, 255), files[index].mimetype,
-      receiptHash(files[index].buffer), JSON.stringify(analysis.images[index])]);
+      receiptHash(files[index].buffer), JSON.stringify(analysis?.images[index] ?? {})]);
   }
 }
