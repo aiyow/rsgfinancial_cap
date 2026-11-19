@@ -105,7 +105,7 @@ export default function ResetPassword() {
         <h2 className="mt-8 text-2xl font-black tracking-tight text-slate-900">{complete ? 'Password changed' : resetToken ? 'Create a new password' : 'Verify your email'}</h2>
         {error && <p role="alert" className="mt-4 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         {complete ? (
-          <div className="mt-5" role="status">
+          <div className="auth-step mt-5" role="status">
             <div className="flex items-center gap-2 text-sm text-emerald-800"><CheckCircle2 size={20} />Sign in with your new password.</div>
             <Link to="/login" state={{ email: recovery.email, passwordReset: true }} className="login-submit mt-5 inline-flex items-center justify-center">Go to sign in</Link>
           </div>
@@ -114,7 +114,7 @@ export default function ResetPassword() {
         ) : resetToken ? (
           <>
             <p className="mt-2 text-sm text-slate-500">Choose a unique password you do not use for another account.</p>
-            <form onSubmit={changePassword} className="mt-6 space-y-4">
+            <form key="new-password" onSubmit={changePassword} className="auth-step mt-6 space-y-4">
               <PasswordInput label="New password" value={password} onChange={(event) => setPassword(event.target.value)} />
               <PasswordInput label="Confirm password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} confirmationFor={password} />
               <button disabled={loading} aria-busy={loading} className="login-submit">{loading ? 'Saving...' : 'Save password'}</button>
@@ -123,7 +123,7 @@ export default function ResetPassword() {
         ) : (
           <>
             <p className="mt-2 text-sm leading-6 text-slate-500">Enter the code sent to <strong className="break-words text-slate-700">{recovery.email}</strong>.</p>
-            <form onSubmit={verify} className="mt-6 space-y-4">
+            <form key="verify-code" onSubmit={verify} className="auth-step mt-6 space-y-4">
               <OtpInput digits={digits} onChange={setDigits} disabled={loading || resending} />
               <p className="text-xs text-slate-500">Code expires in 10 minutes.</p>
               <button disabled={loading || resending || digits.some((digit) => !digit)} aria-busy={loading} className="login-submit">{loading ? 'Verifying...' : 'Verify code'}</button>

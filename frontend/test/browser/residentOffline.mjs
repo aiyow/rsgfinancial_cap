@@ -122,6 +122,7 @@ try {
     await page.waitForFunction(() => localStorage.getItem('residens_offline_session'))
     await page.getByRole('button', { name: 'Open account menu for Offline Resident' }).click()
     await page.getByRole('menuitem', { name: /log out|logout|sign out/i }).click()
+    await page.getByRole('dialog', { name: 'Sign out?' }).getByRole('button', { name: 'Sign out', exact: true }).click()
     await page.waitForURL('**/login')
     assert.equal(await page.evaluate(() => localStorage.getItem('residens_offline_session')), null)
     assert.equal(await savedResponseCount(page), 0)

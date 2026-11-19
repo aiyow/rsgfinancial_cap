@@ -138,7 +138,6 @@ body:has(.login-shell) { min-width: 0; }
   background: rgba(9, 45, 33, 0.42);
   backdrop-filter: blur(8px);
 }
-.verify-modal { animation: verify-modal-in 220ms ease-out both; }
 .verify-icon-wrap {
   display: grid;
   width: 62px;
@@ -147,10 +146,6 @@ body:has(.login-shell) { min-width: 0; }
   margin: 24px auto 0;
   border-radius: 999px;
   background: var(--sidebar-bg);
-}
-@keyframes verify-modal-in {
-  from { opacity: 0; transform: translateY(10px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .login-brand-panel {
   background: #215d47;
@@ -166,13 +161,42 @@ body:has(.login-shell) { min-width: 0; }
 }
 .login-brand-panel::before { width: 520px; height: 520px; right: -210px; top: -180px; }
 .login-brand-panel::after { width: 760px; height: 760px; left: -430px; bottom: -520px; }
-@keyframes login-content-in {
-  from { opacity: 0; transform: translateY(8px); }
+@keyframes auth-content-enter {
+  from { opacity: 0.25; transform: translateY(var(--auth-enter-offset, 16px)); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+@media screen and (prefers-reduced-motion: no-preference) {
+  .login-brand-panel > :first-child,
+  .login-brand-content,
+  .login-brand-panel > p,
+  .login-form-heading,
+  .login-card,
+  .login-register-link,
+  .login-install > button,
+  .login-install [role='dialog'],
+  .auth-form-card,
+  .verify-modal,
+  .auth-step {
+    animation: auth-content-enter 440ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+  }
+
+  .login-brand-content, .login-form-heading { animation-delay: 60ms; }
+  .login-brand-panel > p, .login-card { animation-delay: 110ms; }
+  .login-register-link { animation-delay: 160ms; }
+  .login-install > button { animation-delay: 200ms; }
+  .auth-step { --auth-enter-offset: 8px; animation-duration: 300ms; }
+
+  .input-with-icon { transition: border-color 160ms ease, box-shadow 160ms ease; }
+  .login-submit:not(:disabled):hover { transform: translateY(-1px); }
+  .login-submit:not(:disabled):active { transform: scale(0.985); }
+  .login-register-link > svg { transition: transform 160ms ease; }
+  .login-register-link:hover > svg, .login-register-link:focus-visible > svg { transform: translateX(3px); }
+}
+
 @media (max-width: 1023px) {
   .login-shell .login-brand-panel { min-height: 0; gap: 28px; padding: 24px 24px 32px; }
-  .login-brand-content { padding-block: 0; animation: login-content-in 420ms ease-out both; }
+  .login-brand-content { padding-block: 0; }
   .login-eyebrow { margin-bottom: 12px; font-size: 10px; letter-spacing: 0.16em; }
   .login-hero-title { font-size: clamp(28px, 7.5vw, 34px); line-height: 1.12; }
   .login-hero-description { margin-top: 14px; font-size: 14px; line-height: 1.55; }
@@ -181,9 +205,6 @@ body:has(.login-shell) { min-width: 0; }
   .login-form-heading h2 { font-size: 26px; }
   .login-form-heading p { font-size: 14px; }
   .login-form-panel .login-card { padding: 24px 18px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .login-brand-content { animation: none; }
 }
 @media (min-width: 1024px) and (max-height: 740px) {
   .login-form-panel { padding-block: 24px; }
@@ -246,7 +267,7 @@ body:has(.login-shell) { min-width: 0; }
   box-shadow: 0 5px 12px rgba(47, 143, 91, 0.18);
   transition: background 160ms ease, transform 160ms ease;
 }
-.login-submit:hover { background: #237a4a; transform: translateY(-1px); }
+.login-submit:hover { background: #237a4a; }
 .login-submit:disabled { cursor: not-allowed; opacity: 0.65; transform: none; }
 .login-spinner {
   width: 16px;
@@ -257,7 +278,10 @@ body:has(.login-shell) { min-width: 0; }
   animation: login-spin 700ms linear infinite;
 }
 @keyframes login-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { .login-spinner { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .login-spinner { animation: none; }
+  .login-submit, .login-register-link { transition: none; }
+}
 .brand-feature { color: #55e09b; font-size: 0.85rem; }
 .brand-feature span { display: block; margin-top: 6px; color: rgba(235, 255, 242, 0.75); font-size: 0.75rem; line-height: 1.4; }
 .green-shell { --resident-green: #215d47; }
@@ -324,6 +348,55 @@ body:has(.login-shell) { min-width: 0; }
 .collector-metric-red > div > span { color: #ef4444; background: #fee2e2; }
 .collector-metric-yellow > div > span { color: #b45309; background: #fef3c7; }
 .collector-chart-panel { border-color: #d8e8dc; }
+
+@media screen and (prefers-reduced-motion: no-preference) {
+  .dashboard-nav-link[aria-current='page'] > svg {
+    animation: dashboard-nav-icon-enter 320ms ease-out;
+  }
+
+  .notification-bell[aria-expanded='true'] > svg {
+    animation: notification-bell-ring 300ms ease-out;
+    transform-origin: center 25%;
+  }
+
+  .notification-popover {
+    animation: notification-popover-enter 160ms ease-out;
+  }
+
+  .account-menu {
+    animation: account-menu-enter 220ms ease-out;
+  }
+
+  .sign-out-dialog[open] {
+    animation: payment-proof-dialog-in 240ms ease-out;
+  }
+
+  .sign-out-dialog[open]::backdrop {
+    animation: payment-proof-backdrop-in 180ms ease-out;
+  }
+}
+
+@keyframes dashboard-nav-icon-enter {
+  from { transform: translateX(-5px); }
+  to { transform: translateX(0); }
+}
+
+@keyframes notification-bell-ring {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(-12deg); }
+  50% { transform: rotate(9deg); }
+  75% { transform: rotate(-4deg); }
+}
+
+@keyframes notification-popover-enter {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes account-menu-enter {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .collector-trend-chart { background: linear-gradient(180deg, #ffffff 0%, #fbfdfb 100%); }
 .collector-step-card { border-left-width: 5px; }
 .collector-step-blue { border-left-color: #3730a3; }
@@ -570,6 +643,7 @@ body:has(.resident-bills-shell), body:has(.resident-payments-shell) { min-width:
 @media print {
   .print-hidden { display: none !important; }
   .dashboard-shell { display: block !important; }
+  .dashboard-page-content { margin-block-start: 0 !important; opacity: 1 !important; }
   html, body { width: 100%; height: auto !important; overflow: visible !important; background: white; }
   main { width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
   .soa-viewer { position: static !important; display: block !important; height: auto !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; overflow: visible !important; }

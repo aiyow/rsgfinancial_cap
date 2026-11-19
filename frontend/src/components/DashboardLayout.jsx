@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   BarChart3,
   Bell,
@@ -113,7 +113,7 @@ function NavigationLinks({ sections, collapsed, onNavigate }) {
                     end={item.end}
                     title={collapsed ? item.label : undefined}
                     onClick={onNavigate}
-                    className={({ isActive }) => `flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition ${
+                    className={({ isActive }) => `dashboard-nav-link flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-semibold transition motion-safe:active:scale-[0.98] motion-reduce:transition-none ${
                     collapsed ? 'lg:justify-center' : ''
                     } ${isActive
                       ? 'bg-[var(--active-bg)] text-[var(--primary)] shadow-sm'
@@ -145,7 +145,7 @@ function ResidentMobileNavigation() {
     <div className="grid grid-cols-4 gap-1">
       {items.map((item) => {
         const Icon = item.icon
-        return <NavLink key={item.label} to={item.to} end={item.end} className={({ isActive }) => `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-bold transition ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-[var(--muted)] hover:bg-[var(--app-bg)] hover:text-emerald-700'}`}>
+        return <NavLink key={item.label} to={item.to} end={item.end} className={({ isActive }) => `dashboard-nav-link flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-bold transition motion-safe:active:scale-[0.98] motion-reduce:transition-none ${isActive ? 'bg-emerald-50 text-emerald-700' : 'text-[var(--muted)] hover:bg-[var(--app-bg)] hover:text-emerald-700'}`}>
           <Icon size={19} strokeWidth={2.2} aria-hidden="true" />
           <span>{item.label}</span>
         </NavLink>
@@ -156,13 +156,30 @@ function ResidentMobileNavigation() {
 
 export default function DashboardLayout({ title, description, className = '', children }) {
   const { user, logout, token } = useAuth()
+  const { pathname } = useLocation()
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('rsg_sidebar_collapsed') === 'true')
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const profileMenuRef = useRef(null)
+  const accountButtonRef = useRef(null)
+  const signOutDialogRef = useRef(null)
+  const pageContentRef = useRef(null)
   const sections = navigationByRole[user.role] || navigationByRole.RESIDENT
   const usesGreenSidebar = user.role === 'ADMIN' || user.role === 'RESIDENT' || user.role === 'COLLECTOR'
   const usesResidentMobileNavigation = user.role === 'RESIDENT'
+
+  useLayoutEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    const animation = pageContentRef.current?.animate?.(
+      [
+        { opacity: 0.25, marginBlockStart: '14px' },
+        { opacity: 1, marginBlockStart: '0px' },
+      ],
+      { duration: 320, easing: 'ease-out' },
+    )
+    return () => animation?.cancel()
+  }, [pathname])
 
   useEffect(() => {
     localStorage.setItem('rsg_sidebar_collapsed', String(collapsed))
@@ -198,6 +215,16 @@ export default function DashboardLayout({ title, description, className = '', ch
     document.addEventListener('mousedown', closeOnOutsideClick)
     return () => document.removeEventListener('mousedown', closeOnOutsideClick)
   }, [profileOpen])
+
+  function openSignOutDialog() {
+    setProfileOpen(false)
+    signOutDialogRef.current?.showModal()
+  }
+
+  function confirmSignOut() {
+    signOutDialogRef.current?.close()
+    logout()
+  }
 
   const portalLabel = {
     ADMIN: 'Admin Portal',
@@ -282,37 +309,38 @@ export default function DashboardLayout({ title, description, className = '', ch
               <NotificationCenter token={token} />
               <div ref={profileMenuRef} className="relative shrink-0">
               <button
+                ref={accountButtonRef}
                 type="button"
                 aria-expanded={profileOpen}
                 aria-haspopup="menu"
                 aria-label={`Open account menu for ${formattedName}`}
                 onClick={() => setProfileOpen((value) => !value)}
-                className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-2 py-1.5 text-left hover:bg-[var(--app-bg)] sm:gap-3 sm:px-2.5"
+                className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-white px-2 py-1.5 text-left transition hover:bg-[var(--app-bg)] motion-safe:active:scale-[0.98] motion-reduce:transition-none sm:gap-3 sm:px-2.5"
               >
                 <span className="grid size-7 place-items-center rounded-sm bg-[var(--primary)] text-[10px] font-black text-white">{initials}</span>
                 <span className="hidden min-w-0 sm:block">
                   <span className="block max-w-36 truncate text-xs font-bold text-[var(--ink)]">{formattedName}</span>
                   <span className="block max-w-36 truncate text-[10px] text-[var(--muted)]">{roleLabel(user.role)}</span>
                 </span>
-                <ChevronDown size={14} className={`text-[var(--muted)] transition ${profileOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                <ChevronDown size={14} className={`text-[var(--muted)] transition-transform motion-reduce:transition-none ${profileOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
               </button>
 
               {profileOpen && (
-                <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-60 overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-lg" role="menu">
+                <div className="account-menu absolute right-0 top-[calc(100%+8px)] z-50 w-60 overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-lg" role="menu">
                   <div className="border-b border-[var(--border)] px-4 py-3">
                     <p className="truncate text-sm font-bold text-[var(--ink)]">{formattedName}</p>
                     <p className="mt-0.5 truncate text-xs text-[var(--muted)]">{user.email}</p>
                   </div>
-                  <Link to="/profile" role="menuitem" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--ink)] hover:bg-[var(--app-bg)]">
+                  <Link to="/profile" role="menuitem" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--ink)] transition-colors hover:bg-[var(--app-bg)] motion-reduce:transition-none">
                     <UserRound size={17} aria-hidden="true" />
                     Profile
                   </Link>
-                  <Link to="/settings" role="menuitem" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--ink)] hover:bg-[var(--app-bg)]">
+                  <Link to="/settings" role="menuitem" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-3 text-sm text-[var(--ink)] transition-colors hover:bg-[var(--app-bg)] motion-reduce:transition-none">
                     <Settings2 size={17} aria-hidden="true" />
                     Settings
                   </Link>
                   <div className="border-t border-[var(--border)]">
-                    <button type="button" role="menuitem" onClick={logout} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[var(--ink)] hover:bg-red-50 hover:text-red-700">
+                    <button type="button" role="menuitem" onClick={openSignOutDialog} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-[var(--ink)] transition-colors hover:bg-red-50 hover:text-red-700 motion-reduce:transition-none">
                       <LogOut size={17} aria-hidden="true" />
                       Sign out
                     </button>
@@ -324,7 +352,7 @@ export default function DashboardLayout({ title, description, className = '', ch
           </div>
         </header>
 
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <div ref={pageContentRef} className="dashboard-page-content mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {description && <div className="dashboard-description mb-6 sm:hidden">
             <p className="text-xs text-[var(--muted)]">{description}</p>
           </div>}
@@ -332,6 +360,23 @@ export default function DashboardLayout({ title, description, className = '', ch
         </div>
       </main>
       {usesResidentMobileNavigation && <ResidentMobileNavigation />}
+      <dialog
+        ref={signOutDialogRef}
+        aria-labelledby="sign-out-title"
+        aria-describedby="sign-out-description"
+        onClose={() => accountButtonRef.current?.focus()}
+        className="sign-out-dialog print-hidden fixed inset-0 m-auto h-fit max-h-[85dvh] w-[calc(100%_-_2rem)] max-w-sm overflow-y-auto rounded-2xl border border-[var(--border)] bg-white p-5 text-center text-[var(--ink)] shadow-2xl backdrop:bg-slate-950/40 sm:p-6"
+      >
+        <div className="mx-auto mb-4 grid size-11 place-items-center rounded-xl bg-rose-50 text-rose-700">
+          <LogOut size={21} aria-hidden="true" />
+        </div>
+        <h2 id="sign-out-title" className="text-lg font-black">Sign out?</h2>
+        <p id="sign-out-description" className="mt-2 text-sm leading-relaxed text-[var(--muted)]">Are you sure you want to sign out of your account?</p>
+        <form method="dialog" className="mt-6 flex flex-wrap justify-center gap-2">
+          <button type="submit" className="rounded-lg border border-[var(--border)] px-4 py-2.5 text-sm font-bold hover:bg-[var(--app-bg)]">Cancel</button>
+          <button type="button" onClick={confirmSignOut} className="rounded-lg bg-rose-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-800">Sign out</button>
+        </form>
+      </dialog>
     </div>
   )
 }

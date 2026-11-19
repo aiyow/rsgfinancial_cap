@@ -9,7 +9,6 @@ import useAuth from '../../hooks/useAuth'
 import { apiRequest } from '../../services/api'
 import { chartNumber as number, connectForecastLine } from '../../utils/forecastChart'
 import UnitWaterAnalytics from '../../components/UnitWaterAnalytics'
-import AdminWaterGuidance from '../../components/AdminWaterGuidance'
 
 function valueOrDash(value, suffix = '') {
   return value === null || value === undefined ? '-' : `${Number(value).toFixed(2)}${suffix}`
@@ -226,7 +225,7 @@ export default function AnalyticsPage() {
           </section>
 
           <div className="grid gap-6 xl:grid-cols-2">
-            <ChartCard title="Historical vs Projected Water Consumption" description="Monthly total consumption in cubic meters." filter={<ForecastRangeFilter value={consumptionRange} onChange={setConsumptionRange} />} footer={user.role === 'ADMIN' && data ? <AdminWaterGuidance guidance={data.adminWaterGuidance} title="Prescriptive insights" description="Suggested actions for projected water use and units needing review." metric="consumption" showAnalyticsLink={false} /> : null}>
+            <ChartCard title="Historical vs Projected Water Consumption" description="Monthly total consumption in cubic meters." filter={<ForecastRangeFilter value={consumptionRange} onChange={setConsumptionRange} />}>
               {consumptionChartData.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={consumptionChartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
@@ -242,7 +241,7 @@ export default function AnalyticsPage() {
               ) : <EmptyRow message="No chart data is available yet." />}
             </ChartCard>
 
-            <ChartCard title="Historical vs Projected Water Bill" description="Monthly total water charges from actual readings and forecasts." filter={<ForecastRangeFilter value={waterBillRange} onChange={setWaterBillRange} />} footer={user.role === 'ADMIN' && data ? <AdminWaterGuidance guidance={data.adminWaterGuidance} title="Prescriptive insights" description="Suggested billing checks for projected charges, peso changes, and the applied water rate." metric="bill" showAnalyticsLink={false} /> : null}>
+            <ChartCard title="Historical vs Projected Water Bill" description="Monthly total water charges from actual readings and forecasts." filter={<ForecastRangeFilter value={waterBillRange} onChange={setWaterBillRange} />}>
               {waterBillChartData.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={waterBillChartData} margin={{ top: 10, right: 16, left: 0, bottom: 20 }}>
@@ -449,12 +448,11 @@ function UsageQualityPanel({ review, overallCount, evaluatedMonth }) {
   </Panel>
 }
 
-function ChartCard({ title, description, filter, footer, children }) {
+function ChartCard({ title, description, filter, children }) {
   return (
     <div className="collector-chart-panel min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div><h3 className="text-base font-black text-[var(--ink)]">{title}</h3><p className="mt-1 text-sm text-[var(--muted)]">{description}</p></div>{filter}</div>
       <div className="mt-5 h-72">{children}</div>
-      {footer}
     </div>
   )
 }

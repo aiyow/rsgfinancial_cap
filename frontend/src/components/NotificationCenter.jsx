@@ -112,14 +112,14 @@ export default function NotificationCenter({ token }) {
           aria-label={unreadCount ? `${unreadCount} unread notifications` : 'Open notifications'}
           aria-expanded={open}
           onClick={() => setOpen((value) => !value)}
-          className="relative grid size-10 place-items-center rounded-lg border border-[var(--border)] bg-white text-[var(--primary)] hover:bg-[var(--app-bg)]"
+          className="notification-bell relative grid size-10 place-items-center rounded-lg border border-[var(--border)] bg-white text-[var(--primary)] hover:bg-[var(--app-bg)]"
         >
           {unreadCount ? <BellRing size={19} aria-hidden="true" /> : <Bell size={19} aria-hidden="true" />}
           {unreadCount > 0 && <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[10px] font-black leading-5 text-white">{unreadCount > 99 ? '99+' : unreadCount}</span>}
         </button>
 
         {open && (
-          <div className="absolute -right-[4.25rem] top-[calc(100%+6px)] z-50 w-[min(17rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-[var(--border)] bg-white shadow-xl sm:right-0 sm:top-[calc(100%+8px)] sm:w-[min(23rem,calc(100vw-2rem))]">
+          <div className="notification-popover absolute -right-[4.25rem] top-[calc(100%+6px)] z-50 w-[min(17rem,calc(100vw-1rem))] overflow-hidden rounded-xl border border-[var(--border)] bg-white shadow-xl sm:right-0 sm:top-[calc(100%+8px)] sm:w-[min(23rem,calc(100vw-2rem))]">
             <div className="flex items-center justify-between gap-2 border-b border-[var(--border)] px-2.5 py-2 sm:gap-3 sm:px-4 sm:py-3">
               <div><p className="text-sm font-bold text-[var(--ink)] sm:text-base">Notifications</p><p className="text-[11px] text-[var(--muted)] sm:text-xs">{unreadCount ? `${unreadCount} unread` : 'You are all caught up'}</p></div>
               {unreadCount > 0 && <button type="button" onClick={markAllRead} className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-[var(--primary)] hover:underline sm:text-xs"><CheckCheck size={14} /> Mark all read</button>}
