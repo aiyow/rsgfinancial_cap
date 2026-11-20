@@ -80,7 +80,7 @@ test('secondary scores remain unavailable for empty subsets and zero actual tota
   const allAlerts = summarizeEvaluationHistory([pair(1, 30, 25)], steady)[0];
   assert.equal(allAlerts.usageReview.typicalMetrics.evaluatedCount, 0);
   assert.equal(allAlerts.usageReview.typicalMetrics.accuracy, null);
-  const zero = summarizeEvaluationHistory([pair(1, 0, 2)], makeHistory(Array(8).fill(0)))[0];
+  const zero = summarizeEvaluationHistory([pair(1, 0, 2)], makeHistory([4, 0, 0, 0, 0, 0, 0, 0]))[0];
   assert.equal(zero.usageReview.alertCount, 0);
   assert.equal(zero.usageReview.typicalMetrics.evaluatedCount, 1);
   assert.equal(zero.usageReview.typicalMetrics.wape, null);

@@ -138,11 +138,12 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
           : null,
       }));
     }
-    const diagnostics = allDiagnostics.filter((row) => String(row.forecastForMonth).slice(0, 10) === evaluationMonth);
-    const eligible = diagnostics.filter(validEvaluationPair);
     const evaluationReadings = await pool.query(`${historySelect} WHERE ${analyticsPeriodCondition('p')} ORDER BY m.unit_id, p.period_start`);
     const evaluationHistory = summarizeEvaluationHistory(allDiagnostics, evaluationReadings.rows);
     const latestEvaluation = evaluationHistory.find((row) => row.forecastForMonth === evaluationMonth);
+    const zeroConsumptionExcludedIds = new Set(latestEvaluation?.zeroConsumptionExcludedUnits.map((unit) => String(unit.unitId)));
+    const diagnostics = allDiagnostics.filter((row) => String(row.forecastForMonth).slice(0, 10) === evaluationMonth)
+      .map((row) => ({ ...row, excludedForZeroConsumption: zeroConsumptionExcludedIds.has(String(row.unitId)) }));
     const latestForecastResult = await pool.query(
       `SELECT f.forecast_for_month AS "forecastForMonth",
         COUNT(*)::int AS total,
@@ -220,7 +221,7 @@ router.get("/overview", allowRoles("ADMIN", "COLLECTOR"), async (req, res, next)
     }
     return res.json({
       evaluationMonth,
-      metrics: latestEvaluation?.metrics || { ...calculateAccuracy(eligible), excludedCount: diagnostics.length - eligible.length },
+      metrics: latestEvaluation?.metrics || { ...calculateAccuracy([]), excludedCount: 0 },
       evaluationHistory,
       evaluationType: "RETROSPECTIVE",
       latestForecast: latestForecastResult.rows[0] || { total: 0, ready: 0, excluded: 0, forecastForMonth: null },

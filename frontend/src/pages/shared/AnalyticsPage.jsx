@@ -127,6 +127,7 @@ export default function AnalyticsPage() {
 
   const metrics = data?.metrics || {}
   const latestEvaluation = data?.evaluationHistory?.find((row) => row.forecastForMonth === data.evaluationMonth)
+  const zeroConsumptionExcludedUnits = latestEvaluation?.zeroConsumptionExcludedUnits ?? []
   const usageReview = latestEvaluation?.usageReview
   const hasAnalyticsData = Boolean(data && ((data.latestForecast?.total || 0) > 0 || data.diagnostics.length > 0 || data.flaggedReadings.length > 0))
   const rawChartData = (data?.chartSeries || []).map((row) => ({
@@ -198,11 +199,16 @@ export default function AnalyticsPage() {
                 <Metric label="RMSE" value={valueOrDash(metrics.rmse, ' m3')} accent="blue" icon={ChartNoAxesCombined} />
                 <Metric label="Evaluated / excluded" value={`${metrics.evaluatedCount || 0} / ${metrics.excludedCount || 0}`} accent="green" icon={ListChecks} />
               </div>
+              {zeroConsumptionExcludedUnits.length > 0 && (
+                <p className="text-sm text-slate-600">
+                  {zeroConsumptionExcludedUnits.length === 1 ? 'One excluded unit had' : `${zeroConsumptionExcludedUnits.length} excluded units had`} zero usage in every valid reading through {monthLabel(latestEvaluation.forecastForMonth)}. {zeroConsumptionExcludedUnits.length === 1 ? 'Unit' : 'Units'} {zeroConsumptionExcludedUnits.map((unit) => unit.unitNumber).join(', ')}.
+                </p>
+              )}
               {usageReview && <UsageQualityPanel review={usageReview} overallCount={metrics.evaluatedCount || 0} evaluatedMonth={latestEvaluation.forecastForMonth} />}
               <Panel title="Monthly forecast comparison" description="Retrospective evaluation: each forecast uses only readings before the evaluated month. Historical forecasts may be recalculated when you refresh.">
                 <p className="mb-4 text-sm leading-6 text-slate-600">Lower MAE, RMSE, and WAPE indicate smaller prediction errors. Derived accuracy = max(0, 100 − WAPE); it is not a probability. WAPE and accuracy are unavailable when total actual consumption is zero.</p>
                 {data?.evaluationHistory?.length ? <MonthlyComparisonTable rows={data.evaluationHistory.slice(-12)} /> : <EmptyRow message="Import a later actual month to compare forecasts with readings." />}
-                <p className="mt-3 text-xs text-slate-500">Model and baseline scores use the same eligible units in each month. Coverage can change between months.</p>
+                <p className="mt-3 text-xs text-slate-500">Model and baseline scores use the same units each month. Units with only valid zero readings through the evaluated month are excluded from those scores.</p>
               </Panel>
               {latestEvaluation?.metrics.evaluatedCount > 0 && latestEvaluation.totals && (
                 <Panel title={`What contributed to ${monthLabel(latestEvaluation.forecastForMonth)} errors?`} description="These totals and units use the same valid forecast and actual pairs as the quality score.">
@@ -323,7 +329,9 @@ export default function AnalyticsPage() {
                         <td>{row.predictedConsumption === null ? '-' : `${Number(row.predictedConsumption).toFixed(3)} m3`}</td>
                         <td>{row.actualConsumption === null ? '-' : `${Number(row.actualConsumption).toFixed(3)} m3`}</td>
                         <td>{row.absoluteError === null ? '-' : `${Number(row.absoluteError).toFixed(3)} m3`}</td>
-                        <td><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${row.status === 'READY' && row.actualValidationStatus === 'VALID' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-100 text-amber-800'}`}>{row.status === 'READY' ? row.actualValidationStatus || 'NO ACTUAL' : row.status}</span></td>
+                        <td>{row.excludedForZeroConsumption
+                          ? <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700">Excluded · All-zero history</span>
+                          : <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${row.status === 'READY' && row.actualValidationStatus === 'VALID' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-100 text-amber-800'}`}>{row.status === 'READY' ? row.actualValidationStatus || 'NO ACTUAL' : row.status}</span>}</td>
                       </tr>
                     ))}
                   </tbody>

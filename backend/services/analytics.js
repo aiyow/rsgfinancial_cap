@@ -824,7 +824,7 @@ export function evaluationBaselines(history, sourceMonth) {
   };
 }
 
-// Saved predictions and baselines are compared on the same valid unit/month pairs.
+// Saved predictions and baselines are scored on the same units with recorded water use.
 export function summarizeEvaluationHistory(diagnostics, readings) {
   const byUnit = groupHistory(readings);
   const months = new Map();
@@ -834,10 +834,21 @@ export function summarizeEvaluationHistory(diagnostics, readings) {
     months.get(key).push(row);
   }
   return [...months].sort(([a], [b]) => a.localeCompare(b)).map(([forecastForMonth, rows]) => {
+    const zeroConsumptionExcludedUnits = [];
     const paired = rows.filter(validEvaluationPair).flatMap((row) => {
       if (nextMonthStart(row.basedOnPeriodStart) !== forecastForMonth) return [];
-      const baselines = evaluationBaselines(byUnit.get(String(row.unitId)) || [], row.basedOnPeriodStart);
-      return baselines ? [{ ...row, baselines }] : [];
+      const history = byUnit.get(String(row.unitId)) || [];
+      const baselines = evaluationBaselines(history, row.basedOnPeriodStart);
+      if (!baselines) return [];
+      const sourceMonth = monthIndex(row.basedOnPeriodStart);
+      if (Number(row.actualConsumption) === 0 && !history.some((reading) =>
+        reading.validationStatus === 'VALID' && numeric(reading.consumption) > 0 &&
+        monthIndex(reading.periodStart) <= sourceMonth
+      )) {
+        zeroConsumptionExcludedUnits.push({ unitId: row.unitId, unitNumber: row.unitNumber });
+        return [];
+      }
+      return [{ ...row, baselines }];
     });
     const metrics = { ...calculateAccuracy(paired), excludedCount: rows.length - paired.length };
     const actualTotal = paired.reduce((sum, row) => sum + Number(row.actualConsumption), 0);
@@ -849,7 +860,7 @@ export function summarizeEvaluationHistory(diagnostics, readings) {
       errorShare: absoluteErrorTotal > 0 ?
       Number((Math.abs(Number(row.predictedConsumption) - Number(row.actualConsumption)) / absoluteErrorTotal * 100).toFixed(2)) : 0
     })).sort((a, b) => b.absoluteError - a.absoluteError || String(a.unitId).localeCompare(String(b.unitId))).slice(0, 5);
-    return { forecastForMonth, evaluationType: 'RETROSPECTIVE', metrics,
+    return { forecastForMonth, evaluationType: 'RETROSPECTIVE', metrics, zeroConsumptionExcludedUnits,
       totals: { actualConsumption: Number(actualTotal.toFixed(3)), absoluteError: Number(absoluteErrorTotal.toFixed(3)) },
       topErrorUnits,
       usageReview: summarizeUsageReview(paired, byUnit),

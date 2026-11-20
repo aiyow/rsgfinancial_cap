@@ -72,3 +72,32 @@ test('error breakdown retains zero actuals and excludes invalid pairs', () => {
   assert.equal(summary.metrics.excludedCount, 1);
   assert.equal(summary.metrics.wape, 80);
 });
+
+test('quality scores exclude all-zero histories and keep units with valid water use by the evaluated month', () => {
+  const readings = [1, 2, 3, 4, 5].flatMap((unitId) => history.map((row, index) => ({
+    ...row, unitId,
+    consumption: ((unitId === 2 && index === 2) || (unitId === 3 && index === 0)) ? 4 : 0,
+    validationStatus: ((unitId === 2 && index === 2) || (unitId === 5 && index === 7)) ? 'FLAGGED' : 'VALID',
+  })));
+  readings.push({ unitId: 2, periodStart: '2026-10-01', consumption: 9, validationStatus: 'VALID' });
+  const diagnostics = [1, 2, 3, 4, 5].map((unitId) => ({
+    unitId, unitNumber: String(100 + unitId),
+    forecastForMonth: '2026-09-01', basedOnPeriodStart: '2026-08-01',
+    status: unitId === 5 ? 'FLAGGED_READING' : 'READY', actualValidationStatus: 'VALID',
+    actualConsumption: unitId === 4 ? 5 : '0.000',
+    predictedConsumption: unitId === 5 ? null : 1,
+  }));
+  const [summary] = summarizeEvaluationHistory(diagnostics, readings);
+  assert.deepEqual(summary.zeroConsumptionExcludedUnits, [
+    { unitId: 1, unitNumber: '101' },
+    { unitId: 2, unitNumber: '102' },
+  ]);
+  assert.equal(summary.metrics.evaluatedCount, 2);
+  assert.equal(summary.metrics.excludedCount, 3);
+  assert.equal(summary.baselines.lastMonth.evaluatedCount, 2);
+  assert.equal(summary.baselines.recentAverage.evaluatedCount, 2);
+  assert.deepEqual(summary.totals, { actualConsumption: 5, absoluteError: 5 });
+  assert.deepEqual(summary.topErrorUnits.map((row) => row.unitNumber), ['104', '103']);
+  assert.equal(summary.usageReview.typicalMetrics.evaluatedCount, 1);
+  assert.equal(summary.usageReview.alertCount, 1);
+});
