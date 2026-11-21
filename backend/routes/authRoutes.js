@@ -29,12 +29,14 @@ import {
   verificationExpiryDate,
 } from "../services/email.js";
 
-import { normalizeEmailIdentity, consumeRegistrationGrant, registrationQuota } from "../services/accounts.js";
+import { authUserColumns as userColumns, normalizeEmailIdentity, consumeRegistrationGrant, registrationQuota } from "../services/accounts.js";
 
+import loginRoutes from './loginRoutes.js';
 import registrationRoutes from './registrationRoutes.js';
 
 const router = express.Router();
 router.use(registrationRoutes);
+router.use(loginRoutes);
 const passwordSchema = newPasswordSchema;
 const VERIFICATION_RESEND_COOLDOWN_MS = 60 * 1000;
 
@@ -59,10 +61,6 @@ const registrationNameSchema = z.object({
 // Assemble structured names on the server. Existing clients may still send fullName.
 const registerSchema = z.union([registrationNameSchema, registrationAccountSchema]).pipe(registrationAccountSchema);
 
-const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email().max(255),
-  password: z.string().min(1).max(256),
-}).strict();
 const resendVerificationSchema = z.object({
   email: z.string().trim().toLowerCase().email().max(255),
 }).strict();
@@ -83,16 +81,6 @@ const changePasswordSchema = z.object({
   currentPassword: z.string().min(1).max(256),
   newPassword: passwordSchema,
 }).strict();
-const userColumns = `
-  id,
-  full_name AS "fullName",
-  email,
-  role,
-  is_active AS "isActive",
-  approval_status AS "approvalStatus",
-  email_verified AS "emailVerified",
-  created_at AS "createdAt",
-  updated_at AS "updatedAt"`;
 
 router.post("/register", validateBody(registerSchema), async (req, res, next) => {
   res.set('Cache-Control','no-store');
@@ -127,51 +115,6 @@ router.post("/register", validateBody(registerSchema), async (req, res, next) =>
     if(error.retryAfterSeconds) res.set('Retry-After',String(error.retryAfterSeconds));
     return next(error);
   } finally { client?.release(); }
-});
-
-router.post("/login", validateBody(loginSchema), async (req, res, next) => {
-  try {
-    const { email, password } = req.validatedBody;
-    const result = await pool.query(
-      `SELECT ${userColumns}, auth_version AS "authVersion", password_hash AS "passwordHash"
-       FROM users
-       WHERE LOWER(BTRIM(email)) = $1
-       ORDER BY ${userIdentityOrderSql} LIMIT 1`,
-      [email]
-    );
-    const user = result.rows[0];
-    const passwordMatches = user
-      ? await verifyPassword(password, user.passwordHash)
-      : false;
-
-    if (!user || !passwordMatches) {
-      return res.status(401).json({ message: "Invalid email or password." });
-    }
-
-    if (!user.isActive) {
-      return res.status(403).json({ message: "This account has been deactivated." });
-    }
-
-    if (user.approvalStatus !== "APPROVED") {
-      return res.status(403).json({
-        code: "ACCOUNT_APPROVAL_REQUIRED",
-        message: "Your account is awaiting Admin approval. You can sign in after approval.",
-        email: user.email,
-      });
-    }
-
-    if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET is not configured.");
-    }
-
-    const token = jwt.sign({ id: user.id, authVersion: user.authVersion }, process.env.JWT_SECRET, { expiresIn: "8h" });
-    delete user.passwordHash;
-    delete user.authVersion;
-
-    return res.json({ message: "Login successful.", token, user });
-  } catch (error) {
-    return next(error);
-  }
 });
 
 router.post("/forgot-password", validateBody(forgotPasswordSchema), async (req, res, next) => {

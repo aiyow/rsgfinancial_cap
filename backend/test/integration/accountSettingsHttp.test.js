@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import express from 'express';
 import bcrypt from 'bcrypt';
@@ -26,6 +27,10 @@ test('admin and billing associate can securely manage their own profile, email a
     await query('CREATE TEMP TABLE password_reset_challenges (LIKE public.password_reset_challenges INCLUDING ALL) ON COMMIT DROP');
     await query('CREATE TEMP TABLE audit_logs (LIKE public.audit_logs INCLUDING DEFAULTS) ON COMMIT DROP');
     await query('ALTER TABLE audit_logs ALTER COLUMN id SET DEFAULT -1');
+    for (const migration of ['039_registration_email_otp.sql', '048_login_verification.sql']) {
+      const sql = await readFile(new URL(`../../database/migrations/${migration}`, import.meta.url), 'utf8');
+      await query(sql.replaceAll('public.', '').replaceAll('CREATE TABLE', 'CREATE TEMP TABLE'));
+    }
     const password = 'Original password 123!';
     const hash = await bcrypt.hash(password, 4);
     await query(`INSERT INTO users(id,full_name,email,password_hash,role,is_active,approval_status,email_verified)
@@ -64,7 +69,12 @@ test('admin and billing associate can securely manage their own profile, email a
         ...(token ? { Authorization: `Bearer ${token}` } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
       return { status: response.status, data: await response.json() };
     }
-    const login = async (email, suppliedPassword = password) => request('/api/auth/login', { email, password: suppliedPassword });
+    const login = async (email, suppliedPassword = password) => {
+      const result = await request('/api/auth/login', { email, password: suppliedPassword });
+      if (result.data.code !== 'LOGIN_OTP_REQUIRED') return result;
+      const otp = deliveries.at(-1).text.match(/sign-in code is: (\d{6})/)[1];
+      return request('/api/auth/login/verify', { challengeId: result.data.challengeId, otp });
+    };
     const resident = (await login('resident@example.invalid')).data.token;
     assert.equal((await request('/api/account/profile', { fullName: 'No authorization' }, undefined, 'PATCH')).status, 401);
     assert.equal((await request('/api/account/profile', { fullName: 'Resident cannot edit staff settings' }, resident, 'PATCH')).status, 403);

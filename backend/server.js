@@ -30,6 +30,7 @@ import errorHandler from "./middleware/errorHandler.js";
 dotenv.config({ path: new URL("./.env", import.meta.url) });
 
 import { startRegistrationCleanup } from "./services/accounts.js";
+import { startLoginVerificationCleanup } from './services/loginVerification.js';
 const app = express();
 // Set only when deployed behind a known reverse proxy. Never trust arbitrary forwarded IP headers.
 const proxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
@@ -94,6 +95,7 @@ app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
   startSoaReminderScheduler();
   startRegistrationCleanup();
+  startLoginVerificationCleanup();
   startProtectedSoaMaintenance(protectedSoaExports);
   startWebPushDelivery();
   startReceiptOcrQueue();

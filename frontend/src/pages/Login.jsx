@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, EyeOff, LayoutDashboard, LockKeyhole, Mail, ShieldCheck } from 'lucide-react'
 import BrandMark from '../components/BrandMark'
+import LoginVerificationDialog from '../components/LoginVerificationDialog'
 import PwaInstallPrompt from '../components/PwaInstallPrompt'
 import { dashboardPathFor } from '../constants/routes'
 import useAuth from '../hooks/useAuth'
@@ -30,9 +31,10 @@ function saveRememberedEmail(email, shouldRemember) {
 export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, login } = useAuth()
+  const { user, login, verifyLogin } = useAuth()
   const [form, setForm] = useState(() => ({ email: location.state?.email || readRememberedEmail(), password: '' }))
   const [rememberEmail, setRememberEmail] = useState(() => Boolean(readRememberedEmail()))
+  const [challenge, setChallenge] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -43,14 +45,24 @@ export default function Login() {
     setForm((current) => ({ ...current, [field]: value }))
   }
 
+  function finish(loggedInUser) {
+    saveRememberedEmail(loggedInUser.email, rememberEmail)
+    navigate(dashboardPathFor(loggedInUser.role), { replace: true })
+  }
+
   async function submit(event) {
     event.preventDefault()
     setError('')
     setLoading(true)
     try {
-      const loggedInUser = await login(form)
-      saveRememberedEmail(form.email, rememberEmail)
-      navigate(dashboardPathFor(loggedInUser.role), { replace: true })
+      const result = await login(form)
+      if (result.code === 'LOGIN_OTP_REQUIRED') {
+        setChallenge({ ...result, email: form.email.trim() })
+        update('password', '')
+        setShowPassword(false)
+        return
+      }
+      finish(result.user)
     } catch (requestError) {
       if (requestError.data?.code === 'ACCOUNT_APPROVAL_REQUIRED') {
         navigate(`/pending-approval?email=${encodeURIComponent(requestError.data.email || form.email.trim())}`, { replace: true })
@@ -82,12 +94,18 @@ export default function Login() {
       </section>
 
       <section id="sign-in" aria-labelledby="sign-in-heading" className="login-form-panel flex min-h-screen items-center justify-center bg-[#f7faf8] px-6 py-12 sm:px-12 lg:px-[9%]"><div className="w-full max-w-xl"><div className="login-form-heading mb-8"><h2 id="sign-in-heading" className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">Sign in to your portal</h2><p className="mt-2 text-base text-slate-500">Enter your credentials to continue.</p></div>
-        <div className="login-card"><form onSubmit={submit} className="flex flex-col gap-5">{location.state?.passwordReset && <p role="status" className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-800">Password changed. Enter your new password to sign in.</p>}{error && <p className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-          <label className="block text-sm font-bold text-slate-800">Email address<div className="input-with-icon"><Mail size={19} /><input required type="email" autoComplete="username" placeholder="you@example.com" value={form.email} onChange={(e) => update('email', e.target.value)} /></div></label>
-          <label className="block text-sm font-bold text-slate-800">Password<div className="input-with-icon"><LockKeyhole size={19} /><input required type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password" value={form.password} onChange={(e) => update('password', e.target.value)} /><button type="button" onClick={() => setShowPassword(!showPassword)} className="password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button></div></label>
+        <div className="login-card"><form onSubmit={submit} className="flex flex-col gap-5">{location.state?.passwordReset && <p role="status" className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-800">Password changed. Enter your new password to sign in.</p>}{error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+          <label className="block text-sm font-bold text-slate-800">Email address<div className="input-with-icon"><Mail size={19} /><input required disabled={loading} type="email" autoComplete="username" placeholder="you@example.com" value={form.email} onChange={(e) => update('email', e.target.value)} /></div></label>
+          <label className="block text-sm font-bold text-slate-800">Password<div className="input-with-icon"><LockKeyhole size={19} /><input required disabled={loading} type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Enter your password" value={form.password} onChange={(e) => update('password', e.target.value)} /><button type="button" onClick={() => setShowPassword(!showPassword)} className="password-toggle" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button></div></label>
           <div className="-mt-2 flex justify-end"><Link to="/forgot-password" className="account-registration-link text-sm">Forgot password?</Link></div>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-500"><input type="checkbox" checked={rememberEmail} onChange={(event) => setRememberEmail(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-[var(--primary)] focus:ring-[var(--primary)]" />Remember email</label><button disabled={loading} aria-busy={loading} className="login-submit">{loading && <span className="login-spinner" aria-hidden="true" />}{loading ? 'Signing in...' : 'Sign in'}</button>
         </form></div><Link to="/register" className="login-register-link mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-white px-4 py-3 text-sm font-bold text-emerald-800 shadow-sm transition hover:border-emerald-500 hover:bg-emerald-50">Create an account <ArrowRight size={17} /></Link><div className="login-install mt-2 text-center"><PwaInstallPrompt /></div></div></section>
+      {challenge && <LoginVerificationDialog
+        email={challenge.email} challenge={challenge} onDismiss={() => setChallenge(null)}
+        onVerify={async (otp, trustDevice) => {
+          finish(await verifyLogin({ email: challenge.email, challengeId: challenge.challengeId, otp, trustDevice }))
+        }}
+      />}
     </main>
   )
 }

@@ -22,6 +22,17 @@ export function normalizeEmailIdentity(email) {
 
 // #endregion
 
+export const authUserColumns = `
+  id,
+  full_name AS "fullName",
+  email,
+  role,
+  is_active AS "isActive",
+  approval_status AS "approvalStatus",
+  email_verified AS "emailVerified",
+  created_at AS "createdAt",
+  updated_at AS "updatedAt"`;
+
 // #region Email change verification
 
 export const EMAIL_CHANGE_COOLDOWN_SECONDS = 60;
@@ -70,16 +81,21 @@ export async function consumeRegistrationGrant(client, email, token) {
   await client.query('DELETE FROM registration_challenges WHERE email=$1', [email]);
 }
 
-export async function registrationQuota(database, action, identity, limit, seconds) {
+export async function consumeAccountRequestQuota(database, keyHash, limit, seconds, message) {
   const result = await database.query(`INSERT INTO registration_rate_limits(key_hash,expires_at)
     VALUES($1,NOW()+make_interval(secs=>$2)) ON CONFLICT(key_hash) DO UPDATE SET
     request_count=CASE WHEN registration_rate_limits.expires_at<=NOW() THEN 1 ELSE LEAST(registration_rate_limits.request_count+1,1000000) END,
     window_started_at=CASE WHEN registration_rate_limits.expires_at<=NOW() THEN NOW() ELSE registration_rate_limits.window_started_at END,
     expires_at=CASE WHEN registration_rate_limits.expires_at<=NOW() THEN NOW()+make_interval(secs=>$2) ELSE registration_rate_limits.expires_at END
-    RETURNING request_count, GREATEST(1,CEIL(EXTRACT(EPOCH FROM expires_at-NOW())))::int AS retry`, [registrationHash('quota', action, identity), seconds]);
+    RETURNING request_count, GREATEST(1,CEIL(EXTRACT(EPOCH FROM expires_at-NOW())))::int AS retry`, [keyHash, seconds]);
   const row = result.rows[0];
-  if (row.request_count > limit) throw Object.assign(new Error('Too many registration requests. Please try again later.'), { status: 429, retryAfterSeconds: row.retry });
+  if (row.request_count > limit) throw Object.assign(new Error(message), { status: 429, retryAfterSeconds: row.retry });
   return row.request_count;
+}
+
+export function registrationQuota(database, action, identity, limit, seconds) {
+  return consumeAccountRequestQuota(database, registrationHash('quota', action, identity), limit, seconds,
+    'Too many registration requests. Please try again later.');
 }
 
 export async function cleanupRegistrationData(database = pool) {

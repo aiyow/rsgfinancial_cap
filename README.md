@@ -11,6 +11,14 @@ For a Windows-focused local installation walkthrough with step-by-step error sol
 - **Resident:** view published SOAs for assigned units; upload payment receipts; review payment history; and view their unit's automatically generated prescriptive insights.
 - **Analytics:** five-month linear-regression forecasts, forecast accuracy, historical versus projected charts, reading-quality checks, and explainable recommendations for each unit.
 
+## Two-step sign-in
+
+Apply the sign-in migration to an existing database before releasing the updated backend and frontend. From the backend directory, run `npm run accounts:migrate-login`. A fresh database initialized with `npm run db:init` already includes it.
+
+Sign-in codes use the existing `SMTP_*` settings. Confirm that email delivery works and that enabled accounts can access their registered inboxes before rollout. Sign in with a test account in a new browser, verify the emailed code, and select **Trust this device for 15 days**. Sign out and sign back in with the same browser, then repeat in a separate browser to check that it receives its own code.
+
+If an Admin account still uses a placeholder address, temporarily set `LOGIN_OTP_RECOVERY_ADMIN_EMAIL` to that exact address and reload the backend. Sign in with the Admin password, then open **Settings** to verify a replacement email. The replacement address requires sign-in verification automatically. Clear the recovery setting when finished.
+
 ## Enable Web Push on Render
 
 Web Push sends a device alert for new in-app notifications after a user opts in. The alert opens the Notifications page, where the signed-in user can read the details.

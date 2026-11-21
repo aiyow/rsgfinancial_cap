@@ -144,6 +144,17 @@ export function createEmailVerificationService({
   createTransport = nodemailer.createTransport,
 } = {}) {
   return {
+    async sendLoginCode({ email, otp }) {
+      const config = emailConfiguration(environment);
+      const transporter = createTransport({ host: config.host, port: config.port, secure: config.secure,
+        requireTLS: !config.secure, auth: config.auth, connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000 });
+      const instruction = 'Enter this code to sign in. Your verification window lasts 10 minutes. Never share this code. If you did not try to sign in, ignore this email.';
+      await transporter.sendMail({
+        from: config.from, to: email, subject: 'Your The ResiDens sign-in code',
+        text: `Your sign-in code is: ${otp}\n\n${instruction}`,
+        html: emailTemplate({ title: 'Verify your sign-in', body: `${emailCode(otp, 'Your sign-in code')}<p>${instruction}</p>` }),
+      });
+    },
     async sendRegistrationCode({ email, otp }) {
       const message = buildRegistrationEmailMessage({ otp });
       const config = emailConfiguration(environment);

@@ -1,0 +1,47 @@
+.login-verification-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(27rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  border: 1px solid #dce9e2;
+  border-radius: 1.25rem;
+  background: #fff;
+  color: #183b2e;
+  box-shadow: 0 24px 72px rgb(9 31 22 / 28%);
+  overflow: auto;
+}
+
+.login-verification-dialog::backdrop {
+  background: rgb(10 31 24 / 62%);
+  backdrop-filter: blur(3px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-verification-dialog[open] {
+    animation: login-verification-enter 220ms cubic-bezier(.2, .75, .25, 1) both;
+  }
+
+  .login-verification-dialog[open]::backdrop {
+    animation: login-verification-backdrop 200ms ease-out both;
+  }
+
+  .login-verification-dialog[open] .login-verification-shield {
+    animation: login-verification-shield 260ms 50ms ease-out both;
+  }
+}
+
+@keyframes login-verification-enter {
+  from { opacity: 0; transform: translateY(10px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes login-verification-backdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes login-verification-shield {
+  from { opacity: .5; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

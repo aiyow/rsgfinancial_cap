@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { apiRequest } from '../services/api'
 import { disableDevicePush } from '../services/devicePush'
+import { createTrustedBrowser, readTrustedBrowser, saveTrustedBrowser, signTrustedBrowserChallenge } from '../services/trustedBrowser'
 import AuthContext from './auth-context'
 import {
   clearResidentOffline, getOfflineState, offlineSavedAt,
@@ -95,10 +96,40 @@ export function AuthProvider({ children }) {
   }, [token])
 
   async function login(credentials) {
-    const data = await apiRequest('/api/auth/login', {
-      method: 'POST',
-      body: credentials,
+    const browser = await readTrustedBrowser(credentials.email)
+    const start = (body) => apiRequest('/api/auth/login', { method: 'POST', body })
+    const result = await start(browser ? { ...credentials, trustedBrowserId: browser.id } : credentials)
+    if (result.token && result.user) return { user: await completeLogin(result) }
+    if (result.code === 'LOGIN_OTP_REQUIRED') return result
+    if (result.code !== 'LOGIN_BROWSER_PROOF_REQUIRED') throw new Error('Sign-in verification is unavailable.')
+
+    const signature = await signTrustedBrowserChallenge(browser, result.challengeId).catch(() => null)
+    if (signature) {
+      try {
+        const session = await apiRequest('/api/auth/login/verify', {
+          method: 'POST', body: { challengeId: result.challengeId, signature },
+        })
+        return { user: await completeLogin(session) }
+      } catch (error) {
+        if (!['LOGIN_BROWSER_UNAVAILABLE', 'LOGIN_CHALLENGE_EXPIRED'].includes(error.data?.code)) throw error
+      }
+    }
+
+    const fallback = await start(credentials)
+    if (fallback.code !== 'LOGIN_OTP_REQUIRED') throw new Error('Sign-in verification is unavailable.')
+    return fallback
+  }
+
+  async function verifyLogin({ email, challengeId, otp, trustDevice }) {
+    const browser = trustDevice && await createTrustedBrowser()
+    const data = await apiRequest('/api/auth/login/verify', {
+      method: 'POST', body: { challengeId, otp, ...(browser && { publicKey: browser.publicKey }) },
     })
+    if (browser && data.trustedBrowserId) await saveTrustedBrowser(email, data.trustedBrowserId, browser.privateKey)
+    return completeLogin(data)
+  }
+
+  async function completeLogin(data) {
     localStorage.setItem('condo_token', data.token)
     localStorage.setItem('condo_user', JSON.stringify(data.user))
     await saveVerifiedResident(data.user, data.token)
@@ -124,7 +155,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, initializing, login, replaceToken, updateUser, logout, dataVersion, offline: offlineState.offline }}>
+    <AuthContext.Provider value={{ user, token, initializing, login, verifyLogin, replaceToken, updateUser, logout, dataVersion, offline: offlineState.offline }}>
       {children}
     </AuthContext.Provider>
   )

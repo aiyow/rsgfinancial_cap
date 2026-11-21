@@ -36,6 +36,7 @@ test('email-first signup, durable limits, one-time verification and separate app
    CREATE TABLE unit_assignments(id BIGINT,user_id BIGINT);
    CREATE TABLE audit_logs(context JSONB,actor_user_id BIGINT,actor_name_snapshot TEXT,actor_role_snapshot TEXT,entity_name TEXT,entity_id BIGINT,action TEXT,old_values JSONB,new_values JSONB,remarks TEXT);`);
   await setup.query((await readFile(new URL('../../database/migrations/039_registration_email_otp.sql',import.meta.url),'utf8')).replaceAll('public.',''));
+  await setup.query((await readFile(new URL('../../database/migrations/048_login_verification.sql',import.meta.url),'utf8')).replaceAll('public.',''));
   const hash=await bcrypt.hash('LegacyAdmin7!xy',4);
   await setup.query(`INSERT INTO users(id,full_name,email,password_hash,role,approval_status,email_verified) VALUES
    (1,'Fixture Admin','admin@example.invalid',$1,'ADMIN','APPROVED',TRUE),
@@ -58,6 +59,10 @@ test('email-first signup, durable limits, one-time verification and separate app
   const details=(email,registrationToken)=>({firstName:'Signup',middleInitial:'JP.',lastName:'Fixture',email,password:'StrongPass7!xy',registrationToken});
   const register=(email,token)=>request('auth/register',details(email,token));
   const code=()=>mail.at(-1).text.match(/code is: (\d{6})/)[1];
+  async function signIn(email,password){
+   const started=await request('auth/login',{email,password});assert.equal(started.status,202);assert.equal(started.data.code,'LOGIN_OTP_REQUIRED');
+   return request('auth/login/verify',{challengeId:started.data.challengeId,otp:code()});
+  }
   const count=async email=>(await setup.query('SELECT COUNT(*)::int AS n FROM users WHERE email=$1',[email])).rows[0].n;
   const resetLimits=()=>setup.query('DELETE FROM registration_rate_limits');
   async function ready(email){const sent=await send(email);assert.equal(sent.status,200,JSON.stringify(sent.data));const result=await verify(email,sent.data.challengeId,code());assert.equal(result.status,200,JSON.stringify(result.data));return result.data.registrationToken;}
@@ -88,7 +93,7 @@ test('email-first signup, durable limits, one-time verification and separate app
    assert.equal((await request('auth/me',undefined,forgedPendingSession)).status,401);
    assert.equal((await request('auth/forgot-password',{email})).status,403);
    assert.equal((await request(`users/${saved.data.user.id}`,{approvalStatus:'APPROVED'},adminToken,'PATCH')).status,200);
-   const login=await request('auth/login',{email,password:'StrongPass7!xy'});assert.equal(login.status,200);assert.equal((await request('auth/me',undefined,login.data.token)).status,200);
+   const login=await signIn(email,'StrongPass7!xy');assert.equal(login.status,200);assert.equal((await request('auth/me',undefined,login.data.token)).status,200);
   });
   await t.test('legacy email links and verified pending accounts cannot bypass Admin approval',async()=>{
    await resetLimits();
@@ -97,7 +102,7 @@ test('email-first signup, durable limits, one-time verification and separate app
    assert.equal((await request('auth/verify-email?token=legacy-fixture-link')).status,200);
    assert.equal((await setup.query('SELECT approval_status FROM users WHERE id=3')).rows[0].approval_status,'PENDING');
    assert.equal((await request('auth/login',{email:'legacy@example.invalid',password:'LegacyAdmin7!xy'})).status,403);
-   assert.equal((await request('auth/login',{email:'admin@example.invalid',password:'LegacyAdmin7!xy'})).status,200);
+   assert.equal((await signIn('admin@example.invalid','LegacyAdmin7!xy')).status,200);
    assert.equal((await send('first@example.invalid')).status,409);
   });
   await t.test('cooldown, resend invalidation, five attempts, code expiry and grant expiry',async()=>{
